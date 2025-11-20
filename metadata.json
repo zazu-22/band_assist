@@ -1,0 +1,5 @@
+{
+  "name": "Test",
+  "description": "A collaborative setlist and practice planner for bands, specializing in ZZ Top tributes. Features AI-powered part analysis, setlist management, and backing track organization.",
+  "requestFramePermissions": []
+}
