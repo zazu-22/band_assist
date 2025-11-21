@@ -112,6 +112,7 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const apiRef = useRef<AlphaTabApi | null>(null);
   const metronomeTimeoutsRef = useRef<Set<NodeJS.Timeout>>(new Set());
+  const cleanupEventListenersRef = useRef<(() => void) | null>(null);
   
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -341,8 +342,9 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
 
               // Auto-clear highlight after beat duration - track timeout for cleanup
               const timeoutId = setTimeout(() => {
+                if (!isMounted) return;
                 metronomeTimeoutsRef.current.delete(timeoutId);
-                if (isMounted) setMetronomeBeat(0);
+                setMetronomeBeat(0);
               }, midi.metronomeDurationInMilliseconds * METRONOME_HIGHLIGHT_DURATION_FACTOR);
 
               metronomeTimeoutsRef.current.add(timeoutId);
@@ -362,8 +364,8 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
         api.beatMouseDown.on(handleBeatMouseDown);
         api.midiEventsPlayed.on(handleMidiEventsPlayed);
 
-        // Store cleanup function
-        const cleanupEventListeners = () => {
+        // Store cleanup function in ref for cleanup phase
+        cleanupEventListenersRef.current = () => {
           if (api) {
             api.scoreLoaded.off(handleScoreLoaded);
             api.error.off(handleError);
@@ -411,8 +413,10 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
 
       if (apiRef.current) {
         try {
-          // Event listeners are automatically cleaned up by destroy()
-          // But we're keeping explicit cleanup for clarity
+          // Explicitly cleanup event listeners before destroying
+          if (cleanupEventListenersRef.current) {
+            cleanupEventListenersRef.current();
+          }
           apiRef.current.destroy();
         } catch (e) {
           console.error("[AlphaTab] Error during cleanup", e);

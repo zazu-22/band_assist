@@ -119,6 +119,19 @@ describe('AlphaTabRenderer', () => {
 
       unmount();
 
+      // Verify explicit event handler cleanup
+      expect(mockApiInstance.scoreLoaded.off).toHaveBeenCalled();
+      expect(mockApiInstance.error.off).toHaveBeenCalled();
+      expect(mockApiInstance.playerStateChanged.off).toHaveBeenCalled();
+      expect(mockApiInstance.playerReady.off).toHaveBeenCalled();
+      expect(mockApiInstance.renderStarted.off).toHaveBeenCalled();
+      expect(mockApiInstance.renderFinished.off).toHaveBeenCalled();
+      expect(mockApiInstance.playerPositionChanged.off).toHaveBeenCalled();
+      expect(mockApiInstance.playerFinished.off).toHaveBeenCalled();
+      expect(mockApiInstance.beatMouseDown.off).toHaveBeenCalled();
+      expect(mockApiInstance.midiEventsPlayed.off).toHaveBeenCalled();
+
+      // Verify destroy is still called
       expect(mockApiInstance.destroy).toHaveBeenCalled();
     });
   });
@@ -145,7 +158,7 @@ describe('AlphaTabRenderer', () => {
 
       // The component should handle this gracefully by showing an error
       await waitFor(() => {
-        expect(screen.getByText(/Invalid file data format/)).toBeInTheDocument();
+        expect(screen.getByText(/Invalid file data format\. Could not convert Base64 to binary\./)).toBeInTheDocument();
       });
     });
   });
