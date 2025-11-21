@@ -1,0 +1,36 @@
+/**
+ * AlphaTab Custom Styles
+ * Band Assist - Guitar Pro Player
+ */
+
+/* Currently playing bar - subtle amber highlight */
+.at-cursor-bar {
+  background: rgba(245, 158, 11, 0.12) !important; /* Amber-500 at 12% opacity */
+}
+
+/* Beat cursor - vertical line showing exact playback position */
+.at-cursor-beat {
+  background: rgba(245, 158, 11, 0.85) !important; /* Solid amber */
+  width: 3px !important;
+  border-radius: 1px;
+  box-shadow: 0 0 4px rgba(245, 158, 11, 0.5);
+}
+
+/* Currently playing notes - highlighted in amber */
+.at-highlight * {
+  fill: #f59e0b !important; /* Amber-500 */
+  stroke: #f59e0b !important;
+  stroke-width: 1.5 !important;
+}
+
+/* Loop range selection - light amber overlay */
+.at-selection div {
+  background: rgba(245, 158, 11, 0.08) !important;
+  border: 1px dashed rgba(245, 158, 11, 0.4);
+}
+
+/* Hover effect on beats (for loop selection) */
+.at-surface .at-beat:hover {
+  cursor: pointer;
+  opacity: 0.8;
+}

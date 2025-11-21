@@ -1,6 +1,6 @@
 
 import React, { useEffect, useRef, useState } from 'react';
-import { Play, Pause, Sliders, Layers, Activity, Music2, AlertTriangle } from 'lucide-react';
+import { Play, Pause, Square, Sliders, Layers, Activity, Music2, AlertTriangle, Repeat, X } from 'lucide-react';
 
 // Extend window interface to include alphaTab from CDN
 declare global {
@@ -33,6 +33,16 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
   const [internalIsPlaying, setInternalIsPlaying] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [retryKey, setRetryKey] = useState(0);
+
+  // Phase 1: Transport controls state
+  const [currentTime, setCurrentTime] = useState(0);
+  const [totalTime, setTotalTime] = useState(0);
+  const [isLooping, setIsLooping] = useState(false);
+  const [loopRange, setLoopRange] = useState<{start: number, end: number} | null>(null);
+  const [selectionStart, setSelectionStart] = useState<number | null>(null);
+
+  // Phase 2: Visual feedback state
+  const [metronomeBeat, setMetronomeBeat] = useState<number>(0);
 
   // Helper to convert Base64 DataURI to Uint8Array
   const prepareData = (uri: string): Uint8Array | null => {
@@ -174,6 +184,74 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
           console.log("[AlphaTab] Rendering finished");
         });
 
+        // Phase 1: Position tracking and playback events
+        let lastPositionUpdate = 0;
+        api.playerPositionChanged.on((e: any) => {
+          if (!isMounted) return;
+
+          // Throttle updates to ~10 FPS for performance
+          const now = Date.now();
+          if (now - lastPositionUpdate < 100) return;
+          lastPositionUpdate = now;
+
+          setCurrentTime(e.currentTime);
+          setTotalTime(e.endTime);
+        });
+
+        api.playerFinished.on(() => {
+          if (!isMounted) return;
+          console.log("[AlphaTab] Playback finished");
+          setInternalIsPlaying(false);
+          if (onPlaybackChange) onPlaybackChange(false);
+        });
+
+        // Phase 1: Beat selection for loop
+        api.beatMouseDown.on((e: any) => {
+          if (!isMounted) return;
+
+          // Shift+Click to set loop range
+          if (e.originalEvent.shiftKey) {
+            const beatStart = e.beat.absolutePlaybackStart;
+            const beatEnd = beatStart + e.beat.playbackDuration;
+
+            if (selectionStart === null) {
+              // First click - set start point
+              setSelectionStart(beatStart);
+              console.log("[AlphaTab] Loop start set:", beatStart);
+            } else {
+              // Second click - create range
+              const startTick = Math.min(selectionStart, beatStart);
+              const endTick = Math.max(selectionStart + e.beat.playbackDuration, beatEnd);
+
+              apiRef.current.playbackRange = { startTick, endTick };
+              setLoopRange({ start: startTick, end: endTick });
+              setSelectionStart(null);
+
+              console.log("[AlphaTab] Loop range set:", startTick, "-", endTick);
+            }
+          }
+        });
+
+        // Phase 2: Visual metronome
+        api.midiEventsPlayedFilter = [
+          window.alphaTab.midi.MidiEventType.AlphaTabMetronome
+        ];
+
+        api.midiEventsPlayed.on((e: any) => {
+          if (!isMounted) return;
+
+          for (const midi of e.events) {
+            if (midi.isMetronome) {
+              setMetronomeBeat(midi.metronomeNumerator);
+
+              // Auto-clear highlight after beat duration
+              setTimeout(() => {
+                if (isMounted) setMetronomeBeat(0);
+              }, midi.metronomeDurationInMilliseconds * 0.3);
+            }
+          }
+        });
+
         // 5. Load Data
         const data = prepareData(fileData);
         if (data) {
@@ -250,23 +328,77 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
       }
   };
 
+  // New transport control handlers
+  const stopPlayback = () => {
+    if (apiRef.current) {
+      apiRef.current.stop();
+      setInternalIsPlaying(false);
+      if (onPlaybackChange) onPlaybackChange(false);
+    }
+  };
+
+  const seekTo = (percentage: number) => {
+    if (apiRef.current && totalTime > 0) {
+      const targetTime = totalTime * percentage;
+      apiRef.current.timePosition = targetTime;
+    }
+  };
+
+  const toggleLoop = () => {
+    if (apiRef.current) {
+      const newLooping = !isLooping;
+      apiRef.current.isLooping = newLooping;
+      setIsLooping(newLooping);
+    }
+  };
+
+  const clearLoopRange = () => {
+    if (apiRef.current) {
+      apiRef.current.playbackRange = null;
+      setLoopRange(null);
+      setSelectionStart(null);
+    }
+  };
+
+  // Helper for time formatting
+  const formatTime = (milliseconds: number): string => {
+    const totalSeconds = Math.floor(milliseconds / 1000);
+    const minutes = Math.floor(totalSeconds / 60);
+    const seconds = totalSeconds % 60;
+    return `${minutes}:${seconds.toString().padStart(2, '0')}`;
+  };
+
   return (
     <div className="flex flex-col h-full bg-white text-black rounded-xl overflow-hidden relative border border-zinc-200">
       {/* Toolbar */}
       <div className="bg-zinc-100 border-b border-zinc-300 p-2 flex items-center justify-between shrink-0">
         <div className="flex items-center gap-2">
             {!readOnly && (
-                <button 
-                    onClick={togglePlay}
-                    className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${internalIsPlaying ? 'bg-amber-500 text-white' : 'bg-zinc-200 hover:bg-zinc-300 text-zinc-700'}`}
-                >
-                    {internalIsPlaying ? <Pause size={20} /> : <Play size={20} className="ml-1" />}
-                </button>
+                <>
+                  <button
+                      onClick={togglePlay}
+                      className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${internalIsPlaying ? 'bg-amber-500 text-white' : 'bg-zinc-200 hover:bg-zinc-300 text-zinc-700'}`}
+                  >
+                      {internalIsPlaying ? <Pause size={20} /> : <Play size={20} className="ml-1" />}
+                  </button>
+
+                  {/* Stop button */}
+                  <button
+                    onClick={stopPlayback}
+                    disabled={!internalIsPlaying && currentTime === 0}
+                    className="w-10 h-10 rounded-full flex items-center justify-center bg-zinc-200 hover:bg-zinc-300 text-zinc-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                    title="Stop and return to start"
+                  >
+                    <Square size={18} />
+                  </button>
+                </>
             )}
+
+            {/* Speed control */}
             <div className="flex items-center gap-1 bg-zinc-200 rounded px-2 py-1">
                 <Activity size={14} className="text-zinc-500" />
-                <select 
-                    value={currentSpeed} 
+                <select
+                    value={currentSpeed}
                     onChange={(e) => changeSpeed(parseFloat(e.target.value))}
                     className="bg-transparent text-sm outline-none w-16"
                 >
@@ -276,10 +408,52 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
                     <option value="1.25">125%</option>
                 </select>
             </div>
+
+            {/* Loop controls */}
+            {!readOnly && (
+              <div className="flex items-center gap-1">
+                <button
+                  onClick={toggleLoop}
+                  className={`p-2 rounded transition-colors ${
+                    isLooping ? 'bg-amber-500 text-white' : 'bg-zinc-200 hover:bg-zinc-300 text-zinc-700'
+                  }`}
+                  title="Toggle loop"
+                >
+                  <Repeat size={16} />
+                </button>
+
+                {loopRange && (
+                  <button
+                    onClick={clearLoopRange}
+                    className="p-2 rounded bg-zinc-200 hover:bg-red-200 text-zinc-700 hover:text-red-600 transition-colors"
+                    title="Clear loop range"
+                  >
+                    <X size={16} />
+                  </button>
+                )}
+              </div>
+            )}
+
+            {/* Visual metronome */}
+            {!readOnly && (
+              <div className="flex items-center gap-1 bg-zinc-200 rounded px-2 py-1">
+                <Activity size={14} className="text-zinc-500" />
+                <div className="flex gap-1">
+                  {[1, 2, 3, 4].map((beat) => (
+                    <div
+                      key={beat}
+                      className={`w-2 h-2 rounded-full transition-all duration-75 ${
+                        metronomeBeat === beat ? 'bg-amber-500 scale-150' : 'bg-zinc-400'
+                      }`}
+                    />
+                  ))}
+                </div>
+              </div>
+            )}
         </div>
 
         <div className="flex items-center gap-2">
-            <button 
+            <button
                 onClick={() => setShowSettings(!showSettings)}
                 className={`p-2 rounded hover:bg-zinc-200 ${showSettings ? 'bg-zinc-200 text-amber-600' : 'text-zinc-600'}`}
             >
@@ -288,6 +462,48 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
             <span className="text-xs font-bold text-zinc-400 px-2">AlphaTab</span>
         </div>
       </div>
+
+      {/* Progress Bar */}
+      {!readOnly && totalTime > 0 && (
+        <div className="bg-zinc-100 border-b border-zinc-300 px-4 py-2 flex items-center gap-3 shrink-0">
+          <span className="text-xs font-mono text-zinc-600 w-12 text-right">
+            {formatTime(currentTime)}
+          </span>
+
+          <div
+            className="flex-1 h-2 bg-zinc-200 rounded-full cursor-pointer group relative"
+            onClick={(e) => {
+              const rect = e.currentTarget.getBoundingClientRect();
+              const x = e.clientX - rect.left;
+              const percentage = Math.max(0, Math.min(1, x / rect.width));
+              seekTo(percentage);
+            }}
+          >
+            {/* Progress fill */}
+            <div
+              className="h-full bg-amber-500 rounded-full transition-all"
+              style={{ width: `${(currentTime / totalTime) * 100}%` }}
+            />
+
+            {/* Hover scrubber */}
+            <div
+              className="absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-white border-2 border-amber-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
+              style={{ left: `${(currentTime / totalTime) * 100}%` }}
+            />
+          </div>
+
+          <span className="text-xs font-mono text-zinc-600 w-12">
+            {formatTime(totalTime)}
+          </span>
+        </div>
+      )}
+
+      {/* Loop selection hint */}
+      {selectionStart !== null && (
+        <div className="bg-amber-100 border-b border-amber-400 text-amber-800 px-3 py-1 text-xs">
+          Loop start set - Shift+Click another measure to set end
+        </div>
+      )}
 
       {/* Mixer Overlay */}
       {showSettings && (
