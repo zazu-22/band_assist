@@ -1,11 +1,93 @@
 
-import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import { Play, Pause, Square, Sliders, Layers, Activity, Music2, AlertTriangle, Repeat, X } from 'lucide-react';
+
+// AlphaTab type definitions
+interface AlphaTabScore {
+  tracks: AlphaTabTrack[];
+}
+
+interface AlphaTabTrack {
+  name: string;
+  playbackInfo: {
+    isMute: boolean;
+    isSolo: boolean;
+  };
+}
+
+interface AlphaTabPlayerStateChangedEvent {
+  state: number; // 0 = paused, 1 = playing
+}
+
+interface AlphaTabPositionChangedEvent {
+  currentTime: number;
+  endTime: number;
+}
+
+interface AlphaTabBeatMouseEvent {
+  beat: {
+    absolutePlaybackStart: number;
+    playbackDuration: number;
+  };
+  originalEvent: {
+    shiftKey: boolean;
+  };
+}
+
+interface AlphaTabMidiEvent {
+  isMetronome: boolean;
+  metronomeNumerator: number;
+  metronomeDurationInMilliseconds: number;
+}
+
+interface AlphaTabMidiEventsPlayedEvent {
+  events: AlphaTabMidiEvent[];
+}
+
+interface AlphaTabErrorEvent {
+  message?: string;
+  inner?: string;
+}
+
+interface AlphaTabApi {
+  destroy(): void;
+  load(data: Uint8Array): void;
+  play(): void;
+  pause(): void;
+  playPause(): void;
+  stop(): void;
+  renderTracks(tracks: AlphaTabTrack[]): void;
+  changeTrackMute(tracks: AlphaTabTrack[], mute: boolean): void;
+  changeTrackSolo(tracks: AlphaTabTrack[], solo: boolean): void;
+  playbackSpeed: number;
+  timePosition: number;
+  isLooping: boolean;
+  playbackRange: { startTick: number; endTick: number } | null;
+  score: AlphaTabScore;
+  scoreLoaded: { on(callback: (score: AlphaTabScore) => void): void; off(callback: (score: AlphaTabScore) => void): void };
+  error: { on(callback: (e: AlphaTabErrorEvent) => void): void; off(callback: (e: AlphaTabErrorEvent) => void): void };
+  playerStateChanged: { on(callback: (args: AlphaTabPlayerStateChangedEvent) => void): void; off(callback: (args: AlphaTabPlayerStateChangedEvent) => void): void };
+  playerReady: { on(callback: () => void): void; off(callback: () => void): void };
+  renderStarted: { on(callback: () => void): void; off(callback: () => void): void };
+  renderFinished: { on(callback: () => void): void; off(callback: () => void): void };
+  playerPositionChanged: { on(callback: (e: AlphaTabPositionChangedEvent) => void): void; off(callback: (e: AlphaTabPositionChangedEvent) => void): void };
+  playerFinished: { on(callback: () => void): void; off(callback: () => void): void };
+  beatMouseDown: { on(callback: (e: AlphaTabBeatMouseEvent) => void): void; off(callback: (e: AlphaTabBeatMouseEvent) => void): void };
+  midiEventsPlayed: { on(callback: (e: AlphaTabMidiEventsPlayedEvent) => void): void; off(callback: (e: AlphaTabMidiEventsPlayedEvent) => void): void };
+  midiEventsPlayedFilter: number[];
+}
 
 // Extend window interface to include alphaTab from CDN
 declare global {
   interface Window {
-    alphaTab: any;
+    alphaTab: {
+      AlphaTabApi: new (element: HTMLElement, settings: any) => AlphaTabApi;
+      midi: {
+        MidiEventType: {
+          AlphaTabMetronome: number;
+        };
+      };
+    };
   }
 }
 
@@ -24,11 +106,12 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
 }) => {
   const rootRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
-  const apiRef = useRef<any>(null);
+  const apiRef = useRef<AlphaTabApi | null>(null);
+  const metronomeTimeoutsRef = useRef<Set<NodeJS.Timeout>>(new Set());
   
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [tracks, setTracks] = useState<any[]>([]);
+  const [tracks, setTracks] = useState<AlphaTabTrack[]>([]);
   const [currentSpeed, setCurrentSpeed] = useState(1.0);
   const [internalIsPlaying, setInternalIsPlaying] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
@@ -137,16 +220,16 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
         const api = new window.alphaTab.AlphaTabApi(containerRef.current, settings);
         apiRef.current = api;
 
-        // 4. Attach Events
-        api.scoreLoaded.on((score: any) => {
+        // 4. Attach Events - Store handlers for cleanup
+        const handleScoreLoaded = (score: AlphaTabScore) => {
           if(!isMounted) return;
           console.log("[AlphaTab] Score Loaded Successfully", score);
           clearTimeout(timeoutId);
           setTracks(score.tracks);
           setLoading(false);
-        });
+        };
 
-        api.error.on((e: any) => {
+        const handleError = (e: AlphaTabErrorEvent) => {
           if(!isMounted) return;
           console.error("[AlphaTab] Error Event:", e);
           clearTimeout(timeoutId);
@@ -163,30 +246,33 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
 
           setError(errorMsg);
           setLoading(false);
-        });
+        };
 
-        api.playerStateChanged.on((args: any) => {
+        const handlePlayerStateChanged = (args: AlphaTabPlayerStateChangedEvent) => {
           if(!isMounted) return;
           const playing = args.state === 1;
           setInternalIsPlaying(playing);
           if (onPlaybackChange) onPlaybackChange(playing);
-        });
+        };
 
-        api.playerReady.on(() => {
+        const handlePlayerReady = () => {
+          if(!isMounted) return;
           console.log("[AlphaTab] Player Ready");
-        });
+        };
 
-        api.renderStarted.on(() => {
+        const handleRenderStarted = () => {
+          if(!isMounted) return;
           console.log("[AlphaTab] Rendering started...");
-        });
+        };
 
-        api.renderFinished.on(() => {
+        const handleRenderFinished = () => {
+          if(!isMounted) return;
           console.log("[AlphaTab] Rendering finished");
-        });
+        };
 
         // Phase 1: Position tracking and playback events
         let lastPositionUpdate = 0;
-        api.playerPositionChanged.on((e: any) => {
+        const handlePositionChanged = (e: AlphaTabPositionChangedEvent) => {
           if (!isMounted) return;
 
           // Throttle updates to ~10 FPS for performance
@@ -196,17 +282,17 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
 
           setCurrentTime(e.currentTime);
           setTotalTime(e.endTime);
-        });
+        };
 
-        api.playerFinished.on(() => {
+        const handlePlayerFinished = () => {
           if (!isMounted) return;
           console.log("[AlphaTab] Playback finished");
           setInternalIsPlaying(false);
           if (onPlaybackChange) onPlaybackChange(false);
-        });
+        };
 
-        // Phase 1: Beat selection for loop
-        api.beatMouseDown.on((e: any) => {
+        // Phase 1: Beat selection for loop - use ref to avoid stale closure
+        const handleBeatMouseDown = (e: AlphaTabBeatMouseEvent) => {
           if (!isMounted) return;
 
           // Shift+Click to set loop range
@@ -214,43 +300,78 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
             const beatStart = e.beat.absolutePlaybackStart;
             const beatEnd = beatStart + e.beat.playbackDuration;
 
-            if (selectionStart === null) {
-              // First click - set start point
-              setSelectionStart(beatStart);
-              console.log("[AlphaTab] Loop start set:", beatStart);
-            } else {
-              // Second click - create range
-              const startTick = Math.min(selectionStart, beatStart);
-              const endTick = Math.max(selectionStart + e.beat.playbackDuration, beatEnd);
+            setSelectionStart((currentStart) => {
+              if (currentStart === null) {
+                // First click - set start point
+                console.log("[AlphaTab] Loop start set:", beatStart);
+                return beatStart;
+              } else {
+                // Second click - create range
+                const startTick = Math.min(currentStart, beatStart);
+                const endTick = Math.max(currentStart + e.beat.playbackDuration, beatEnd);
 
-              apiRef.current.playbackRange = { startTick, endTick };
-              setLoopRange({ start: startTick, end: endTick });
-              setSelectionStart(null);
+                if (apiRef.current) {
+                  apiRef.current.playbackRange = { startTick, endTick };
+                }
+                setLoopRange({ start: startTick, end: endTick });
 
-              console.log("[AlphaTab] Loop range set:", startTick, "-", endTick);
-            }
+                console.log("[AlphaTab] Loop range set:", startTick, "-", endTick);
+                return null;
+              }
+            });
           }
-        });
+        };
 
         // Phase 2: Visual metronome
         api.midiEventsPlayedFilter = [
           window.alphaTab.midi.MidiEventType.AlphaTabMetronome
         ];
 
-        api.midiEventsPlayed.on((e: any) => {
+        const handleMidiEventsPlayed = (e: AlphaTabMidiEventsPlayedEvent) => {
           if (!isMounted) return;
 
           for (const midi of e.events) {
             if (midi.isMetronome) {
               setMetronomeBeat(midi.metronomeNumerator);
 
-              // Auto-clear highlight after beat duration
-              setTimeout(() => {
+              // Auto-clear highlight after beat duration - track timeout for cleanup
+              const timeoutId = setTimeout(() => {
                 if (isMounted) setMetronomeBeat(0);
+                metronomeTimeoutsRef.current.delete(timeoutId);
               }, midi.metronomeDurationInMilliseconds * 0.3);
+
+              metronomeTimeoutsRef.current.add(timeoutId);
             }
           }
-        });
+        };
+
+        // Register all event handlers
+        api.scoreLoaded.on(handleScoreLoaded);
+        api.error.on(handleError);
+        api.playerStateChanged.on(handlePlayerStateChanged);
+        api.playerReady.on(handlePlayerReady);
+        api.renderStarted.on(handleRenderStarted);
+        api.renderFinished.on(handleRenderFinished);
+        api.playerPositionChanged.on(handlePositionChanged);
+        api.playerFinished.on(handlePlayerFinished);
+        api.beatMouseDown.on(handleBeatMouseDown);
+        api.midiEventsPlayed.on(handleMidiEventsPlayed);
+
+        // Store cleanup function
+        const cleanupEventListeners = () => {
+          if (api) {
+            api.scoreLoaded.off(handleScoreLoaded);
+            api.error.off(handleError);
+            api.playerStateChanged.off(handlePlayerStateChanged);
+            api.playerReady.off(handlePlayerReady);
+            api.renderStarted.off(handleRenderStarted);
+            api.renderFinished.off(handleRenderFinished);
+            api.playerPositionChanged.off(handlePositionChanged);
+            api.playerFinished.off(handlePlayerFinished);
+            api.beatMouseDown.off(handleBeatMouseDown);
+            api.midiEventsPlayed.off(handleMidiEventsPlayed);
+          }
+        };
 
         // 5. Load Data
         const data = prepareData(fileData);
@@ -278,8 +399,15 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
     return () => {
       isMounted = false;
       clearTimeout(timeoutId);
+
+      // Clear all metronome timeouts
+      metronomeTimeoutsRef.current.forEach(timeout => clearTimeout(timeout));
+      metronomeTimeoutsRef.current.clear();
+
       if (apiRef.current) {
         try {
+          // Event listeners are automatically cleaned up by destroy()
+          // But we're keeping explicit cleanup for clarity
           apiRef.current.destroy();
         } catch (e) {
           console.error("[AlphaTab] Error during cleanup", e);
@@ -338,9 +466,17 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
   };
 
   const seekTo = (percentage: number) => {
-    if (apiRef.current && totalTime > 0) {
+    if (!apiRef.current || totalTime <= 0) return;
+
+    try {
       const targetTime = totalTime * percentage;
+      if (isNaN(targetTime) || targetTime < 0 || targetTime > totalTime) {
+        console.error("[AlphaTab] Invalid seek time:", targetTime);
+        return;
+      }
       apiRef.current.timePosition = targetTime;
+    } catch (error) {
+      console.error("[AlphaTab] Error seeking to position:", error);
     }
   };
 
@@ -360,13 +496,21 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
     }
   };
 
-  // Helper for time formatting
-  const formatTime = (milliseconds: number): string => {
+  // Helper for time formatting - memoized to prevent re-creation
+  const formatTime = useCallback((milliseconds: number): string => {
     const totalSeconds = Math.floor(milliseconds / 1000);
     const minutes = Math.floor(totalSeconds / 60);
     const seconds = totalSeconds % 60;
     return `${minutes}:${seconds.toString().padStart(2, '0')}`;
-  };
+  }, []);
+
+  // Memoize formatted times to reduce string operations
+  const formattedCurrentTime = useMemo(() => formatTime(currentTime), [currentTime, formatTime]);
+  const formattedTotalTime = useMemo(() => formatTime(totalTime), [totalTime, formatTime]);
+  const progressPercentage = useMemo(() =>
+    totalTime > 0 ? (currentTime / totalTime) * 100 : 0,
+    [currentTime, totalTime]
+  );
 
   return (
     <div className="flex flex-col h-full bg-white text-black rounded-xl overflow-hidden relative border border-zinc-200">
@@ -467,7 +611,7 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
       {!readOnly && totalTime > 0 && (
         <div className="bg-zinc-100 border-b border-zinc-300 px-4 py-2 flex items-center gap-3 shrink-0">
           <span className="text-xs font-mono text-zinc-600 w-12 text-right">
-            {formatTime(currentTime)}
+            {formattedCurrentTime}
           </span>
 
           <div
@@ -482,18 +626,18 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
             {/* Progress fill */}
             <div
               className="h-full bg-amber-500 rounded-full transition-all"
-              style={{ width: `${(currentTime / totalTime) * 100}%` }}
+              style={{ width: `${progressPercentage}%` }}
             />
 
             {/* Hover scrubber */}
             <div
               className="absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-white border-2 border-amber-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
-              style={{ left: `${(currentTime / totalTime) * 100}%` }}
+              style={{ left: `${progressPercentage}%` }}
             />
           </div>
 
           <span className="text-xs font-mono text-zinc-600 w-12">
-            {formatTime(totalTime)}
+            {formattedTotalTime}
           </span>
         </div>
       )}
