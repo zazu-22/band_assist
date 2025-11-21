@@ -2,6 +2,10 @@
 import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
 import { Play, Pause, Square, Sliders, Layers, Activity, Music2, AlertTriangle, Repeat, X } from 'lucide-react';
 
+// Constants
+const POSITION_UPDATE_THROTTLE_MS = 100; // Throttle position updates to ~10 FPS for performance
+const METRONOME_HIGHLIGHT_DURATION_FACTOR = 0.3; // Duration factor for metronome beat highlight
+
 // AlphaTab type definitions
 interface AlphaTabScore {
   tracks: AlphaTabTrack[];
@@ -275,9 +279,9 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
         const handlePositionChanged = (e: AlphaTabPositionChangedEvent) => {
           if (!isMounted) return;
 
-          // Throttle updates to ~10 FPS for performance
+          // Throttle updates for performance
           const now = Date.now();
-          if (now - lastPositionUpdate < 100) return;
+          if (now - lastPositionUpdate < POSITION_UPDATE_THROTTLE_MS) return;
           lastPositionUpdate = now;
 
           setCurrentTime(e.currentTime);
@@ -291,7 +295,7 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
           if (onPlaybackChange) onPlaybackChange(false);
         };
 
-        // Phase 1: Beat selection for loop - use ref to avoid stale closure
+        // Phase 1: Beat selection for loop - capture ref outside state setter to avoid stale closure
         const handleBeatMouseDown = (e: AlphaTabBeatMouseEvent) => {
           if (!isMounted) return;
 
@@ -299,6 +303,7 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
           if (e.originalEvent.shiftKey) {
             const beatStart = e.beat.absolutePlaybackStart;
             const beatEnd = beatStart + e.beat.playbackDuration;
+            const api = apiRef.current; // Capture ref value outside state setter
 
             setSelectionStart((currentStart) => {
               if (currentStart === null) {
@@ -310,8 +315,8 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
                 const startTick = Math.min(currentStart, beatStart);
                 const endTick = Math.max(currentStart + e.beat.playbackDuration, beatEnd);
 
-                if (apiRef.current) {
-                  apiRef.current.playbackRange = { startTick, endTick };
+                if (api) {
+                  api.playbackRange = { startTick, endTick };
                 }
                 setLoopRange({ start: startTick, end: endTick });
 
@@ -336,9 +341,9 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
 
               // Auto-clear highlight after beat duration - track timeout for cleanup
               const timeoutId = setTimeout(() => {
-                if (isMounted) setMetronomeBeat(0);
                 metronomeTimeoutsRef.current.delete(timeoutId);
-              }, midi.metronomeDurationInMilliseconds * 0.3);
+                if (isMounted) setMetronomeBeat(0);
+              }, midi.metronomeDurationInMilliseconds * METRONOME_HIGHLIGHT_DURATION_FACTOR);
 
               metronomeTimeoutsRef.current.add(timeoutId);
             }
