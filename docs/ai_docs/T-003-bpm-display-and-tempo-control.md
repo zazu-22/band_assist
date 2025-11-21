@@ -36,16 +36,19 @@ Add BPM (beats per minute) display next to the metronome and provide user-friend
 ### AlphaTab BPM Information
 
 **Score Metadata**: AlphaTab provides tempo information via:
+
 ```typescript
 api.score.tempo // Original BPM of the song
 ```
 
 **Playback Speed**: Current implementation uses:
+
 ```typescript
 api.playbackSpeed = 0.5; // 50% of original tempo
 ```
 
 **Calculated BPM**:
+
 ```typescript
 const currentBPM = api.score.tempo * api.playbackSpeed;
 ```
@@ -53,12 +56,14 @@ const currentBPM = api.score.tempo * api.playbackSpeed;
 ### Project Architecture
 
 **Tech Stack**:
+
 - React 19.2.0 with TypeScript
 - Tailwind CSS for styling
 - Lucide React for icons (Timer, CircleGauge, Music2, etc.)
 - AlphaTab library for playback
 
 **Component State** (already in AlphaTabRenderer.tsx):
+
 - `currentSpeed` - Current playback speed multiplier (0.5-1.25)
 - Need to add: `originalTempo` and `currentBPM`
 
@@ -425,6 +430,7 @@ const [rampDuration, setRampDuration] = useState<number>(60); // seconds
 ---
 
 **Files to Modify:**
+
 - `components/AlphaTabRenderer.tsx` - Main implementation
 - Possibly: Add new icons to imports if using different visual indicators
 

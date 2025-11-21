@@ -29,6 +29,7 @@ Dotted borders should maintain consistent dash spacing and size, dynamically add
 AlphaTab automatically adds the `.at-selection` CSS class to elements representing the selected loop range. The library creates a `<div>` overlay that shows the visual selection.
 
 **Current CSS** (likely in `public/alphatab-custom.css` or inline):
+
 ```css
 .at-selection div {
   background: rgba(245, 158, 11, 0.08) !important;
@@ -39,6 +40,7 @@ AlphaTab automatically adds the `.at-selection` CSS class to elements representi
 ### Root Cause
 
 The issue is likely one of:
+
 1. Using `background-image` with a pattern instead of native CSS `border-style: dashed`
 2. SVG stroke pattern that scales instead of repeats
 3. AlphaTab internal rendering using a scalable border image
@@ -139,5 +141,6 @@ If native CSS dashed border doesn't work due to AlphaTab rendering:
 ---
 
 **Files to Modify:**
+
 - `public/alphatab-custom.css` (or create if doesn't exist)
 - Possibly: `index.html` (to link CSS file if not already linked)

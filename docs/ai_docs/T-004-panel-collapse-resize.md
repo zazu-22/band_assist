@@ -14,6 +14,7 @@ Implement collapsible and resizable panels throughout the application to improve
 ### Existing Layout
 
 **App Structure** (`App.tsx`):
+
 ```
 ┌─────────────────────────────────────────┐
 │  Navigation (Left Sidebar - 200px)     │
@@ -24,6 +25,7 @@ Implement collapsible and resizable panels throughout the application to improve
 ```
 
 **PracticeRoom Layout** (example):
+
 ```
 ┌────────┬────────────────────┬──────────┐
 │ Song   │  AlphaTab Viewer   │  (none)  │
@@ -85,11 +87,13 @@ App.tsx (root state & layout)
 ### Responsive Requirements
 
 **Target Breakpoints**:
+
 - Desktop: 1024px+ (full layout)
 - Tablet: 768px-1023px (collapsible sidebar, single panel focus)
 - Mobile: < 768px (stack vertically, sidebar as drawer)
 
 **Priority Views** (implement in order):
+
 1. PracticeRoom (most important for tablet use)
 2. Song Detail
 3. Dashboard
@@ -184,6 +188,7 @@ export const Navigation: React.FC<NavigationProps> = ({
 ```
 
 **New Icons Needed**:
+
 ```typescript
 import { ChevronLeft, ChevronRight } from 'lucide-react';
 ```
@@ -215,6 +220,7 @@ return (
 #### 2.1 Install or Create Resize Handler
 
 **Option A**: Use existing CSS resize
+
 ```css
 .resizable-panel {
   resize: horizontal;
@@ -361,6 +367,7 @@ export const PracticeRoom: React.FC<PracticeRoomProps> = ({ ... }) => {
 ```
 
 **New Icons**:
+
 ```typescript
 import { PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 ```
@@ -633,11 +640,13 @@ useEffect(() => {
 ---
 
 **Files to Create:**
+
 - `components/ResizablePanel.tsx` - Reusable resize component
 - `hooks/useBreakpoint.ts` - Responsive breakpoint hook
 - `utils/panelState.ts` - localStorage persistence
 
 **Files to Modify:**
+
 - `App.tsx` - Add sidebar collapse state
 - `components/Navigation.tsx` - Add collapse button and conditional rendering
 - `components/PracticeRoom.tsx` - Add resizable song list panel
