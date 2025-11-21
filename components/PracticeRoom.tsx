@@ -227,13 +227,13 @@ export const PracticeRoom: React.FC<PracticeRoomProps> = ({ songs }) => {
                                 readOnly={true}
                             />
                          ) : activeChart.type === 'PDF' ? (
-                             <object data={activeChart.url} type="application/pdf" className="w-full h-[800px]">
-                                 <div className="flex items-center justify-center h-full">
-                                     <a href={activeChart.url} target="_blank" className="text-blue-500 underline">Open PDF externally</a>
-                                 </div>
-                             </object>
+                             <iframe
+                                 src={activeChart.url}
+                                 className="w-full h-[800px] border-0"
+                                 title="PDF Chart Viewer"
+                             />
                          ) : activeChart.type === 'GP' ? (
-                             <AlphaTabRenderer fileData={activeChart.url!} />
+                             <AlphaTabRenderer fileData={activeChart.url!} readOnly={false} />
                          ) : (
                              <img src={activeChart.url} className="w-full h-auto" />
                          )}

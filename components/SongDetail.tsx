@@ -547,7 +547,7 @@ export const SongDetail: React.FC<SongDetailProps> = ({ song, members, available
                         ) : activeChart.type === 'GP' ? (
                              <AlphaTabRenderer fileData={activeChart.url!} readOnly={true} />
                         ) : (
-                            <div className="w-full h-full relative bg-zinc-200">
+                            <div className="w-full h-full relative bg-zinc-200 pdf-viewer-container">
                                  <div className="absolute top-2 right-2 z-10 flex gap-2">
                                     <button 
                                         onClick={() => downloadFile(activeChart.url!, `${activeChart.name.replace(/\s+/g, '_')}`)}
@@ -570,18 +570,30 @@ export const SongDetail: React.FC<SongDetailProps> = ({ song, members, available
                                  </div>
 
                                  {activeChart.type === 'PDF' ? (
-                                    <object 
-                                        data={activeChart.url} 
-                                        type="application/pdf"
-                                        className="w-full h-full"
-                                    >
-                                        <div className="flex items-center justify-center h-full flex-col gap-2 text-zinc-800 p-10">
-                                            <p className="font-bold">PDF Preview Unavailable</p>
-                                            <a href={activeChart.url} target="_blank" rel="noreferrer" className="text-blue-600 underline">
-                                                Click here to open PDF
-                                            </a>
-                                        </div>
-                                    </object>
+                                    <iframe
+                                        src={activeChart.url}
+                                        className="w-full h-full border-0"
+                                        title="PDF Viewer"
+                                        onError={() => {
+                                            // Fallback if iframe fails
+                                            const parent = document.querySelector('.pdf-viewer-container');
+                                            if (parent) {
+                                                parent.innerHTML = `
+                                                    <div class="flex items-center justify-center h-full flex-col gap-4 text-zinc-800 p-10">
+                                                        <div class="text-6xl">📄</div>
+                                                        <p class="font-bold text-lg">PDF Preview Not Available</p>
+                                                        <p class="text-sm text-zinc-600">Your browser or environment doesn't support embedded PDFs.</p>
+                                                        <a href="${activeChart.url}" target="_blank" rel="noreferrer" class="bg-blue-600 hover:bg-blue-700 text-white px-6 py-3 rounded-lg font-medium transition-colors">
+                                                            Open PDF in New Tab
+                                                        </a>
+                                                        <button onclick="navigator.clipboard.writeText('${activeChart.url}')" class="text-blue-600 hover:underline text-sm">
+                                                            Copy PDF Link
+                                                        </button>
+                                                    </div>
+                                                `;
+                                            }
+                                        }}
+                                    />
                                  ) : (
                                      <div className="w-full h-full overflow-auto bg-zinc-900 flex items-start justify-center">
                                          <img src={activeChart.url} alt="Chart" className="max-w-full" />

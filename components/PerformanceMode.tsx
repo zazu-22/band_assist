@@ -187,13 +187,11 @@ export const PerformanceMode: React.FC<PerformanceModeProps> = ({ songs, onExit 
                                 />
                              </div>
                         ) : activeChart.type === 'PDF' ? (
-                            <object 
-                                data={activeChart.url} 
-                                type="application/pdf"
-                                className="w-full h-[80vh]"
-                            >
-                                <p className="p-10 text-center">PDF Viewer unavailable in live mode. <a href={activeChart.url} target="_blank" className="text-blue-500">Open externally</a></p>
-                            </object>
+                            <iframe
+                                src={activeChart.url}
+                                className="w-full h-[80vh] border-0"
+                                title="PDF Chart Viewer"
+                            />
                         ) : activeChart.type === 'GP' ? (
                             <AlphaTabRenderer fileData={activeChart.url!} readOnly={true} />
                         ) : (

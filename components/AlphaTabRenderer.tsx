@@ -2,7 +2,7 @@
 import React, { useEffect, useRef, useState } from 'react';
 import { Play, Pause, Sliders, Layers, Activity, Music2, AlertTriangle } from 'lucide-react';
 
-// Extend window interface to include alphaTab
+// Extend window interface to include alphaTab from CDN
 declare global {
   interface Window {
     alphaTab: any;
@@ -32,6 +32,7 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
   const [currentSpeed, setCurrentSpeed] = useState(1.0);
   const [internalIsPlaying, setInternalIsPlaying] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [retryKey, setRetryKey] = useState(0);
 
   // Helper to convert Base64 DataURI to Uint8Array
   const prepareData = (uri: string): Uint8Array | null => {
@@ -57,10 +58,21 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
   // Initialize AlphaTab
   useEffect(() => {
     let isMounted = true;
+    let timeoutId: NodeJS.Timeout;
+    let checkAttempts = 0;
+    const MAX_CHECK_ATTEMPTS = 50; // 10 seconds
 
-    // 1. Wait for the script to be loaded if it's not ready yet
+    // Wait for AlphaTab CDN script to load
     const checkLibrary = () => {
+      checkAttempts++;
       if (!window.alphaTab) {
+        if (checkAttempts >= MAX_CHECK_ATTEMPTS) {
+          if (isMounted) {
+            setError("AlphaTab library failed to load from CDN. Please check your internet connection.");
+            setLoading(false);
+          }
+          return;
+        }
         setTimeout(checkLibrary, 200);
         return;
       }
@@ -69,31 +81,48 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
 
     const initAlphaTab = () => {
       if (!containerRef.current || !isMounted) return;
-      
+
       // Cleanup existing
       if (apiRef.current) {
-        apiRef.current.destroy();
+        try {
+          apiRef.current.destroy();
+        } catch (e) {
+          console.error("[AlphaTab] Error destroying previous instance", e);
+        }
         apiRef.current = null;
       }
 
       setLoading(true);
       setError(null);
 
+      // Set a timeout for loading
+      timeoutId = setTimeout(() => {
+        if (isMounted && loading) {
+          setError("Loading timeout. The file may be too large, corrupted, or incompatible with this environment.");
+          setLoading(false);
+        }
+      }, 15000); // 15 second timeout
+
       try {
         // 2. Configure Settings
-        const settings = {
+        const settings: any = {
+          core: {
+            fontDirectory: '/font/', // Use locally served Bravura fonts
+            includeNoteBounds: false,
+            useWorkers: true // CDN version can use workers
+          },
           player: {
-            enablePlayer: true,
+            enablePlayer: !readOnly, // Disable player in readonly mode
             soundFont: 'https://cdn.jsdelivr.net/npm/@coderline/alphatab@latest/dist/soundfont/sonivox.sf2',
-            scrollElement: rootRef.current // Use the wrapper as the scroll target
+            scrollElement: rootRef.current
           },
           display: {
-            layoutMode: readOnly ? 'page' : 'horizontal',
+            layoutMode: 'page', // Always use page layout for better readability
             staveProfile: 'Default'
           }
         };
 
-        // 3. Initialize API WITHOUT file first
+        // 3. Initialize API
         console.log("[AlphaTab] Initializing API...");
         const api = new window.alphaTab.AlphaTabApi(containerRef.current, settings);
         apiRef.current = api;
@@ -101,43 +130,67 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
         // 4. Attach Events
         api.scoreLoaded.on((score: any) => {
           if(!isMounted) return;
-          console.log("[AlphaTab] Score Loaded", score);
+          console.log("[AlphaTab] Score Loaded Successfully", score);
+          clearTimeout(timeoutId);
           setTracks(score.tracks);
           setLoading(false);
         });
 
         api.error.on((e: any) => {
           if(!isMounted) return;
-          console.error("[AlphaTab] Error:", e);
-          setError("Failed to render tab file. It may be corrupted or an unsupported format.");
+          console.error("[AlphaTab] Error Event:", e);
+          clearTimeout(timeoutId);
+
+          // Provide more specific error messages
+          let errorMsg = "Failed to load Guitar Pro file.";
+          if (e?.message) {
+            errorMsg += ` ${e.message}`;
+          }
+          if (e?.inner) {
+            errorMsg += ` Details: ${e.inner}`;
+          }
+          errorMsg += " The file may be corrupted, an unsupported version, or incompatible with this environment.";
+
+          setError(errorMsg);
           setLoading(false);
         });
 
         api.playerStateChanged.on((args: any) => {
           if(!isMounted) return;
-          const playing = args.state === 1; 
+          const playing = args.state === 1;
           setInternalIsPlaying(playing);
           if (onPlaybackChange) onPlaybackChange(playing);
         });
 
         api.playerReady.on(() => {
-             console.log("[AlphaTab] Player Ready");
+          console.log("[AlphaTab] Player Ready");
+        });
+
+        api.renderStarted.on(() => {
+          console.log("[AlphaTab] Rendering started...");
+        });
+
+        api.renderFinished.on(() => {
+          console.log("[AlphaTab] Rendering finished");
         });
 
         // 5. Load Data
         const data = prepareData(fileData);
         if (data) {
-             console.log("[AlphaTab] Loading Binary Data...", data.length + " bytes");
-             api.load(data);
+          console.log("[AlphaTab] Loading Binary Data...", data.length, "bytes");
+          console.log("[AlphaTab] First few bytes:", Array.from(data.slice(0, 10)));
+          api.load(data);
         } else {
-             console.error("[AlphaTab] Invalid data format");
-             setError("Invalid file data.");
-             setLoading(false);
+          clearTimeout(timeoutId);
+          console.error("[AlphaTab] Data preparation failed");
+          setError("Invalid file data format. Could not convert Base64 to binary.");
+          setLoading(false);
         }
 
       } catch (e: any) {
         console.error("[AlphaTab] Setup Exception", e);
-        setError(e.message || "Unknown initialization error");
+        clearTimeout(timeoutId);
+        setError(`Initialization error: ${e.message || "Unknown error"}. This might be an environment compatibility issue.`);
         setLoading(false);
       }
     };
@@ -146,11 +199,16 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
 
     return () => {
       isMounted = false;
+      clearTimeout(timeoutId);
       if (apiRef.current) {
-        apiRef.current.destroy();
+        try {
+          apiRef.current.destroy();
+        } catch (e) {
+          console.error("[AlphaTab] Error during cleanup", e);
+        }
       }
     };
-  }, [fileData, readOnly]);
+  }, [fileData, readOnly, retryKey]);
 
   // External Playback Sync
   useEffect(() => {
@@ -263,11 +321,27 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
               </div>
           )}
           {error && (
-              <div className="absolute inset-0 flex items-center justify-center z-10 bg-white">
-                 <div className="text-center p-6 max-w-sm">
-                    <AlertTriangle size={40} className="text-red-500 mx-auto mb-2" />
-                    <h4 className="font-bold text-red-600 mb-1">Error</h4>
-                    <p className="text-sm text-zinc-500">{error}</p>
+              <div className="absolute inset-0 flex items-center justify-center z-50 bg-white pointer-events-auto">
+                 <div className="text-center p-6 max-w-md">
+                    <AlertTriangle size={48} className="text-red-500 mx-auto mb-4" />
+                    <h4 className="font-bold text-red-600 mb-2 text-lg">Guitar Pro File Error</h4>
+                    <p className="text-sm text-zinc-600 mb-4 leading-relaxed">{error}</p>
+                    <div className="flex flex-col gap-2">
+                      <button
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          setRetryKey(k => k + 1);
+                        }}
+                        className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-medium transition-colors cursor-pointer"
+                      >
+                        Retry Loading
+                      </button>
+                      <p className="text-xs text-zinc-500 mt-2">
+                        <strong>Troubleshooting:</strong> Try converting the file to a newer Guitar Pro format (.gpx or .gp5),
+                        ensure it's not corrupted, or export as PDF/image instead.
+                      </p>
+                    </div>
                  </div>
               </div>
           )}
