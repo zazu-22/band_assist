@@ -1,6 +1,10 @@
 /**
  * AlphaTab Custom Styles
  * Band Assist - Guitar Pro Player
+ *
+ * Note: Some !important declarations are necessary because AlphaTab
+ * applies inline styles. These are scoped to AlphaTab-specific classes
+ * (prefixed with .at-) to minimize global impact.
  */
 
 /* Currently playing bar - subtle amber highlight */
