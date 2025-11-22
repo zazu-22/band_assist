@@ -5,6 +5,7 @@ import { Play, Pause, Square, Sliders, Layers, Activity, Music2, AlertTriangle, 
 // AlphaTab type definitions
 interface AlphaTabScore {
   tracks: AlphaTabTrack[];
+  tempo: number;
 }
 
 interface AlphaTabTrack {
@@ -129,6 +130,10 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
   // Phase 2: Visual feedback state
   const [metronomeBeat, setMetronomeBeat] = useState<number>(0);
 
+  // Phase 3: BPM display and tempo control
+  const [originalTempo, setOriginalTempo] = useState<number | null>(null);
+  const [currentBPM, setCurrentBPM] = useState<number | null>(null);
+
   // Helper to convert Base64 DataURI to Uint8Array
   const prepareData = (uri: string): Uint8Array | null => {
     try {
@@ -230,6 +235,12 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
           setTracks(score.tracks);
           // AlphaTab renders first track by default
           setCurrentTrackIndex(0);
+
+          // Extract original tempo
+          const tempo = score.tempo || 120; // Default to 120 if not specified
+          setOriginalTempo(tempo);
+          setCurrentBPM(Math.round(tempo * currentSpeed));
+
           setLoading(false);
         };
 
@@ -441,8 +452,26 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
          console.log(`[AlphaTab] Changing playback speed from ${apiRef.current.playbackSpeed} to ${val}`);
          apiRef.current.playbackSpeed = val;
          setCurrentSpeed(val);
+
+         // Update current BPM
+         if (originalTempo) {
+           setCurrentBPM(Math.round(originalTempo * val));
+         }
+
          console.log(`[AlphaTab] Playback speed is now: ${apiRef.current.playbackSpeed}`);
      }
+  };
+
+  const handleBPMChange = (newBPM: number) => {
+    if (!originalTempo || !apiRef.current) return;
+
+    const newSpeed = newBPM / originalTempo;
+    // Clamp to supported range (0.25 to 2.0)
+    const clampedSpeed = Math.max(0.25, Math.min(2.0, newSpeed));
+
+    apiRef.current.playbackSpeed = clampedSpeed;
+    setCurrentSpeed(clampedSpeed);
+    setCurrentBPM(Math.round(originalTempo * clampedSpeed));
   };
 
   // Helper to update tracks state from API
@@ -656,39 +685,59 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
           )}
         </div>
 
-        {/* Right: Metronome + Speed control */}
+        {/* Right: BPM Display + Metronome + Speed control */}
         <div className="flex items-center gap-2 flex-1 justify-end">
-            {/* Visual metronome */}
-            {!readOnly && (
-              <div className="flex items-center gap-1 bg-zinc-200 rounded px-2 py-1">
-                <CircleGauge size={14} className="text-zinc-500" />
-                <div className="flex gap-1">
-                  {[1, 2, 3, 4].map((beat) => (
-                    <div
-                      key={beat}
-                      className={`w-2 h-2 rounded-full transition-all duration-75 ${
-                        metronomeBeat === beat ? 'bg-amber-500 scale-150' : 'bg-zinc-400'
-                      }`}
-                    />
-                  ))}
+            {/* BPM Display + Visual metronome */}
+            {!readOnly && originalTempo && (
+              <div className="flex items-center gap-2">
+                {/* BPM Display */}
+                <div className="flex items-center gap-1 bg-zinc-200 rounded px-3 py-1">
+                  <Music2 size={14} className="text-zinc-500" />
+                  <span className="text-sm font-semibold text-zinc-700">
+                    {currentBPM || originalTempo}
+                  </span>
+                  <span className="text-xs text-zinc-500">BPM</span>
+                </div>
+
+                {/* Metronome beat indicators */}
+                <div className="flex items-center gap-1 bg-zinc-200 rounded px-2 py-1">
+                  <CircleGauge size={14} className="text-zinc-500" />
+                  <div className="flex gap-1">
+                    {[1, 2, 3, 4].map((beat) => (
+                      <div
+                        key={beat}
+                        className={`w-2 h-2 rounded-full transition-all duration-75 ${
+                          metronomeBeat === beat ? 'bg-amber-500 scale-150' : 'bg-zinc-400'
+                        }`}
+                      />
+                    ))}
+                  </div>
                 </div>
               </div>
             )}
 
-            {/* Speed control */}
-            <div className="flex items-center gap-1 bg-zinc-200 rounded px-2 py-1">
+            {/* BPM Slider Control */}
+            {!readOnly && originalTempo && (
+              <div className="flex items-center gap-2 bg-zinc-200 rounded px-3 py-2">
                 <Timer size={14} className="text-zinc-500" />
-                <select
-                    value={currentSpeed}
-                    onChange={(e) => changeSpeed(parseFloat(e.target.value))}
-                    className="bg-transparent text-sm outline-none w-16"
-                >
-                    <option value={0.5}>50%</option>
-                    <option value={0.75}>75%</option>
-                    <option value={1.0}>100%</option>
-                    <option value={1.25}>125%</option>
-                </select>
-            </div>
+                <div className="flex flex-col gap-1">
+                  <input
+                    type="range"
+                    min={Math.round(originalTempo * 0.25)}
+                    max={Math.round(originalTempo * 2.0)}
+                    step="1"
+                    value={currentBPM || originalTempo}
+                    onChange={(e) => handleBPMChange(parseInt(e.target.value))}
+                    className="w-32 h-1 bg-zinc-300 rounded-lg appearance-none cursor-pointer accent-amber-500"
+                  />
+                  <div className="flex justify-between text-[10px] text-zinc-500">
+                    <span>{Math.round(originalTempo * 0.25)}</span>
+                    <span className="font-semibold text-zinc-700">{currentBPM}</span>
+                    <span>{Math.round(originalTempo * 2.0)}</span>
+                  </div>
+                </div>
+              </div>
+            )}
 
             <span className="text-xs font-bold text-zinc-400 px-2">AlphaTab</span>
         </div>
