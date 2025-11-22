@@ -1,6 +1,6 @@
 # T-002: Loop Selection Border Visual Fix
 
-**Status**: COMPLETE
+**Status**: KNOWN LIMITATION
 **Priority**: Low
 **Estimated Effort**: 30 minutes
 **Last Updated**: 2025-11-21
@@ -145,50 +145,68 @@ If native CSS dashed border doesn't work due to AlphaTab rendering:
 - `public/alphatab-custom.css` (or create if doesn't exist)
 - Possibly: `index.html` (to link CSS file if not already linked)
 
-## Completion Notes
+## Investigation Results
 
-**Implemented**: 2025-11-21
-**Testing Results**: CSS implementation verified
+**Investigated**: 2025-11-21
+**Status**: Known Limitation - Cannot be fixed with pure CSS
 
 **Changes Made**:
-- `public/alphatab-custom.css:31-38` - Updated `.at-selection div` styling with enhanced dashed border
+- `public/alphatab-custom.css:30-38` - Added CSS with documentation of limitation
 
-**Implementation Details**:
+**Root Cause Analysis**:
 
-The fix addresses the visual distortion by strengthening the CSS implementation:
+After extensive investigation, the visual distortion is caused by **AlphaTab's internal rendering**:
 
-1. **Border width increased**: 1px → 2px for better visibility
-2. **Added `!important` flag**: Ensures border style overrides any AlphaTab inline styles
-3. **Opacity increased**: 0.4 → 0.6 for clearer dash visibility
-4. **Added `border-radius: 4px`**: Polished appearance
-5. **Added `background-clip: padding-box`**: Proper border rendering
-6. **Added `box-sizing: border-box`**: Ensures consistent sizing
+1. **AlphaTab creates** `.at-selection` div with a child `<div>` element
+2. **Child div has fixed dimensions**: `width: 100px; height: 100px`
+3. **AlphaTab applies transform scaling**: `transform: translate(x, y) scale(scaleX, scaleY)` inline
+4. **Scale values change** based on selection size (e.g., `scale(3.86274, 0.867)`)
+5. **ALL visual properties** on the child div (borders, outlines, backgrounds) get scaled by the transform
 
-**Why This Works**:
+**Why CSS Approaches Failed**:
 
-Native CSS `border-style: dashed` automatically maintains consistent dash spacing regardless of element size. The browser handles:
-- Dynamic dash repetition (adds more dashes, doesn't stretch existing ones)
-- Consistent spacing at all zoom levels
-- Proper rendering across different selection sizes
+All attempted CSS solutions failed because transforms scale the entire rendered box:
 
-**Verification**:
+❌ **CSS dashed border** - Dashes stretch horizontally/vertically with scale
+❌ **CSS outline** - Also gets scaled by transform
+❌ **Repeating gradients** - Background patterns scale with element
+❌ **Pseudo-elements** - Child pseudo-elements inherit parent transform
+❌ **Parent styling** - Parent `.at-selection` has no dimensions
+❌ **Counter-scaling** - Would need dynamic values for each selection size
 
-The implementation uses native browser dashed border rendering which:
-- ✅ Maintains consistent dash spacing
-- ✅ No stretching artifacts
-- ✅ Better performance than pattern-based approaches
-- ✅ Works across all zoom levels and screen sizes
-- ✅ Consistent cross-browser rendering
+**Attempted Solutions**:
 
-**Testing**:
+1. Native CSS `border-style: dashed` → Stretches with transform
+2. CSS `outline` with offset → Also stretches
+3. Repeating linear gradients → Background scales with element
+4. Pseudo-element with counter-scale → Would need dynamic CSS (not possible)
+5. Parent element styling → Parent has no dimensions to style
 
-Manual testing should verify:
-- Small loop selections (2-3 measures): Normal dash appearance
-- Medium loop selections (1-2 lines): Maintained spacing
-- Large loop selections (full page): No stretching
-- Different zoom levels: Appropriate scaling
-- Multiple selections: Proper clearing and re-selection
+**Current Implementation**:
 
-**Notes**:
+Reverted to simple dashed border with documentation:
 
-The fix relies on native CSS rendering rather than SVG patterns or background images. This is the most robust solution as browsers have optimized dashed border rendering that automatically handles spacing and repetition correctly.
+```css
+.at-selection div {
+  background: rgba(245, 158, 11, 0.08) !important;
+  border: 2px dashed rgba(245, 158, 11, 0.6) !important;
+  border-radius: 4px;
+}
+```
+
+**Known Issue**: The dashes will stretch as the selection grows due to AlphaTab's transform scaling.
+
+**Potential Future Solutions**:
+
+To properly fix this would require one of:
+
+1. **JavaScript override** - Modify `AlphaTabRenderer.tsx` to inject custom selection overlay that doesn't use the scaled child div
+2. **SVG overlay** - Create separate SVG elements for selection borders positioned via JavaScript
+3. **AlphaTab API** - Request feature from AlphaTab library to expose selection styling hooks
+4. **Fork AlphaTab** - Modify the library's selection rendering internals
+
+**Decision**: Leaving as-is. The visual issue is cosmetic and doesn't affect functionality. The selection is still clearly visible and usable.
+
+**References**:
+- [AlphaTab Styling Guide](https://alphatab.net/docs/guides/styling-player/)
+- Element inspection revealed inline transform scaling on child div
