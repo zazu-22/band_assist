@@ -133,6 +133,8 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
   // Phase 3: BPM display and tempo control
   const [originalTempo, setOriginalTempo] = useState<number | null>(null);
   const [currentBPM, setCurrentBPM] = useState<number | null>(null);
+  const [isEditingBPM, setIsEditingBPM] = useState(false);
+  const [bpmInputValue, setBpmInputValue] = useState<string>('');
 
   // Helper to convert Base64 DataURI to Uint8Array
   const prepareData = (uri: string): Uint8Array | null => {
@@ -474,6 +476,27 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
     setCurrentBPM(Math.round(originalTempo * clampedSpeed));
   };
 
+  const startEditingBPM = () => {
+    if (!currentBPM) return;
+    setBpmInputValue(currentBPM.toString());
+    setIsEditingBPM(true);
+  };
+
+  const submitBPMEdit = () => {
+    const newBPM = parseInt(bpmInputValue);
+    if (!isNaN(newBPM) && originalTempo) {
+      const minBPM = Math.round(originalTempo * 0.25);
+      const maxBPM = Math.round(originalTempo * 2.0);
+      const clampedBPM = Math.max(minBPM, Math.min(maxBPM, newBPM));
+      handleBPMChange(clampedBPM);
+    }
+    setIsEditingBPM(false);
+  };
+
+  const resetToOriginalTempo = () => {
+    changeSpeed(1.0);
+  };
+
   // Helper to update tracks state from API
   const updateTracksFromAPI = () => {
     if (apiRef.current) {
@@ -690,14 +713,45 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
             {/* BPM Display + Visual metronome */}
             {!readOnly && originalTempo && (
               <div className="flex items-center gap-2">
-                {/* BPM Display */}
-                <div className="flex items-center gap-1 bg-zinc-200 rounded px-3 py-1">
+                {/* BPM Display - Clickable for direct input */}
+                <div
+                  className="flex items-center gap-1 bg-zinc-200 rounded px-3 py-1 cursor-pointer hover:bg-zinc-300 transition-colors"
+                  onClick={startEditingBPM}
+                  title="Click to enter BPM directly"
+                >
                   <Music2 size={14} className="text-zinc-500" />
-                  <span className="text-sm font-semibold text-zinc-700">
-                    {currentBPM || originalTempo}
-                  </span>
+                  {isEditingBPM ? (
+                    <input
+                      type="number"
+                      value={bpmInputValue}
+                      onChange={(e) => setBpmInputValue(e.target.value)}
+                      onBlur={submitBPMEdit}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') submitBPMEdit();
+                        if (e.key === 'Escape') setIsEditingBPM(false);
+                      }}
+                      autoFocus
+                      className="w-12 bg-white border border-amber-500 rounded px-1 text-sm font-semibold text-center focus:outline-none"
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  ) : (
+                    <span className="text-sm font-semibold text-zinc-700">
+                      {currentBPM || originalTempo}
+                    </span>
+                  )}
                   <span className="text-xs text-zinc-500">BPM</span>
                 </div>
+
+                {/* Reset button - only show when not at original tempo */}
+                {currentSpeed !== 1.0 && (
+                  <button
+                    onClick={resetToOriginalTempo}
+                    className="px-2 py-1 rounded bg-amber-100 hover:bg-amber-200 text-amber-700 text-xs font-semibold transition-colors"
+                    title="Reset to original tempo"
+                  >
+                    Reset
+                  </button>
+                )}
 
                 {/* Metronome beat indicators */}
                 <div className="flex items-center gap-1 bg-zinc-200 rounded px-2 py-1">
