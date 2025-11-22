@@ -82,32 +82,38 @@ const App: React.FC = () => {
 
         setSongs(data.songs || INITIAL_SONGS);
         setMembers(data.members || [
-          { id: '1', name: 'Brother 1', roles: ['Lead Guitar', 'Lead Vocals'], avatarColor: 'bg-blue-500' },
-          { id: '2', name: 'Brother 2', roles: ['Rhythm Guitar'], avatarColor: 'bg-red-500' },
-          { id: '3', name: 'Brother 3', roles: ['Bass Guitar'], avatarColor: 'bg-green-500' },
-          { id: '4', name: 'Brother 4', roles: ['Drums'], avatarColor: 'bg-yellow-500' },
+          { id: '1763776021452', name: 'Jason', roles: [], avatarColor: 'bg-red-500' },
+          { id: '1763776022630', name: 'Jeff', roles: [], avatarColor: 'bg-blue-500' },
+          { id: '1763776023343', name: 'Joe', roles: [], avatarColor: 'bg-green-500' },
+          { id: '1763776025207', name: 'Berry', roles: [], avatarColor: 'bg-yellow-500' },
+          { id: '1763776026538', name: 'Lori', roles: [], avatarColor: 'bg-purple-500' },
+          { id: '1763776028016', name: 'Hunter', roles: [], avatarColor: 'bg-red-500' },
         ]);
         setAvailableRoles(data.roles || [
           'Lead Guitar', 'Rhythm Guitar', 'Bass Guitar', 'Drums', 'Synthesizer', 'Lead Vocals', 'Backing Vocals'
         ]);
         setEvents(data.events || [
-          { id: '1', title: 'Weekly Practice', date: new Date().toISOString().split('T')[0], type: 'PRACTICE', time: '19:00' }
+          { id: '1', title: 'Thanksgiving Rehearsal', date: '2025-11-27', type: 'PRACTICE', time: '16:00', location: 'Jeff\'s House', notes: '- Just Got Paid\n- Tush' },
+          { id: '1763776277014', title: 'Christmas Performance', date: '2025-12-28', time: '19:00', type: 'GIG', location: 'Covert View Drive' }
         ]);
       } catch (error) {
         console.error('Error loading data:', error);
         // Fall back to defaults on error
         setSongs(INITIAL_SONGS);
         setMembers([
-          { id: '1', name: 'Brother 1', roles: ['Lead Guitar', 'Lead Vocals'], avatarColor: 'bg-blue-500' },
-          { id: '2', name: 'Brother 2', roles: ['Rhythm Guitar'], avatarColor: 'bg-red-500' },
-          { id: '3', name: 'Brother 3', roles: ['Bass Guitar'], avatarColor: 'bg-green-500' },
-          { id: '4', name: 'Brother 4', roles: ['Drums'], avatarColor: 'bg-yellow-500' },
+          { id: '1763776021452', name: 'Jason', roles: [], avatarColor: 'bg-red-500' },
+          { id: '1763776022630', name: 'Jeff', roles: [], avatarColor: 'bg-blue-500' },
+          { id: '1763776023343', name: 'Joe', roles: [], avatarColor: 'bg-green-500' },
+          { id: '1763776025207', name: 'Berry', roles: [], avatarColor: 'bg-yellow-500' },
+          { id: '1763776026538', name: 'Lori', roles: [], avatarColor: 'bg-purple-500' },
+          { id: '1763776028016', name: 'Hunter', roles: [], avatarColor: 'bg-red-500' },
         ]);
         setAvailableRoles([
           'Lead Guitar', 'Rhythm Guitar', 'Bass Guitar', 'Drums', 'Synthesizer', 'Lead Vocals', 'Backing Vocals'
         ]);
         setEvents([
-          { id: '1', title: 'Weekly Practice', date: new Date().toISOString().split('T')[0], type: 'PRACTICE', time: '19:00' }
+          { id: '1', title: 'Thanksgiving Rehearsal', date: '2025-11-27', type: 'PRACTICE', time: '16:00', location: 'Jeff\'s House', notes: '- Just Got Paid\n- Tush' },
+          { id: '1763776277014', title: 'Christmas Performance', date: '2025-12-28', time: '19:00', type: 'GIG', location: 'Covert View Drive' }
         ]);
       } finally {
         setIsLoading(false);

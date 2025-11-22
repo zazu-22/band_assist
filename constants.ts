@@ -3,73 +3,113 @@ import { Song, Instrument } from './types';
 
 export const INITIAL_SONGS: Song[] = [
   {
-    id: '1',
+    id: '1763776320897',
+    title: 'Gimme All Your Lovin\'',
+    artist: 'ZZ Top',
+    duration: '3:30',
+    bpm: 120,
+    key: 'E',
+    isOriginal: false,
+    status: 'To Learn',
+    assignments: [],
+    parts: [],
+    charts: []
+  },
+  {
+    id: '1763776327699',
     title: 'La Grange',
     artist: 'ZZ Top',
-    duration: '3:50',
-    bpm: 161,
-    key: 'A Minor',
+    duration: '3:30',
+    bpm: 120,
+    key: 'E',
+    isOriginal: false,
+    status: 'To Learn',
+    assignments: [],
+    parts: [],
+    charts: []
+  },
+  {
+    id: '1763776334966',
+    title: 'Waiting On The Bus',
+    artist: 'ZZ Top',
+    duration: '3:30',
+    bpm: 120,
+    key: 'E',
+    isOriginal: false,
+    status: 'To Learn',
+    assignments: [],
+    parts: [],
+    charts: []
+  },
+  {
+    id: '1763776342136',
+    title: 'Jesus Just Left Chicago',
+    artist: 'ZZ Top',
+    duration: '3:30',
+    bpm: 120,
+    key: 'E',
+    isOriginal: false,
+    status: 'To Learn',
+    assignments: [],
+    parts: [],
+    charts: []
+  },
+  {
+    id: '1763776350340',
+    title: 'I\'m Bad, I\'m Nationwide',
+    artist: 'ZZ Top',
+    duration: '3:30',
+    bpm: 120,
+    key: 'E',
+    isOriginal: false,
+    status: 'To Learn',
+    assignments: [],
+    parts: [],
+    charts: []
+  },
+  {
+    id: '1763775855500',
+    title: 'Just Got Paid',
+    artist: 'ZZ Top',
+    duration: '3:36',
+    bpm: 100,
+    key: 'E',
     isOriginal: false,
     status: 'In Progress',
     assignments: [
-      { memberId: '1', role: 'Lead Guitar' },
-      { memberId: '1', role: 'Lead Vocals' },
-      { memberId: '2', role: 'Rhythm Guitar' },
-      { memberId: '3', role: 'Bass Guitar' },
-      { memberId: '4', role: 'Drums' },
+      { memberId: '1763776021452', role: 'Lead Guitar' },
+      { memberId: '1763776021452', role: 'Rhythm Guitar' },
+      { memberId: '1763776022630', role: 'Drums' },
+      { memberId: '1763776023343', role: 'Lead Guitar' },
+      { memberId: '1763776023343', role: 'Rhythm Guitar' },
+      { memberId: '1763776025207', role: 'Bass Guitar' },
+      { memberId: '1763776026538', role: 'Rhythm Guitar' },
+      { memberId: '1763776028016', role: 'Lead Vocals' }
     ],
-    parts: [
-      {
-        id: 'p1',
-        name: 'Main Riff',
-        instrument: 'Rhythm Guitar',
-        content: 'A-string: 3-4 | D-string: 2 (hammer on)',
-        assignedToMemberId: '2'
-      }
-    ],
-    charts: [
-      {
-        id: 'c1',
-        name: 'Master Tab',
-        instrument: 'Lead Guitar',
-        type: 'TEXT',
-        content: `
-e|---------------------------------|
-B|---------------------------------|
-G|----------------2--------------2-|
-D|--------2-------2------2-------2-|
-A|----3-4---3-4------3-4---3-4-----|
-E|-5------------5------------5-----|
-        `
-      }
-    ],
-    aiAnalysis: "Focus on the pinch harmonics in the solo. The shuffle feel is critical for the drums."
+    parts: [],
+    charts: [],
+    targetDate: '2025-11-27'
   },
   {
-    id: '2',
+    id: '1763776357861',
+    title: 'Tube Snake Boogie',
+    artist: 'ZZ Top',
+    duration: '3:30',
+    bpm: 120,
+    key: 'E',
+    isOriginal: false,
+    status: 'To Learn',
+    assignments: [],
+    parts: [],
+    charts: []
+  },
+  {
+    id: '1763776363853',
     title: 'Sharp Dressed Man',
     artist: 'ZZ Top',
-    duration: '4:13',
-    bpm: 125,
-    key: 'C Major',
-    isOriginal: false,
-    status: 'Performance Ready',
-    assignments: [
-      { memberId: '1', role: 'Lead Guitar' },
-      { memberId: '2', role: 'Synthesizer' },
-      { memberId: '3', role: 'Bass Guitar' },
-      { memberId: '4', role: 'Drums' },
-    ],
-    parts: [],
-    charts: []
-  },
-  {
-    id: '3',
-    title: 'Gimme All Your Lovin\'',
-    artist: 'ZZ Top',
-    duration: '3:59',
+    duration: '3:30',
     bpm: 120,
-    key: 'C Major',
+    key: 'E',
     isOriginal: false,
     status: 'To Learn',
     assignments: [],
@@ -77,17 +117,25 @@ E|-5------------5------------5-----|
     charts: []
   },
   {
-    id: '4',
+    id: '1763776292213',
     title: 'Tush',
     artist: 'ZZ Top',
-    duration: '2:15',
+    duration: '3:30',
     bpm: 144,
-    key: 'G Major',
+    key: 'G',
     isOriginal: false,
-    status: 'To Learn',
-    assignments: [],
+    status: 'In Progress',
+    assignments: [
+      { memberId: '1763776021452', role: 'Lead Guitar' },
+      { memberId: '1763776022630', role: 'Drums' },
+      { memberId: '1763776023343', role: 'Rhythm Guitar' },
+      { memberId: '1763776025207', role: 'Bass Guitar' },
+      { memberId: '1763776026538', role: 'Rhythm Guitar' },
+      { memberId: '1763776028016', role: 'Lead Vocals' }
+    ],
     parts: [],
-    charts: []
+    charts: [],
+    targetDate: '2025-11-27'
   }
 ];
 
