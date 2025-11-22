@@ -1,6 +1,6 @@
 
 import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
-import { Play, Pause, Square, Sliders, Layers, Activity, Music2, AlertTriangle, Repeat, X, Timer, CircleGauge } from 'lucide-react';
+import { Play, Pause, Square, Sliders, Layers, Activity, Music2, AlertTriangle, Repeat, X, Timer, CircleGauge, Scroll, Gauge } from 'lucide-react';
 
 // AlphaTab type definitions
 interface AlphaTabScore {
@@ -136,6 +136,12 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
   const [isEditingBPM, setIsEditingBPM] = useState(false);
   const [bpmInputValue, setBpmInputValue] = useState<string>('');
 
+  // Auto-scroll state
+  const [autoScrollEnabled, setAutoScrollEnabled] = useState(false);
+  const [scrollSpeed, setScrollSpeed] = useState(0.5); // Default to middle speed
+  const autoScrollRef = useRef<number | null>(null);
+  const lastScrollTimeRef = useRef<number>(0);
+
   // Helper to convert Base64 DataURI to Uint8Array
   const prepareData = (uri: string): Uint8Array | null => {
     try {
@@ -268,6 +274,16 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
         const handlePlayerStateChanged = (args: AlphaTabPlayerStateChangedEvent) => {
           if(!isMounted) return;
           const playing = args.state === 1;
+          console.log('[Metronome Debug] Playback state changed:', playing ? 'PLAYING' : 'STOPPED');
+
+          // Reset metronome when playback stops to avoid desync
+          if (!playing) {
+            setMetronomeBeat(0);
+            // Clear any pending metronome timeouts
+            metronomeTimeoutsRef.current.forEach(timeout => clearTimeout(timeout));
+            metronomeTimeoutsRef.current.clear();
+          }
+
           setInternalIsPlaying(playing);
           if (onPlaybackChange) onPlaybackChange(playing);
         };
@@ -350,7 +366,13 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
 
           for (const midi of e.events) {
             if (midi.isMetronome) {
-              setMetronomeBeat(midi.metronomeNumerator);
+              console.log('[Metronome Debug] Raw beat from AlphaTab:', midi.metronomeNumerator, 'Duration:', midi.metronomeDurationInMilliseconds);
+
+              // AlphaTab sends 0-indexed beat numbers (0, 1, 2, 3)
+              // Convert to 1-indexed for display (1, 2, 3, 4)
+              const displayBeat = midi.metronomeNumerator + 1;
+              console.log('[Metronome Debug] Display beat:', displayBeat);
+              setMetronomeBeat(displayBeat);
 
               // Auto-clear highlight after beat duration - track timeout for cleanup
               const timeoutId = setTimeout(() => {
@@ -437,7 +459,7 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
   // External Playback Sync
   useEffect(() => {
     if (!apiRef.current) return;
-    
+
     if (externalIsPlaying && !internalIsPlaying) {
       apiRef.current.play();
     } else if (!externalIsPlaying && internalIsPlaying) {
@@ -445,8 +467,75 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
     }
   }, [externalIsPlaying]);
 
+  // Auto-scroll Logic
+  useEffect(() => {
+    if (!autoScrollEnabled || !rootRef.current) {
+      if (autoScrollRef.current) {
+        cancelAnimationFrame(autoScrollRef.current);
+        autoScrollRef.current = null;
+      }
+      return;
+    }
+
+    // Map slider value (0.1 to 1.0) to pixels per frame (0.25 to 1.0)
+    // This ensures all speeds are visible and useful for performance
+    const minPixels = 0.25;
+    const maxPixels = 1.0;
+    const pixelsPerFrame = minPixels + (scrollSpeed - 0.1) * (maxPixels - minPixels) / (1.0 - 0.1);
+
+    console.log('[Auto-scroll] Starting auto-scroll:', { scrollSpeed, pixelsPerFrame, pixelsPerSecond: pixelsPerFrame * 60 });
+
+    const animate = (currentTime: number) => {
+      if (!rootRef.current) return;
+
+      const deltaTime = currentTime - lastScrollTimeRef.current;
+
+      // Throttle to ~60fps
+      if (deltaTime >= 16) {
+        rootRef.current.scrollTop += pixelsPerFrame;
+        lastScrollTimeRef.current = currentTime;
+      }
+
+      autoScrollRef.current = requestAnimationFrame(animate);
+    };
+
+    lastScrollTimeRef.current = performance.now();
+    autoScrollRef.current = requestAnimationFrame(animate);
+
+    return () => {
+      if (autoScrollRef.current) {
+        cancelAnimationFrame(autoScrollRef.current);
+        autoScrollRef.current = null;
+      }
+    };
+  }, [autoScrollEnabled, currentBPM, originalTempo, scrollSpeed]);
+
   const togglePlay = () => {
     if (apiRef.current) apiRef.current.playPause();
+  };
+
+  // Manual scroll functions
+  const scrollBy = (amount: number) => {
+    if (rootRef.current) {
+      rootRef.current.scrollBy({ top: amount, behavior: 'smooth' });
+      // Pause auto-scroll on manual scroll
+      if (autoScrollEnabled) {
+        setAutoScrollEnabled(false);
+      }
+    }
+  };
+
+  const scrollToTop = () => {
+    if (rootRef.current) {
+      rootRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  const handleUserScroll = () => {
+    // Pause auto-scroll if user manually scrolls
+    if (autoScrollEnabled) {
+      setAutoScrollEnabled(false);
+    }
   };
 
   const changeSpeed = (val: number) => {
@@ -637,7 +726,7 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
   );
 
   return (
-    <div className="flex flex-col h-full bg-white text-black rounded-xl overflow-hidden relative border border-zinc-200">
+    <div className="flex flex-col max-h-full bg-white text-black rounded-xl relative border border-zinc-200">
       {/* Toolbar */}
       <div className="bg-zinc-100 border-b border-zinc-300 p-2 flex items-center justify-between shrink-0">
         {/* Left: Transport controls */}
@@ -708,8 +797,37 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
           )}
         </div>
 
-        {/* Right: BPM Display + Metronome + Speed control */}
+        {/* Right: Auto-scroll + BPM Display + Metronome + Speed control */}
         <div className="flex items-center gap-2 flex-1 justify-end">
+            {/* Auto-Scroll Controls - Only shown in Performance Mode (readOnly) */}
+            {readOnly && (<>
+              <div className="flex items-center gap-2 bg-zinc-200 rounded px-2 py-1">
+                <button
+                  onClick={() => setAutoScrollEnabled(!autoScrollEnabled)}
+                  className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-bold transition-colors ${
+                    autoScrollEnabled ? 'bg-amber-500 text-white' : 'bg-white text-zinc-600 hover:bg-zinc-50'
+                  }`}
+                  title="Toggle auto-scroll"
+                >
+                  <Scroll size={12} /> Auto
+                </button>
+                <div className="flex items-center gap-1 border-l border-zinc-300 pl-2">
+                  <Gauge size={12} className="text-zinc-500" />
+                  <input
+                    type="range"
+                    min="0.1"
+                    max="1.0"
+                    step="0.1"
+                    value={scrollSpeed}
+                    onChange={(e) => setScrollSpeed(parseFloat(e.target.value))}
+                    className="w-16 h-1 bg-zinc-300 rounded-lg appearance-none cursor-pointer accent-amber-500"
+                    title="Scroll speed multiplier"
+                  />
+                  <span className="text-[10px] font-mono text-zinc-600 w-6">{scrollSpeed}x</span>
+                </div>
+              </div>
+            </>)}
+
             {/* BPM Display + Visual metronome */}
             {!readOnly && originalTempo && (
               <div className="flex items-center gap-2">
