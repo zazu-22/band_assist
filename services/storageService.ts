@@ -77,6 +77,25 @@ class StorageServiceWrapper implements IStorageService {
   getActiveService(): IStorageService {
     return this.activeService;
   }
+
+  /**
+   * Set the current band context (required for multi-user Supabase mode)
+   */
+  setCurrentBand(bandId: string): void {
+    if ('setCurrentBand' in this.activeService && typeof this.activeService.setCurrentBand === 'function') {
+      this.activeService.setCurrentBand(bandId);
+    }
+  }
+
+  /**
+   * Get the current band ID
+   */
+  getCurrentBandId(): string | null {
+    if ('getCurrentBandId' in this.activeService && typeof this.activeService.getCurrentBandId === 'function') {
+      return this.activeService.getCurrentBandId();
+    }
+    return null;
+  }
 }
 
 // Export singleton instance (backwards compatible with existing code)

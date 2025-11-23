@@ -9,11 +9,28 @@ import { RealtimeChannel } from '@supabase/supabase-js';
  */
 export class SupabaseStorageService implements IStorageService {
   private realtimeChannels: RealtimeChannel[] = [];
+  private currentBandId: string | null = null;
 
   constructor() {
     if (!isSupabaseConfigured()) {
       console.warn('SupabaseStorageService initialized but Supabase is not configured');
     }
+  }
+
+  /**
+   * Set the current band context for all operations
+   * Must be called after user logs in and selects a band
+   */
+  setCurrentBand(bandId: string): void {
+    this.currentBandId = bandId;
+    console.log('✅ Band context set:', bandId);
+  }
+
+  /**
+   * Get the current band ID
+   */
+  getCurrentBandId(): string | null {
+    return this.currentBandId;
   }
 
   /**
@@ -31,6 +48,10 @@ export class SupabaseStorageService implements IStorageService {
       throw new Error('Supabase is not configured. Check environment variables.');
     }
 
+    if (!this.currentBandId) {
+      throw new Error('No band selected. Call setCurrentBand() first.');
+    }
+
     try {
       // Save members
       const { error: membersError } = await supabase
@@ -40,7 +61,8 @@ export class SupabaseStorageService implements IStorageService {
             id: m.id,
             name: m.name,
             roles: m.roles,
-            avatar_color: m.avatarColor || null
+            avatar_color: m.avatarColor || null,
+            band_id: this.currentBandId
           })),
           { onConflict: 'id' }
         );
@@ -68,7 +90,8 @@ export class SupabaseStorageService implements IStorageService {
             backing_track_storage_path: s.backingTrackStoragePath || null,
             ai_analysis: s.aiAnalysis || null,
             lyrics: s.lyrics || null,
-            sort_order: s.sortOrder !== undefined ? s.sortOrder : null
+            sort_order: s.sortOrder !== undefined ? s.sortOrder : null,
+            band_id: this.currentBandId
           })),
           { onConflict: 'id' }
         );
@@ -86,19 +109,20 @@ export class SupabaseStorageService implements IStorageService {
             time: e.time || null,
             type: e.type,
             location: e.location || null,
-            notes: e.notes || null
+            notes: e.notes || null,
+            band_id: this.currentBandId
           })),
           { onConflict: 'id' }
         );
 
       if (eventsError) throw eventsError;
 
-      // Save roles (upsert by name)
+      // Save roles (upsert by name + band_id)
       const { error: rolesError } = await supabase
         .from('roles')
         .upsert(
-          roles.map(r => ({ name: r })),
-          { onConflict: 'name', ignoreDuplicates: true }
+          roles.map(r => ({ name: r, band_id: this.currentBandId })),
+          { onConflict: 'name,band_id', ignoreDuplicates: true }
         );
 
       if (rolesError) throw rolesError;
@@ -289,10 +313,15 @@ export class SupabaseStorageService implements IStorageService {
       throw new Error('Supabase is not configured');
     }
 
+    if (!this.currentBandId) {
+      throw new Error('No band selected. Call setCurrentBand() first.');
+    }
+
     try {
       const fileId = crypto.randomUUID();
       const extension = fileName.split('.').pop() || 'bin';
-      const storagePath = `${fileType}s/${songId}/${fileId}.${extension}`;
+      // New path structure: bands/{band_id}/charts/{song_id}/{file_id}.ext
+      const storagePath = `bands/${this.currentBandId}/${fileType}s/${songId}/${fileId}.${extension}`;
 
       const { error: uploadError } = await supabase.storage
         .from('band-files')
@@ -309,7 +338,8 @@ export class SupabaseStorageService implements IStorageService {
         storage_path: storagePath,
         file_name: fileName,
         mime_type: mimeType,
-        file_size: file.size
+        file_size: file.size,
+        band_id: this.currentBandId
       });
 
       if (metadataError) {

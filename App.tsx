@@ -22,6 +22,10 @@ const App: React.FC = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [session, setSession] = useState<Session | null>(null);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+  const [currentBandId, setCurrentBandId] = useState<string | null>(null);
+  const [currentBandName, setCurrentBandName] = useState<string>('');
+  const [userBands, setUserBands] = useState<Array<{ id: string; name: string }>>([]);
+  const [isAdmin, setIsAdmin] = useState<boolean>(false);
 
   // -- State Initialization --
   const [songs, setSongs] = useState<Song[]>([]);
@@ -70,12 +74,118 @@ const App: React.FC = () => {
     checkAuth();
   }, []);
 
+  // -- Fetch/Create Band for User --
+  // After authentication, fetch user's bands or create a new one
+  useEffect(() => {
+    const setupBand = async () => {
+      // Skip if not using Supabase or no session
+      if (!isSupabaseConfigured() || !session) {
+        setIsLoading(false);
+        return;
+      }
+
+      const supabase = getSupabaseClient();
+      if (!supabase) {
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        // Fetch user's bands with role information
+        const { data: userBandsData, error: fetchError } = await supabase
+          .from('user_bands')
+          .select('band_id, role, bands(id, name)')
+          .eq('user_id', session.user.id);
+
+        if (fetchError) {
+          console.error('Error fetching bands:', fetchError);
+          setIsLoading(false);
+          return;
+        }
+
+        // If user has bands, use the first one
+        if (userBandsData && userBandsData.length > 0) {
+          const bands = userBandsData.map((ub: any) => ({
+            id: ub.bands.id,
+            name: ub.bands.name
+          }));
+          setUserBands(bands);
+          setCurrentBandId(bands[0].id);
+          setCurrentBandName(bands[0].name);
+
+          // Fetch user's role in this band
+          const firstBandData = userBandsData[0];
+          const userRole = firstBandData.role || 'member';
+          setIsAdmin(userRole === 'admin');
+
+          // Set band context in storage service
+          StorageService.setCurrentBand?.(bands[0].id);
+
+          console.log('✅ Band loaded:', bands[0].name, `(${userRole})`);
+        } else {
+          // No bands found - create a new one for this user
+          console.log('No bands found, creating new band...');
+
+          const { data: newBand, error: createError } = await supabase
+            .from('bands')
+            .insert({
+              name: 'My Band',
+              created_by: session.user.id
+            })
+            .select()
+            .single();
+
+          if (createError) {
+            console.error('Error creating band:', createError);
+            setIsLoading(false);
+            return;
+          }
+
+          // Add user to the band as admin
+          const { error: joinError } = await supabase
+            .from('user_bands')
+            .insert({
+              user_id: session.user.id,
+              band_id: newBand.id,
+              role: 'admin'
+            });
+
+          if (joinError) {
+            console.error('Error joining band:', joinError);
+            setIsLoading(false);
+            return;
+          }
+
+          setUserBands([{ id: newBand.id, name: newBand.name }]);
+          setCurrentBandId(newBand.id);
+          setCurrentBandName(newBand.name);
+          setIsAdmin(true); // Creator is always admin
+
+          // Set band context in storage service
+          StorageService.setCurrentBand?.(newBand.id);
+
+          console.log('✅ New band created:', newBand.name, '(admin)');
+        }
+      } catch (error) {
+        console.error('Error setting up band:', error);
+        setIsLoading(false);
+      }
+    };
+
+    if (!isCheckingAuth) {
+      setupBand();
+    }
+  }, [session, isCheckingAuth]);
+
   // -- Load Data on Mount --
   // Async loading to support both localStorage and Supabase
-  // Only load data after auth check is complete
+  // Only load data after auth check and band setup is complete
   useEffect(() => {
     // Wait for auth check to complete
     if (isCheckingAuth) return;
+
+    // If using Supabase, wait for band to be set
+    if (isSupabaseConfigured() && session && !currentBandId) return;
     const loadData = async () => {
       try {
         const data = await StorageService.load();
@@ -121,7 +231,7 @@ const App: React.FC = () => {
     };
 
     loadData();
-  }, [isCheckingAuth]);
+  }, [isCheckingAuth, currentBandId]);
 
   // -- Auto-Save Effect --
   // Whenever core data changes, save to storage (debounced to avoid excessive saves)
@@ -202,15 +312,18 @@ const App: React.FC = () => {
         return <SetlistManager songs={songs} setSongs={setSongs} onSelectSong={handleSelectSong} />;
       case 'SETTINGS':
         return (
-            <Settings 
-                members={members} 
-                setMembers={setMembers} 
+            <Settings
+                members={members}
+                setMembers={setMembers}
                 availableRoles={availableRoles}
                 setAvailableRoles={setAvailableRoles}
                 songs={songs}
                 setSongs={setSongs}
                 events={events}
                 setEvents={setEvents}
+                currentBandId={currentBandId || undefined}
+                currentUserId={session?.user?.id}
+                isAdmin={isAdmin}
             />
         );
       case 'PRACTICE_ROOM':
@@ -272,6 +385,7 @@ const App: React.FC = () => {
         onNavigate={handleNavigate}
         onLogout={handleLogout}
         showLogout={isSupabaseConfigured() && !!session}
+        currentBandName={currentBandName}
       />
       <main className="flex-1 h-screen overflow-y-auto">
         {renderContent()}

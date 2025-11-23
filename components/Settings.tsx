@@ -1,30 +1,39 @@
 import React, { useState, useRef } from 'react';
 import { BandMember, Song, BandEvent } from '../types';
-import { Trash2, Plus, User, Edit2, Check, X, Music2, Users, Database, Download, Upload, AlertTriangle } from 'lucide-react';
+import { Trash2, Plus, User, Edit2, Check, X, Music2, Users, Database, Download, Upload, AlertTriangle, UserPlus } from 'lucide-react';
 import { StorageService } from '../services/storageService';
+import { InvitationManager } from './InvitationManager';
+import { isSupabaseConfigured } from '../services/supabaseClient';
 
 interface SettingsProps {
   members: BandMember[];
   setMembers: React.Dispatch<React.SetStateAction<BandMember[]>>;
   availableRoles: string[];
   setAvailableRoles: React.Dispatch<React.SetStateAction<string[]>>;
-  songs?: Song[]; 
+  songs?: Song[];
   setSongs?: React.Dispatch<React.SetStateAction<Song[]>>;
   events?: BandEvent[];
   setEvents?: React.Dispatch<React.SetStateAction<BandEvent[]>>;
+  currentBandId?: string;
+  currentUserId?: string;
+  isAdmin?: boolean;
 }
 
-export const Settings: React.FC<SettingsProps> = ({ 
-  members, 
-  setMembers, 
-  availableRoles, 
+export const Settings: React.FC<SettingsProps> = ({
+  members,
+  setMembers,
+  availableRoles,
   setAvailableRoles,
   songs = [],
   setSongs,
   events = [],
-  setEvents
+  setEvents,
+  currentBandId,
+  currentUserId,
+  isAdmin = false
 }) => {
-  const [activeTab, setActiveTab] = useState<'ROSTER' | 'ROLES' | 'DATA'>('ROSTER');
+  const [activeTab, setActiveTab] = useState<'ROSTER' | 'ROLES' | 'TEAM' | 'DATA'>('ROSTER');
+  const showInvitations = isSupabaseConfigured() && currentBandId && currentUserId;
   const fileInputRef = useRef<HTMLInputElement>(null);
   
   // --- Member State ---
@@ -115,19 +124,27 @@ export const Settings: React.FC<SettingsProps> = ({
         </div>
         
         <div className="flex bg-zinc-900 p-1 rounded-xl border border-zinc-800">
-            <button 
+            <button
                 onClick={() => setActiveTab('ROSTER')}
                 className={`px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-colors ${activeTab === 'ROSTER' ? 'bg-zinc-800 text-white shadow' : 'text-zinc-500 hover:text-zinc-300'}`}
             >
                 <Users size={16} /> Roster
             </button>
-            <button 
+            <button
                 onClick={() => setActiveTab('ROLES')}
                 className={`px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-colors ${activeTab === 'ROLES' ? 'bg-zinc-800 text-white shadow' : 'text-zinc-500 hover:text-zinc-300'}`}
             >
                 <Music2 size={16} /> Roles
             </button>
-            <button 
+            {showInvitations && (
+              <button
+                  onClick={() => setActiveTab('TEAM')}
+                  className={`px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-colors ${activeTab === 'TEAM' ? 'bg-zinc-800 text-white shadow' : 'text-zinc-500 hover:text-zinc-300'}`}
+              >
+                  <UserPlus size={16} /> Team
+              </button>
+            )}
+            <button
                 onClick={() => setActiveTab('DATA')}
                 className={`px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-colors ${activeTab === 'DATA' ? 'bg-zinc-800 text-white shadow' : 'text-zinc-500 hover:text-zinc-300'}`}
             >
@@ -229,6 +246,18 @@ export const Settings: React.FC<SettingsProps> = ({
                     </button>
                 </div>
             </section>
+        </div>
+      )}
+
+      {activeTab === 'TEAM' && showInvitations && currentBandId && currentUserId && (
+        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4">
+          <section className="bg-zinc-900 rounded-2xl border border-zinc-800 p-6">
+            <InvitationManager
+              bandId={currentBandId}
+              currentUserId={currentUserId}
+              isAdmin={isAdmin}
+            />
+          </section>
         </div>
       )}
 

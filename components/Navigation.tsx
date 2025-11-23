@@ -2,15 +2,23 @@
 import React from 'react';
 import { ViewState } from '../types';
 import { LayoutDashboard, Music, ListMusic, Mic2, Settings, Users, CalendarClock, Radio, LogOut } from 'lucide-react';
+import { BandSelector } from './BandSelector';
 
 interface NavigationProps {
   currentView: ViewState;
   onNavigate: (view: ViewState) => void;
   onLogout?: () => void;
   showLogout?: boolean;
+  currentBandName?: string;
 }
 
-export const Navigation: React.FC<NavigationProps> = ({ currentView, onNavigate, onLogout, showLogout = false }) => {
+export const Navigation: React.FC<NavigationProps> = ({
+  currentView,
+  onNavigate,
+  onLogout,
+  showLogout = false,
+  currentBandName
+}) => {
   const navItems = [
     { id: 'DASHBOARD', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'SCHEDULE', label: 'Schedule', icon: CalendarClock },
@@ -29,6 +37,11 @@ export const Navigation: React.FC<NavigationProps> = ({ currentView, onNavigate,
           SHARP<br/><span className="text-amber-600">DRESSED</span> APP
         </h1>
       </div>
+
+      {/* Band Selector (only show if using Supabase) */}
+      {currentBandName && (
+        <BandSelector currentBandName={currentBandName} />
+      )}
 
       <nav className="flex-1 px-3 py-6 space-y-2">
         {navItems.map((item) => (

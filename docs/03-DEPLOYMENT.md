@@ -66,23 +66,21 @@ This guide covers deploying Band Assist to production using Supabase + Vercel.
    - Update policy (UPDATE)
    - Delete policy (DELETE)
 
-**Note:** All policies apply to the `band-files` bucket and allow authenticated users full access (appropriate for the shared band account model).
+**Note:** All policies are band-scoped - users can only access files belonging to bands they are members of.
 
 ### Step 5: Set Up Authentication
 
-For the **simple password model** (shared band account):
+For the **individual user account model**:
 
 1. Go to **Authentication** → **Providers**
 2. Enable **Email** provider
-3. Disable "Confirm email" (for simplicity)
-4. Go to **Authentication** → **Users**
-5. Click "Add user" (manually)
-6. Email: `band@sharpdressedband.com` (or your choice)
-7. Password: Choose a shared password for the band
-8. Auto-confirm: **Yes**
-9. Click "Create user"
+3. **Enable "Confirm email"** (recommended for security)
+   - This requires users to verify their email before logging in
+   - Alternatively, you can disable it for easier testing
+4. Configure email templates (optional but recommended):
+   - Customize the confirmation and invitation emails if desired
 
-**Share these credentials with your brothers!**
+**Note:** Users will create their own accounts when they first visit your app or accept an invitation.
 
 ### Step 6: Get API Credentials
 
@@ -159,27 +157,48 @@ In Vercel project settings, add these environment variables:
 8. Open the app in another browser/device → verify real-time sync works
 9. Try the JSON backup import/export feature in Settings
 
-### Authentication Flow
+### Authentication & Band Setup Flow
 
-The app includes a login screen that appears when Supabase is configured but no user is logged in:
+The app automatically handles user authentication and band management:
 
-1. Users visit your deployed URL
-2. Login screen prompts for email/password
-3. Enter the shared band email/password (created in Step 5 of Supabase Setup)
-4. Upon successful login, user accesses the full app
-5. Logout button available in Navigation sidebar
+**First User (Band Creator):**
+
+1. Visit your deployed URL
+2. See login screen with email/password fields
+3. Click "Sign Up" (or create account)
+4. Enter email and password
+5. Verify email (if confirmation enabled)
+6. Upon first login, a band is automatically created called "My Band"
+7. User becomes the admin of this band
+8. Can rename the band and invite other members via Settings → Team
+
+**Invited Members:**
+
+1. Receive an email invitation from the band admin
+2. Click the invitation link or visit your app URL
+3. Sign up with the invited email address
+4. Upon signup, automatically join the band
+5. Access all band data immediately
 
 **Session persistence:** Sessions are maintained using Supabase Auth tokens and persist across page refreshes.
+
+**Band Management:**
+
+- Band selector shown in navigation (displays current band name)
+- Future support for users being in multiple bands
+- Admins can invite members via Settings → Team tab
 
 ### New Features in This Deployment
 
 **File Storage:**
+
 - PDF charts, images, Guitar Pro files, and audio files are now stored in Supabase Storage (`band-files` bucket)
 - Files are no longer stored as base64 in the database (saves space and improves performance)
 - Guitar Pro files store both a Storage URL and base64 copy for AlphaTab rendering
 - File size limits: 50MB for charts, 10MB for audio (configurable in upload handlers)
 
 **Persistent Setlist Ordering:**
+
 - Drag-and-drop song reordering in Setlist view now persists across sessions
 - Order syncs in real-time across all users
 - Songs are ordered by `sort_order` column in database
@@ -322,13 +341,14 @@ To deploy a specific branch:
 
 ## Security Checklist
 
-- [ ] Supabase database has RLS policies enabled
+- [ ] Supabase database has RLS policies enabled (band-scoped)
 - [ ] Storage bucket is private (not public)
-- [ ] Shared password is strong (16+ characters)
+- [ ] Storage policies are band-scoped (applied from migration scripts)
+- [ ] Email confirmation is enabled (recommended)
 - [ ] Environment variables are set in Vercel (not hardcoded)
 - [ ] HTTPS is enabled on custom domain (Vercel does this automatically)
-- [ ] Regular backups are being taken
-- [ ] Only trusted band members have the password
+- [ ] Regular backups are being taken via Settings → Data → Export Backup
+- [ ] Only invite trusted members via Settings → Team tab
 
 ---
 
