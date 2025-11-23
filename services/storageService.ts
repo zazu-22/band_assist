@@ -1,15 +1,11 @@
 /**
- * Storage Service Factory
+ * Storage Service
  *
- * Automatically selects between LocalStorage and Supabase based on configuration.
- * - If Supabase credentials are configured, uses SupabaseStorageService
- * - Otherwise, falls back to LocalStorageService
- *
- * This provides a seamless migration path from localStorage to Supabase.
+ * Uses Supabase for data persistence and file storage.
+ * Requires Supabase to be configured - app will not function without it.
  */
 
 import { IStorageService, LoadResult } from './IStorageService';
-import { localStorageService } from './localStorageService';
 import { supabaseStorageService } from './supabaseStorageService';
 import { isSupabaseConfigured } from './supabaseClient';
 import { Song, BandMember, BandEvent } from '../types';
@@ -18,19 +14,18 @@ class StorageServiceWrapper implements IStorageService {
   private activeService: IStorageService;
 
   constructor() {
-    // Choose service based on configuration
-    if (isSupabaseConfigured()) {
-      console.log('✅ Using Supabase for data persistence');
-      this.activeService = supabaseStorageService;
-    } else {
-      console.log('📦 Using LocalStorage for data persistence (Supabase not configured)');
-      this.activeService = localStorageService;
+    // Require Supabase configuration
+    if (!isSupabaseConfigured()) {
+      console.error('❌ Supabase is not configured. Please set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.');
+      throw new Error('Supabase configuration required. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your environment variables.');
     }
+
+    console.log('✅ Using Supabase for data persistence');
+    this.activeService = supabaseStorageService;
   }
 
   /**
-   * Save data using the active service
-   * Handles both sync (localStorage) and async (Supabase) operations
+   * Save data to Supabase
    */
   async save(
     songs: Song[],
@@ -38,22 +33,14 @@ class StorageServiceWrapper implements IStorageService {
     roles: string[],
     events: BandEvent[]
   ): Promise<void> {
-    const result = this.activeService.save(songs, members, roles, events);
-    if (result instanceof Promise) {
-      await result;
-    }
+    await this.activeService.save(songs, members, roles, events);
   }
 
   /**
-   * Load data using the active service
-   * Handles both sync (localStorage) and async (Supabase) operations
+   * Load data from Supabase
    */
   async load(): Promise<LoadResult> {
-    const result = this.activeService.load();
-    if (result instanceof Promise) {
-      return await result;
-    }
-    return result;
+    return await this.activeService.load();
   }
 
   /**

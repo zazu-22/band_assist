@@ -42,7 +42,9 @@ export interface SongChart {
   instrument: string; // For filtering
   type: 'TEXT' | 'IMAGE' | 'PDF' | 'GP'; // Added GP for Guitar Pro files
   content?: string; // For text tabs
-  url?: string; // For PDF/Images/GP (Base64 Data URI)
+  url?: string; // For PDF/Images/GP (Storage URL or Base64 Data URI)
+  storagePath?: string; // Storage bucket path if file is in Supabase Storage
+  storageBase64?: string; // Base64 copy for AlphaTab (GP files only)
   annotations?: Annotation[];
 }
 
@@ -50,26 +52,28 @@ export interface Song {
   id: string;
   title: string;
   artist: string;
-  duration: string; 
+  duration: string;
   bpm: number;
   key: string;
   isOriginal: boolean;
   status: 'To Learn' | 'In Progress' | 'Performance Ready';
   assignments: Assignment[];
-  parts: SongPart[]; 
-  
+  parts: SongPart[];
+
   // Deprecated in favor of charts array, but kept for migration
   annotations?: Annotation[];
   lyrics?: string;
-  tabContent?: string; 
-  tabUrl?: string; 
-  
+  tabContent?: string;
+  tabUrl?: string;
+
   // New Multi-Chart System
   charts: SongChart[];
 
   backingTrackUrl?: string;
+  backingTrackStoragePath?: string; // Storage bucket path for audio file
   aiAnalysis?: string;
   targetDate?: string; // YYYY-MM-DD target for completion
+  sortOrder?: number; // Position in setlist view (for persistent ordering)
 }
 
 export interface BandEvent {

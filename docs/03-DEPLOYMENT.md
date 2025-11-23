@@ -57,13 +57,16 @@ This guide covers deploying Band Assist to production using Supabase + Vercel.
 
 1. Click on the `band-files` bucket
 2. Go to "Policies" tab
-3. Click "New Policy"
+3. Click "New Policy" → "Create a policy from scratch"
 4. Open `/supabase/storage/band-files-policies.sql` from this repo
-5. Copy each policy SQL and create them individually:
-   - Upload policy
-   - View policy
-   - Update policy
-   - Delete policy
+5. Copy ALL policy SQL statements and paste them into the Supabase SQL Editor
+6. Run the entire script to create all four policies:
+   - Upload policy (INSERT)
+   - View policy (SELECT)
+   - Update policy (UPDATE)
+   - Delete policy (DELETE)
+
+**Note:** All policies apply to the `band-files` bucket and allow authenticated users full access (appropriate for the shared band account model).
 
 ### Step 5: Set Up Authentication
 
@@ -147,29 +150,40 @@ In Vercel project settings, add these environment variables:
 ### Test the Deployment
 
 1. Visit your deployed URL
-2. Click "Settings" in the app
-3. Try importing your localStorage backup (if you have one)
-4. Create a test song with a PDF chart
-5. Verify file upload works
-6. Open the app in another browser/device
-7. Make a change and verify it syncs
+2. Log in with the shared band credentials
+3. Create a test song
+4. Upload a PDF chart → verify it uploads to Storage (check Supabase Storage dashboard)
+5. Upload a Guitar Pro file → verify it renders with AlphaTab
+6. Upload a backing track audio file → verify playback works
+7. Reorder songs in the Setlist view → refresh page and verify order persists
+8. Open the app in another browser/device → verify real-time sync works
+9. Try the JSON backup import/export feature in Settings
 
 ### Authentication Flow
 
-Users will need to:
+The app includes a login screen that appears when Supabase is configured but no user is logged in:
 
-1. Visit your deployed URL
-2. They'll see a login screen (you'll need to add this - see next section)
-3. Enter the shared email/password
-4. Access the full app
+1. Users visit your deployed URL
+2. Login screen prompts for email/password
+3. Enter the shared band email/password (created in Step 5 of Supabase Setup)
+4. Upon successful login, user accesses the full app
+5. Logout button available in Navigation sidebar
 
-**TODO:** The app doesn't currently have a login UI. You'll need to add:
+**Session persistence:** Sessions are maintained using Supabase Auth tokens and persist across page refreshes.
 
-- Login form component
-- Session management
-- Logout button
+### New Features in This Deployment
 
-See `/docs/AUTH_IMPLEMENTATION.md` (to be created) for details.
+**File Storage:**
+- PDF charts, images, Guitar Pro files, and audio files are now stored in Supabase Storage (`band-files` bucket)
+- Files are no longer stored as base64 in the database (saves space and improves performance)
+- Guitar Pro files store both a Storage URL and base64 copy for AlphaTab rendering
+- File size limits: 50MB for charts, 10MB for audio (configurable in upload handlers)
+
+**Persistent Setlist Ordering:**
+- Drag-and-drop song reordering in Setlist view now persists across sessions
+- Order syncs in real-time across all users
+- Songs are ordered by `sort_order` column in database
+- Unordered songs (NULL `sort_order`) appear after ordered songs, sorted alphabetically
 
 ### Monitor Usage
 

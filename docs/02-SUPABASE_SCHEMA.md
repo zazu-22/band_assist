@@ -48,9 +48,11 @@ Stores song information with nested data in JSONB.
 | `charts` | JSONB | NOT NULL DEFAULT '[]' | Array of SongChart objects |
 | `assignments` | JSONB | NOT NULL DEFAULT '[]' | Array of Assignment objects |
 | `parts` | JSONB | NOT NULL DEFAULT '[]' | Array of SongPart objects |
-| `backing_track_url` | TEXT | | URL to backing track file in Storage |
+| `backing_track_url` | TEXT | | Signed Storage URL for backing track audio file |
+| `backing_track_storage_path` | TEXT | | Storage bucket path (audio/{songId}/{fileId}.ext) |
 | `ai_analysis` | TEXT | | AI-generated practice tips |
 | `lyrics` | TEXT | | Song lyrics (legacy field) |
+| `sort_order` | INTEGER | | Position in setlist view (NULL = not ordered) |
 | `created_at` | TIMESTAMPTZ | NOT NULL DEFAULT NOW() | Record creation timestamp |
 | `updated_at` | TIMESTAMPTZ | NOT NULL DEFAULT NOW() | Last update timestamp |
 
@@ -65,7 +67,9 @@ Stores song information with nested data in JSONB.
   "instrument": "Bass",
   "type": "TEXT|IMAGE|PDF|GP",
   "content": "text content for TEXT type",
-  "url": "storage-url-for-files",
+  "url": "signed-storage-url OR base64-data-uri",
+  "storagePath": "charts/{songId}/{fileId}.{ext} (for Storage files)",
+  "storageBase64": "base64-data-uri (GP files only, for AlphaTab rendering)",
   "annotations": [
     {
       "id": "uuid",
@@ -76,6 +80,13 @@ Stores song information with nested data in JSONB.
   ]
 }
 ```
+
+**Note on file storage:**
+- `TEXT` charts: Use `content` field for raw text/tablature
+- `IMAGE`/`PDF`/`GP` charts: Files are uploaded to Supabase Storage (`band-files` bucket)
+- `url` contains signed Storage URL (1-year expiry) or base64 data URI for fallback
+- `storagePath` tracks the bucket path for file management
+- `storageBase64` stores base64 copy for GP files (AlphaTab requires binary data)
 
 **`assignments`** array contains:
 
@@ -104,6 +115,7 @@ Stores song information with nested data in JSONB.
 - GIN index on `charts` for JSONB queries
 - Index on `status` for filtering
 - Index on `title` for search
+- Partial index on `sort_order` (WHERE sort_order IS NOT NULL) for setlist ordering
 
 ---
 
@@ -235,20 +247,42 @@ supabase
 
 ---
 
-## Migration from localStorage
+## Setlist Ordering
 
-The `SupabaseStorageService` will handle:
+The `sort_order` column enables persistent song ordering for the setlist view:
 
-1. **UUID Generation**: Current app uses client-generated IDs (likely `Date.now()` or similar). Migration will preserve IDs if they're UUID format, otherwise generate new UUIDs and maintain ID mapping.
+- **NULL values**: Songs with `sort_order = NULL` are not in the setlist or have no specific order
+- **Ordering**: When loading songs, order by `sort_order ASC NULLS LAST, title ASC`
+- **Drag-and-drop**: When users reorder songs in SetlistManager, update `sort_order` to match array indices
+- **Sync across users**: Real-time subscriptions ensure all users see the same song order
 
-2. **File Extraction**: Base64 data URIs in `charts[].url` and `backingTrackUrl` will be:
-   - Decoded from Base64
-   - Uploaded to Supabase Storage
-   - Replaced with storage URLs
+**Example query:**
+```sql
+SELECT * FROM songs
+ORDER BY sort_order ASC NULLS LAST, title ASC;
+```
 
-3. **JSONB Conversion**: Nested arrays (charts, assignments, parts) will be stored as-is in JSONB columns.
+This ensures:
+1. Songs with `sort_order` appear first, in order
+2. Songs without `sort_order` appear after, alphabetically
 
-4. **Legacy Field Handling**: `tabContent`, `tabUrl`, `annotations`, `lyrics` are already migrated to `charts` array by localStorage migration (storageService.ts:39-69), so new backend won't store these separately.
+---
+
+## Data Import from JSON Backups
+
+The app supports importing data from JSON backup files:
+
+1. **File uploads**: PDF, image, and Guitar Pro files in the backup are uploaded to Supabase Storage
+2. **URL conversion**: Base64 data URIs are converted to Storage URLs
+3. **Dual storage for GP**: Guitar Pro files store both Storage URL (for downloads) and base64 (for AlphaTab rendering)
+4. **JSONB preservation**: Nested structures (charts, assignments, parts) are stored as-is
+
+**Import flow:**
+- User selects JSON backup file in Settings
+- App reads file and validates format
+- Files are extracted and uploaded to Storage
+- Data is inserted into Supabase tables
+- Real-time sync propagates changes to all users
 
 ---
 

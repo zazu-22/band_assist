@@ -65,8 +65,10 @@ export class SupabaseStorageService implements IStorageService {
             assignments: s.assignments || [],
             parts: s.parts || [],
             backing_track_url: s.backingTrackUrl || null,
+            backing_track_storage_path: s.backingTrackStoragePath || null,
             ai_analysis: s.aiAnalysis || null,
-            lyrics: s.lyrics || null
+            lyrics: s.lyrics || null,
+            sort_order: s.sortOrder !== undefined ? s.sortOrder : null
           })),
           { onConflict: 'id' }
         );
@@ -128,10 +130,12 @@ export class SupabaseStorageService implements IStorageService {
       if (membersError) throw membersError;
 
       // Load songs
+      // Order by sort_order first (for setlist view), then by title for unordered songs
       const { data: songsData, error: songsError } = await supabase
         .from('songs')
         .select('*')
-        .order('title');
+        .order('sort_order', { ascending: true, nullsFirst: false })
+        .order('title', { ascending: true });
 
       if (songsError) throw songsError;
 
@@ -176,8 +180,10 @@ export class SupabaseStorageService implements IStorageService {
             assignments: s.assignments || [],
             parts: s.parts || [],
             backingTrackUrl: s.backing_track_url || undefined,
+            backingTrackStoragePath: s.backing_track_storage_path || undefined,
             aiAnalysis: s.ai_analysis || undefined,
             lyrics: s.lyrics || undefined,
+            sortOrder: s.sort_order !== null ? s.sort_order : undefined,
             // Legacy fields (not used but kept for compatibility)
             annotations: undefined,
             tabContent: undefined,
@@ -321,6 +327,71 @@ export class SupabaseStorageService implements IStorageService {
       console.error('Error uploading file:', error);
       return null;
     }
+  }
+
+  /**
+   * Upload a chart file (PDF, image, or Guitar Pro) to Supabase Storage
+   * For GP files, also stores base64 version for AlphaTab rendering
+   * @returns Object with url, storagePath, and storageBase64 (GP only)
+   */
+  async uploadChartFile(
+    file: Blob,
+    fileName: string,
+    mimeType: string,
+    songId: string
+  ): Promise<{ url: string; storagePath: string; storageBase64?: string } | null> {
+    // Upload to Storage
+    const url = await this.uploadFile(file, fileName, mimeType, songId, 'chart');
+    if (!url) return null;
+
+    // Extract storage path from URL
+    const urlParts = url.split('/band-files/');
+    const storagePath = urlParts.length > 1 ? urlParts[1].split('?')[0] : '';
+
+    // For Guitar Pro files, also generate base64 for AlphaTab
+    const isGp = /\.(gp|gp3|gp4|gp5|gpx)$/i.test(fileName);
+    if (isGp) {
+      const reader = new FileReader();
+      const base64Promise = new Promise<string>((resolve, reject) => {
+        reader.onload = (e) => {
+          const result = e.target?.result as string;
+          resolve(result);
+        };
+        reader.onerror = () => reject(new Error('Failed to read file as base64'));
+        reader.readAsDataURL(file);
+      });
+
+      try {
+        const storageBase64 = await base64Promise;
+        return { url, storagePath, storageBase64 };
+      } catch (error) {
+        console.warn('Failed to generate base64 for GP file:', error);
+        return { url, storagePath };
+      }
+    }
+
+    return { url, storagePath };
+  }
+
+  /**
+   * Upload an audio file (backing track) to Supabase Storage
+   * @returns Object with url and storagePath
+   */
+  async uploadAudioFile(
+    file: Blob,
+    fileName: string,
+    mimeType: string,
+    songId: string
+  ): Promise<{ url: string; storagePath: string } | null> {
+    // Upload to Storage
+    const url = await this.uploadFile(file, fileName, mimeType, songId, 'audio');
+    if (!url) return null;
+
+    // Extract storage path from URL
+    const urlParts = url.split('/band-files/');
+    const storagePath = urlParts.length > 1 ? urlParts[1].split('?')[0] : '';
+
+    return { url, storagePath };
   }
 
   /**

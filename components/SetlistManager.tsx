@@ -83,7 +83,7 @@ export const SetlistManager: React.FC<SetlistManagerProps> = ({ songs, setSongs,
 
   const handleDrop = (e: React.DragEvent<HTMLElement>) => {
     e.preventDefault();
-    
+
     if (draggedIndex === null || dragOverIndex === null) {
         handleDragEnd();
         return;
@@ -94,7 +94,13 @@ export const SetlistManager: React.FC<SetlistManagerProps> = ({ songs, setSongs,
     let targetIndex = dragOverIndex;
     newSongs.splice(targetIndex, 0, movedSong);
 
-    setSongs(newSongs);
+    // Update sortOrder for all songs to persist ordering
+    const songsWithOrder = newSongs.map((song, index) => ({
+      ...song,
+      sortOrder: index
+    }));
+
+    setSongs(songsWithOrder);
     handleDragEnd();
   };
 

@@ -33,8 +33,10 @@ CREATE TABLE songs (
   assignments JSONB NOT NULL DEFAULT '[]',
   parts JSONB NOT NULL DEFAULT '[]',
   backing_track_url TEXT,
+  backing_track_storage_path TEXT, -- Storage bucket path for audio file
   ai_analysis TEXT,
   lyrics TEXT, -- Legacy field, kept for compatibility
+  sort_order INTEGER, -- For persistent setlist ordering (NULL = not in setlist)
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
   updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
@@ -78,6 +80,7 @@ CREATE TABLE files (
 CREATE INDEX idx_songs_status ON songs(status);
 CREATE INDEX idx_songs_title ON songs(title);
 CREATE INDEX idx_songs_charts ON songs USING GIN (charts);
+CREATE INDEX idx_songs_sort_order ON songs(sort_order) WHERE sort_order IS NOT NULL;
 
 -- Events indexes
 CREATE INDEX idx_events_date ON band_events(date);
@@ -254,6 +257,9 @@ COMMENT ON TABLE band_events IS 'Practice schedule, gigs, and other calendar eve
 COMMENT ON TABLE roles IS 'Available instrument/role options for the band';
 COMMENT ON TABLE files IS 'Metadata for files stored in Supabase Storage';
 
-COMMENT ON COLUMN songs.charts IS 'JSONB array of SongChart objects (TEXT, IMAGE, PDF, GP)';
+COMMENT ON COLUMN songs.charts IS 'JSONB array of SongChart objects (TEXT, IMAGE, PDF, GP). For GP files, url contains Storage URL while storage_base64 contains base64 for AlphaTab rendering.';
 COMMENT ON COLUMN songs.assignments IS 'JSONB array of member-to-role assignments for this song';
 COMMENT ON COLUMN songs.parts IS 'JSONB array of song sections (Intro, Verse, Solo, etc.)';
+COMMENT ON COLUMN songs.backing_track_url IS 'Storage URL for backing track audio file';
+COMMENT ON COLUMN songs.backing_track_storage_path IS 'Storage bucket path (audio/{songId}/{fileId}.ext) for tracking uploads';
+COMMENT ON COLUMN songs.sort_order IS 'Position in setlist view (NULL = not ordered, used for drag-drop persistence)';
