@@ -1,14 +1,16 @@
 
 import React from 'react';
 import { ViewState } from '../types';
-import { LayoutDashboard, Music, ListMusic, Mic2, Settings, Users, CalendarClock, Radio } from 'lucide-react';
+import { LayoutDashboard, Music, ListMusic, Mic2, Settings, Users, CalendarClock, Radio, LogOut } from 'lucide-react';
 
 interface NavigationProps {
   currentView: ViewState;
   onNavigate: (view: ViewState) => void;
+  onLogout?: () => void;
+  showLogout?: boolean;
 }
 
-export const Navigation: React.FC<NavigationProps> = ({ currentView, onNavigate }) => {
+export const Navigation: React.FC<NavigationProps> = ({ currentView, onNavigate, onLogout, showLogout = false }) => {
   const navItems = [
     { id: 'DASHBOARD', label: 'Dashboard', icon: LayoutDashboard },
     { id: 'SCHEDULE', label: 'Schedule', icon: CalendarClock },
@@ -61,14 +63,25 @@ export const Navigation: React.FC<NavigationProps> = ({ currentView, onNavigate 
         </div>
       </nav>
       
-      <div className="p-4 border-t border-zinc-800">
-         <button 
+      <div className="p-4 border-t border-zinc-800 space-y-2">
+         <button
             onClick={() => onNavigate('SETTINGS')}
             className={`w-full flex items-center gap-3 px-3 py-3 text-zinc-500 rounded-xl hover:bg-zinc-800 hover:text-zinc-100 transition-all ${currentView === 'SETTINGS' ? 'bg-zinc-800 text-white' : ''}`}
          >
             <Settings className="w-5 h-5" />
             <span className="hidden lg:block text-sm font-medium">Config</span>
          </button>
+
+         {/* Logout Button (only shown when authenticated with Supabase) */}
+         {showLogout && onLogout && (
+           <button
+              onClick={onLogout}
+              className="w-full flex items-center gap-3 px-3 py-3 text-zinc-500 rounded-xl hover:bg-red-900/20 hover:text-red-400 transition-all group"
+           >
+              <LogOut className="w-5 h-5 group-hover:stroke-red-400" />
+              <span className="hidden lg:block text-sm font-medium">Logout</span>
+           </button>
+         )}
       </div>
     </div>
   );

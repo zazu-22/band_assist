@@ -27,10 +27,14 @@
   stroke-width: 1.5 !important;
 }
 
-/* Loop range selection - light amber overlay */
+/* Loop range selection - light amber overlay with dashed border
+ * Note: AlphaTab applies transform: scale() to this element, which causes
+ * the border dashes to stretch. This is a known limitation of AlphaTab's
+ * selection rendering and cannot be fixed with pure CSS. */
 .at-selection div {
   background: rgba(245, 158, 11, 0.08) !important;
-  border: 1px dashed rgba(245, 158, 11, 0.4);
+  border: 2px dashed rgba(245, 158, 11, 0.6) !important;
+  border-radius: 4px;
 }
 
 /* Hover effect on beats (for loop selection) */

@@ -1,6 +1,6 @@
 
 import React, { useEffect, useRef, useState, useMemo, useCallback } from 'react';
-import { Play, Pause, Square, Sliders, Layers, Activity, Music2, AlertTriangle, Repeat, X } from 'lucide-react';
+import { Play, Pause, Square, Sliders, Layers, Activity, Music2, AlertTriangle, Repeat, X, Timer, CircleGauge, Scroll, Gauge } from 'lucide-react';
 
 // Constants
 const POSITION_UPDATE_THROTTLE_MS = 100; // Throttle position updates to ~10 FPS for performance
@@ -9,6 +9,7 @@ const METRONOME_HIGHLIGHT_DURATION_FACTOR = 0.3; // Duration factor for metronom
 // AlphaTab type definitions
 interface AlphaTabScore {
   tracks: AlphaTabTrack[];
+  tempo: number;
 }
 
 interface AlphaTabTrack {
@@ -121,6 +122,8 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
   const [internalIsPlaying, setInternalIsPlaying] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [retryKey, setRetryKey] = useState(0);
+  const [currentTrackIndex, setCurrentTrackIndex] = useState<number | null>(null);
+  const [soloStateBeforeSolo, setSoloStateBeforeSolo] = useState<{mutes: boolean[], solos: boolean[]} | null>(null);
 
   // Phase 1: Transport controls state
   const [currentTime, setCurrentTime] = useState(0);
@@ -131,6 +134,18 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
 
   // Phase 2: Visual feedback state
   const [metronomeBeat, setMetronomeBeat] = useState<number>(0);
+
+  // Phase 3: BPM display and tempo control
+  const [originalTempo, setOriginalTempo] = useState<number | null>(null);
+  const [currentBPM, setCurrentBPM] = useState<number | null>(null);
+  const [isEditingBPM, setIsEditingBPM] = useState(false);
+  const [bpmInputValue, setBpmInputValue] = useState<string>('');
+
+  // Auto-scroll state
+  const [autoScrollEnabled, setAutoScrollEnabled] = useState(false);
+  const [scrollSpeed, setScrollSpeed] = useState(0.5); // Default to middle speed
+  const autoScrollRef = useRef<number | null>(null);
+  const lastScrollTimeRef = useRef<number>(0);
 
   // Helper to convert Base64 DataURI to Uint8Array
   const prepareData = (uri: string): Uint8Array | null => {
@@ -231,6 +246,14 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
           console.log("[AlphaTab] Score Loaded Successfully", score);
           clearTimeout(timeoutId);
           setTracks(score.tracks);
+          // AlphaTab renders first track by default
+          setCurrentTrackIndex(0);
+
+          // Extract original tempo
+          const tempo = score.tempo || 120; // Default to 120 if not specified
+          setOriginalTempo(tempo);
+          setCurrentBPM(Math.round(tempo * currentSpeed));
+
           setLoading(false);
         };
 
@@ -256,6 +279,16 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
         const handlePlayerStateChanged = (args: AlphaTabPlayerStateChangedEvent) => {
           if(!isMounted) return;
           const playing = args.state === 1;
+          console.log('[Metronome Debug] Playback state changed:', playing ? 'PLAYING' : 'STOPPED');
+
+          // Reset metronome when playback stops to avoid desync
+          if (!playing) {
+            setMetronomeBeat(0);
+            // Clear any pending metronome timeouts
+            metronomeTimeoutsRef.current.forEach(timeout => clearTimeout(timeout));
+            metronomeTimeoutsRef.current.clear();
+          }
+
           setInternalIsPlaying(playing);
           if (onPlaybackChange) onPlaybackChange(playing);
         };
@@ -299,6 +332,7 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
         // Phase 1: Beat selection for loop - capture ref outside state setter to avoid stale closure
         const handleBeatMouseDown = (e: AlphaTabBeatMouseEvent) => {
           if (!isMounted) return;
+          if (!e.originalEvent) return; // Guard against missing originalEvent
 
           // Shift+Click to set loop range
           if (e.originalEvent.shiftKey) {
@@ -338,7 +372,13 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
 
           for (const midi of e.events) {
             if (midi.isMetronome) {
-              setMetronomeBeat(midi.metronomeNumerator);
+              console.log('[Metronome Debug] Raw beat from AlphaTab:', midi.metronomeNumerator, 'Duration:', midi.metronomeDurationInMilliseconds);
+
+              // AlphaTab sends 0-indexed beat numbers (0, 1, 2, 3)
+              // Convert to 1-indexed for display (1, 2, 3, 4)
+              const displayBeat = midi.metronomeNumerator + 1;
+              console.log('[Metronome Debug] Display beat:', displayBeat);
+              setMetronomeBeat(displayBeat);
 
               // Auto-clear highlight after beat duration - track timeout for cleanup
               const timeoutId = setTimeout(() => {
@@ -428,7 +468,7 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
   // External Playback Sync
   useEffect(() => {
     if (!apiRef.current) return;
-    
+
     if (externalIsPlaying && !internalIsPlaying) {
       apiRef.current.play();
     } else if (!externalIsPlaying && internalIsPlaying) {
@@ -436,33 +476,206 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
     }
   }, [externalIsPlaying]);
 
+  // Auto-scroll Logic
+  useEffect(() => {
+    if (!autoScrollEnabled || !rootRef.current) {
+      if (autoScrollRef.current) {
+        cancelAnimationFrame(autoScrollRef.current);
+        autoScrollRef.current = null;
+      }
+      return;
+    }
+
+    // Map slider value (0.1 to 1.0) to pixels per frame (0.25 to 1.0)
+    // This ensures all speeds are visible and useful for performance
+    const minPixels = 0.25;
+    const maxPixels = 1.0;
+    const pixelsPerFrame = minPixels + (scrollSpeed - 0.1) * (maxPixels - minPixels) / (1.0 - 0.1);
+
+    console.log('[Auto-scroll] Starting auto-scroll:', { scrollSpeed, pixelsPerFrame, pixelsPerSecond: pixelsPerFrame * 60 });
+
+    const animate = (currentTime: number) => {
+      if (!rootRef.current) return;
+
+      const deltaTime = currentTime - lastScrollTimeRef.current;
+
+      // Throttle to ~60fps
+      if (deltaTime >= 16) {
+        rootRef.current.scrollTop += pixelsPerFrame;
+        lastScrollTimeRef.current = currentTime;
+      }
+
+      autoScrollRef.current = requestAnimationFrame(animate);
+    };
+
+    lastScrollTimeRef.current = performance.now();
+    autoScrollRef.current = requestAnimationFrame(animate);
+
+    return () => {
+      if (autoScrollRef.current) {
+        cancelAnimationFrame(autoScrollRef.current);
+        autoScrollRef.current = null;
+      }
+    };
+  }, [autoScrollEnabled, currentBPM, originalTempo, scrollSpeed]);
+
   const togglePlay = () => {
     if (apiRef.current) apiRef.current.playPause();
   };
 
+  // Manual scroll functions
+  const scrollBy = (amount: number) => {
+    if (rootRef.current) {
+      rootRef.current.scrollBy({ top: amount, behavior: 'smooth' });
+      // Pause auto-scroll on manual scroll
+      if (autoScrollEnabled) {
+        setAutoScrollEnabled(false);
+      }
+    }
+  };
+
+  const scrollToTop = () => {
+    if (rootRef.current) {
+      rootRef.current.scrollTo({ top: 0, behavior: 'smooth' });
+    }
+  };
+
+  const handleUserScroll = () => {
+    // Pause auto-scroll if user manually scrolls
+    if (autoScrollEnabled) {
+      setAutoScrollEnabled(false);
+    }
+  };
+
   const changeSpeed = (val: number) => {
      if(apiRef.current) {
+         console.log(`[AlphaTab] Changing playback speed from ${apiRef.current.playbackSpeed} to ${val}`);
          apiRef.current.playbackSpeed = val;
          setCurrentSpeed(val);
+
+         // Update current BPM
+         if (originalTempo) {
+           setCurrentBPM(Math.round(originalTempo * val));
+         }
+
+         console.log(`[AlphaTab] Playback speed is now: ${apiRef.current.playbackSpeed}`);
      }
   };
 
-  const renderTrack = (track: any) => {
-     if(apiRef.current) apiRef.current.renderTracks([track]);
+  const handleBPMChange = (newBPM: number) => {
+    if (!originalTempo || !apiRef.current) return;
+
+    const newSpeed = newBPM / originalTempo;
+    // Clamp to supported range (0.25 to 2.0)
+    const clampedSpeed = Math.max(0.25, Math.min(2.0, newSpeed));
+
+    apiRef.current.playbackSpeed = clampedSpeed;
+    setCurrentSpeed(clampedSpeed);
+    setCurrentBPM(Math.round(originalTempo * clampedSpeed));
   };
 
-  const toggleTrackMute = (track: any) => {
-      if(apiRef.current) {
-          apiRef.current.changeTrackMute([track], !track.playbackInfo.isMute);
-          setTracks([...apiRef.current.score.tracks]);
-      }
+  const startEditingBPM = () => {
+    if (!currentBPM) return;
+    setBpmInputValue(currentBPM.toString());
+    setIsEditingBPM(true);
   };
 
-  const toggleTrackSolo = (track: any) => {
-      if(apiRef.current) {
-          apiRef.current.changeTrackSolo([track], !track.playbackInfo.isSolo);
-          setTracks([...apiRef.current.score.tracks]);
+  const submitBPMEdit = () => {
+    const newBPM = parseInt(bpmInputValue);
+    if (!isNaN(newBPM) && originalTempo) {
+      const minBPM = Math.round(originalTempo * 0.25);
+      const maxBPM = Math.round(originalTempo * 2.0);
+      const clampedBPM = Math.max(minBPM, Math.min(maxBPM, newBPM));
+      handleBPMChange(clampedBPM);
+    }
+    setIsEditingBPM(false);
+  };
+
+  const resetToOriginalTempo = () => {
+    changeSpeed(1.0);
+  };
+
+  // Helper to update tracks state from API
+  const updateTracksFromAPI = () => {
+    if (apiRef.current) {
+      // Create new array reference to force React re-render, but keep full track objects
+      const updatedTracks = [...apiRef.current.score.tracks];
+      console.log('[AlphaTab] Updating tracks state:', updatedTracks.map((t, i) => `${i}:${t.name} M:${t.playbackInfo.isMute} S:${t.playbackInfo.isSolo}`).join(', '));
+      setTracks(updatedTracks);
+    }
+  };
+
+  const renderTrack = (trackIndex: number) => {
+     if(apiRef.current) {
+       // Get the full track object from the API, not from React state
+       const track = apiRef.current.score.tracks[trackIndex];
+       apiRef.current.renderTracks([track]);
+       setCurrentTrackIndex(trackIndex);
+     }
+  };
+
+  const toggleTrackMute = (trackIndex: number) => {
+      if(!apiRef.current) return;
+
+      // Get track from API
+      const track = apiRef.current.score.tracks[trackIndex];
+      const currentMuteState = track.playbackInfo.isMute;
+      const newMuteState = !currentMuteState;
+
+      console.log(`[AlphaTab] BEFORE mute toggle - Track ${trackIndex} (${track.name}): isMute=${currentMuteState}`);
+
+      // Try BOTH: Set property directly AND call API method
+      track.playbackInfo.isMute = newMuteState;
+      apiRef.current.changeTrackMute([track], newMuteState);
+
+      console.log(`[AlphaTab] AFTER direct property set - Track ${trackIndex}: isMute=${track.playbackInfo.isMute}`);
+
+      // Force immediate UI update
+      updateTracksFromAPI();
+  };
+
+  const toggleTrackSolo = (trackIndex: number) => {
+      if(!apiRef.current) return;
+
+      const track = apiRef.current.score.tracks[trackIndex];
+      const allTracks = apiRef.current.score.tracks;
+      const currentSoloState = track.playbackInfo.isSolo;
+      const newSoloState = !currentSoloState;
+
+      console.log(`[AlphaTab] BEFORE solo toggle - Track ${trackIndex} (${track.name}): isSolo=${currentSoloState}`);
+
+      if (newSoloState) {
+        // ENABLING SOLO: Save current state before soloing
+        const currentMutes = allTracks.map(t => t.playbackInfo.isMute);
+        const currentSolos = allTracks.map(t => t.playbackInfo.isSolo);
+        console.log('[AlphaTab] Saving state before solo:', { mutes: currentMutes, solos: currentSolos });
+        setSoloStateBeforeSolo({ mutes: currentMutes, solos: currentSolos });
+
+        // Set property directly AND call API method
+        track.playbackInfo.isSolo = true;
+        apiRef.current.changeTrackSolo([track], true);
+      } else {
+        // DISABLING SOLO: Restore previous state
+        console.log('[AlphaTab] Restoring state after solo:', soloStateBeforeSolo);
+        track.playbackInfo.isSolo = false;
+        apiRef.current.changeTrackSolo([track], false);
+
+        if (soloStateBeforeSolo) {
+          // Restore mute states
+          allTracks.forEach((t, i) => {
+            if (t.playbackInfo.isMute !== soloStateBeforeSolo.mutes[i]) {
+              t.playbackInfo.isMute = soloStateBeforeSolo.mutes[i];
+              apiRef.current!.changeTrackMute([t], soloStateBeforeSolo.mutes[i]);
+            }
+          });
+          setSoloStateBeforeSolo(null);
+        }
       }
+
+      console.log(`[AlphaTab] AFTER direct property set - Track ${trackIndex}: isSolo=${track.playbackInfo.isSolo}`);
+
+      // Force immediate UI update
+      updateTracksFromAPI();
   };
 
   // New transport control handlers
@@ -522,10 +735,11 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
   );
 
   return (
-    <div className="flex flex-col h-full bg-white text-black rounded-xl overflow-hidden relative border border-zinc-200">
+    <div className="flex flex-col max-h-full bg-white text-black rounded-xl relative border border-zinc-200">
       {/* Toolbar */}
       <div className="bg-zinc-100 border-b border-zinc-300 p-2 flex items-center justify-between shrink-0">
-        <div className="flex items-center gap-2">
+        {/* Left: Transport controls */}
+        <div className="flex items-center gap-2 flex-1">
             {!readOnly && (
                 <>
                   <button
@@ -544,74 +758,168 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
                   >
                     <Square size={18} />
                   </button>
-                </>
-            )}
 
-            {/* Speed control */}
-            <div className="flex items-center gap-1 bg-zinc-200 rounded px-2 py-1">
-                <Activity size={14} className="text-zinc-500" />
-                <select
-                    value={currentSpeed}
-                    onChange={(e) => changeSpeed(parseFloat(e.target.value))}
-                    className="bg-transparent text-sm outline-none w-16"
-                >
-                    <option value="0.5">50%</option>
-                    <option value="0.75">75%</option>
-                    <option value="1.0">100%</option>
-                    <option value="1.25">125%</option>
-                </select>
-            </div>
-
-            {/* Loop controls */}
-            {!readOnly && (
-              <div className="flex items-center gap-1">
-                <button
-                  onClick={toggleLoop}
-                  className={`p-2 rounded transition-colors ${
-                    isLooping ? 'bg-amber-500 text-white' : 'bg-zinc-200 hover:bg-zinc-300 text-zinc-700'
-                  }`}
-                  title="Toggle loop"
-                >
-                  <Repeat size={16} />
-                </button>
-
-                {loopRange && (
-                  <button
-                    onClick={clearLoopRange}
-                    className="p-2 rounded bg-zinc-200 hover:bg-red-200 text-zinc-700 hover:text-red-600 transition-colors"
-                    title="Clear loop range"
-                  >
-                    <X size={16} />
-                  </button>
-                )}
-              </div>
-            )}
-
-            {/* Visual metronome */}
-            {!readOnly && (
-              <div className="flex items-center gap-1 bg-zinc-200 rounded px-2 py-1">
-                <Activity size={14} className="text-zinc-500" />
-                <div className="flex gap-1">
-                  {[1, 2, 3, 4].map((beat) => (
-                    <div
-                      key={beat}
-                      className={`w-2 h-2 rounded-full transition-all duration-75 ${
-                        metronomeBeat === beat ? 'bg-amber-500 scale-150' : 'bg-zinc-400'
+                  {/* Loop controls */}
+                  <div className="flex items-center gap-1">
+                    <button
+                      onClick={toggleLoop}
+                      className={`p-2 rounded transition-colors ${
+                        isLooping ? 'bg-amber-500 text-white' : 'bg-zinc-200 hover:bg-zinc-300 text-zinc-700'
                       }`}
-                    />
-                  ))}
-                </div>
-              </div>
+                      title="Toggle loop"
+                    >
+                      <Repeat size={16} />
+                    </button>
+
+                    {loopRange && (
+                      <button
+                        onClick={clearLoopRange}
+                        className="p-2 rounded bg-zinc-200 hover:bg-red-200 text-zinc-700 hover:text-red-600 transition-colors"
+                        title="Clear loop range"
+                      >
+                        <X size={16} />
+                      </button>
+                    )}
+                  </div>
+                </>
             )}
         </div>
 
-        <div className="flex items-center gap-2">
+        {/* Center: Track selector */}
+        <div className="flex items-center justify-center flex-1">
+          {currentTrackIndex !== null && tracks[currentTrackIndex] && (
             <button
-                onClick={() => setShowSettings(!showSettings)}
-                className={`p-2 rounded hover:bg-zinc-200 ${showSettings ? 'bg-zinc-200 text-amber-600' : 'text-zinc-600'}`}
+              onClick={() => setShowSettings(!showSettings)}
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${
+                showSettings
+                  ? 'bg-amber-500 text-white shadow-md'
+                  : 'bg-zinc-200 hover:bg-zinc-300 text-zinc-800 hover:shadow-sm'
+              }`}
+              title="Click to open mixer and switch tracks"
             >
-                <Layers size={20} />
+              <div className={`w-2.5 h-2.5 rounded-full ${
+                showSettings ? 'bg-white' : 'bg-amber-500'
+              }`}></div>
+              <span className="text-sm font-semibold">{tracks[currentTrackIndex].name}</span>
+              <Sliders size={16} className={showSettings ? 'opacity-90' : 'opacity-60'} />
             </button>
+          )}
+        </div>
+
+        {/* Right: Auto-scroll + BPM Display + Metronome + Speed control */}
+        <div className="flex items-center gap-2 flex-1 justify-end">
+            {/* Auto-Scroll Controls - Only shown in Performance Mode (readOnly) */}
+            {readOnly && (<>
+              <div className="flex items-center gap-2 bg-zinc-200 rounded px-2 py-1">
+                <button
+                  onClick={() => setAutoScrollEnabled(!autoScrollEnabled)}
+                  className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-bold transition-colors ${
+                    autoScrollEnabled ? 'bg-amber-500 text-white' : 'bg-white text-zinc-600 hover:bg-zinc-50'
+                  }`}
+                  title="Toggle auto-scroll"
+                >
+                  <Scroll size={12} /> Auto
+                </button>
+                <div className="flex items-center gap-1 border-l border-zinc-300 pl-2">
+                  <Gauge size={12} className="text-zinc-500" />
+                  <input
+                    type="range"
+                    min="0.1"
+                    max="1.0"
+                    step="0.1"
+                    value={scrollSpeed}
+                    onChange={(e) => setScrollSpeed(parseFloat(e.target.value))}
+                    className="w-16 h-1 bg-zinc-300 rounded-lg appearance-none cursor-pointer accent-amber-500"
+                    title="Scroll speed multiplier"
+                  />
+                  <span className="text-[10px] font-mono text-zinc-600 w-6">{scrollSpeed}x</span>
+                </div>
+              </div>
+            </>)}
+
+            {/* BPM Display + Visual metronome */}
+            {!readOnly && originalTempo && (
+              <div className="flex items-center gap-2">
+                {/* BPM Display - Clickable for direct input */}
+                <div
+                  className="flex items-center gap-1 bg-zinc-200 rounded px-3 py-1 cursor-pointer hover:bg-zinc-300 transition-colors"
+                  onClick={startEditingBPM}
+                  title="Click to enter BPM directly"
+                >
+                  <Music2 size={14} className="text-zinc-500" />
+                  {isEditingBPM ? (
+                    <input
+                      type="number"
+                      value={bpmInputValue}
+                      onChange={(e) => setBpmInputValue(e.target.value)}
+                      onBlur={submitBPMEdit}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter') submitBPMEdit();
+                        if (e.key === 'Escape') setIsEditingBPM(false);
+                      }}
+                      autoFocus
+                      className="w-12 bg-white border border-amber-500 rounded px-1 text-sm font-semibold text-center focus:outline-none"
+                      onClick={(e) => e.stopPropagation()}
+                    />
+                  ) : (
+                    <span className="text-sm font-semibold text-zinc-700">
+                      {currentBPM || originalTempo}
+                    </span>
+                  )}
+                  <span className="text-xs text-zinc-500">BPM</span>
+                </div>
+
+                {/* Reset button - only show when not at original tempo */}
+                {currentSpeed !== 1.0 && (
+                  <button
+                    onClick={resetToOriginalTempo}
+                    className="px-2 py-1 rounded bg-amber-100 hover:bg-amber-200 text-amber-700 text-xs font-semibold transition-colors"
+                    title="Reset to original tempo"
+                  >
+                    Reset
+                  </button>
+                )}
+
+                {/* Metronome beat indicators */}
+                <div className="flex items-center gap-1 bg-zinc-200 rounded px-2 py-1">
+                  <CircleGauge size={14} className="text-zinc-500" />
+                  <div className="flex gap-1">
+                    {[1, 2, 3, 4].map((beat) => (
+                      <div
+                        key={beat}
+                        className={`w-2 h-2 rounded-full transition-all duration-75 ${
+                          metronomeBeat === beat ? 'bg-amber-500 scale-150' : 'bg-zinc-400'
+                        }`}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {/* BPM Slider Control */}
+            {!readOnly && originalTempo && (
+              <div className="flex items-center gap-2 bg-zinc-200 rounded px-3 py-2">
+                <Timer size={14} className="text-zinc-500" />
+                <div className="flex flex-col gap-1">
+                  <input
+                    type="range"
+                    min={Math.round(originalTempo * 0.25)}
+                    max={Math.round(originalTempo * 2.0)}
+                    step="1"
+                    value={currentBPM || originalTempo}
+                    onChange={(e) => handleBPMChange(parseInt(e.target.value))}
+                    className="w-32 h-1 bg-zinc-300 rounded-lg appearance-none cursor-pointer accent-amber-500"
+                  />
+                  <div className="flex justify-between text-[10px] text-zinc-500">
+                    <span>{Math.round(originalTempo * 0.25)}</span>
+                    <span className="font-semibold text-zinc-700">{currentBPM}</span>
+                    <span>{Math.round(originalTempo * 2.0)}</span>
+                  </div>
+                </div>
+              </div>
+            )}
+
             <span className="text-xs font-bold text-zinc-400 px-2">AlphaTab</span>
         </div>
       </div>
@@ -660,18 +968,67 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
 
       {/* Mixer Overlay */}
       {showSettings && (
-         <div className="absolute top-14 right-2 z-20 bg-white shadow-xl border border-zinc-200 rounded-xl p-4 w-64 animate-in fade-in zoom-in-95 max-h-[80%] flex flex-col">
-            <h4 className="font-bold text-sm mb-3 flex items-center gap-2"><Sliders size={14}/> Mixer</h4>
+         <div className="absolute top-20 left-1/2 -translate-x-1/2 z-[9999] bg-white shadow-2xl border border-zinc-200 rounded-xl p-4 w-64 animate-in fade-in zoom-in-95 max-h-[80%] flex flex-col">
+            <div className="flex items-center justify-between mb-3">
+              <h4 className="font-bold text-sm flex items-center gap-2"><Sliders size={14}/> Mixer</h4>
+              <button
+                onClick={() => setShowSettings(false)}
+                className="p-1 hover:bg-zinc-100 rounded text-zinc-400 hover:text-zinc-600 transition-colors"
+                title="Close mixer"
+              >
+                <X size={16} />
+              </button>
+            </div>
             <div className="overflow-y-auto flex-1 space-y-2">
                 {tracks.map((track, i) => (
-                    <div key={i} className="flex items-center justify-between bg-zinc-50 p-2 rounded border border-zinc-100">
-                        <div className="flex items-center gap-2 overflow-hidden" onClick={() => renderTrack(track)}>
-                            <div className="w-3 h-3 rounded-full bg-amber-500 cursor-pointer"></div>
-                            <span className="text-xs truncate cursor-pointer hover:underline font-medium">{track.name}</span>
+                    <div
+                      key={i}
+                      className={`flex items-center justify-between p-2 rounded border transition-all ${
+                        currentTrackIndex === i
+                          ? 'bg-amber-50 border-amber-400 shadow-sm'
+                          : 'bg-zinc-50 border-zinc-100'
+                      }`}
+                    >
+                        <div
+                          className="flex items-center gap-2 overflow-hidden cursor-pointer"
+                          onClick={() => renderTrack(i)}
+                        >
+                            <div className={`w-3 h-3 rounded-full transition-all ${
+                              currentTrackIndex === i ? 'bg-amber-500' : 'bg-zinc-400'
+                            }`}></div>
+                            <span className={`text-xs truncate hover:underline ${
+                              currentTrackIndex === i ? 'font-bold text-amber-900' : 'font-medium text-zinc-700'
+                            }`}>{track.name}</span>
                         </div>
                         <div className="flex gap-1">
-                            <button onClick={() => toggleTrackMute(track)} className={`text-[10px] px-1.5 rounded border ${track.playbackInfo.isMute ? 'bg-red-100 text-red-600' : 'bg-zinc-100 text-zinc-400'}`}>M</button>
-                            <button onClick={() => toggleTrackSolo(track)} className={`text-[10px] px-1.5 rounded border ${track.playbackInfo.isSolo ? 'bg-yellow-100 text-yellow-600' : 'bg-zinc-100 text-zinc-400'}`}>S</button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toggleTrackMute(i);
+                              }}
+                              className={`text-[10px] font-bold px-2 py-1 rounded border transition-all ${
+                                track.playbackInfo.isMute
+                                  ? 'bg-red-500 text-white border-red-600 shadow-sm'
+                                  : 'bg-white text-zinc-500 border-zinc-300 hover:bg-zinc-50'
+                              }`}
+                              title={track.playbackInfo.isMute ? 'Unmute track' : 'Mute track'}
+                            >
+                              M
+                            </button>
+                            <button
+                              onClick={(e) => {
+                                e.stopPropagation();
+                                toggleTrackSolo(i);
+                              }}
+                              className={`text-[10px] font-bold px-2 py-1 rounded border transition-all ${
+                                track.playbackInfo.isSolo
+                                  ? 'bg-amber-500 text-white border-amber-600 shadow-sm'
+                                  : 'bg-white text-zinc-500 border-zinc-300 hover:bg-zinc-50'
+                              }`}
+                              title={track.playbackInfo.isSolo ? 'Unsolo track' : 'Solo track'}
+                            >
+                              S
+                            </button>
                         </div>
                     </div>
                 ))}

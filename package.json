@@ -14,6 +14,7 @@
   "dependencies": {
     "@coderline/alphatab": "^1.6.3",
     "@google/genai": "^1.30.0",
+    "@supabase/supabase-js": "^2.84.0",
     "lucide-react": "^0.554.0",
     "react": "^19.2.0",
     "react-dom": "^19.2.0"

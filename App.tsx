@@ -1,5 +1,6 @@
 
 import React, { useState, useEffect } from 'react';
+import { Session } from '@supabase/supabase-js';
 import { Navigation } from './components/Navigation';
 import { Dashboard } from './components/Dashboard';
 import { SetlistManager } from './components/SetlistManager';
@@ -9,51 +10,134 @@ import { BandDashboard } from './components/BandDashboard';
 import { PerformanceMode } from './components/PerformanceMode';
 import { ScheduleManager } from './components/ScheduleManager';
 import { PracticeRoom } from './components/PracticeRoom';
+import { Login } from './components/Login';
 import { Song, ViewState, BandMember, BandEvent } from './types';
 import { INITIAL_SONGS } from './constants';
 import { StorageService } from './services/storageService';
+import { getSupabaseClient, isSupabaseConfigured } from './services/supabaseClient';
 
 const App: React.FC = () => {
   const [currentView, setCurrentView] = useState<ViewState>('DASHBOARD');
   const [selectedSongId, setSelectedSongId] = useState<string | null>(null);
-  
+  const [isLoading, setIsLoading] = useState(true);
+  const [session, setSession] = useState<Session | null>(null);
+  const [isCheckingAuth, setIsCheckingAuth] = useState(true);
+
   // -- State Initialization --
-  // We use lazy initialization to try loading from storage first, falling back to defaults
-  const [songs, setSongs] = useState<Song[]>(() => {
-     const data = StorageService.load();
-     return data.songs || INITIAL_SONGS;
-  });
+  const [songs, setSongs] = useState<Song[]>([]);
+  const [members, setMembers] = useState<BandMember[]>([]);
+  const [availableRoles, setAvailableRoles] = useState<string[]>([]);
+  const [events, setEvents] = useState<BandEvent[]>([]);
 
-  const [members, setMembers] = useState<BandMember[]>(() => {
-     const data = StorageService.load();
-     return data.members || [
-        { id: '1', name: 'Brother 1', roles: ['Lead Guitar', 'Lead Vocals'], avatarColor: 'bg-blue-500' },
-        { id: '2', name: 'Brother 2', roles: ['Rhythm Guitar'], avatarColor: 'bg-red-500' },
-        { id: '3', name: 'Brother 3', roles: ['Bass Guitar'], avatarColor: 'bg-green-500' },
-        { id: '4', name: 'Brother 4', roles: ['Drums'], avatarColor: 'bg-yellow-500' },
-     ];
-  });
+  // -- Authentication Check --
+  // Check if Supabase is configured and user is authenticated
+  useEffect(() => {
+    const checkAuth = async () => {
+      // If Supabase is not configured, skip auth check
+      if (!isSupabaseConfigured()) {
+        setIsCheckingAuth(false);
+        setSession(null);
+        return;
+      }
 
-  const [availableRoles, setAvailableRoles] = useState<string[]>(() => {
-      const data = StorageService.load();
-      return data.roles || [
-        'Lead Guitar', 'Rhythm Guitar', 'Bass Guitar', 'Drums', 'Synthesizer', 'Lead Vocals', 'Backing Vocals'
-      ];
-  });
+      const supabase = getSupabaseClient();
+      if (!supabase) {
+        setIsCheckingAuth(false);
+        return;
+      }
 
-  const [events, setEvents] = useState<BandEvent[]>(() => {
-      const data = StorageService.load();
-      // Default placeholder event if none exist
-      return data.events || [
-          { id: '1', title: 'Weekly Practice', date: new Date().toISOString().split('T')[0], type: 'PRACTICE', time: '19:00' }
-      ];
-  });
+      try {
+        // Check for existing session
+        const { data: { session: existingSession } } = await supabase.auth.getSession();
+        setSession(existingSession);
+
+        // Listen for auth changes
+        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, newSession) => {
+          setSession(newSession);
+        });
+
+        // Cleanup subscription on unmount
+        return () => {
+          subscription.unsubscribe();
+        };
+      } catch (error) {
+        console.error('Error checking auth:', error);
+      } finally {
+        setIsCheckingAuth(false);
+      }
+    };
+
+    checkAuth();
+  }, []);
+
+  // -- Load Data on Mount --
+  // Async loading to support both localStorage and Supabase
+  // Only load data after auth check is complete
+  useEffect(() => {
+    // Wait for auth check to complete
+    if (isCheckingAuth) return;
+    const loadData = async () => {
+      try {
+        const data = await StorageService.load();
+
+        setSongs(data.songs || INITIAL_SONGS);
+        setMembers(data.members || [
+          { id: '1763776021452', name: 'Jason', roles: [], avatarColor: 'bg-red-500' },
+          { id: '1763776022630', name: 'Jeff', roles: [], avatarColor: 'bg-blue-500' },
+          { id: '1763776023343', name: 'Joe', roles: [], avatarColor: 'bg-green-500' },
+          { id: '1763776025207', name: 'Berry', roles: [], avatarColor: 'bg-yellow-500' },
+          { id: '1763776026538', name: 'Lori', roles: [], avatarColor: 'bg-purple-500' },
+          { id: '1763776028016', name: 'Hunter', roles: [], avatarColor: 'bg-red-500' },
+        ]);
+        setAvailableRoles(data.roles || [
+          'Lead Guitar', 'Rhythm Guitar', 'Bass Guitar', 'Drums', 'Synthesizer', 'Lead Vocals', 'Backing Vocals'
+        ]);
+        setEvents(data.events || [
+          { id: '1', title: 'Thanksgiving Rehearsal', date: '2025-11-27', type: 'PRACTICE', time: '16:00', location: 'Jeff\'s House', notes: '- Just Got Paid\n- Tush' },
+          { id: '1763776277014', title: 'Christmas Performance', date: '2025-12-28', time: '19:00', type: 'GIG', location: 'Covert View Drive' }
+        ]);
+      } catch (error) {
+        console.error('Error loading data:', error);
+        // Fall back to defaults on error
+        setSongs(INITIAL_SONGS);
+        setMembers([
+          { id: '1763776021452', name: 'Jason', roles: [], avatarColor: 'bg-red-500' },
+          { id: '1763776022630', name: 'Jeff', roles: [], avatarColor: 'bg-blue-500' },
+          { id: '1763776023343', name: 'Joe', roles: [], avatarColor: 'bg-green-500' },
+          { id: '1763776025207', name: 'Berry', roles: [], avatarColor: 'bg-yellow-500' },
+          { id: '1763776026538', name: 'Lori', roles: [], avatarColor: 'bg-purple-500' },
+          { id: '1763776028016', name: 'Hunter', roles: [], avatarColor: 'bg-red-500' },
+        ]);
+        setAvailableRoles([
+          'Lead Guitar', 'Rhythm Guitar', 'Bass Guitar', 'Drums', 'Synthesizer', 'Lead Vocals', 'Backing Vocals'
+        ]);
+        setEvents([
+          { id: '1', title: 'Thanksgiving Rehearsal', date: '2025-11-27', type: 'PRACTICE', time: '16:00', location: 'Jeff\'s House', notes: '- Just Got Paid\n- Tush' },
+          { id: '1763776277014', title: 'Christmas Performance', date: '2025-12-28', time: '19:00', type: 'GIG', location: 'Covert View Drive' }
+        ]);
+      } finally {
+        setIsLoading(false);
+      }
+    };
+
+    loadData();
+  }, [isCheckingAuth]);
 
   // -- Auto-Save Effect --
-  // Whenever core data changes, save to local storage
+  // Whenever core data changes, save to storage (debounced to avoid excessive saves)
   useEffect(() => {
-      StorageService.save(songs, members, availableRoles, events);
-  }, [songs, members, availableRoles, events]);
+    if (isLoading) return; // Don't save during initial load
+
+    const saveData = async () => {
+      try {
+        await StorageService.save(songs, members, availableRoles, events);
+      } catch (error) {
+        console.error('Error saving data:', error);
+      }
+    };
+
+    saveData();
+  }, [songs, members, availableRoles, events, isLoading]);
 
   const handleNavigate = (view: ViewState) => {
     setCurrentView(view);
@@ -67,6 +151,19 @@ const App: React.FC = () => {
 
   const handleUpdateSong = (updatedSong: Song) => {
     setSongs(songs.map(s => s.id === updatedSong.id ? updatedSong : s));
+  };
+
+  const handleLogout = async () => {
+    const supabase = getSupabaseClient();
+    if (!supabase) return;
+
+    try {
+      await supabase.auth.signOut();
+      setSession(null);
+      // Data will be cleared when user logs back in
+    } catch (error) {
+      console.error('Error logging out:', error);
+    }
   };
 
   const renderContent = () => {
@@ -132,13 +229,50 @@ const App: React.FC = () => {
       return renderContent();
   }
 
+  // Show loading screen while checking authentication
+  if (isCheckingAuth) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-zinc-950 text-zinc-100">
+        <div className="text-center">
+          <div className="inline-block w-8 h-8 border-4 border-zinc-700 border-t-blue-500 rounded-full animate-spin mb-4"></div>
+          <p className="text-lg">Checking authentication...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show login screen if Supabase is configured but user is not authenticated
+  if (isSupabaseConfigured() && !session) {
+    return <Login onLoginSuccess={() => {
+      // Session will be set by the auth state change listener
+      // Just need to trigger re-render
+    }} />;
+  }
+
+  // Show loading screen while data is loading
+  if (isLoading) {
+    return (
+      <div className="flex items-center justify-center min-h-screen bg-zinc-950 text-zinc-100">
+        <div className="text-center">
+          <div className="inline-block w-8 h-8 border-4 border-zinc-700 border-t-blue-500 rounded-full animate-spin mb-4"></div>
+          <p className="text-lg">Loading Band Assist...</p>
+        </div>
+      </div>
+    );
+  }
+
   if (currentView === 'SONG_DETAIL') {
     return renderContent();
   }
 
   return (
     <div className="flex min-h-screen bg-zinc-950 font-sans text-zinc-100">
-      <Navigation currentView={currentView} onNavigate={handleNavigate} />
+      <Navigation
+        currentView={currentView}
+        onNavigate={handleNavigate}
+        onLogout={handleLogout}
+        showLogout={isSupabaseConfigured() && !!session}
+      />
       <main className="flex-1 h-screen overflow-y-auto">
         {renderContent()}
       </main>

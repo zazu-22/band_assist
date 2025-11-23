@@ -4,6 +4,8 @@ import { Song, SongPart, BandMember, Annotation, SongChart } from '../types';
 import { INSTRUMENT_ICONS } from '../constants';
 import { getMusicAnalysis, extractSongParts } from '../services/geminiService';
 import { SmartTabEditor } from './SmartTabEditor';
+import { isSupabaseConfigured } from '../services/supabaseClient';
+import { supabaseStorageService } from '../services/supabaseStorageService';
 import { 
   Music2, 
   Users, 
@@ -148,24 +150,66 @@ export const SongDetail: React.FC<SongDetailProps> = ({ song, members, available
       setNewChartName('');
   };
 
-  const handleUploadChart = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleUploadChart = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 10 * 1024 * 1024) {
-        alert("File is too large for browser storage (Limit: 10MB). Please compress the file.");
+    if (file.size > 50 * 1024 * 1024) {
+        alert("File is too large (Limit: 50MB). Please compress the file.");
         return;
     }
 
-    const reader = new FileReader();
     const isPdf = file.type === "application/pdf";
     const isImage = file.type.startsWith("image/");
-    // Basic detection for Guitar Pro files based on extension
     const isGp = /\.(gp|gp3|gp4|gp5|gpx)$/i.test(file.name);
 
-    reader.onload = (event) => {
-      const result = event.target?.result as string;
-      const newChart: SongChart = {
+    // If Supabase is configured, upload to Storage
+    if (isSupabaseConfigured() && (isPdf || isImage || isGp)) {
+      setScanStatus('Uploading file to storage...');
+
+      try {
+        const uploadResult = await supabaseStorageService.uploadChartFile(
+          file,
+          file.name,
+          file.type,
+          song.id
+        );
+
+        if (!uploadResult) {
+          alert('Failed to upload file. Please try again.');
+          setScanStatus('');
+          return;
+        }
+
+        const newChart: SongChart = {
+          id: Date.now().toString(),
+          name: newChartName || file.name,
+          instrument: newChartInstrument,
+          type: isGp ? 'GP' : isPdf ? 'PDF' : 'IMAGE',
+          url: uploadResult.url,
+          storagePath: uploadResult.storagePath,
+          storageBase64: uploadResult.storageBase64, // For GP files only
+          annotations: []
+        };
+
+        const updatedCharts = [...song.charts, newChart];
+        onUpdateSong({ ...song, charts: updatedCharts });
+        setActiveChartId(newChart.id);
+        setIsAddingChart(false);
+        setNewChartName('');
+        setScanStatus('');
+        if (fileInputRef.current) fileInputRef.current.value = '';
+      } catch (error) {
+        console.error('Error uploading chart:', error);
+        alert('Error uploading file. Please try again.');
+        setScanStatus('');
+      }
+    } else {
+      // Fallback for text files or when Supabase not configured
+      const reader = new FileReader();
+      reader.onload = (event) => {
+        const result = event.target?.result as string;
+        const newChart: SongChart = {
           id: Date.now().toString(),
           name: newChartName || file.name,
           instrument: newChartInstrument,
@@ -173,20 +217,21 @@ export const SongDetail: React.FC<SongDetailProps> = ({ song, members, available
           url: (isPdf || isImage || isGp) ? result : undefined,
           content: (!isPdf && !isImage && !isGp) ? result : undefined,
           annotations: []
+        };
+
+        const updatedCharts = [...song.charts, newChart];
+        onUpdateSong({ ...song, charts: updatedCharts });
+        setActiveChartId(newChart.id);
+        setIsAddingChart(false);
+        setNewChartName('');
+        if (fileInputRef.current) fileInputRef.current.value = '';
       };
 
-      const updatedCharts = [...song.charts, newChart];
-      onUpdateSong({ ...song, charts: updatedCharts });
-      setActiveChartId(newChart.id);
-      setIsAddingChart(false);
-      setNewChartName('');
-      if (fileInputRef.current) fileInputRef.current.value = '';
-    };
-
-    if (isPdf || isImage || isGp) {
-      reader.readAsDataURL(file);
-    } else {
-      reader.readAsText(file);
+      if (isPdf || isImage || isGp) {
+        reader.readAsDataURL(file);
+      } else {
+        reader.readAsText(file);
+      }
     }
   };
 
@@ -212,22 +257,55 @@ export const SongDetail: React.FC<SongDetailProps> = ({ song, members, available
 
   // --- Audio & Metadata ---
 
-  const handleAudioUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleAudioUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
       if (!file) return;
-      
-      if (file.size > 4 * 1024 * 1024) {
-        alert("Audio file is too large for browser storage (Limit: 4MB). Please use a compressed MP3 or shorter clip.");
+
+      if (file.size > 10 * 1024 * 1024) {
+        alert("Audio file is too large (Limit: 10MB). Please use a compressed MP3 or shorter clip.");
         return;
       }
 
-      const reader = new FileReader();
-      reader.onload = (event) => {
+      // If Supabase is configured, upload to Storage
+      if (isSupabaseConfigured()) {
+        setScanStatus('Uploading audio file...');
+
+        try {
+          const uploadResult = await supabaseStorageService.uploadAudioFile(
+            file,
+            file.name,
+            file.type,
+            song.id
+          );
+
+          if (!uploadResult) {
+            alert('Failed to upload audio file. Please try again.');
+            setScanStatus('');
+            return;
+          }
+
+          onUpdateSong({
+            ...song,
+            backingTrackUrl: uploadResult.url,
+            backingTrackStoragePath: uploadResult.storagePath
+          });
+          setScanStatus('');
+          if (audioInputRef.current) audioInputRef.current.value = '';
+        } catch (error) {
+          console.error('Error uploading audio:', error);
+          alert('Error uploading audio file. Please try again.');
+          setScanStatus('');
+        }
+      } else {
+        // Fallback to base64 if Supabase not configured
+        const reader = new FileReader();
+        reader.onload = (event) => {
           const result = event.target?.result as string;
           onUpdateSong({ ...song, backingTrackUrl: result });
           if (audioInputRef.current) audioInputRef.current.value = '';
-      };
-      reader.readAsDataURL(file);
+        };
+        reader.readAsDataURL(file);
+      }
   };
 
   const saveMetadata = () => {
@@ -545,7 +623,10 @@ export const SongDetail: React.FC<SongDetailProps> = ({ song, members, available
                                 onUpdateAnnotations={(ann) => handleUpdateChartAnnotations(activeChart.id, ann)}
                             />
                         ) : activeChart.type === 'GP' ? (
-                             <AlphaTabRenderer fileData={activeChart.url!} readOnly={true} />
+                             <AlphaTabRenderer
+                                fileData={activeChart.storageBase64 || activeChart.url!}
+                                readOnly={true}
+                            />
                         ) : (
                             <div className="w-full h-full relative bg-zinc-200 pdf-viewer-container">
                                  <div className="absolute top-2 right-2 z-10 flex gap-2">
