@@ -1,0 +1,179 @@
+name: Security Scan
+
+on:
+  push:
+    branches: [main, development]
+  pull_request:
+    branches: [main]
+  schedule:
+    # Run security scan every Sunday at midnight
+    - cron: '0 0 * * 0'
+  workflow_dispatch:
+
+jobs:
+  codeql:
+    name: CodeQL Analysis
+    runs-on: ubuntu-latest
+    permissions:
+      actions: read
+      contents: read
+      security-events: write
+    strategy:
+      fail-fast: false
+      matrix:
+        language: ['javascript', 'typescript']
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Initialize CodeQL
+        uses: github/codeql-action/init@v2
+        with:
+          languages: ${{ matrix.language }}
+          queries: security-extended,security-and-quality
+
+      - name: Autobuild
+        uses: github/codeql-action/autobuild@v2
+
+      - name: Perform CodeQL Analysis
+        uses: github/codeql-action/analyze@v2
+        with:
+          category: "/language:${{matrix.language}}"
+
+  dependency-scan:
+    name: Dependency Vulnerability Scan
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run npm audit
+        run: |
+          npm audit --json > audit-report.json || true
+          npm audit --audit-level=moderate
+
+      - name: Upload audit report
+        uses: actions/upload-artifact@v3
+        with:
+          name: npm-audit-report
+          path: audit-report.json
+
+  secret-scan:
+    name: Secret Scanning
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: TruffleHog Secret Scan
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: ${{ github.event.repository.default_branch }}
+          head: HEAD
+          extra_args: --debug --only-verified
+
+      - name: Check for .env files
+        run: |
+          if find . -name ".env*" -not -path "./node_modules/*" -not -name ".env.example" -not -name ".env.template" | grep -q .; then
+            echo "⚠️ Warning: .env files found in repository!"
+            find . -name ".env*" -not -path "./node_modules/*" -not -name ".env.example" -not -name ".env.template"
+            exit 1
+          else
+            echo "✅ No .env files found in repository"
+          fi
+
+  client-side-security:
+    name: Client-Side Security Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Check for dangerous patterns
+        run: |
+          echo "Checking for dangerous JavaScript patterns..."
+
+          # Check for eval usage
+          if grep -r "eval(" --include="*.ts" --include="*.tsx" --include="*.js" --include="*.jsx" --exclude-dir=node_modules .; then
+            echo "❌ Found eval() usage - potential security risk"
+            exit 1
+          fi
+
+          # Check for dangerouslySetInnerHTML
+          if grep -r "dangerouslySetInnerHTML" --include="*.tsx" --include="*.jsx" --exclude-dir=node_modules .; then
+            echo "⚠️ Warning: Found dangerouslySetInnerHTML usage"
+            echo "Please ensure HTML is properly sanitized"
+          fi
+
+          # Check for hardcoded secrets patterns
+          if grep -rE "(api[_-]?key|password|secret|token).*=.*['\"][a-zA-Z0-9]{20,}['\"]" --include="*.ts" --include="*.tsx" --include="*.js" --include="*.jsx" --exclude-dir=node_modules .; then
+            echo "❌ Found potential hardcoded secrets"
+            exit 1
+          fi
+
+          echo "✅ No dangerous patterns found"
+
+      - name: Build security report
+        run: |
+          echo "## Security Scan Summary" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "✅ No dangerous JavaScript patterns detected" >> $GITHUB_STEP_SUMMARY
+          echo "✅ No hardcoded secrets found" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "### Dependencies" >> $GITHUB_STEP_SUMMARY
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+          npm list --production --depth=0 >> $GITHUB_STEP_SUMMARY || true
+          echo "\`\`\`" >> $GITHUB_STEP_SUMMARY
+
+  license-check:
+    name: License Compliance Check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Install license checker
+        run: npm install -g license-checker
+
+      - name: Check licenses
+        run: |
+          echo "Checking dependency licenses..."
+          license-checker --production --json > licenses.json
+
+          # Check for problematic licenses
+          if license-checker --production --onlyAllow 'MIT;Apache-2.0;BSD-2-Clause;BSD-3-Clause;ISC;0BSD;Python-2.0;CC0-1.0;Unlicense'; then
+            echo "✅ All licenses are approved"
+          else
+            echo "❌ Found dependencies with non-approved licenses"
+            license-checker --production --summary
+            exit 1
+          fi
+
+      - name: Upload license report
+        uses: actions/upload-artifact@v3
+        with:
+          name: license-report
+          path: licenses.json

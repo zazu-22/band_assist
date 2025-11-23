@@ -1,0 +1,50 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+# Run type checking
+echo "Running type check..."
+npx tsc --noEmit || {
+  echo "❌ Type check failed. Please fix TypeScript errors before committing."
+  exit 1
+}
+
+# Run linting if eslint config exists
+if [ -f ".eslintrc.js" ] || [ -f ".eslintrc.json" ] || [ -f "eslint.config.js" ]; then
+  echo "Running linter..."
+  npm run lint || {
+    echo "❌ Linting failed. Please fix linting errors before committing."
+    exit 1
+  }
+fi
+
+# Check for large files
+echo "Checking for large files..."
+for file in $(git diff --cached --name-only); do
+  if [ -f "$file" ]; then
+    size=$(wc -c < "$file")
+    # 1MB = 1048576 bytes
+    if [ "$size" -gt 1048576 ]; then
+      echo "❌ File $file is larger than 1MB ($size bytes)"
+      echo "   Large files should not be committed. Consider using Git LFS or external storage."
+      exit 1
+    fi
+  fi
+done
+
+# Check for console.log statements (warning only, doesn't block commit)
+echo "Checking for console.log statements..."
+git diff --cached --name-only | grep -E '\.(ts|tsx|js|jsx)$' | while read file; do
+  if git diff --cached "$file" | grep -E '^\+.*console\.(log|debug|info|warn|error)' > /dev/null; then
+    echo "⚠️  Warning: console.log found in $file"
+  fi
+done
+
+# Check for TODO/FIXME comments in committed code
+echo "Checking for TODO/FIXME comments..."
+git diff --cached --name-only | grep -E '\.(ts|tsx|js|jsx)$' | while read file; do
+  if git diff --cached "$file" | grep -E '^\+.*(TODO|FIXME|XXX|HACK)' > /dev/null; then
+    echo "⚠️  Warning: TODO/FIXME comment found in $file"
+  fi
+done
+
+echo "✅ Pre-commit checks passed!"
