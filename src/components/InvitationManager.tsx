@@ -17,6 +17,24 @@ interface InvitationManagerProps {
   isAdmin: boolean;
 }
 
+/** PostgreSQL error structure returned by Supabase */
+interface PostgresError {
+  code?: string;
+  message?: string;
+  details?: string;
+  hint?: string;
+}
+
+/** Type guard to check if an error is a PostgreSQL error */
+function isPostgresError(error: unknown): error is PostgresError {
+  // Check null first to avoid CodeQL type comparison warning
+  // (typeof null === 'object' is a JavaScript quirk)
+  if (error === null || typeof error !== 'object') {
+    return false;
+  }
+  return 'code' in error || 'message' in error;
+}
+
 /**
  * InvitationManager Component
  *
@@ -37,7 +55,10 @@ export const InvitationManager: React.FC<InvitationManagerProps> = ({
 
   const loadInvitations = useCallback(async () => {
     const supabase = getSupabaseClient();
-    if (!supabase) return [];
+    if (!supabase) {
+      setInvitations([]);
+      return;
+    }
 
     try {
       const { data, error } = (await supabase
@@ -50,31 +71,16 @@ export const InvitationManager: React.FC<InvitationManagerProps> = ({
       };
 
       if (error) throw error;
-      return data || [];
+      setInvitations(data || []);
     } catch (err) {
       console.error('Error loading invitations:', err);
-      return [];
+      setInvitations([]);
     }
   }, [bandId]);
 
-  // Load invitations with cancellation support
+  // Load invitations on mount and when bandId changes
   useEffect(() => {
-    let cancelled = false;
-
-    const loadData = async () => {
-      const data = await loadInvitations();
-
-      // Check cancellation before updating state
-      if (!cancelled) {
-        setInvitations(data);
-      }
-    };
-
-    loadData();
-
-    return () => {
-      cancelled = true;
-    };
+    loadInvitations();
   }, [loadInvitations]);
 
   const handleInvite = async (e: React.FormEvent) => {
@@ -154,18 +160,16 @@ export const InvitationManager: React.FC<InvitationManagerProps> = ({
       if (inviteError) {
         // Check if error is due to rate limit trigger
         // The database trigger raises PostgreSQL exception code 'P0001' (RAISE EXCEPTION)
-        // Prioritize error code detection as it's more reliable than message text
-        const errorCode = (inviteError as { code?: string }).code;
-        const errorMessage = (inviteError as { message?: string }).message || '';
-
-        // Check both error code AND message text for robustness across client versions
-        if (errorCode === 'P0001' || errorMessage.includes('Rate limit exceeded')) {
-          setError('Rate limit exceeded. Maximum 10 invitations per hour per band.');
-        } else {
-          throw inviteError;
+        if (isPostgresError(inviteError)) {
+          const { code, message } = inviteError;
+          // Check both error code AND message text for robustness across client versions
+          if (code === 'P0001' || message?.includes('Rate limit exceeded')) {
+            setError('Rate limit exceeded. Maximum 10 invitations per hour per band.');
+            setIsLoading(false);
+            return;
+          }
         }
-        setIsLoading(false);
-        return;
+        throw inviteError;
       }
 
       setSuccessMessage(`Invitation sent to ${normalizedEmail}`);
@@ -185,6 +189,9 @@ export const InvitationManager: React.FC<InvitationManagerProps> = ({
     const supabase = getSupabaseClient();
     if (!supabase) return;
 
+    setError('');
+    setSuccessMessage('');
+
     try {
       const { error } = await supabase
         .from('invitations')
@@ -192,9 +199,11 @@ export const InvitationManager: React.FC<InvitationManagerProps> = ({
         .eq('id', invitationId);
 
       if (error) throw error;
+      setSuccessMessage('Invitation cancelled');
       loadInvitations();
     } catch (err) {
       console.error('Error cancelling invitation:', err);
+      setError('Failed to cancel invitation. Please try again.');
     }
   };
 
