@@ -234,7 +234,8 @@ describe('AlphaTabRenderer', () => {
 
         if (playButton) {
           fireEvent.click(playButton);
-          expect(mockApiInstance.playPause).toHaveBeenCalled();
+          // Now uses play() instead of playPause() to avoid InvalidStateError
+          expect(mockApiInstance.play).toHaveBeenCalled();
         }
       });
     });
@@ -251,6 +252,60 @@ describe('AlphaTabRenderer', () => {
         if (stopButton) {
           fireEvent.click(stopButton);
           expect(mockApiInstance.stop).toHaveBeenCalled();
+        }
+      });
+    });
+
+    it('should not call stop() on audio node when not playing (regression test for InvalidStateError)', async () => {
+      // This test verifies the fix for: "InvalidStateError: cannot call stop without calling start first"
+
+      // Score is loaded but playback has NOT been started
+      const stateHandler = mockApiInstance.playerStateChanged.on.mock.calls[0][0];
+
+      // Ensure playback state is false (this is the critical condition)
+      stateHandler({ state: 0 }); // 0 = paused/stopped
+
+      await waitFor(() => {
+        const stopButton = screen.getAllByRole('button').find(btn =>
+          btn.querySelector('svg')?.classList.toString().includes('lucide-square')
+        );
+
+        // The stop button exists but should be disabled when not playing
+        expect(stopButton).toBeDefined();
+
+        if (stopButton && !stopButton.hasAttribute('disabled')) {
+          // Try to click stop when not playing
+          fireEvent.click(stopButton);
+
+          // CRITICAL: stop() should NOT be called because internalIsPlaying is false
+          // This prevents "InvalidStateError: cannot call stop without calling start first"
+          expect(mockApiInstance.stop).not.toHaveBeenCalled();
+        }
+      });
+    });
+
+    it('should handle stop() errors gracefully without crashing', async () => {
+      // Set playing state first
+      const stateHandler = mockApiInstance.playerStateChanged.on.mock.calls[0][0];
+      stateHandler({ state: 1 }); // 1 = playing
+
+      // Make stop() throw an error (simulating Web Audio API error)
+      mockApiInstance.stop.mockImplementationOnce(() => {
+        throw new Error('InvalidStateError: cannot call stop without calling start first');
+      });
+
+      await waitFor(() => {
+        const stopButton = screen.getAllByRole('button').find(btn =>
+          btn.querySelector('svg')?.classList.toString().includes('lucide-square')
+        );
+
+        if (stopButton) {
+          // Should not throw - error should be caught and handled gracefully
+          expect(() => fireEvent.click(stopButton)).not.toThrow();
+
+          // State should still be updated despite the error
+          // The try-catch ensures the component doesn't crash
+          // and the state update code after the try-catch still executes
         }
       });
     });

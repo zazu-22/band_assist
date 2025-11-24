@@ -578,16 +578,29 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
   const togglePlay = () => {
     if (apiRef.current && playerReady) {
       try {
-        apiRef.current.playPause();
+        // Use play()/pause() separately instead of playPause() to avoid
+        // AlphaTab calling stop() internally on unstarted audio nodes
+        if (internalIsPlaying) {
+          apiRef.current.pause();
+        } else {
+          apiRef.current.play();
+        }
       } catch (error) {
         console.warn('[AlphaTab] Playback error, retrying...', error);
         // Try again after a short delay to allow audio context to initialize
         setTimeout(() => {
-          if (apiRef.current) {
+          if (apiRef.current && playerReady) {
             try {
-              apiRef.current.playPause();
+              if (internalIsPlaying) {
+                apiRef.current.pause();
+              } else {
+                apiRef.current.play();
+              }
             } catch (e) {
               console.error('[AlphaTab] Playback failed:', e);
+              // If playback fails, ensure state reflects reality
+              setInternalIsPlaying(false);
+              if (onPlaybackChange) onPlaybackChange(false);
             }
           }
         }, 100);
@@ -739,7 +752,15 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
   // New transport control handlers
   const stopPlayback = () => {
     if (apiRef.current) {
-      apiRef.current.stop();
+      // Only call stop() if playback is actually active
+      // This prevents "InvalidStateError: cannot call stop without calling start first"
+      if (internalIsPlaying) {
+        try {
+          apiRef.current.stop();
+        } catch (error) {
+          console.warn('[AlphaTab] Error stopping playback:', error);
+        }
+      }
       setInternalIsPlaying(false);
       if (onPlaybackChange) onPlaybackChange(false);
     }
