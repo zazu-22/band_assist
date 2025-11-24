@@ -42,8 +42,8 @@
     "husky": "^8.0.3",
     "jsdom": "^27.2.0",
     "prettier": "^3.2.5",
-    "typescript": "~5.8.2",
+    "typescript": "~5.9.3",
     "vite": "^6.2.0",
-    "vitest": "^4.0.12"
+    "vitest": "^4.0.13"
   }
 }
