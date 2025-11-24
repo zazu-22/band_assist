@@ -19,6 +19,8 @@ interface NavigationProps {
   onLogout?: () => void;
   showLogout?: boolean;
   currentBandName?: string;
+  userBands?: Array<{ id: string; name: string }>;
+  onSelectBand?: (bandId: string) => void;
 }
 
 export const Navigation: React.FC<NavigationProps> = ({
@@ -27,6 +29,8 @@ export const Navigation: React.FC<NavigationProps> = ({
   onLogout,
   showLogout = false,
   currentBandName,
+  userBands = [],
+  onSelectBand,
 }) => {
   const navItems = [
     { id: 'DASHBOARD', label: 'Dashboard', icon: LayoutDashboard },
@@ -50,7 +54,13 @@ export const Navigation: React.FC<NavigationProps> = ({
       </div>
 
       {/* Band Selector (only show if using Supabase) */}
-      {currentBandName && <BandSelector currentBandName={currentBandName} />}
+      {currentBandName && userBands.length > 0 && onSelectBand && (
+        <BandSelector
+          currentBandName={currentBandName}
+          bands={userBands}
+          onSelectBand={onSelectBand}
+        />
+      )}
 
       <nav className="flex-1 px-3 py-6 space-y-2">
         {navItems.map(item => (

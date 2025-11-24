@@ -51,7 +51,7 @@ jobs:
           else
             echo "No ESLint configuration found, skipping"
           fi
-        continue-on-error: true
+        continue-on-error: false
 
   build:
     name: Build Application

@@ -134,7 +134,7 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
         {/* Footer */}
         <div className="mt-8 text-center">
           <p className="text-xs text-zinc-600">
-            Using shared band credentials for collaborative access
+            Copyright © 2025 Band Assist. All rights reserved.
           </p>
         </div>
       </div>

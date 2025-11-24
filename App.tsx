@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { Session } from '@supabase/supabase-js';
 import { Navigation } from './components/Navigation';
 import { Dashboard } from './components/Dashboard';
@@ -11,7 +11,7 @@ import { ScheduleManager } from './components/ScheduleManager';
 import { PracticeRoom } from './components/PracticeRoom';
 import { Login } from './components/Login';
 import { Song, ViewState, BandMember, BandEvent } from './types';
-import { INITIAL_SONGS } from './constants';
+import { INITIAL_SONGS, DEFAULT_MEMBERS, DEFAULT_ROLES, DEFAULT_EVENTS, withDefaults } from './constants';
 import { StorageService } from './services/storageService';
 import { getSupabaseClient, isSupabaseConfigured } from './services/supabaseClient';
 
@@ -23,8 +23,11 @@ const App: React.FC = () => {
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [currentBandId, setCurrentBandId] = useState<string | null>(null);
   const [currentBandName, setCurrentBandName] = useState<string>('');
-  const [_userBands, setUserBands] = useState<Array<{ id: string; name: string }>>([]);
+  const [userBands, setUserBands] = useState<Array<{ id: string; name: string }>>([]);
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
+
+  // Ref to track current band ID for race condition prevention
+  const currentBandIdRef = useRef<string | null>(null);
 
   // -- State Initialization --
   const [songs, setSongs] = useState<Song[]>([]);
@@ -32,20 +35,31 @@ const App: React.FC = () => {
   const [availableRoles, setAvailableRoles] = useState<string[]>([]);
   const [events, setEvents] = useState<BandEvent[]>([]);
 
+  // Keep ref in sync with currentBandId state
+  useEffect(() => {
+    currentBandIdRef.current = currentBandId;
+  }, [currentBandId]);
+
   // -- Authentication Check --
   // Check if Supabase is configured and user is authenticated
   useEffect(() => {
+    let mounted = true;
+
     const checkAuth = async () => {
       // If Supabase is not configured, skip auth check
       if (!isSupabaseConfigured()) {
-        setIsCheckingAuth(false);
-        setSession(null);
+        if (mounted) {
+          setIsCheckingAuth(false);
+          setSession(null);
+        }
         return;
       }
 
       const supabase = getSupabaseClient();
       if (!supabase) {
-        setIsCheckingAuth(false);
+        if (mounted) {
+          setIsCheckingAuth(false);
+        }
         return;
       }
 
@@ -54,27 +68,45 @@ const App: React.FC = () => {
         const {
           data: { session: existingSession },
         } = await supabase.auth.getSession();
-        setSession(existingSession);
+
+        if (mounted) {
+          setSession(existingSession);
+        }
 
         // Listen for auth changes
         const {
           data: { subscription },
         } = supabase.auth.onAuthStateChange((_event, newSession) => {
-          setSession(newSession);
+          if (mounted) {
+            setSession(newSession);
+          }
         });
 
         // Cleanup subscription on unmount
         return () => {
+          mounted = false;
           subscription.unsubscribe();
         };
       } catch (error) {
         console.error('Error checking auth:', error);
       } finally {
-        setIsCheckingAuth(false);
+        if (mounted) {
+          setIsCheckingAuth(false);
+        }
       }
     };
 
-    checkAuth();
+    const cleanup = checkAuth();
+
+    // Return cleanup function
+    return () => {
+      mounted = false;
+      if (cleanup && typeof cleanup.then === 'function') {
+        cleanup.then(cleanupFn => {
+          if (cleanupFn) cleanupFn();
+        });
+      }
+    };
   }, []);
 
   // -- Fetch/Create Band for User --
@@ -205,99 +237,44 @@ const App: React.FC = () => {
 
     // If using Supabase, wait for band to be set
     if (isSupabaseConfigured() && session && !currentBandId) return;
+
+    // Cancellation flag to prevent race conditions
+    let isCancelled = false;
+
     const loadData = async () => {
       try {
         const data = await StorageService.load();
 
-        setSongs(data.songs || INITIAL_SONGS);
-        setMembers(
-          data.members || [
-            { id: '1763776021452', name: 'Jason', roles: [], avatarColor: 'bg-red-500' },
-            { id: '1763776022630', name: 'Jeff', roles: [], avatarColor: 'bg-blue-500' },
-            { id: '1763776023343', name: 'Joe', roles: [], avatarColor: 'bg-green-500' },
-            { id: '1763776025207', name: 'Berry', roles: [], avatarColor: 'bg-yellow-500' },
-            { id: '1763776026538', name: 'Lori', roles: [], avatarColor: 'bg-purple-500' },
-            { id: '1763776028016', name: 'Hunter', roles: [], avatarColor: 'bg-red-500' },
-          ]
-        );
-        setAvailableRoles(
-          data.roles || [
-            'Lead Guitar',
-            'Rhythm Guitar',
-            'Bass Guitar',
-            'Drums',
-            'Synthesizer',
-            'Lead Vocals',
-            'Backing Vocals',
-          ]
-        );
-        setEvents(
-          data.events || [
-            {
-              id: '1',
-              title: 'Thanksgiving Rehearsal',
-              date: '2025-11-27',
-              type: 'PRACTICE',
-              time: '16:00',
-              location: "Jeff's House",
-              notes: '- Just Got Paid\n- Tush',
-            },
-            {
-              id: '1763776277014',
-              title: 'Christmas Performance',
-              date: '2025-12-28',
-              time: '19:00',
-              type: 'GIG',
-              location: 'Covert View Drive',
-            },
-          ]
-        );
+        // Check if this effect was cancelled before updating state
+        if (isCancelled) return;
+
+        const appData = withDefaults(data);
+        setSongs(appData.songs);
+        setMembers(appData.members);
+        setAvailableRoles(appData.roles);
+        setEvents(appData.events);
       } catch (error) {
+        if (isCancelled) return;
+
         console.error('Error loading data:', error);
         // Fall back to defaults on error
         setSongs(INITIAL_SONGS);
-        setMembers([
-          { id: '1763776021452', name: 'Jason', roles: [], avatarColor: 'bg-red-500' },
-          { id: '1763776022630', name: 'Jeff', roles: [], avatarColor: 'bg-blue-500' },
-          { id: '1763776023343', name: 'Joe', roles: [], avatarColor: 'bg-green-500' },
-          { id: '1763776025207', name: 'Berry', roles: [], avatarColor: 'bg-yellow-500' },
-          { id: '1763776026538', name: 'Lori', roles: [], avatarColor: 'bg-purple-500' },
-          { id: '1763776028016', name: 'Hunter', roles: [], avatarColor: 'bg-red-500' },
-        ]);
-        setAvailableRoles([
-          'Lead Guitar',
-          'Rhythm Guitar',
-          'Bass Guitar',
-          'Drums',
-          'Synthesizer',
-          'Lead Vocals',
-          'Backing Vocals',
-        ]);
-        setEvents([
-          {
-            id: '1',
-            title: 'Thanksgiving Rehearsal',
-            date: '2025-11-27',
-            type: 'PRACTICE',
-            time: '16:00',
-            location: "Jeff's House",
-            notes: '- Just Got Paid\n- Tush',
-          },
-          {
-            id: '1763776277014',
-            title: 'Christmas Performance',
-            date: '2025-12-28',
-            time: '19:00',
-            type: 'GIG',
-            location: 'Covert View Drive',
-          },
-        ]);
+        setMembers(DEFAULT_MEMBERS);
+        setAvailableRoles(DEFAULT_ROLES);
+        setEvents(DEFAULT_EVENTS);
       } finally {
-        setIsLoading(false);
+        if (!isCancelled) {
+          setIsLoading(false);
+        }
       }
     };
 
     loadData();
+
+    // Cleanup function to cancel stale loads
+    return () => {
+      isCancelled = true;
+    };
   }, [isCheckingAuth, currentBandId, session]);
 
   // -- Auto-Save Effect --
@@ -340,6 +317,65 @@ const App: React.FC = () => {
       // Data will be cleared when user logs back in
     } catch (error) {
       console.error('Error logging out:', error);
+    }
+  };
+
+  const handleSelectBand = async (bandId: string) => {
+    const selectedBand = userBands.find(b => b.id === bandId);
+    if (!selectedBand) return;
+
+    setCurrentBandId(bandId);
+    setCurrentBandName(selectedBand.name);
+    currentBandIdRef.current = bandId; // Update ref immediately
+
+    // Update storage service context
+    StorageService.setCurrentBand?.(bandId);
+
+    // Reload data for the new band
+    setIsLoading(true);
+    try {
+      const data = await StorageService.load();
+
+      // Check if band changed while loading (race condition prevention)
+      if (currentBandIdRef.current !== bandId) {
+        return;
+      }
+
+      const appData = withDefaults(data);
+      setSongs(appData.songs);
+      setMembers(appData.members);
+      setAvailableRoles(appData.roles);
+      setEvents(appData.events);
+
+      // Fetch user's role in this band
+      const supabase = getSupabaseClient();
+      if (supabase && session) {
+        // Check again before making the role query
+        if (currentBandIdRef.current !== bandId) return;
+
+        type UserBandRole = { role: string };
+        const { data: userBandData } = (await supabase
+          .from('user_bands')
+          .select('role')
+          .eq('user_id', session.user.id)
+          .eq('band_id', bandId)
+          .single()) as { data: UserBandRole | null; error: unknown };
+
+        // Final check before updating admin status
+        if (currentBandIdRef.current === bandId) {
+          setIsAdmin(userBandData?.role === 'admin');
+        }
+      }
+    } catch (error) {
+      // Only show error if this is still the current band
+      if (currentBandIdRef.current === bandId) {
+        console.error('Error loading band data:', error);
+      }
+    } finally {
+      // Only clear loading if this is still the current band
+      if (currentBandIdRef.current === bandId) {
+        setIsLoading(false);
+      }
     }
   };
 
@@ -456,6 +492,8 @@ const App: React.FC = () => {
         onLogout={handleLogout}
         showLogout={isSupabaseConfigured() && !!session}
         currentBandName={currentBandName}
+        userBands={userBands}
+        onSelectBand={handleSelectBand}
       />
       <main className="flex-1 h-screen overflow-y-auto">{renderContent()}</main>
     </div>

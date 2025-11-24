@@ -35,7 +35,7 @@ export const InvitationManager: React.FC<InvitationManagerProps> = ({
 
   const loadInvitations = useCallback(async () => {
     const supabase = getSupabaseClient();
-    if (!supabase) return;
+    if (!supabase) return [];
 
     try {
       const { data, error } = (await supabase
@@ -48,15 +48,31 @@ export const InvitationManager: React.FC<InvitationManagerProps> = ({
       };
 
       if (error) throw error;
-      setInvitations(data || []);
+      return data || [];
     } catch (err) {
       console.error('Error loading invitations:', err);
+      return [];
     }
   }, [bandId]);
 
-  // Load invitations
+  // Load invitations with cancellation support
   useEffect(() => {
-    loadInvitations();
+    let cancelled = false;
+
+    const loadData = async () => {
+      const data = await loadInvitations();
+
+      // Check cancellation before updating state
+      if (!cancelled) {
+        setInvitations(data);
+      }
+    };
+
+    loadData();
+
+    return () => {
+      cancelled = true;
+    };
   }, [loadInvitations]);
 
   const handleInvite = async (e: React.FormEvent) => {
@@ -64,7 +80,10 @@ export const InvitationManager: React.FC<InvitationManagerProps> = ({
     setError('');
     setSuccessMessage('');
 
-    if (!newEmail || !newEmail.includes('@')) {
+    // RFC 5322 compliant email validation
+    const emailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
+
+    if (!newEmail || !emailRegex.test(newEmail.trim())) {
       setError('Please enter a valid email address');
       return;
     }
@@ -100,18 +119,24 @@ export const InvitationManager: React.FC<InvitationManagerProps> = ({
       }
 
       // Create invitation
-      const invitationData = {
+      type InvitationInsert = {
+        band_id: string;
+        email: string;
+        invited_by: string;
+        status: string;
+      };
+
+      const invitationData: InvitationInsert = {
         band_id: bandId,
         email: newEmail.toLowerCase(),
         invited_by: currentUserId,
         status: 'pending',
       };
+
       // Type assertion required: Supabase's generated types don't match runtime schema
-      const { error: inviteError } = await (
-        supabase
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          .from('invitations') as any
-      ).insert([invitationData]);
+      const { error: inviteError } = await supabase
+        .from('invitations')
+        .insert(invitationData as unknown as never);
 
       if (inviteError) throw inviteError;
 
@@ -133,13 +158,13 @@ export const InvitationManager: React.FC<InvitationManagerProps> = ({
     if (!supabase) return;
 
     try {
+      type InvitationUpdate = { status: string };
+      const updateData: InvitationUpdate = { status: 'cancelled' };
+
       // Type assertion required: Supabase's generated types don't match runtime schema
-      const { error } = await (
-        supabase
-          // eslint-disable-next-line @typescript-eslint/no-explicit-any
-          .from('invitations') as any
-      )
-        .update({ status: 'cancelled' })
+      const { error } = await supabase
+        .from('invitations')
+        .update(updateData as unknown as never)
         .eq('id', invitationId);
 
       if (error) throw error;

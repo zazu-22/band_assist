@@ -1,4 +1,4 @@
-import { Song } from './types';
+import { Song, BandMember, BandEvent } from './types';
 
 export const INITIAL_SONGS: Song[] = [
   {
@@ -149,3 +149,64 @@ export const INSTRUMENT_ICONS: Record<string, string> = {
   // Default fallback
   default: '🎵',
 };
+
+export const DEFAULT_MEMBERS: BandMember[] = [
+  { id: '1763776021452', name: 'Jason', roles: [], avatarColor: 'bg-red-500' },
+  { id: '1763776022630', name: 'Jeff', roles: [], avatarColor: 'bg-blue-500' },
+  { id: '1763776023343', name: 'Joe', roles: [], avatarColor: 'bg-green-500' },
+  { id: '1763776025207', name: 'Berry', roles: [], avatarColor: 'bg-yellow-500' },
+  { id: '1763776026538', name: 'Lori', roles: [], avatarColor: 'bg-purple-500' },
+  { id: '1763776028016', name: 'Hunter', roles: [], avatarColor: 'bg-red-500' },
+];
+
+export const DEFAULT_ROLES: string[] = [
+  'Lead Guitar',
+  'Rhythm Guitar',
+  'Bass Guitar',
+  'Drums',
+  'Synthesizer',
+  'Lead Vocals',
+  'Backing Vocals',
+];
+
+export const DEFAULT_EVENTS: BandEvent[] = [
+  {
+    id: '1',
+    title: 'Thanksgiving Rehearsal',
+    date: '2025-11-27',
+    type: 'PRACTICE',
+    time: '16:00',
+    location: "Jeff's House",
+    notes: '- Just Got Paid\n- Tush',
+  },
+  {
+    id: '1763776277014',
+    title: 'Christmas Performance',
+    date: '2025-12-28',
+    time: '19:00',
+    type: 'GIG',
+    location: 'Covert View Drive',
+  },
+];
+
+/**
+ * Helper to apply default values to potentially null data from storage
+ */
+export function withDefaults(data: {
+  songs: Song[] | null;
+  members: BandMember[] | null;
+  roles: string[] | null;
+  events: BandEvent[] | null;
+}): {
+  songs: Song[];
+  members: BandMember[];
+  roles: string[];
+  events: BandEvent[];
+} {
+  return {
+    songs: data.songs || INITIAL_SONGS,
+    members: data.members || DEFAULT_MEMBERS,
+    roles: data.roles || DEFAULT_ROLES,
+    events: data.events || DEFAULT_EVENTS,
+  };
+}

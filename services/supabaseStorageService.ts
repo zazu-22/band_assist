@@ -440,7 +440,8 @@ export class SupabaseStorageService implements IStorageService {
       const { error: metadataError } = await supabase.from('files').insert(fileMetadata as unknown as never);
 
       if (metadataError) {
-        // Don't fail the upload if metadata fails
+        // Log metadata insert failures but don't fail the upload
+        console.warn('Failed to save file metadata:', metadataError);
       }
 
       // Get public URL (signed URL for private bucket)
@@ -526,6 +527,10 @@ export class SupabaseStorageService implements IStorageService {
     const supabase = getSupabaseClient();
     if (!supabase) return;
 
+    if (!this.currentBandId) {
+      throw new Error('No band selected. Call setCurrentBand() first.');
+    }
+
     try {
       // Extract storage path from URL
       const urlParts = storageUrl.split('/band-files/');
@@ -533,14 +538,27 @@ export class SupabaseStorageService implements IStorageService {
 
       const path = urlParts[1].split('?')[0]; // Remove query params
 
+      // Security: Verify the path belongs to current band
+      // Expected path format: bands/{band_id}/charts/{song_id}/{file_id}.ext
+      const pathSegments = path.split('/');
+      if (pathSegments.length < 2 || pathSegments[0] !== 'bands') {
+        throw new Error('Invalid storage path format');
+      }
+
+      const pathBandId = pathSegments[1];
+      if (pathBandId !== this.currentBandId) {
+        throw new Error('Cannot delete files from other bands');
+      }
+
       const { error } = await supabase.storage.from('band-files').remove([path]);
 
       if (error) throw error;
 
-      // Delete metadata
+      // Delete metadata (RLS policy will ensure it's for current band)
       await supabase.from('files').delete().eq('storage_path', path);
     } catch (error) {
       console.error('Error deleting file:', error);
+      throw error; // Re-throw instead of silently swallowing
     }
   }
 
@@ -556,6 +574,13 @@ export class SupabaseStorageService implements IStorageService {
   }): void {
     const supabase = getSupabaseClient();
     if (!supabase) return;
+
+    if (!this.currentBandId) {
+      throw new Error('No band selected. Call setCurrentBand() first.');
+    }
+
+    // Store band ID to avoid closure issues
+    const bandId = this.currentBandId;
 
     type DbSong = {
       id: string;
@@ -596,7 +621,15 @@ export class SupabaseStorageService implements IStorageService {
     if (callbacks.onSongsChange) {
       const songsChannel = supabase
         .channel('songs-changes')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'songs' }, payload => {
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'songs',
+            filter: `band_id=eq.${bandId}`,
+          },
+          payload => {
           if (payload.new && callbacks.onSongsChange) {
             const dbSong = payload.new as DbSong;
             const song: Song = {
@@ -630,7 +663,12 @@ export class SupabaseStorageService implements IStorageService {
         .channel('members-changes')
         .on(
           'postgres_changes',
-          { event: '*', schema: 'public', table: 'band_members' },
+          {
+            event: '*',
+            schema: 'public',
+            table: 'band_members',
+            filter: `band_id=eq.${bandId}`,
+          },
           payload => {
             if (payload.new && callbacks.onMembersChange) {
               const dbMember = payload.new as DbMember;
@@ -653,7 +691,15 @@ export class SupabaseStorageService implements IStorageService {
     if (callbacks.onEventsChange) {
       const eventsChannel = supabase
         .channel('events-changes')
-        .on('postgres_changes', { event: '*', schema: 'public', table: 'band_events' }, payload => {
+        .on(
+          'postgres_changes',
+          {
+            event: '*',
+            schema: 'public',
+            table: 'band_events',
+            filter: `band_id=eq.${bandId}`,
+          },
+          payload => {
           if (payload.new && callbacks.onEventsChange) {
             const dbEvent = payload.new as DbEvent;
             const event: BandEvent = {
