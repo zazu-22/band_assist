@@ -14,6 +14,10 @@ import {
   Gauge,
 } from 'lucide-react';
 
+// Constants
+const POSITION_UPDATE_THROTTLE_MS = 100; // Throttle position updates to ~10 FPS for performance
+const METRONOME_HIGHLIGHT_DURATION_FACTOR = 0.3; // Duration factor for metronome beat highlight
+
 // AlphaTab type definitions
 interface AlphaTabScore {
   tracks: AlphaTabTrack[];
@@ -156,6 +160,7 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
   const containerRef = useRef<HTMLDivElement>(null);
   const apiRef = useRef<AlphaTabApi | null>(null);
   const metronomeTimeoutsRef = useRef<Set<NodeJS.Timeout>>(new Set());
+  const cleanupEventListenersRef = useRef<(() => void) | null>(null);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -361,9 +366,9 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
         const handlePositionChanged = (e: AlphaTabPositionChangedEvent) => {
           if (!isMounted) return;
 
-          // Throttle updates to ~10 FPS for performance
+          // Throttle updates for performance
           const now = Date.now();
-          if (now - lastPositionUpdate < 100) return;
+          if (now - lastPositionUpdate < POSITION_UPDATE_THROTTLE_MS) return;
           lastPositionUpdate = now;
 
           setCurrentTime(e.currentTime);
@@ -376,7 +381,7 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
           if (onPlaybackChange) onPlaybackChange(false);
         };
 
-        // Phase 1: Beat selection for loop - use ref to avoid stale closure
+        // Phase 1: Beat selection for loop - capture ref outside state setter to avoid stale closure
         const handleBeatMouseDown = (e: AlphaTabBeatMouseEvent) => {
           if (!isMounted) return;
           if (!e.originalEvent) return; // Guard against missing originalEvent
@@ -385,6 +390,7 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
           if (e.originalEvent.shiftKey) {
             const beatStart = e.beat.absolutePlaybackStart;
             const beatEnd = beatStart + e.beat.playbackDuration;
+            const api = apiRef.current; // Capture ref value outside state setter
 
             setSelectionStart(currentStart => {
               if (currentStart === null) {
@@ -395,8 +401,8 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
                 const startTick = Math.min(currentStart, beatStart);
                 const endTick = Math.max(currentStart + e.beat.playbackDuration, beatEnd);
 
-                if (apiRef.current) {
-                  apiRef.current.playbackRange = { startTick, endTick };
+                if (api) {
+                  api.playbackRange = { startTick, endTick };
                 }
                 setLoopRange({ start: startTick, end: endTick });
 
@@ -421,9 +427,10 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
 
               // Auto-clear highlight after beat duration - track timeout for cleanup
               const timeoutId = setTimeout(() => {
-                if (isMounted) setMetronomeBeat(0);
+                if (!isMounted) return;
                 metronomeTimeoutsRef.current.delete(timeoutId);
-              }, midi.metronomeDurationInMilliseconds * 0.3);
+                setMetronomeBeat(0);
+              }, midi.metronomeDurationInMilliseconds * METRONOME_HIGHLIGHT_DURATION_FACTOR);
 
               metronomeTimeoutsRef.current.add(timeoutId);
             }
@@ -442,8 +449,8 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
         api.beatMouseDown.on(handleBeatMouseDown);
         api.midiEventsPlayed.on(handleMidiEventsPlayed);
 
-        // Store cleanup function
-        const _cleanupEventListeners = () => {
+        // Store cleanup function in ref for cleanup phase
+        cleanupEventListenersRef.current = () => {
           if (api) {
             api.scoreLoaded.off(handleScoreLoaded);
             api.error.off(handleError);
@@ -491,8 +498,10 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
 
       if (apiRef.current) {
         try {
-          // Event listeners are automatically cleaned up by destroy()
-          // But we're keeping explicit cleanup for clarity
+          // Explicitly cleanup event listeners before destroying
+          if (cleanupEventListenersRef.current) {
+            cleanupEventListenersRef.current();
+          }
           apiRef.current.destroy();
         } catch (e) {
           console.error('[AlphaTab] Error during cleanup', e);

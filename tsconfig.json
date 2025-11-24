@@ -15,6 +15,7 @@
     "paths": {
       "@/*": ["./*"]
     },
+    "types": ["vitest/globals", "@testing-library/jest-dom"],
     "allowImportingTsExtensions": true,
     "noEmit": true
   }
