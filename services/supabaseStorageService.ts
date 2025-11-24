@@ -535,6 +535,9 @@ export class SupabaseStorageService implements IStorageService {
       throw new Error('No band selected. Call setCurrentBand() first.');
     }
 
+    // Unsubscribe from existing channels to prevent memory leaks
+    this.unsubscribeFromChanges();
+
     // Store band ID to avoid closure issues
     const bandId = this.currentBandId;
 
@@ -554,6 +557,7 @@ export class SupabaseStorageService implements IStorageService {
       backing_track_url?: string;
       ai_analysis?: string;
       lyrics?: string;
+      band_id: string;
     };
 
     type DbMember = {
@@ -561,6 +565,7 @@ export class SupabaseStorageService implements IStorageService {
       name: string;
       roles: string[];
       avatar_color?: string;
+      band_id: string;
     };
 
     type DbEvent = {
@@ -571,6 +576,7 @@ export class SupabaseStorageService implements IStorageService {
       type: string;
       location?: string;
       notes?: string;
+      band_id: string;
     };
 
     // Subscribe to songs
@@ -588,6 +594,10 @@ export class SupabaseStorageService implements IStorageService {
           payload => {
           if (payload.new && callbacks.onSongsChange) {
             const dbSong = payload.new as DbSong;
+            // Validate band_id to prevent stale updates from band switches
+            if (dbSong.band_id !== bandId) {
+              return;
+            }
             const song: Song = {
               id: dbSong.id,
               title: dbSong.title,
@@ -628,6 +638,10 @@ export class SupabaseStorageService implements IStorageService {
           payload => {
             if (payload.new && callbacks.onMembersChange) {
               const dbMember = payload.new as DbMember;
+              // Validate band_id to prevent stale updates from band switches
+              if (dbMember.band_id !== bandId) {
+                return;
+              }
               const member: BandMember = {
                 id: dbMember.id,
                 name: dbMember.name,
@@ -658,6 +672,10 @@ export class SupabaseStorageService implements IStorageService {
           payload => {
           if (payload.new && callbacks.onEventsChange) {
             const dbEvent = payload.new as DbEvent;
+            // Validate band_id to prevent stale updates from band switches
+            if (dbEvent.band_id !== bandId) {
+              return;
+            }
             const event: BandEvent = {
               id: dbEvent.id,
               title: dbEvent.title,

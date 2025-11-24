@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import { UserPlus, Mail, Check, X, Trash2, Clock } from 'lucide-react';
 import { getSupabaseClient } from '../services/supabaseClient';
+import { validateEmail, normalizeEmail } from '../utils/validation';
 
 interface Invitation {
   id: string;
@@ -80,11 +81,10 @@ export const InvitationManager: React.FC<InvitationManagerProps> = ({
     setError('');
     setSuccessMessage('');
 
-    // RFC 5322 compliant email validation
-    const emailRegex = /^[a-zA-Z0-9.!#$%&'*+/=?^_`{|}~-]+@[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?(?:\.[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?)*$/;
-
-    if (!newEmail || !emailRegex.test(newEmail.trim())) {
-      setError('Please enter a valid email address');
+    // Validate email format
+    const validation = validateEmail(newEmail);
+    if (!validation.isValid) {
+      setError(validation.error || 'Invalid email address');
       return;
     }
 
@@ -102,6 +102,9 @@ export const InvitationManager: React.FC<InvitationManagerProps> = ({
       return;
     }
 
+    // Normalize email for storage
+    const normalizedEmail = normalizeEmail(newEmail);
+
     try {
       // Check rate limit (10 invitations per hour per band)
       const { data: rateLimitCheck, error: rateLimitError } = await supabase
@@ -109,6 +112,9 @@ export const InvitationManager: React.FC<InvitationManagerProps> = ({
 
       if (rateLimitError) {
         console.error('Rate limit check error:', rateLimitError);
+        setError('Unable to verify rate limit. Please try again.');
+        setIsLoading(false);
+        return; // Fail closed - don't allow invitation if check fails
       }
 
       if (rateLimitCheck === false) {
@@ -122,7 +128,7 @@ export const InvitationManager: React.FC<InvitationManagerProps> = ({
         .from('invitations')
         .select('*')
         .eq('band_id', bandId)
-        .eq('email', newEmail.toLowerCase())
+        .eq('email', normalizedEmail)
         .eq('status', 'pending')
         .single();
 
@@ -137,7 +143,7 @@ export const InvitationManager: React.FC<InvitationManagerProps> = ({
         .from('invitations')
         .insert({
           band_id: bandId,
-          email: newEmail.toLowerCase(),
+          email: normalizedEmail,
           invited_by: currentUserId,
           status: 'pending',
         });
@@ -153,7 +159,7 @@ export const InvitationManager: React.FC<InvitationManagerProps> = ({
         return;
       }
 
-      setSuccessMessage(`Invitation sent to ${newEmail}`);
+      setSuccessMessage(`Invitation sent to ${normalizedEmail}`);
       setNewEmail('');
       loadInvitations();
     } catch (err) {

@@ -85,7 +85,8 @@ const App: React.FC = () => {
           }
         });
 
-        // Store unsubscribe function in ref immediately
+        // Store unsubscribe function in ref immediately to prevent memory leaks
+        // if component unmounts while async auth check is in progress
         authUnsubscribeRef.current = () => subscription.unsubscribe();
       } catch (error) {
         console.error('Error checking auth:', error);
