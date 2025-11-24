@@ -1,6 +1,8 @@
 # Secrets
 .env.local
 .env.production
+.envrc
+supabase/.temp
 
 # Logs
 logs

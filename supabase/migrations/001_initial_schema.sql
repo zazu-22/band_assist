@@ -1,16 +1,13 @@
 -- Band Assist Initial Schema Migration
 -- Creates all tables, indexes, RLS policies, and triggers
 
--- Enable UUID extension
-CREATE EXTENSION IF NOT EXISTS "uuid-ossp";
-
 -- =============================================================================
 -- TABLES
 -- =============================================================================
 
 -- Band Members Table
 CREATE TABLE band_members (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT NOT NULL,
   roles TEXT[] NOT NULL DEFAULT '{}',
   avatar_color TEXT,
@@ -20,7 +17,7 @@ CREATE TABLE band_members (
 
 -- Songs Table
 CREATE TABLE songs (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   title TEXT NOT NULL,
   artist TEXT NOT NULL,
   duration TEXT,
@@ -43,7 +40,7 @@ CREATE TABLE songs (
 
 -- Band Events Table
 CREATE TABLE band_events (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   title TEXT NOT NULL,
   date DATE NOT NULL,
   time TIME,
@@ -56,14 +53,14 @@ CREATE TABLE band_events (
 
 -- Roles Table
 CREATE TABLE roles (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT UNIQUE NOT NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
 
 -- Files Metadata Table
 CREATE TABLE files (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   storage_path TEXT NOT NULL,
   file_name TEXT NOT NULL,
   mime_type TEXT NOT NULL,

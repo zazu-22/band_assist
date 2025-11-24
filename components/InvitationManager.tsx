@@ -103,6 +103,20 @@ export const InvitationManager: React.FC<InvitationManagerProps> = ({
     }
 
     try {
+      // Check rate limit (10 invitations per hour per band)
+      const { data: rateLimitCheck, error: rateLimitError } = await supabase
+        .rpc('check_invitation_rate_limit', { p_band_id: bandId });
+
+      if (rateLimitError) {
+        console.error('Rate limit check error:', rateLimitError);
+      }
+
+      if (rateLimitCheck === false) {
+        setError('Rate limit exceeded. Maximum 10 invitations per hour per band.');
+        setIsLoading(false);
+        return;
+      }
+
       // Check if invitation already exists
       const { data: existing } = await supabase
         .from('invitations')
@@ -119,26 +133,25 @@ export const InvitationManager: React.FC<InvitationManagerProps> = ({
       }
 
       // Create invitation
-      type InvitationInsert = {
-        band_id: string;
-        email: string;
-        invited_by: string;
-        status: string;
-      };
-
-      const invitationData: InvitationInsert = {
-        band_id: bandId,
-        email: newEmail.toLowerCase(),
-        invited_by: currentUserId,
-        status: 'pending',
-      };
-
-      // Type assertion required: Supabase's generated types don't match runtime schema
       const { error: inviteError } = await supabase
         .from('invitations')
-        .insert(invitationData as unknown as never);
+        .insert({
+          band_id: bandId,
+          email: newEmail.toLowerCase(),
+          invited_by: currentUserId,
+          status: 'pending',
+        });
 
-      if (inviteError) throw inviteError;
+      if (inviteError) {
+        // Check if error is due to rate limit constraint
+        if (inviteError.message?.includes('check_rate_limit')) {
+          setError('Rate limit exceeded. Maximum 10 invitations per hour per band.');
+        } else {
+          throw inviteError;
+        }
+        setIsLoading(false);
+        return;
+      }
 
       setSuccessMessage(`Invitation sent to ${newEmail}`);
       setNewEmail('');
@@ -158,13 +171,9 @@ export const InvitationManager: React.FC<InvitationManagerProps> = ({
     if (!supabase) return;
 
     try {
-      type InvitationUpdate = { status: string };
-      const updateData: InvitationUpdate = { status: 'cancelled' };
-
-      // Type assertion required: Supabase's generated types don't match runtime schema
       const { error } = await supabase
         .from('invitations')
-        .update(updateData as unknown as never)
+        .update({ status: 'cancelled' })
         .eq('id', invitationId);
 
       if (error) throw error;

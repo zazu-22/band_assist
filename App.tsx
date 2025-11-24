@@ -29,6 +29,9 @@ const App: React.FC = () => {
   // Ref to track current band ID for race condition prevention
   const currentBandIdRef = useRef<string | null>(null);
 
+  // Ref to store auth subscription unsubscribe function
+  const authUnsubscribeRef = useRef<(() => void) | null>(null);
+
   // -- State Initialization --
   const [songs, setSongs] = useState<Song[]>([]);
   const [members, setMembers] = useState<BandMember[]>([]);
@@ -82,11 +85,8 @@ const App: React.FC = () => {
           }
         });
 
-        // Cleanup subscription on unmount
-        return () => {
-          mounted = false;
-          subscription.unsubscribe();
-        };
+        // Store unsubscribe function in ref immediately
+        authUnsubscribeRef.current = () => subscription.unsubscribe();
       } catch (error) {
         console.error('Error checking auth:', error);
       } finally {
@@ -96,16 +96,13 @@ const App: React.FC = () => {
       }
     };
 
-    const cleanup = checkAuth();
+    checkAuth();
 
-    // Return cleanup function
+    // Return cleanup function that directly calls unsubscribe from ref
     return () => {
       mounted = false;
-      if (cleanup && typeof cleanup.then === 'function') {
-        cleanup.then(cleanupFn => {
-          if (cleanupFn) cleanupFn();
-        });
-      }
+      authUnsubscribeRef.current?.();
+      authUnsubscribeRef.current = null;
     };
   }, []);
 
@@ -142,13 +139,12 @@ const App: React.FC = () => {
           } | null;
         };
 
-        const { data: userBandsData, error: fetchError } = (await supabase
+        const { data, error: fetchError } = await supabase
           .from('user_bands')
           .select('band_id, role, bands(id, name)')
-          .eq('user_id', session.user.id)) as {
-          data: UserBandWithBand[] | null;
-          error: Error | null;
-        };
+          .eq('user_id', session.user.id);
+
+        const userBandsData = data as UserBandWithBand[] | null;
 
         if (cancelled) return;
 
@@ -189,15 +185,14 @@ const App: React.FC = () => {
           StorageService.setCurrentBand?.(bands[0].id);
         } else {
           // No bands found - create a new one for this user
-          const bandData = {
-            name: 'My Band',
-            created_by: session.user.id,
-          };
-          const { data: newBand, error: createError } = (await supabase
+          const { data: newBand, error: createError } = await supabase
             .from('bands')
-            .insert(bandData as never)
+            .insert({
+              name: 'My Band',
+              created_by: session.user.id,
+            })
             .select()
-            .single()) as { data: { id: string; name: string } | null; error: Error | null };
+            .single();
 
           if (cancelled) return;
 
@@ -346,9 +341,10 @@ const App: React.FC = () => {
     const selectedBand = userBands.find(b => b.id === bandId);
     if (!selectedBand) return;
 
+    // Update ref BEFORE state to prevent race conditions
+    currentBandIdRef.current = bandId;
     setCurrentBandId(bandId);
     setCurrentBandName(selectedBand.name);
-    currentBandIdRef.current = bandId; // Update ref immediately
 
     // Update storage service context
     StorageService.setCurrentBand?.(bandId);
@@ -375,13 +371,12 @@ const App: React.FC = () => {
         // Check again before making the role query
         if (currentBandIdRef.current !== bandId) return;
 
-        type UserBandRole = { role: string };
-        const { data: userBandData } = (await supabase
+        const { data: userBandData } = await supabase
           .from('user_bands')
           .select('role')
           .eq('user_id', session.user.id)
           .eq('band_id', bandId)
-          .single()) as { data: UserBandRole | null; error: unknown };
+          .single();
 
         // Final check before updating admin status
         if (currentBandIdRef.current === bandId) {

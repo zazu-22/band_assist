@@ -1,7 +1,8 @@
-import { Song, BandMember, BandEvent } from '../types';
+import { Song, BandMember, BandEvent, SongChart, Assignment, SongPart } from '../types';
 import { IStorageService, LoadResult } from './IStorageService';
 import { getSupabaseClient, isSupabaseConfigured } from './supabaseClient';
 import { RealtimeChannel } from '@supabase/supabase-js';
+import type { Json } from '../src/types/database.types';
 
 /**
  * Supabase-based persistence service
@@ -69,9 +70,9 @@ export class SupabaseStorageService implements IStorageService {
       is_original: boolean;
       status: string;
       target_date: string | null;
-      charts: unknown;
-      assignments: unknown;
-      parts: unknown;
+      charts: Json;
+      assignments: Json;
+      parts: Json;
       backing_track_url: string | null;
       backing_track_storage_path: string | null;
       ai_analysis: string | null;
@@ -107,8 +108,7 @@ export class SupabaseStorageService implements IStorageService {
       }));
       const { error: membersError } = await supabase
         .from('band_members')
-        // Type assertion required: Supabase's generated types don't match our data structure
-        .upsert(memberData as unknown as never[], { onConflict: 'id' });
+        .upsert(memberData, { onConflict: 'id' });
 
       if (membersError) throw membersError;
 
@@ -123,9 +123,9 @@ export class SupabaseStorageService implements IStorageService {
         is_original: s.isOriginal,
         status: s.status,
         target_date: s.targetDate || null,
-        charts: s.charts || [],
-        assignments: s.assignments || [],
-        parts: s.parts || [],
+        charts: (s.charts || []) as unknown as Json,
+        assignments: (s.assignments || []) as unknown as Json,
+        parts: (s.parts || []) as unknown as Json,
         backing_track_url: s.backingTrackUrl || null,
         backing_track_storage_path: s.backingTrackStoragePath || null,
         ai_analysis: s.aiAnalysis || null,
@@ -135,8 +135,7 @@ export class SupabaseStorageService implements IStorageService {
       }));
       const { error: songsError } = await supabase
         .from('songs')
-        // Type assertion required: Supabase's generated types don't match our data structure
-        .upsert(songData as unknown as never[], { onConflict: 'id' });
+        .upsert(songData, { onConflict: 'id' });
 
       if (songsError) throw songsError;
 
@@ -153,8 +152,7 @@ export class SupabaseStorageService implements IStorageService {
       }));
       const { error: eventsError } = await supabase
         .from('band_events')
-        // Type assertion required: Supabase's generated types don't match our data structure
-        .upsert(eventData as unknown as never[], { onConflict: 'id' });
+        .upsert(eventData, { onConflict: 'id' });
 
       if (eventsError) throw eventsError;
 
@@ -162,8 +160,7 @@ export class SupabaseStorageService implements IStorageService {
       const roleData: RoleInsert[] = roles.map(r => ({ name: r, band_id: this.currentBandId! }));
       const { error: rolesError } = await supabase
         .from('roles')
-        // Type assertion required: Supabase's generated types don't match our data structure
-        .upsert(roleData as unknown as never[], { onConflict: 'name,band_id', ignoreDuplicates: true });
+        .upsert(roleData, { onConflict: 'name,band_id', ignoreDuplicates: true });
 
       if (rolesError) throw rolesError;
     } catch (error) {
@@ -189,77 +186,40 @@ export class SupabaseStorageService implements IStorageService {
 
     try {
       // Load members
-      type MemberRow = {
-        id: string;
-        name: string;
-        roles: string[];
-        avatar_color: string | null;
-      };
-      const { data: membersData, error: membersError } = (await supabase
+      const { data: membersData, error: membersError } = await supabase
         .from('band_members')
         .select('*')
         .eq('band_id', this.currentBandId)
-        .order('name')) as { data: MemberRow[] | null; error: unknown };
+        .order('name');
 
       if (membersError) throw membersError;
 
       // Load songs
       // Order by sort_order first (for setlist view), then by title for unordered songs
-      type SongRow = {
-        id: string;
-        title: string;
-        artist: string;
-        duration: string | null;
-        bpm: number | null;
-        key: string | null;
-        is_original: boolean;
-        status: string;
-        target_date: string | null;
-        charts: unknown;
-        assignments: unknown;
-        parts: unknown;
-        backing_track_url: string | null;
-        backing_track_storage_path: string | null;
-        ai_analysis: string | null;
-        lyrics: string | null;
-        sort_order: number | null;
-      };
-      const { data: songsData, error: songsError } = (await supabase
+      const { data: songsData, error: songsError } = await supabase
         .from('songs')
         .select('*')
         .eq('band_id', this.currentBandId)
         .order('sort_order', { ascending: true, nullsFirst: false })
-        .order('title', { ascending: true })) as { data: SongRow[] | null; error: unknown };
+        .order('title', { ascending: true });
 
       if (songsError) throw songsError;
 
       // Load events
-      type EventRow = {
-        id: string;
-        title: string;
-        date: string;
-        time: string | null;
-        type: string;
-        location: string | null;
-        notes: string | null;
-      };
-      const { data: eventsData, error: eventsError } = (await supabase
+      const { data: eventsData, error: eventsError } = await supabase
         .from('band_events')
         .select('*')
         .eq('band_id', this.currentBandId)
-        .order('date')) as { data: EventRow[] | null; error: unknown };
+        .order('date');
 
       if (eventsError) throw eventsError;
 
       // Load roles
-      type RoleRow = {
-        name: string;
-      };
-      const { data: rolesData, error: rolesError } = (await supabase
+      const { data: rolesData, error: rolesError } = await supabase
         .from('roles')
         .select('name')
         .eq('band_id', this.currentBandId)
-        .order('name')) as { data: RoleRow[] | null; error: unknown };
+        .order('name');
 
       if (rolesError) throw rolesError;
 
@@ -284,12 +244,9 @@ export class SupabaseStorageService implements IStorageService {
             isOriginal: s.is_original,
             status: s.status as 'To Learn' | 'In Progress' | 'Performance Ready',
             targetDate: s.target_date || undefined,
-            // Type assertion required: Supabase's generated types don't match our data structure
-            charts: (s.charts as unknown as never[]) || [],
-            // Type assertion required: Supabase's generated types don't match our data structure
-            assignments: (s.assignments as unknown as never[]) || [],
-            // Type assertion required: Supabase's generated types don't match our data structure
-            parts: (s.parts as unknown as never[]) || [],
+            charts: (s.charts as unknown as SongChart[]) || [],
+            assignments: (s.assignments as unknown as Assignment[]) || [],
+            parts: (s.parts as unknown as SongPart[]) || [],
             backingTrackUrl: s.backing_track_url || undefined,
             backingTrackStoragePath: s.backing_track_storage_path || undefined,
             aiAnalysis: s.ai_analysis || undefined,
@@ -436,8 +393,7 @@ export class SupabaseStorageService implements IStorageService {
         file_size: file.size,
         band_id: this.currentBandId!,
       };
-      // Type assertion required: Supabase's generated types don't match our data structure
-      const { error: metadataError } = await supabase.from('files').insert(fileMetadata as unknown as never);
+      const { error: metadataError } = await supabase.from('files').insert(fileMetadata);
 
       if (metadataError) {
         // Log metadata insert failures but don't fail the upload

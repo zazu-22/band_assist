@@ -6,7 +6,7 @@
 -- =============================================================================
 
 CREATE TABLE bands (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   name TEXT NOT NULL,
   created_by UUID REFERENCES auth.users(id) ON DELETE SET NULL,
   created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
@@ -40,7 +40,7 @@ CREATE INDEX idx_user_bands_band_id ON user_bands(band_id);
 -- =============================================================================
 
 CREATE TABLE invitations (
-  id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
   band_id UUID NOT NULL REFERENCES bands(id) ON DELETE CASCADE,
   email TEXT NOT NULL,
   invited_by UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,

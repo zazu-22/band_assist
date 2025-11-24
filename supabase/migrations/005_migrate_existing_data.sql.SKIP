@@ -39,7 +39,7 @@ BEGIN
 
   -- Create a default band for existing data
   INSERT INTO bands (id, name, created_by)
-  VALUES (uuid_generate_v4(), 'Your Band Name', existing_user_id) -- CHANGE 'Your Band Name'!
+  VALUES (gen_random_uuid(), 'Your Band Name', existing_user_id) -- CHANGE 'Your Band Name'!
   RETURNING id INTO default_band_id;
 
   RAISE NOTICE 'Created default band with ID: %', default_band_id;
