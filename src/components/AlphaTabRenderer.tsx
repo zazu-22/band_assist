@@ -353,7 +353,12 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
 
         const handlePlayerReady = () => {
           if (!isMounted) return;
-          setPlayerReady(true);
+          // Add delay to ensure audio context is fully initialized
+          setTimeout(() => {
+            if (isMounted) {
+              setPlayerReady(true);
+            }
+          }, 500);
         };
 
         const handleRenderStarted = () => {
