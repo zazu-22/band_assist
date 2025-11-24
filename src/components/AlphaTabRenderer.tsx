@@ -161,6 +161,8 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
   const apiRef = useRef<AlphaTabApi | null>(null);
   const metronomeTimeoutsRef = useRef<Set<NodeJS.Timeout>>(new Set());
   const cleanupEventListenersRef = useRef<(() => void) | null>(null);
+  const mixerButtonRef = useRef<HTMLButtonElement | null>(null);
+  const mixerPanelRef = useRef<HTMLDivElement | null>(null);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -197,6 +199,26 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
   const [scrollSpeed, setScrollSpeed] = useState(0.5); // Default to middle speed
   const autoScrollRef = useRef<number | null>(null);
   const lastScrollTimeRef = useRef<number>(0);
+
+  // Close mixer when clicking outside
+  useEffect(() => {
+    if (!showSettings) return;
+
+    const handlePointerDown = (event: MouseEvent | TouchEvent) => {
+      const target = event.target as Node | null;
+      if (!target) return;
+      if (mixerPanelRef.current?.contains(target)) return;
+      if (mixerButtonRef.current?.contains(target)) return;
+      setShowSettings(false);
+    };
+
+    document.addEventListener('mousedown', handlePointerDown);
+    document.addEventListener('touchstart', handlePointerDown);
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+      document.removeEventListener('touchstart', handlePointerDown);
+    };
+  }, [showSettings]);
 
   // Helper to convert Base64 DataURI to Uint8Array
   const prepareData = (uri: string): Uint8Array | null => {
@@ -826,7 +848,7 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
   );
 
   return (
-    <div className="flex flex-col max-h-full bg-white text-black rounded-xl relative border border-zinc-200">
+    <div className="flex flex-col max-h-full bg-white text-black rounded-xl relative border border-zinc-200 overflow-hidden">
       {/* Toolbar */}
       <div className="bg-zinc-100 border-b border-zinc-300 p-2 flex items-center justify-between shrink-0">
         {/* Left: Transport controls */}
@@ -888,6 +910,7 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
         <div className="flex items-center justify-center flex-1">
           {currentTrackIndex !== null && tracks[currentTrackIndex] && (
             <button
+              ref={mixerButtonRef}
               onClick={() => setShowSettings(!showSettings)}
               className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${showSettings
                   ? 'bg-amber-500 text-white shadow-md'
@@ -1066,7 +1089,10 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
 
       {/* Mixer Overlay */}
       {showSettings && (
-        <div className="absolute top-20 left-1/2 -translate-x-1/2 z-[9999] bg-white shadow-2xl border border-zinc-200 rounded-xl p-4 w-64 animate-in fade-in zoom-in-95 max-h-[80%] flex flex-col">
+        <div
+          ref={mixerPanelRef}
+          className="absolute top-20 left-1/2 -translate-x-1/2 z-[9999] bg-white shadow-2xl border border-zinc-200 rounded-xl p-4 w-64 animate-in fade-in zoom-in-95 max-h-[80%] flex flex-col"
+        >
           <div className="flex items-center justify-between mb-3">
             <h4 className="font-bold text-sm flex items-center gap-2">
               <Sliders size={14} /> Mixer

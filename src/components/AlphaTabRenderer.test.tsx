@@ -159,7 +159,9 @@ describe('AlphaTabRenderer', () => {
 
       // Trigger error handler
       const errorHandler = mockApiInstance.error.on.mock.calls[0][0];
-      errorHandler({ message: 'Test error' });
+      act(() => {
+        errorHandler({ message: 'Test error' });
+      });
 
       await waitFor(() => {
         expect(screen.getByText(/Test error/)).toBeInTheDocument();
@@ -186,7 +188,9 @@ describe('AlphaTabRenderer', () => {
 
       // Trigger score loaded to hide loading state
       const scoreLoadedHandler = mockApiInstance.scoreLoaded.on.mock.calls[0][0];
-      scoreLoadedHandler({ tracks: [] });
+      act(() => {
+        scoreLoadedHandler({ tracks: [] });
+      });
 
       await waitFor(() => {
         expect(screen.queryByText('Parsing Tab...')).not.toBeInTheDocument();
@@ -194,7 +198,9 @@ describe('AlphaTabRenderer', () => {
 
       // Trigger position change
       const positionHandler = mockApiInstance.playerPositionChanged.on.mock.calls[0][0];
-      positionHandler({ currentTime: 65000, endTime: 125000 }); // 1:05 and 2:05
+      act(() => {
+        positionHandler({ currentTime: 65000, endTime: 125000 }); // 1:05 and 2:05
+      });
 
       await waitFor(() => {
         expect(screen.getByText('1:05')).toBeInTheDocument();
@@ -213,7 +219,9 @@ describe('AlphaTabRenderer', () => {
 
       // Trigger score loaded
       const scoreLoadedHandler = mockApiInstance.scoreLoaded.on.mock.calls[0][0];
-      scoreLoadedHandler({ tracks: [] });
+      act(() => {
+        scoreLoadedHandler({ tracks: [] });
+      });
     });
 
     it('should toggle play/pause when play button is clicked', async () => {
@@ -245,7 +253,9 @@ describe('AlphaTabRenderer', () => {
     it('should stop playback when stop button is clicked', async () => {
       // First set playing state
       const stateHandler = mockApiInstance.playerStateChanged.on.mock.calls[0][0];
-      stateHandler({ state: 1 });
+      act(() => {
+        stateHandler({ state: 1 });
+      });
 
       await waitFor(() => {
         const stopButton = screen.getAllByRole('button').find(btn =>
@@ -265,7 +275,9 @@ describe('AlphaTabRenderer', () => {
       const stateHandler = mockApiInstance.playerStateChanged.on.mock.calls[0][0];
 
       // Ensure playback state is false (this is the critical condition)
-      stateHandler({ state: 0 }); // 0 = paused/stopped
+      act(() => {
+        stateHandler({ state: 0 }); // 0 = paused/stopped
+      });
 
       await waitFor(() => {
         const stopButton = screen.getAllByRole('button').find(btn =>
@@ -289,7 +301,9 @@ describe('AlphaTabRenderer', () => {
     it('should handle stop() errors gracefully without crashing', async () => {
       // Set playing state first
       const stateHandler = mockApiInstance.playerStateChanged.on.mock.calls[0][0];
-      stateHandler({ state: 1 }); // 1 = playing
+      act(() => {
+        stateHandler({ state: 1 }); // 1 = playing
+      });
 
       // Make stop() throw an error (simulating Web Audio API error)
       mockApiInstance.stop.mockImplementationOnce(() => {
@@ -353,7 +367,9 @@ describe('AlphaTabRenderer', () => {
       });
 
       const stateHandler = mockApiInstance.playerStateChanged.on.mock.calls[0][0];
-      stateHandler({ state: 1 }); // Playing
+      act(() => {
+        stateHandler({ state: 1 }); // Playing
+      });
 
       await waitFor(() => {
         expect(onPlaybackChange).toHaveBeenCalledWith(true);
@@ -382,7 +398,9 @@ describe('AlphaTabRenderer', () => {
       });
 
       const stateHandler = mockApiInstance.playerStateChanged.on.mock.calls[0][0];
-      stateHandler({ state: 1 });
+      act(() => {
+        stateHandler({ state: 1 });
+      });
 
       await waitFor(() => {
         expect(mockApiInstance.pause).not.toHaveBeenCalled();
@@ -436,14 +454,16 @@ describe('AlphaTabRenderer', () => {
 
       // Trigger metronome event
       const midiHandler = mockApiInstance.midiEventsPlayed.on.mock.calls[0][0];
-      midiHandler({
-        events: [
-          {
-            isMetronome: true,
-            metronomeNumerator: 1,
-            metronomeDurationInMilliseconds: 500,
-          },
-        ],
+      act(() => {
+        midiHandler({
+          events: [
+            {
+              isMetronome: true,
+              metronomeNumerator: 1,
+              metronomeDurationInMilliseconds: 500,
+            },
+          ],
+        });
       });
 
       unmount();
@@ -462,14 +482,16 @@ describe('AlphaTabRenderer', () => {
       const midiHandler = mockApiInstance.midiEventsPlayed.on.mock.calls[0][0];
 
       // Trigger metronome event
-      midiHandler({
-        events: [
-          {
-            isMetronome: true,
-            metronomeNumerator: 1,
-            metronomeDurationInMilliseconds: 500,
-          },
-        ],
+      act(() => {
+        midiHandler({
+          events: [
+            {
+              isMetronome: true,
+              metronomeNumerator: 1,
+              metronomeDurationInMilliseconds: 500,
+            },
+          ],
+        });
       });
 
       // Unmount before timeout fires
@@ -491,25 +513,29 @@ describe('AlphaTabRenderer', () => {
       const beatHandler = mockApiInstance.beatMouseDown.on.mock.calls[0][0];
 
       // First click to set selection start
-      beatHandler({
-        beat: {
-          absolutePlaybackStart: 1000,
-          playbackDuration: 500,
-        },
-        originalEvent: {
-          shiftKey: true,
-        },
+      act(() => {
+        beatHandler({
+          beat: {
+            absolutePlaybackStart: 1000,
+            playbackDuration: 500,
+          },
+          originalEvent: {
+            shiftKey: true,
+          },
+        });
       });
 
       // Second click to create range
-      beatHandler({
-        beat: {
-          absolutePlaybackStart: 2000,
-          playbackDuration: 500,
-        },
-        originalEvent: {
-          shiftKey: true,
-        },
+      act(() => {
+        beatHandler({
+          beat: {
+            absolutePlaybackStart: 2000,
+            playbackDuration: 500,
+          },
+          originalEvent: {
+            shiftKey: true,
+          },
+        });
       });
 
       // Verify the API was called without stale closure issues
@@ -542,7 +568,9 @@ describe('AlphaTabRenderer', () => {
       }, { timeout: 3000 });
 
       const scoreLoadedHandler = mockApiInstance.scoreLoaded.on.mock.calls[0][0];
-      scoreLoadedHandler({ tracks: mockTracks });
+      act(() => {
+        scoreLoadedHandler({ tracks: mockTracks });
+      });
       mockApiInstance.score.tracks = mockTracks;
 
       await waitFor(() => {
@@ -561,6 +589,37 @@ describe('AlphaTabRenderer', () => {
       }
     });
 
+    it('should close mixer when clicking outside panel', async () => {
+      render(<AlphaTabRenderer fileData={mockFileData} />);
+
+      await waitFor(() => {
+        expect(mockApiInstance.scoreLoaded.on).toHaveBeenCalled();
+      });
+
+      const scoreLoadedHandler = mockApiInstance.scoreLoaded.on.mock.calls[0][0];
+      act(() => {
+        scoreLoadedHandler({ tracks: mockTracks });
+      });
+      mockApiInstance.score.tracks = mockTracks;
+
+      await waitFor(() => {
+        expect(screen.queryByText('Parsing Tab...')).not.toBeInTheDocument();
+      });
+
+      const settingsButton = screen.getByTitle('Click to open mixer and switch tracks');
+      fireEvent.click(settingsButton);
+
+      await waitFor(() => {
+        expect(screen.getByText('Mixer')).toBeInTheDocument();
+      });
+
+      fireEvent.mouseDown(document.body);
+
+      await waitFor(() => {
+        expect(screen.queryByText('Mixer')).not.toBeInTheDocument();
+      });
+    });
+
     it('should toggle track mute', async () => {
       render(<AlphaTabRenderer fileData={mockFileData} />);
 
@@ -569,7 +628,9 @@ describe('AlphaTabRenderer', () => {
       }, { timeout: 3000 });
 
       const scoreLoadedHandler = mockApiInstance.scoreLoaded.on.mock.calls[0][0];
-      scoreLoadedHandler({ tracks: mockTracks });
+      act(() => {
+        scoreLoadedHandler({ tracks: mockTracks });
+      });
       mockApiInstance.score.tracks = mockTracks;
 
       await waitFor(() => {
