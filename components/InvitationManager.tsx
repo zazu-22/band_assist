@@ -151,10 +151,10 @@ export const InvitationManager: React.FC<InvitationManagerProps> = ({
       if (inviteError) {
         // Check if error is due to rate limit trigger
         // The database trigger raises PostgreSQL exception code 'P0001' (RAISE EXCEPTION)
+        // Prioritize error code detection as it's more reliable than message text
         const errorCode = (inviteError as { code?: string }).code;
-        const errorMessage = (inviteError as { message?: string }).message || '';
 
-        if (errorCode === 'P0001' || errorMessage.includes('Rate limit exceeded')) {
+        if (errorCode === 'P0001') {
           setError('Rate limit exceeded. Maximum 10 invitations per hour per band.');
         } else {
           throw inviteError;
