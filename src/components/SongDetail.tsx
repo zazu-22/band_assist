@@ -137,7 +137,7 @@ export const SongDetail: React.FC<SongDetailProps> = ({
   const handleCreateTextChart = () => {
     if (!newChartName) return;
     const newChart: SongChart = {
-      id: Date.now().toString(),
+      id: crypto.randomUUID(),
       name: newChartName,
       instrument: newChartInstrument,
       type: 'TEXT',
@@ -180,7 +180,7 @@ export const SongDetail: React.FC<SongDetailProps> = ({
         }
 
         const newChart: SongChart = {
-          id: Date.now().toString(),
+          id: crypto.randomUUID(),
           name: newChartName || file.name,
           instrument: newChartInstrument,
           type: isGp ? 'GP' : isPdf ? 'PDF' : 'IMAGE',
@@ -206,7 +206,7 @@ export const SongDetail: React.FC<SongDetailProps> = ({
       reader.onload = event => {
         const result = event.target?.result as string;
         const newChart: SongChart = {
-          id: Date.now().toString(),
+          id: crypto.randomUUID(),
           name: newChartName || file.name,
           instrument: newChartInstrument,
           type: isGp ? 'GP' : isPdf ? 'PDF' : isImage ? 'IMAGE' : 'TEXT',
