@@ -100,4 +100,8 @@ export type ViewState =
   | 'SETTINGS'
   | 'BAND_DASHBOARD'
   | 'PERFORMANCE_MODE'
-  | 'SCHEDULE';
+  | 'SCHEDULE'
+  | 'LOGIN'
+  | 'SIGNUP'
+  | 'PASSWORD_RESET'
+  | 'PASSWORD_UPDATE';

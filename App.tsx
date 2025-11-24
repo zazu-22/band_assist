@@ -10,6 +10,9 @@ import { PerformanceMode } from './components/PerformanceMode';
 import { ScheduleManager } from './components/ScheduleManager';
 import { PracticeRoom } from './components/PracticeRoom';
 import { Login } from './components/Login';
+import { Signup } from './components/Signup';
+import { PasswordReset } from './components/PasswordReset';
+import { PasswordUpdate } from './components/PasswordUpdate';
 import { Song, ViewState, BandMember, BandEvent } from './types';
 import { INITIAL_SONGS, DEFAULT_MEMBERS, DEFAULT_ROLES, DEFAULT_EVENTS, withDefaults } from './constants';
 import { StorageService } from './services/storageService';
@@ -42,6 +45,14 @@ const App: React.FC = () => {
   useEffect(() => {
     currentBandIdRef.current = currentBandId;
   }, [currentBandId]);
+
+  // Check for password reset hash in URL
+  useEffect(() => {
+    const hash = window.location.hash;
+    if (hash.includes('type=recovery') || hash.includes('#password-update')) {
+      setCurrentView('PASSWORD_UPDATE');
+    }
+  }, []);
 
   // -- Authentication Check --
   // Check if Supabase is configured and user is authenticated
@@ -474,14 +485,47 @@ const App: React.FC = () => {
     );
   }
 
-  // Show login screen if Supabase is configured but user is not authenticated
+  // Show auth screens if Supabase is configured but user is not authenticated
   if (isSupabaseConfigured() && !session) {
+    if (currentView === 'PASSWORD_UPDATE') {
+      return (
+        <PasswordUpdate
+          onSuccess={() => {
+            // Clear the hash and redirect to login
+            window.location.hash = '';
+            setCurrentView('LOGIN');
+          }}
+          onNavigate={(view: string) => setCurrentView(view as ViewState)}
+        />
+      );
+    }
+
+    if (currentView === 'SIGNUP') {
+      return (
+        <Signup
+          onSignupSuccess={() => {
+            // Session will be set by the auth state change listener
+            setCurrentView('DASHBOARD');
+          }}
+          onNavigate={(view: string) => setCurrentView(view as ViewState)}
+        />
+      );
+    }
+
+    if (currentView === 'PASSWORD_RESET') {
+      return (
+        <PasswordReset onNavigate={(view: string) => setCurrentView(view as ViewState)} />
+      );
+    }
+
+    // Default to login view
     return (
       <Login
         onLoginSuccess={() => {
           // Session will be set by the auth state change listener
-          // Just need to trigger re-render
+          setCurrentView('DASHBOARD');
         }}
+        onNavigate={(view: string) => setCurrentView(view as ViewState)}
       />
     );
   }

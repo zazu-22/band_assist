@@ -1,12 +1,14 @@
 import React, { useState } from 'react';
 import { getSupabaseClient } from '../services/supabaseClient';
+import { validateEmail, normalizeEmail } from '../utils/validation';
 import { Music } from 'lucide-react';
 
 interface LoginProps {
   onLoginSuccess: () => void;
+  onNavigate: (view: string) => void;
 }
 
-export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
+export const Login: React.FC<LoginProps> = ({ onLoginSuccess, onNavigate }) => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
@@ -17,6 +19,14 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
     setError('');
     setIsLoading(true);
 
+    // Email validation
+    const emailValidation = validateEmail(email);
+    if (!emailValidation.isValid) {
+      setError(emailValidation.error || 'Invalid email address');
+      setIsLoading(false);
+      return;
+    }
+
     const supabase = getSupabaseClient();
     if (!supabase) {
       setError('Supabase is not configured. Check environment variables.');
@@ -25,8 +35,9 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
     }
 
     try {
+      const normalizedEmail = normalizeEmail(email);
       const { data, error: authError } = await supabase.auth.signInWithPassword({
-        email,
+        email: normalizedEmail,
         password,
       });
 
@@ -123,11 +134,23 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
           </form>
 
           {/* Help Text */}
-          <div className="mt-6 text-center">
-            <p className="text-sm text-zinc-400">Don&apos;t have the password?</p>
-            <p className="text-xs text-zinc-500 mt-1">
-              Contact your band administrator to get access
-            </p>
+          <div className="mt-6 text-center space-y-3">
+            <div>
+              <button
+                onClick={() => onNavigate('SIGNUP')}
+                className="text-sm text-blue-400 hover:text-blue-300 transition-colors"
+              >
+                Don&apos;t have an account? Sign up
+              </button>
+            </div>
+            <div>
+              <button
+                onClick={() => onNavigate('PASSWORD_RESET')}
+                className="text-sm text-zinc-400 hover:text-zinc-300 transition-colors"
+              >
+                Forgot password?
+              </button>
+            </div>
           </div>
         </div>
 
