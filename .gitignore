@@ -27,3 +27,8 @@ dist-ssr
 *.sln
 *.sw?
 .vercel
+
+# Local development files
+.claude/agents
+.claude/commands
+.claude/settings*.json
