@@ -32,6 +32,7 @@ export const InvitationManager: React.FC<InvitationManagerProps> = ({
   const [newEmail, setNewEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  const [hasValidationError, setHasValidationError] = useState(false);
   const [successMessage, setSuccessMessage] = useState('');
 
   const loadInvitations = useCallback(async () => {
@@ -79,12 +80,14 @@ export const InvitationManager: React.FC<InvitationManagerProps> = ({
   const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setHasValidationError(false);
     setSuccessMessage('');
 
     // Validate email format
     const validation = validateEmail(newEmail);
     if (!validation.isValid) {
       setError(validation.error || 'Invalid email address');
+      setHasValidationError(true);
       return;
     }
 
@@ -153,8 +156,10 @@ export const InvitationManager: React.FC<InvitationManagerProps> = ({
         // The database trigger raises PostgreSQL exception code 'P0001' (RAISE EXCEPTION)
         // Prioritize error code detection as it's more reliable than message text
         const errorCode = (inviteError as { code?: string }).code;
+        const errorMessage = (inviteError as { message?: string }).message || '';
 
-        if (errorCode === 'P0001') {
+        // Check both error code AND message text for robustness across client versions
+        if (errorCode === 'P0001' || errorMessage.includes('Rate limit exceeded')) {
           setError('Rate limit exceeded. Maximum 10 invitations per hour per band.');
         } else {
           throw inviteError;
@@ -253,6 +258,9 @@ export const InvitationManager: React.FC<InvitationManagerProps> = ({
                   value={newEmail}
                   onChange={e => setNewEmail(e.target.value)}
                   placeholder="member@example.com"
+                  autoFocus
+                  aria-invalid={hasValidationError}
+                  aria-describedby={hasValidationError ? 'invitation-error' : undefined}
                   className="w-full pl-10 pr-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   disabled={isLoading}
                 />
@@ -268,8 +276,8 @@ export const InvitationManager: React.FC<InvitationManagerProps> = ({
           </div>
 
           {error && (
-            <div className="bg-red-900/20 border border-red-800 rounded-lg p-3">
-              <p className="text-sm text-red-400">{error}</p>
+            <div className="bg-red-900/20 border border-red-800 rounded-lg p-3" role="alert">
+              <p id="invitation-error" className="text-sm text-red-400">{error}</p>
             </div>
           )}
 

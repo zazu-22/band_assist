@@ -1,6 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { getSupabaseClient } from '../services/supabaseClient';
-import { validatePassword } from '../utils/validation';
+import { validatePassword, PASSWORD_HINT } from '../utils/validation';
 import { AuthLayout } from './AuthLayout';
 
 interface PasswordUpdateProps {
@@ -12,6 +12,7 @@ export const PasswordUpdate: React.FC<PasswordUpdateProps> = ({ onSuccess }) => 
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
+  const [errorField, setErrorField] = useState<'password' | 'confirmPassword' | null>(null);
   const [isLoading, setIsLoading] = useState(false);
   const [isValidSession, setIsValidSession] = useState(true);
 
@@ -25,11 +26,13 @@ export const PasswordUpdate: React.FC<PasswordUpdateProps> = ({ onSuccess }) => 
         return;
       }
 
-      // Check for access_token in URL hash - this indicates a recovery session
+      // Check for access_token and type=recovery in URL hash
+      // This ensures it's specifically a recovery session, not a regular login
       const hashParams = new URLSearchParams(window.location.hash.substring(1));
       const hasAccessToken = hashParams.has('access_token');
+      const tokenType = hashParams.get('type');
 
-      if (!hasAccessToken) {
+      if (!hasAccessToken || tokenType !== 'recovery') {
         setError('Invalid or expired password reset link. Please request a new one.');
         setIsValidSession(false);
         return;
@@ -44,23 +47,36 @@ export const PasswordUpdate: React.FC<PasswordUpdateProps> = ({ onSuccess }) => 
     };
 
     checkSession();
+
+    // Cleanup: Clear hash on unmount to prevent persistence issues
+    return () => {
+      // Always clear hash when leaving password update screen
+      // to prevent accidental reuse or navigation issues
+      const hash = window.location.hash;
+      if (hash.includes('access_token') || hash.includes('type=recovery')) {
+        window.location.hash = '';
+      }
+    };
   }, []);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setErrorField(null);
     setIsLoading(true);
 
     // Validate password
     const passwordValidation = validatePassword(password);
     if (!passwordValidation.isValid) {
       setError(passwordValidation.error || 'Invalid password');
+      setErrorField('password');
       setIsLoading(false);
       return;
     }
 
     if (password !== confirmPassword) {
       setError('Passwords do not match.');
+      setErrorField('confirmPassword');
       setIsLoading(false);
       return;
     }
@@ -118,12 +134,15 @@ export const PasswordUpdate: React.FC<PasswordUpdateProps> = ({ onSuccess }) => 
               onChange={e => setPassword(e.target.value)}
               required
               autoComplete="new-password"
+              autoFocus
+              aria-invalid={errorField === 'password'}
+              aria-describedby={errorField === 'password' ? 'form-error password-help' : 'password-help'}
               className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-md text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="••••••••"
               disabled={isLoading}
             />
-            <p className="text-xs text-zinc-500 mt-1">
-              Must be at least 8 characters with uppercase, lowercase, and numbers
+            <p id="password-help" className="text-xs text-zinc-500 mt-1">
+              {PASSWORD_HINT}
             </p>
           </div>
 
@@ -141,6 +160,8 @@ export const PasswordUpdate: React.FC<PasswordUpdateProps> = ({ onSuccess }) => 
               onChange={e => setConfirmPassword(e.target.value)}
               required
               autoComplete="new-password"
+              aria-invalid={errorField === 'confirmPassword'}
+              aria-describedby={errorField === 'confirmPassword' ? 'form-error' : undefined}
               className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-md text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="••••••••"
               disabled={isLoading}
@@ -148,8 +169,8 @@ export const PasswordUpdate: React.FC<PasswordUpdateProps> = ({ onSuccess }) => 
           </div>
 
           {error && (
-            <div className="bg-red-900/20 border border-red-800 rounded-md p-3">
-              <p className="text-sm text-red-400">{error}</p>
+            <div className="bg-red-900/20 border border-red-800 rounded-md p-3" role="alert">
+              <p id="form-error" className="text-sm text-red-400">{error}</p>
             </div>
           )}
 

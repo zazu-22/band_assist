@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { getSupabaseClient } from '../services/supabaseClient';
-import { validateEmail, validatePassword, normalizeEmail } from '../utils/validation';
+import { validateEmail, validatePassword, normalizeEmail, PASSWORD_HINT } from '../utils/validation';
 import { ArrowLeft } from 'lucide-react';
 import { AuthLayout } from './AuthLayout';
 
@@ -14,12 +14,14 @@ export const Signup: React.FC<SignupProps> = ({ onSignupSuccess, onNavigate }) =
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
+  const [errorField, setErrorField] = useState<'email' | 'password' | 'confirmPassword' | null>(null);
   const [success, setSuccess] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
+    setErrorField(null);
     setSuccess(false);
     setIsLoading(true);
 
@@ -27,6 +29,7 @@ export const Signup: React.FC<SignupProps> = ({ onSignupSuccess, onNavigate }) =
     const emailValidation = validateEmail(email);
     if (!emailValidation.isValid) {
       setError(emailValidation.error || 'Invalid email address');
+      setErrorField('email');
       setIsLoading(false);
       return;
     }
@@ -35,12 +38,14 @@ export const Signup: React.FC<SignupProps> = ({ onSignupSuccess, onNavigate }) =
     const passwordValidation = validatePassword(password);
     if (!passwordValidation.isValid) {
       setError(passwordValidation.error || 'Invalid password');
+      setErrorField('password');
       setIsLoading(false);
       return;
     }
 
     if (password !== confirmPassword) {
       setError('Passwords do not match.');
+      setErrorField('confirmPassword');
       setIsLoading(false);
       return;
     }
@@ -119,6 +124,9 @@ export const Signup: React.FC<SignupProps> = ({ onSignupSuccess, onNavigate }) =
               onChange={e => setEmail(e.target.value)}
               required
               autoComplete="email"
+              autoFocus
+              aria-invalid={errorField === 'email'}
+              aria-describedby={errorField === 'email' ? 'form-error' : undefined}
               className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-md text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="you@example.com"
               disabled={isLoading}
@@ -137,12 +145,14 @@ export const Signup: React.FC<SignupProps> = ({ onSignupSuccess, onNavigate }) =
               onChange={e => setPassword(e.target.value)}
               required
               autoComplete="new-password"
+              aria-invalid={errorField === 'password'}
+              aria-describedby={errorField === 'password' ? 'form-error password-help' : 'password-help'}
               className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-md text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="••••••••"
               disabled={isLoading}
             />
-            <p className="text-xs text-zinc-500 mt-1">
-              Must be at least 8 characters with uppercase, lowercase, and numbers
+            <p id="password-help" className="text-xs text-zinc-500 mt-1">
+              {PASSWORD_HINT}
             </p>
           </div>
 
@@ -161,6 +171,8 @@ export const Signup: React.FC<SignupProps> = ({ onSignupSuccess, onNavigate }) =
               onChange={e => setConfirmPassword(e.target.value)}
               required
               autoComplete="new-password"
+              aria-invalid={errorField === 'confirmPassword'}
+              aria-describedby={errorField === 'confirmPassword' ? 'form-error' : undefined}
               className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-md text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="••••••••"
               disabled={isLoading}
@@ -169,8 +181,8 @@ export const Signup: React.FC<SignupProps> = ({ onSignupSuccess, onNavigate }) =
 
           {/* Error Message */}
           {error && (
-            <div className="bg-red-900/20 border border-red-800 rounded-md p-3">
-              <p className="text-sm text-red-400">{error}</p>
+            <div className="bg-red-900/20 border border-red-800 rounded-md p-3" role="alert">
+              <p id="form-error" className="text-sm text-red-400">{error}</p>
             </div>
           )}
 

@@ -47,7 +47,11 @@ const App: React.FC = () => {
   }, [currentBandId]);
 
   // Check for password reset hash in URL
+  // Only process after session check is complete to avoid race conditions
   useEffect(() => {
+    // Wait for session check to complete
+    if (isCheckingAuth) return;
+
     const hash = window.location.hash;
 
     // Check for our custom redirect (#password-update)
@@ -61,7 +65,7 @@ const App: React.FC = () => {
     if (hash.includes('type=recovery')) {
       setCurrentView('PASSWORD_UPDATE');
     }
-  }, []);
+  }, [isCheckingAuth]);
 
   // -- Authentication Check --
   // Check if Supabase is configured and user is authenticated

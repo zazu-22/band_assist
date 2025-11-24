@@ -102,6 +102,11 @@ export interface PasswordValidationResult {
 }
 
 /**
+ * Password requirement hint text for UI display
+ */
+export const PASSWORD_HINT = 'Must be at least 8 characters with at least 3 of: uppercase, lowercase, numbers, special characters';
+
+/**
  * Validates password strength and security requirements.
  *
  * Requirements:
