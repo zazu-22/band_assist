@@ -49,7 +49,16 @@ const App: React.FC = () => {
   // Check for password reset hash in URL
   useEffect(() => {
     const hash = window.location.hash;
-    if (hash.includes('type=recovery') || hash.includes('#password-update')) {
+
+    // Check for our custom redirect (#password-update)
+    if (hash === '#password-update') {
+      setCurrentView('PASSWORD_UPDATE');
+      return;
+    }
+
+    // Check for Supabase recovery token in hash
+    // Format: #access_token=...&type=recovery&...
+    if (hash.includes('type=recovery')) {
       setCurrentView('PASSWORD_UPDATE');
     }
   }, []);

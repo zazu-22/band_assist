@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { getSupabaseClient } from '../services/supabaseClient';
+import { validateEmail, normalizeEmail } from '../utils/validation';
 import { Music, ArrowLeft } from 'lucide-react';
 
 interface PasswordResetProps {
@@ -18,6 +19,14 @@ export const PasswordReset: React.FC<PasswordResetProps> = ({ onNavigate }) => {
     setSuccess(false);
     setIsLoading(true);
 
+    // Email validation
+    const emailValidation = validateEmail(email);
+    if (!emailValidation.isValid) {
+      setError(emailValidation.error || 'Invalid email address');
+      setIsLoading(false);
+      return;
+    }
+
     const supabase = getSupabaseClient();
     if (!supabase) {
       setError('Supabase is not configured. Check environment variables.');
@@ -26,7 +35,8 @@ export const PasswordReset: React.FC<PasswordResetProps> = ({ onNavigate }) => {
     }
 
     try {
-      const { error: resetError } = await supabase.auth.resetPasswordForEmail(email, {
+      const normalizedEmail = normalizeEmail(email);
+      const { error: resetError } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
         redirectTo: `${window.location.origin}/#password-update`,
       });
 
