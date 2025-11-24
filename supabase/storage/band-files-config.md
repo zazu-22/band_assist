@@ -77,7 +77,7 @@ const { data, error } = await supabase.storage
   .from('band-files')
   .upload(`charts/${songId}/${fileId}.pdf`, fileBlob, {
     contentType: 'application/pdf',
-    upsert: false
+    upsert: false,
   });
 
 // Get public URL (signed for private buckets)

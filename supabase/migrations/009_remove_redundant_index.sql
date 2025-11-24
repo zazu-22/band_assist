@@ -1,0 +1,68 @@
+-- Band Assist: Remove Redundant Single-Column Index
+-- Addresses code review feedback from PR #9
+
+-- =============================================================================
+-- BACKGROUND
+-- =============================================================================
+--
+-- The single-column index on user_id (created in migration 003) is redundant
+-- because PostgreSQL efficiently uses the leftmost column of the composite
+-- index (user_id, band_id) added in migration 006 for queries filtering only
+-- by user_id.
+--
+-- This migration removes the unnecessary index to:
+-- - Reduce storage overhead (~16 bytes per row)
+-- - Improve INSERT/UPDATE/DELETE performance
+-- - Simplify index maintenance and query planner complexity
+
+-- =============================================================================
+-- INDEX REMOVAL
+-- =============================================================================
+
+DROP INDEX IF EXISTS idx_user_bands_user_id;
+
+-- =============================================================================
+-- PERFORMANCE IMPACT
+-- =============================================================================
+--
+-- Benefits of removing redundant index:
+-- - Storage savings: ~16 bytes per row in user_bands table
+-- - Faster writes: One fewer index to update on INSERT/UPDATE/DELETE
+-- - Simplified query planner: Reduces optimizer complexity
+--
+-- No negative impact:
+-- - Queries filtering by user_id continue using composite index
+-- - All RLS policies maintain O(log n) lookup performance
+-- - PostgreSQL automatically uses leftmost column of composite index
+
+-- =============================================================================
+-- VERIFICATION
+-- =============================================================================
+--
+-- 1. Verify the composite index handles user_id-only queries:
+--
+-- EXPLAIN ANALYZE
+-- SELECT band_id FROM user_bands WHERE user_id = 'some-user-id';
+--
+-- Expected output: "Index Scan using idx_user_bands_user_band"
+-- This proves PostgreSQL uses the composite index's leftmost column,
+-- making the single-column index redundant.
+--
+-- 2. Verify the redundant index has been removed:
+--
+-- SELECT indexname FROM pg_indexes
+-- WHERE tablename = 'user_bands' AND indexname = 'idx_user_bands_user_id';
+--
+-- Expected: No rows (index has been removed)
+--
+-- 3. List all remaining indexes on user_bands:
+--
+-- SELECT indexname, indexdef
+-- FROM pg_indexes
+-- WHERE tablename = 'user_bands'
+-- ORDER BY indexname;
+--
+-- Expected indexes:
+-- - user_bands_pkey (PRIMARY KEY)
+-- - idx_user_bands_band_id (for band lookups)
+-- - idx_user_bands_user_band (composite index for RLS)

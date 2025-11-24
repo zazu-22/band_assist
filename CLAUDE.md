@@ -195,7 +195,7 @@ Never mutate state objects directly. Always create new objects/arrays:
 ```typescript
 // Good
 onUpdateSong({ ...song, title: 'New Title' });
-setSongs(songs.map(s => s.id === song.id ? updatedSong : s));
+setSongs(songs.map(s => (s.id === song.id ? updatedSong : s)));
 
 // Bad
 song.title = 'New Title'; // Direct mutation

@@ -1,0 +1,206 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - 'v*.*.*'
+  workflow_dispatch:
+    inputs:
+      version:
+        description: 'Version to release (e.g., 1.0.0)'
+        required: true
+        type: string
+
+jobs:
+  create-release:
+    name: Create Release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: 'npm'
+
+      - name: Get version
+        id: version
+        run: |
+          if [ "${{ github.event_name }}" == "workflow_dispatch" ]; then
+            VERSION="${{ github.event.inputs.version }}"
+          else
+            VERSION=${GITHUB_REF#refs/tags/v}
+          fi
+          echo "version=$VERSION" >> $GITHUB_OUTPUT
+          echo "Releasing version: $VERSION"
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run tests and build
+        run: |
+          echo "Running type check..."
+          npx tsc --noEmit
+
+          echo "Building application..."
+          npm run build
+
+      - name: Generate changelog
+        id: changelog
+        run: |
+          # Get the previous tag
+          PREV_TAG=$(git describe --tags --abbrev=0 HEAD^ 2>/dev/null || echo "")
+
+          if [ -z "$PREV_TAG" ]; then
+            echo "First release - generating changelog from all commits"
+            CHANGELOG=$(git log --pretty=format:"- %s (%h)" --no-merges)
+          else
+            echo "Generating changelog from $PREV_TAG to HEAD"
+            CHANGELOG=$(git log $PREV_TAG..HEAD --pretty=format:"- %s (%h)" --no-merges)
+          fi
+
+          # Save changelog to file
+          echo "$CHANGELOG" > CHANGELOG_RELEASE.md
+
+          # Categorize commits
+          echo "## 🚀 Features" > CHANGELOG_FORMATTED.md
+          echo "$CHANGELOG" | grep "^- feat" >> CHANGELOG_FORMATTED.md || echo "_No new features_" >> CHANGELOG_FORMATTED.md
+          echo "" >> CHANGELOG_FORMATTED.md
+
+          echo "## 🐛 Bug Fixes" >> CHANGELOG_FORMATTED.md
+          echo "$CHANGELOG" | grep "^- fix" >> CHANGELOG_FORMATTED.md || echo "_No bug fixes_" >> CHANGELOG_FORMATTED.md
+          echo "" >> CHANGELOG_FORMATTED.md
+
+          echo "## 📚 Documentation" >> CHANGELOG_FORMATTED.md
+          echo "$CHANGELOG" | grep "^- docs" >> CHANGELOG_FORMATTED.md || echo "_No documentation changes_" >> CHANGELOG_FORMATTED.md
+          echo "" >> CHANGELOG_FORMATTED.md
+
+          echo "## 🔧 Other Changes" >> CHANGELOG_FORMATTED.md
+          echo "$CHANGELOG" | grep -v "^- feat" | grep -v "^- fix" | grep -v "^- docs" >> CHANGELOG_FORMATTED.md || echo "_No other changes_" >> CHANGELOG_FORMATTED.md
+
+      - name: Create GitHub Release
+        uses: actions/github-script@v6
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        with:
+          script: |
+            const fs = require('fs');
+            const changelog = fs.readFileSync('CHANGELOG_FORMATTED.md', 'utf8');
+
+            const release = await github.rest.repos.createRelease({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              tag_name: `v${process.env.VERSION}`,
+              name: `Release v${process.env.VERSION}`,
+              body: `# Band Assist v${process.env.VERSION}
+
+            ${changelog}
+
+            ## Installation
+
+            ### Deploy to Vercel
+            [![Deploy with Vercel](https://vercel.com/button)](https://vercel.com/new/clone?repository-url=https://github.com/${context.repo.owner}/${context.repo.repo})
+
+            ### Run Locally
+            \`\`\`bash
+            git clone https://github.com/${context.repo.owner}/${context.repo.repo}.git
+            cd ${context.repo.repo}
+            git checkout v${process.env.VERSION}
+            npm install
+            cp .env.example .env.local
+            # Edit .env.local with your API keys
+            npm run dev
+            \`\`\`
+
+            ---
+            **Full Changelog**: https://github.com/${context.repo.owner}/${context.repo.repo}/compare/v${process.env.PREV_VERSION || '0.0.0'}...v${process.env.VERSION}
+            `,
+              draft: false,
+              prerelease: process.env.VERSION.includes('alpha') || process.env.VERSION.includes('beta') || process.env.VERSION.includes('rc')
+            });
+
+            console.log(`Release created: ${release.data.html_url}`);
+
+      - name: Update package.json version
+        if: github.event_name == 'workflow_dispatch'
+        run: |
+          npm version ${{ steps.version.outputs.version }} --no-git-tag-version
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add package.json
+          git commit -m "chore: bump version to ${{ steps.version.outputs.version }}"
+          git push
+
+      - name: Deploy to production
+        if: ${{ !contains(steps.version.outputs.version, 'alpha') && !contains(steps.version.outputs.version, 'beta') }}
+        run: |
+          echo "Triggering production deployment..."
+          # This will be handled by the deploy-vercel.yml workflow
+
+      - name: Notify release
+        uses: actions/github-script@v6
+        with:
+          script: |
+            const version = '${{ steps.version.outputs.version }}';
+            const releaseUrl = `https://github.com/${context.repo.owner}/${context.repo.repo}/releases/tag/v${version}`;
+
+            console.log(`🎉 Release v${version} published!`);
+            console.log(`📦 Release URL: ${releaseUrl}`);
+
+            core.summary
+              .addHeading(`Release v${version} Published! 🎉`)
+              .addLink('View Release', releaseUrl)
+              .addBreak()
+              .addRaw('The release has been published and is now available.')
+              .write();
+
+  # Optional: Create a PR to update documentation after release
+  update-docs:
+    name: Update Documentation
+    needs: create-release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: development
+
+      - name: Update version in docs
+        run: |
+          VERSION="${{ needs.create-release.outputs.version }}"
+
+          # Update any documentation that references version numbers
+          if [ -f "docs/README.md" ]; then
+            sed -i "s/Version: .*/Version: $VERSION/" docs/README.md
+          fi
+
+      - name: Create documentation PR
+        uses: peter-evans/create-pull-request@v5
+        with:
+          token: ${{ secrets.GITHUB_TOKEN }}
+          commit-message: 'docs: update version to ${{ needs.create-release.outputs.version }}'
+          title: 'docs: Update documentation for v${{ needs.create-release.outputs.version }}'
+          body: |
+            ## 📚 Documentation Update
+
+            Updates documentation to reflect release v${{ needs.create-release.outputs.version }}
+
+            ### Changes
+            - Updated version numbers in documentation
+            - Synced with latest release
+
+            ---
+            🤖 Auto-generated by release workflow
+          branch: docs/release-${{ needs.create-release.outputs.version }}
+          delete-branch: true
+          labels: |
+            documentation
+            automated

@@ -1,6 +1,8 @@
 # Secrets
 .env.local
 .env.production
+.envrc
+supabase/.temp
 
 # Logs
 logs
@@ -26,3 +28,9 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+.vercel
+
+# Local development files
+.claude/agents
+.claude/commands
+.claude/settings*.json

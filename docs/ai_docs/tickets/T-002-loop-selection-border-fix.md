@@ -107,8 +107,12 @@ If native CSS dashed border doesn't work due to AlphaTab rendering:
       transparent 8px,
       transparent 16px
     );
-  background-size: 2px 100%, 100% 2px;
-  background-position: 0 0, 0 0;
+  background-size:
+    2px 100%,
+    100% 2px;
+  background-position:
+    0 0,
+    0 0;
   background-repeat: repeat-y, repeat-x;
 }
 ```
@@ -151,6 +155,7 @@ If native CSS dashed border doesn't work due to AlphaTab rendering:
 **Status**: Known Limitation - Cannot be fixed with pure CSS
 
 **Changes Made**:
+
 - `public/alphatab-custom.css:30-38` - Added CSS with documentation of limitation
 
 **Root Cause Analysis**:
@@ -208,5 +213,6 @@ To properly fix this would require one of:
 **Decision**: Leaving as-is. The visual issue is cosmetic and doesn't affect functionality. The selection is still clearly visible and usable.
 
 **References**:
+
 - [AlphaTab Styling Guide](https://alphatab.net/docs/guides/styling-player/)
 - Element inspection revealed inline transform scaling on child div
