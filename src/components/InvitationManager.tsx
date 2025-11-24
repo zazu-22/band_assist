@@ -27,11 +27,12 @@ interface PostgresError {
 
 /** Type guard to check if an error is a PostgreSQL error */
 function isPostgresError(error: unknown): error is PostgresError {
-  return (
-    typeof error === 'object' &&
-    error !== null &&
-    ('code' in error || 'message' in error)
-  );
+  // Check null first to avoid CodeQL type comparison warning
+  // (typeof null === 'object' is a JavaScript quirk)
+  if (error === null || typeof error !== 'object') {
+    return false;
+  }
+  return 'code' in error || 'message' in error;
 }
 
 /**

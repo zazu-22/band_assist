@@ -49,6 +49,21 @@ function escapeHtml(unsafe: string): string {
 }
 
 /**
+ * Sanitizes text for use in email subject lines.
+ * Removes control characters and newlines that could cause issues.
+ */
+function sanitizeForSubject(str: string): string {
+  return str.replace(/[\r\n\t\x00-\x1F]/g, ' ').trim();
+}
+
+/**
+ * Basic email validation to catch obviously invalid addresses.
+ */
+function isValidEmail(email: string): boolean {
+  return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
+}
+
+/**
  * Validates that a webhook payload has all required fields for an invitation.
  */
 function validatePayload(
@@ -103,6 +118,15 @@ serve(async (req: Request) => {
 
     const { email, band_id, invited_by } = payload.record;
 
+    // Validate email format before attempting to send
+    if (!isValidEmail(email)) {
+      console.error('Invalid email address in payload:', email);
+      return new Response(JSON.stringify({ error: 'Invalid email address' }), {
+        status: 400,
+        headers: { 'Content-Type': 'application/json' },
+      });
+    }
+
     // Create Supabase client with service role for admin access
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
@@ -142,7 +166,7 @@ serve(async (req: Request) => {
       body: JSON.stringify({
         from: EMAIL_FROM,
         to: [email],
-        subject: `You've been invited to join ${bandName} on Band Assist`,
+        subject: `You've been invited to join ${sanitizeForSubject(bandName)} on Band Assist`,
         html: `
           <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
             <h1 style="color: #18181b; font-size: 24px; margin-bottom: 16px;">
