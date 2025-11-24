@@ -571,7 +571,23 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
   }, [autoScrollEnabled, scrollSpeed]);
 
   const togglePlay = () => {
-    if (apiRef.current) apiRef.current.playPause();
+    if (apiRef.current && playerReady) {
+      try {
+        apiRef.current.playPause();
+      } catch (error) {
+        console.warn('[AlphaTab] Playback error, retrying...', error);
+        // Try again after a short delay to allow audio context to initialize
+        setTimeout(() => {
+          if (apiRef.current) {
+            try {
+              apiRef.current.playPause();
+            } catch (e) {
+              console.error('[AlphaTab] Playback failed:', e);
+            }
+          }
+        }, 100);
+      }
+    }
   };
 
   // Manual scroll functions
