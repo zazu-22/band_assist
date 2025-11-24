@@ -120,9 +120,9 @@ export interface Database {
           is_original: boolean;
           status: string;
           target_date: string | null;
-          charts: any; // JSONB
-          assignments: any; // JSONB
-          parts: any; // JSONB
+          charts: unknown; // JSONB
+          assignments: unknown; // JSONB
+          parts: unknown; // JSONB
           backing_track_url: string | null;
           backing_track_storage_path: string | null;
           ai_analysis: string | null;
@@ -142,9 +142,9 @@ export interface Database {
           is_original?: boolean;
           status: string;
           target_date?: string | null;
-          charts?: any;
-          assignments?: any;
-          parts?: any;
+          charts?: unknown;
+          assignments?: unknown;
+          parts?: unknown;
           backing_track_url?: string | null;
           backing_track_storage_path?: string | null;
           ai_analysis?: string | null;
@@ -164,9 +164,9 @@ export interface Database {
           is_original?: boolean;
           status?: string;
           target_date?: string | null;
-          charts?: any;
-          assignments?: any;
-          parts?: any;
+          charts?: unknown;
+          assignments?: unknown;
+          parts?: unknown;
           backing_track_url?: string | null;
           backing_track_storage_path?: string | null;
           ai_analysis?: string | null;
@@ -276,7 +276,6 @@ let supabaseClient: SupabaseClient<Database> | null = null;
 
 export const getSupabaseClient = (): SupabaseClient<Database> | null => {
   if (!supabaseUrl || !supabaseAnonKey) {
-    console.warn('Supabase credentials not configured. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in .env.local');
     return null;
   }
 
@@ -285,8 +284,8 @@ export const getSupabaseClient = (): SupabaseClient<Database> | null => {
       auth: {
         persistSession: true,
         autoRefreshToken: true,
-        detectSessionInUrl: true
-      }
+        detectSessionInUrl: true,
+      },
     });
   }
 

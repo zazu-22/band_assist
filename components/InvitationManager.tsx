@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { UserPlus, Mail, Check, X, Trash2, Clock } from 'lucide-react';
 import { getSupabaseClient } from '../services/supabaseClient';
 
@@ -25,7 +25,7 @@ interface InvitationManagerProps {
 export const InvitationManager: React.FC<InvitationManagerProps> = ({
   bandId,
   currentUserId,
-  isAdmin
+  isAdmin,
 }) => {
   const [invitations, setInvitations] = useState<Invitation[]>([]);
   const [newEmail, setNewEmail] = useState('');
@@ -33,28 +33,31 @@ export const InvitationManager: React.FC<InvitationManagerProps> = ({
   const [error, setError] = useState('');
   const [successMessage, setSuccessMessage] = useState('');
 
-  // Load invitations
-  useEffect(() => {
-    loadInvitations();
-  }, [bandId]);
-
-  const loadInvitations = async () => {
+  const loadInvitations = useCallback(async () => {
     const supabase = getSupabaseClient();
     if (!supabase) return;
 
     try {
-      const { data, error } = await supabase
+      const { data, error } = (await supabase
         .from('invitations')
         .select('*')
         .eq('band_id', bandId)
-        .order('invited_at', { ascending: false });
+        .order('invited_at', { ascending: false })) as {
+        data: Invitation[] | null;
+        error: unknown;
+      };
 
       if (error) throw error;
       setInvitations(data || []);
     } catch (err) {
       console.error('Error loading invitations:', err);
     }
-  };
+  }, [bandId]);
+
+  // Load invitations
+  useEffect(() => {
+    loadInvitations();
+  }, [loadInvitations]);
 
   const handleInvite = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -97,14 +100,18 @@ export const InvitationManager: React.FC<InvitationManagerProps> = ({
       }
 
       // Create invitation
-      const { error: inviteError } = await supabase
-        .from('invitations')
-        .insert({
-          band_id: bandId,
-          email: newEmail.toLowerCase(),
-          invited_by: currentUserId,
-          status: 'pending'
-        });
+      const invitationData = {
+        band_id: bandId,
+        email: newEmail.toLowerCase(),
+        invited_by: currentUserId,
+        status: 'pending',
+      };
+      // Type assertion required: Supabase's generated types don't match runtime schema
+      const { error: inviteError } = await (
+        supabase
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          .from('invitations') as any
+      ).insert([invitationData]);
 
       if (inviteError) throw inviteError;
 
@@ -126,8 +133,12 @@ export const InvitationManager: React.FC<InvitationManagerProps> = ({
     if (!supabase) return;
 
     try {
-      const { error } = await supabase
-        .from('invitations')
+      // Type assertion required: Supabase's generated types don't match runtime schema
+      const { error } = await (
+        supabase
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          .from('invitations') as any
+      )
         .update({ status: 'cancelled' })
         .eq('id', invitationId);
 
@@ -143,7 +154,7 @@ export const InvitationManager: React.FC<InvitationManagerProps> = ({
     return date.toLocaleDateString('en-US', {
       month: 'short',
       day: 'numeric',
-      year: 'numeric'
+      year: 'numeric',
     });
   };
 
@@ -162,11 +173,13 @@ export const InvitationManager: React.FC<InvitationManagerProps> = ({
     const styles = {
       pending: 'bg-yellow-900/20 text-yellow-400 border-yellow-900/50',
       accepted: 'bg-green-900/20 text-green-400 border-green-900/50',
-      cancelled: 'bg-red-900/20 text-red-400 border-red-900/50'
+      cancelled: 'bg-red-900/20 text-red-400 border-red-900/50',
     };
 
     return (
-      <span className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium border ${styles[status as keyof typeof styles]}`}>
+      <span
+        className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium border ${styles[status as keyof typeof styles]}`}
+      >
         {getStatusIcon(status)}
         {status.charAt(0).toUpperCase() + status.slice(1)}
       </span>
@@ -194,7 +207,7 @@ export const InvitationManager: React.FC<InvitationManagerProps> = ({
                   id="email"
                   type="email"
                   value={newEmail}
-                  onChange={(e) => setNewEmail(e.target.value)}
+                  onChange={e => setNewEmail(e.target.value)}
                   placeholder="member@example.com"
                   className="w-full pl-10 pr-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
                   disabled={isLoading}
@@ -223,7 +236,8 @@ export const InvitationManager: React.FC<InvitationManagerProps> = ({
           )}
 
           <p className="text-xs text-zinc-500">
-            New members will automatically join the band when they sign up with the invited email address.
+            New members will automatically join the band when they sign up with the invited email
+            address.
           </p>
         </form>
       )}
@@ -231,7 +245,8 @@ export const InvitationManager: React.FC<InvitationManagerProps> = ({
       {!isAdmin && (
         <div className="bg-zinc-800/50 border border-zinc-700 rounded-lg p-4">
           <p className="text-sm text-zinc-400">
-            Only band admins can invite new members. Contact your band administrator to send invitations.
+            Only band admins can invite new members. Contact your band administrator to send
+            invitations.
           </p>
         </div>
       )}
@@ -241,15 +256,13 @@ export const InvitationManager: React.FC<InvitationManagerProps> = ({
         <div className="space-y-3">
           <h4 className="text-sm font-medium text-zinc-400">Invitation History</h4>
           <div className="space-y-2">
-            {invitations.map((invitation) => (
+            {invitations.map(invitation => (
               <div
                 key={invitation.id}
                 className="flex items-center justify-between p-3 bg-zinc-800/50 border border-zinc-700 rounded-lg"
               >
                 <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-zinc-100 truncate">
-                    {invitation.email}
-                  </p>
+                  <p className="text-sm font-medium text-zinc-100 truncate">{invitation.email}</p>
                   <p className="text-xs text-zinc-500">
                     Invited {formatDate(invitation.invited_at)}
                   </p>

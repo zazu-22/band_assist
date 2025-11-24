@@ -1,4 +1,4 @@
-import { Song, BandMember, BandEvent, SongChart } from '../types';
+import { Song, BandMember, BandEvent } from '../types';
 import { IStorageService, LoadResult } from './IStorageService';
 import { getSupabaseClient, isSupabaseConfigured } from './supabaseClient';
 import { RealtimeChannel } from '@supabase/supabase-js';
@@ -13,7 +13,7 @@ export class SupabaseStorageService implements IStorageService {
 
   constructor() {
     if (!isSupabaseConfigured()) {
-      console.warn('SupabaseStorageService initialized but Supabase is not configured');
+      // Supabase not configured
     }
   }
 
@@ -23,7 +23,6 @@ export class SupabaseStorageService implements IStorageService {
    */
   setCurrentBand(bandId: string): void {
     this.currentBandId = bandId;
-    console.log('✅ Band context set:', bandId);
   }
 
   /**
@@ -52,85 +51,130 @@ export class SupabaseStorageService implements IStorageService {
       throw new Error('No band selected. Call setCurrentBand() first.');
     }
 
+    type MemberInsert = {
+      id: string;
+      name: string;
+      roles: string[];
+      avatar_color: string | null;
+      band_id: string;
+    };
+
+    type SongInsert = {
+      id: string;
+      title: string;
+      artist: string;
+      duration: string | null;
+      bpm: number | null;
+      key: string | null;
+      is_original: boolean;
+      status: string;
+      target_date: string | null;
+      charts: unknown;
+      assignments: unknown;
+      parts: unknown;
+      backing_track_url: string | null;
+      backing_track_storage_path: string | null;
+      ai_analysis: string | null;
+      lyrics: string | null;
+      sort_order: number | null;
+      band_id: string;
+    };
+
+    type EventInsert = {
+      id: string;
+      title: string;
+      date: string;
+      time: string | null;
+      type: string;
+      location: string | null;
+      notes: string | null;
+      band_id: string;
+    };
+
+    type RoleInsert = {
+      name: string;
+      band_id: string;
+    };
+
     try {
       // Save members
+      const memberData: MemberInsert[] = members.map(m => ({
+        id: m.id,
+        name: m.name,
+        roles: m.roles,
+        avatar_color: m.avatarColor || null,
+        band_id: this.currentBandId!,
+      }));
       const { error: membersError } = await supabase
         .from('band_members')
-        .upsert(
-          members.map(m => ({
-            id: m.id,
-            name: m.name,
-            roles: m.roles,
-            avatar_color: m.avatarColor || null,
-            band_id: this.currentBandId
-          })),
-          { onConflict: 'id' }
-        );
+        // Type assertion required: Supabase's generated types don't match our data structure
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .upsert(memberData as any, { onConflict: 'id' });
 
       if (membersError) throw membersError;
 
       // Save songs
+      const songData: SongInsert[] = songs.map(s => ({
+        id: s.id,
+        title: s.title,
+        artist: s.artist,
+        duration: s.duration || null,
+        bpm: s.bpm || null,
+        key: s.key || null,
+        is_original: s.isOriginal,
+        status: s.status,
+        target_date: s.targetDate || null,
+        charts: s.charts || [],
+        assignments: s.assignments || [],
+        parts: s.parts || [],
+        backing_track_url: s.backingTrackUrl || null,
+        backing_track_storage_path: s.backingTrackStoragePath || null,
+        ai_analysis: s.aiAnalysis || null,
+        lyrics: s.lyrics || null,
+        sort_order: s.sortOrder !== undefined ? s.sortOrder : null,
+        band_id: this.currentBandId!,
+      }));
       const { error: songsError } = await supabase
         .from('songs')
-        .upsert(
-          songs.map(s => ({
-            id: s.id,
-            title: s.title,
-            artist: s.artist,
-            duration: s.duration || null,
-            bpm: s.bpm || null,
-            key: s.key || null,
-            is_original: s.isOriginal,
-            status: s.status,
-            target_date: s.targetDate || null,
-            charts: s.charts || [],
-            assignments: s.assignments || [],
-            parts: s.parts || [],
-            backing_track_url: s.backingTrackUrl || null,
-            backing_track_storage_path: s.backingTrackStoragePath || null,
-            ai_analysis: s.aiAnalysis || null,
-            lyrics: s.lyrics || null,
-            sort_order: s.sortOrder !== undefined ? s.sortOrder : null,
-            band_id: this.currentBandId
-          })),
-          { onConflict: 'id' }
-        );
+        // Type assertion required: Supabase's generated types don't match our data structure
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .upsert(songData as any, { onConflict: 'id' });
 
       if (songsError) throw songsError;
 
       // Save events
+      const eventData: EventInsert[] = events.map(e => ({
+        id: e.id,
+        title: e.title,
+        date: e.date,
+        time: e.time || null,
+        type: e.type,
+        location: e.location || null,
+        notes: e.notes || null,
+        band_id: this.currentBandId!,
+      }));
       const { error: eventsError } = await supabase
         .from('band_events')
-        .upsert(
-          events.map(e => ({
-            id: e.id,
-            title: e.title,
-            date: e.date,
-            time: e.time || null,
-            type: e.type,
-            location: e.location || null,
-            notes: e.notes || null,
-            band_id: this.currentBandId
-          })),
-          { onConflict: 'id' }
-        );
+        // Type assertion required: Supabase's generated types don't match our data structure
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .upsert(eventData as any, { onConflict: 'id' });
 
       if (eventsError) throw eventsError;
 
       // Save roles (upsert by name + band_id)
+      const roleData: RoleInsert[] = roles.map(r => ({ name: r, band_id: this.currentBandId! }));
       const { error: rolesError } = await supabase
         .from('roles')
-        .upsert(
-          roles.map(r => ({ name: r, band_id: this.currentBandId })),
-          { onConflict: 'name,band_id', ignoreDuplicates: true }
-        );
+        // Type assertion required: Supabase's generated types don't match our data structure
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        .upsert(roleData as any, { onConflict: 'name,band_id', ignoreDuplicates: true });
 
       if (rolesError) throw rolesError;
-
-      console.log('✅ Data saved to Supabase successfully');
     } catch (error) {
       console.error('Error saving to Supabase:', error);
-      throw new Error(`Failed to save data: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      throw new Error(
+        `Failed to save data: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
     }
   }
 
@@ -140,42 +184,78 @@ export class SupabaseStorageService implements IStorageService {
   async load(): Promise<LoadResult> {
     const supabase = getSupabaseClient();
     if (!supabase) {
-      console.warn('Supabase not configured, returning empty data');
       return { songs: null, members: null, roles: null, events: null };
     }
 
     try {
       // Load members
-      const { data: membersData, error: membersError } = await supabase
+      type MemberRow = {
+        id: string;
+        name: string;
+        roles: string[];
+        avatar_color: string | null;
+      };
+      const { data: membersData, error: membersError } = (await supabase
         .from('band_members')
         .select('*')
-        .order('name');
+        .order('name')) as { data: MemberRow[] | null; error: unknown };
 
       if (membersError) throw membersError;
 
       // Load songs
       // Order by sort_order first (for setlist view), then by title for unordered songs
-      const { data: songsData, error: songsError } = await supabase
+      type SongRow = {
+        id: string;
+        title: string;
+        artist: string;
+        duration: string | null;
+        bpm: number | null;
+        key: string | null;
+        is_original: boolean;
+        status: string;
+        target_date: string | null;
+        charts: unknown;
+        assignments: unknown;
+        parts: unknown;
+        backing_track_url: string | null;
+        backing_track_storage_path: string | null;
+        ai_analysis: string | null;
+        lyrics: string | null;
+        sort_order: number | null;
+      };
+      const { data: songsData, error: songsError } = (await supabase
         .from('songs')
         .select('*')
         .order('sort_order', { ascending: true, nullsFirst: false })
-        .order('title', { ascending: true });
+        .order('title', { ascending: true })) as { data: SongRow[] | null; error: unknown };
 
       if (songsError) throw songsError;
 
       // Load events
-      const { data: eventsData, error: eventsError } = await supabase
+      type EventRow = {
+        id: string;
+        title: string;
+        date: string;
+        time: string | null;
+        type: string;
+        location: string | null;
+        notes: string | null;
+      };
+      const { data: eventsData, error: eventsError } = (await supabase
         .from('band_events')
         .select('*')
-        .order('date');
+        .order('date')) as { data: EventRow[] | null; error: unknown };
 
       if (eventsError) throw eventsError;
 
       // Load roles
-      const { data: rolesData, error: rolesError } = await supabase
+      type RoleRow = {
+        name: string;
+      };
+      const { data: rolesData, error: rolesError } = (await supabase
         .from('roles')
         .select('name')
-        .order('name');
+        .order('name')) as { data: RoleRow[] | null; error: unknown };
 
       if (rolesError) throw rolesError;
 
@@ -185,7 +265,7 @@ export class SupabaseStorageService implements IStorageService {
             id: m.id,
             name: m.name,
             roles: m.roles,
-            avatarColor: m.avatar_color || undefined
+            avatarColor: m.avatar_color || undefined,
           }))
         : null;
 
@@ -200,9 +280,15 @@ export class SupabaseStorageService implements IStorageService {
             isOriginal: s.is_original,
             status: s.status as 'To Learn' | 'In Progress' | 'Performance Ready',
             targetDate: s.target_date || undefined,
-            charts: s.charts || [],
-            assignments: s.assignments || [],
-            parts: s.parts || [],
+            // Type assertion required: Supabase's generated types don't match our data structure
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            charts: (s.charts as any) || [],
+            // Type assertion required: Supabase's generated types don't match our data structure
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            assignments: (s.assignments as any) || [],
+            // Type assertion required: Supabase's generated types don't match our data structure
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            parts: (s.parts as any) || [],
             backingTrackUrl: s.backing_track_url || undefined,
             backingTrackStoragePath: s.backing_track_storage_path || undefined,
             aiAnalysis: s.ai_analysis || undefined,
@@ -211,7 +297,7 @@ export class SupabaseStorageService implements IStorageService {
             // Legacy fields (not used but kept for compatibility)
             annotations: undefined,
             tabContent: undefined,
-            tabUrl: undefined
+            tabUrl: undefined,
           }))
         : null;
 
@@ -223,7 +309,7 @@ export class SupabaseStorageService implements IStorageService {
             time: e.time || undefined,
             type: e.type as 'PRACTICE' | 'GIG' | 'OTHER',
             location: e.location || undefined,
-            notes: e.notes || undefined
+            notes: e.notes || undefined,
           }))
         : null;
 
@@ -242,12 +328,12 @@ export class SupabaseStorageService implements IStorageService {
   exportData(songs: Song[], members: BandMember[], roles: string[], events: BandEvent[]): void {
     const data = {
       version: 3,
-      appName: "SharpDressedBand",
+      appName: 'SharpDressedBand',
       timestamp: new Date().toISOString(),
       songs,
       members,
       roles,
-      events
+      events,
     };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -269,7 +355,7 @@ export class SupabaseStorageService implements IStorageService {
   ): Promise<{ songs: Song[]; members: BandMember[]; roles: string[]; events: BandEvent[] }> {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
-      reader.onload = (e) => {
+      reader.onload = e => {
         try {
           const text = e.target?.result as string;
           const data = JSON.parse(text);
@@ -283,7 +369,7 @@ export class SupabaseStorageService implements IStorageService {
             songs: data.songs,
             members: data.members,
             roles: data.roles || [],
-            events: data.events || []
+            events: data.events || [],
           });
         } catch (err) {
           reject(err);
@@ -327,23 +413,33 @@ export class SupabaseStorageService implements IStorageService {
         .from('band-files')
         .upload(storagePath, file, {
           contentType: mimeType,
-          upsert: false
+          upsert: false,
         });
 
       if (uploadError) throw uploadError;
 
       // Record file metadata
-      const { error: metadataError } = await supabase.from('files').insert({
+      type FileInsert = {
+        id: string;
+        storage_path: string;
+        file_name: string;
+        mime_type: string;
+        file_size: number;
+        band_id: string;
+      };
+      const fileMetadata: FileInsert = {
         id: fileId,
         storage_path: storagePath,
         file_name: fileName,
         mime_type: mimeType,
         file_size: file.size,
-        band_id: this.currentBandId
-      });
+        band_id: this.currentBandId!,
+      };
+      // Type assertion required: Supabase's generated types don't match our data structure
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      const { error: metadataError } = await supabase.from('files').insert(fileMetadata as any);
 
       if (metadataError) {
-        console.warn('Failed to save file metadata:', metadataError);
         // Don't fail the upload if metadata fails
       }
 
@@ -383,7 +479,7 @@ export class SupabaseStorageService implements IStorageService {
     if (isGp) {
       const reader = new FileReader();
       const base64Promise = new Promise<string>((resolve, reject) => {
-        reader.onload = (e) => {
+        reader.onload = e => {
           const result = e.target?.result as string;
           resolve(result);
         };
@@ -394,8 +490,7 @@ export class SupabaseStorageService implements IStorageService {
       try {
         const storageBase64 = await base64Promise;
         return { url, storagePath, storageBase64 };
-      } catch (error) {
-        console.warn('Failed to generate base64 for GP file:', error);
+      } catch (_error) {
         return { url, storagePath };
       }
     }
@@ -462,38 +557,68 @@ export class SupabaseStorageService implements IStorageService {
     const supabase = getSupabaseClient();
     if (!supabase) return;
 
+    type DbSong = {
+      id: string;
+      title: string;
+      artist: string;
+      duration: string | null;
+      bpm: number | null;
+      key: string | null;
+      is_original: boolean;
+      status: string;
+      target_date?: string;
+      charts?: unknown[];
+      assignments?: unknown[];
+      parts?: unknown[];
+      backing_track_url?: string;
+      ai_analysis?: string;
+      lyrics?: string;
+    };
+
+    type DbMember = {
+      id: string;
+      name: string;
+      roles: string[];
+      avatar_color?: string;
+    };
+
+    type DbEvent = {
+      id: string;
+      title: string;
+      date: string;
+      time?: string;
+      type: string;
+      location?: string;
+      notes?: string;
+    };
+
     // Subscribe to songs
     if (callbacks.onSongsChange) {
       const songsChannel = supabase
         .channel('songs-changes')
-        .on(
-          'postgres_changes',
-          { event: '*', schema: 'public', table: 'songs' },
-          (payload) => {
-            console.log('Song changed:', payload);
-            if (payload.new && callbacks.onSongsChange) {
-              const dbSong = payload.new as any;
-              const song: Song = {
-                id: dbSong.id,
-                title: dbSong.title,
-                artist: dbSong.artist,
-                duration: dbSong.duration || '',
-                bpm: dbSong.bpm || 120,
-                key: dbSong.key || 'C',
-                isOriginal: dbSong.is_original,
-                status: dbSong.status,
-                targetDate: dbSong.target_date,
-                charts: dbSong.charts || [],
-                assignments: dbSong.assignments || [],
-                parts: dbSong.parts || [],
-                backingTrackUrl: dbSong.backing_track_url,
-                aiAnalysis: dbSong.ai_analysis,
-                lyrics: dbSong.lyrics
-              };
-              callbacks.onSongsChange(song);
-            }
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'songs' }, payload => {
+          if (payload.new && callbacks.onSongsChange) {
+            const dbSong = payload.new as DbSong;
+            const song: Song = {
+              id: dbSong.id,
+              title: dbSong.title,
+              artist: dbSong.artist,
+              duration: dbSong.duration || '',
+              bpm: dbSong.bpm || 120,
+              key: dbSong.key || 'C',
+              isOriginal: dbSong.is_original,
+              status: dbSong.status as 'To Learn' | 'In Progress' | 'Performance Ready',
+              targetDate: dbSong.target_date,
+              charts: (dbSong.charts as []) || [],
+              assignments: (dbSong.assignments as []) || [],
+              parts: (dbSong.parts as []) || [],
+              backingTrackUrl: dbSong.backing_track_url,
+              aiAnalysis: dbSong.ai_analysis,
+              lyrics: dbSong.lyrics,
+            };
+            callbacks.onSongsChange(song);
           }
-        )
+        })
         .subscribe();
 
       this.realtimeChannels.push(songsChannel);
@@ -506,15 +631,14 @@ export class SupabaseStorageService implements IStorageService {
         .on(
           'postgres_changes',
           { event: '*', schema: 'public', table: 'band_members' },
-          (payload) => {
-            console.log('Member changed:', payload);
+          payload => {
             if (payload.new && callbacks.onMembersChange) {
-              const dbMember = payload.new as any;
+              const dbMember = payload.new as DbMember;
               const member: BandMember = {
                 id: dbMember.id,
                 name: dbMember.name,
                 roles: dbMember.roles,
-                avatarColor: dbMember.avatar_color
+                avatarColor: dbMember.avatar_color,
               };
               callbacks.onMembersChange(member);
             }
@@ -529,26 +653,21 @@ export class SupabaseStorageService implements IStorageService {
     if (callbacks.onEventsChange) {
       const eventsChannel = supabase
         .channel('events-changes')
-        .on(
-          'postgres_changes',
-          { event: '*', schema: 'public', table: 'band_events' },
-          (payload) => {
-            console.log('Event changed:', payload);
-            if (payload.new && callbacks.onEventsChange) {
-              const dbEvent = payload.new as any;
-              const event: BandEvent = {
-                id: dbEvent.id,
-                title: dbEvent.title,
-                date: dbEvent.date,
-                time: dbEvent.time,
-                type: dbEvent.type,
-                location: dbEvent.location,
-                notes: dbEvent.notes
-              };
-              callbacks.onEventsChange(event);
-            }
+        .on('postgres_changes', { event: '*', schema: 'public', table: 'band_events' }, payload => {
+          if (payload.new && callbacks.onEventsChange) {
+            const dbEvent = payload.new as DbEvent;
+            const event: BandEvent = {
+              id: dbEvent.id,
+              title: dbEvent.title,
+              date: dbEvent.date,
+              time: dbEvent.time,
+              type: dbEvent.type as 'PRACTICE' | 'GIG' | 'OTHER',
+              location: dbEvent.location,
+              notes: dbEvent.notes,
+            };
+            callbacks.onEventsChange(event);
           }
-        )
+        })
         .subscribe();
 
       this.realtimeChannels.push(eventsChannel);
@@ -588,7 +707,7 @@ export class SupabaseStorageService implements IStorageService {
 
       return {
         blob: new Blob([arrayBuffer], { type: mimeType }),
-        mimeType
+        mimeType,
       };
     } catch (error) {
       console.error('Error converting data URI to blob:', error);

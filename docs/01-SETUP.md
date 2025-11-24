@@ -181,15 +181,15 @@ VITE_SUPABASE_ANON_KEY=your_anon_public_key_here
 
 ### Required
 
-| Variable | Description | Where to Get |
-|----------|-------------|--------------|
+| Variable         | Description              | Where to Get                           |
+| ---------------- | ------------------------ | -------------------------------------- |
 | `GEMINI_API_KEY` | Google Gemini AI API key | <https://ai.google.dev/> → Get API key |
 
 ### Optional (for Backend Sync)
 
-| Variable | Description | Where to Get |
-|----------|-------------|--------------|
-| `VITE_SUPABASE_URL` | Supabase project URL | Supabase Dashboard → Settings → API → Project URL |
+| Variable                 | Description              | Where to Get                                      |
+| ------------------------ | ------------------------ | ------------------------------------------------- |
+| `VITE_SUPABASE_URL`      | Supabase project URL     | Supabase Dashboard → Settings → API → Project URL |
 | `VITE_SUPABASE_ANON_KEY` | Supabase anon public key | Supabase Dashboard → Settings → API → anon public |
 
 ### Environment File Structure

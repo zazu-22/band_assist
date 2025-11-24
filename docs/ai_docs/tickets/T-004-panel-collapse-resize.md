@@ -515,16 +515,18 @@ export const savePanelState = (state: Partial<PanelState>) => {
 export const loadPanelState = (): PanelState => {
   try {
     const saved = localStorage.getItem(PANEL_STATE_KEY);
-    return saved ? JSON.parse(saved) : {
-      sidebarCollapsed: false,
-      songListWidth: 280,
-      songListVisible: true
-    };
+    return saved
+      ? JSON.parse(saved)
+      : {
+          sidebarCollapsed: false,
+          songListWidth: 280,
+          songListVisible: true,
+        };
   } catch {
     return {
       sidebarCollapsed: false,
       songListWidth: 280,
-      songListVisible: true
+      songListVisible: true,
     };
   }
 };

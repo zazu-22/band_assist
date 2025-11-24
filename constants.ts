@@ -1,10 +1,9 @@
-
-import { Song, Instrument } from './types';
+import { Song } from './types';
 
 export const INITIAL_SONGS: Song[] = [
   {
     id: '1763776320897',
-    title: 'Gimme All Your Lovin\'',
+    title: "Gimme All Your Lovin'",
     artist: 'ZZ Top',
     duration: '3:30',
     bpm: 120,
@@ -13,7 +12,7 @@ export const INITIAL_SONGS: Song[] = [
     status: 'To Learn',
     assignments: [],
     parts: [],
-    charts: []
+    charts: [],
   },
   {
     id: '1763776327699',
@@ -26,7 +25,7 @@ export const INITIAL_SONGS: Song[] = [
     status: 'To Learn',
     assignments: [],
     parts: [],
-    charts: []
+    charts: [],
   },
   {
     id: '1763776334966',
@@ -39,7 +38,7 @@ export const INITIAL_SONGS: Song[] = [
     status: 'To Learn',
     assignments: [],
     parts: [],
-    charts: []
+    charts: [],
   },
   {
     id: '1763776342136',
@@ -52,11 +51,11 @@ export const INITIAL_SONGS: Song[] = [
     status: 'To Learn',
     assignments: [],
     parts: [],
-    charts: []
+    charts: [],
   },
   {
     id: '1763776350340',
-    title: 'I\'m Bad, I\'m Nationwide',
+    title: "I'm Bad, I'm Nationwide",
     artist: 'ZZ Top',
     duration: '3:30',
     bpm: 120,
@@ -65,7 +64,7 @@ export const INITIAL_SONGS: Song[] = [
     status: 'To Learn',
     assignments: [],
     parts: [],
-    charts: []
+    charts: [],
   },
   {
     id: '1763775855500',
@@ -84,11 +83,11 @@ export const INITIAL_SONGS: Song[] = [
       { memberId: '1763776023343', role: 'Rhythm Guitar' },
       { memberId: '1763776025207', role: 'Bass Guitar' },
       { memberId: '1763776026538', role: 'Rhythm Guitar' },
-      { memberId: '1763776028016', role: 'Lead Vocals' }
+      { memberId: '1763776028016', role: 'Lead Vocals' },
     ],
     parts: [],
     charts: [],
-    targetDate: '2025-11-27'
+    targetDate: '2025-11-27',
   },
   {
     id: '1763776357861',
@@ -101,7 +100,7 @@ export const INITIAL_SONGS: Song[] = [
     status: 'To Learn',
     assignments: [],
     parts: [],
-    charts: []
+    charts: [],
   },
   {
     id: '1763776363853',
@@ -114,7 +113,7 @@ export const INITIAL_SONGS: Song[] = [
     status: 'To Learn',
     assignments: [],
     parts: [],
-    charts: []
+    charts: [],
   },
   {
     id: '1763776292213',
@@ -131,22 +130,22 @@ export const INITIAL_SONGS: Song[] = [
       { memberId: '1763776023343', role: 'Rhythm Guitar' },
       { memberId: '1763776025207', role: 'Bass Guitar' },
       { memberId: '1763776026538', role: 'Rhythm Guitar' },
-      { memberId: '1763776028016', role: 'Lead Vocals' }
+      { memberId: '1763776028016', role: 'Lead Vocals' },
     ],
     parts: [],
     charts: [],
-    targetDate: '2025-11-27'
-  }
+    targetDate: '2025-11-27',
+  },
 ];
 
 export const INSTRUMENT_ICONS: Record<string, string> = {
   'Lead Guitar': '🎸',
   'Rhythm Guitar': '🎸',
   'Bass Guitar': '🎸',
-  'Drums': '🥁',
-  'Synthesizer': '🎹',
+  Drums: '🥁',
+  Synthesizer: '🎹',
   'Lead Vocals': '🎤',
   'Backing Vocals': '🎤',
   // Default fallback
-  'default': '🎵'
+  default: '🎵',
 };

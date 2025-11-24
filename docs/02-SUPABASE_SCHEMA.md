@@ -15,14 +15,14 @@ This document describes the database schema for the Band Assist backend using Su
 
 Stores band roster information.
 
-| Column | Type | Constraints | Description |
-|--------|------|-------------|-------------|
-| `id` | UUID | PRIMARY KEY, DEFAULT uuid_generate_v4() | Unique member identifier |
-| `name` | TEXT | NOT NULL | Member's display name |
-| `roles` | TEXT[] | NOT NULL DEFAULT '{}' | Preferred instruments/roles |
-| `avatar_color` | TEXT | | Color for UI avatars (hex code) |
-| `created_at` | TIMESTAMPTZ | NOT NULL DEFAULT NOW() | Record creation timestamp |
-| `updated_at` | TIMESTAMPTZ | NOT NULL DEFAULT NOW() | Last update timestamp |
+| Column         | Type        | Constraints                             | Description                     |
+| -------------- | ----------- | --------------------------------------- | ------------------------------- |
+| `id`           | UUID        | PRIMARY KEY, DEFAULT uuid_generate_v4() | Unique member identifier        |
+| `name`         | TEXT        | NOT NULL                                | Member's display name           |
+| `roles`        | TEXT[]      | NOT NULL DEFAULT '{}'                   | Preferred instruments/roles     |
+| `avatar_color` | TEXT        |                                         | Color for UI avatars (hex code) |
+| `created_at`   | TIMESTAMPTZ | NOT NULL DEFAULT NOW()                  | Record creation timestamp       |
+| `updated_at`   | TIMESTAMPTZ | NOT NULL DEFAULT NOW()                  | Last update timestamp           |
 
 **Indexes:**
 
@@ -34,27 +34,27 @@ Stores band roster information.
 
 Stores song information with nested data in JSONB.
 
-| Column | Type | Constraints | Description |
-|--------|------|-------------|-------------|
-| `id` | UUID | PRIMARY KEY, DEFAULT uuid_generate_v4() | Unique song identifier |
-| `title` | TEXT | NOT NULL | Song title |
-| `artist` | TEXT | NOT NULL | Artist/composer name |
-| `duration` | TEXT | | Song duration (e.g., "3:45") |
-| `bpm` | INTEGER | | Beats per minute |
-| `key` | TEXT | | Musical key (e.g., "Am", "C") |
-| `is_original` | BOOLEAN | NOT NULL DEFAULT FALSE | Original composition flag |
-| `status` | TEXT | NOT NULL | "To Learn", "In Progress", or "Performance Ready" |
-| `target_date` | DATE | | Target date for learning completion |
-| `charts` | JSONB | NOT NULL DEFAULT '[]' | Array of SongChart objects |
-| `assignments` | JSONB | NOT NULL DEFAULT '[]' | Array of Assignment objects |
-| `parts` | JSONB | NOT NULL DEFAULT '[]' | Array of SongPart objects |
-| `backing_track_url` | TEXT | | Signed Storage URL for backing track audio file |
-| `backing_track_storage_path` | TEXT | | Storage bucket path (audio/{songId}/{fileId}.ext) |
-| `ai_analysis` | TEXT | | AI-generated practice tips |
-| `lyrics` | TEXT | | Song lyrics (legacy field) |
-| `sort_order` | INTEGER | | Position in setlist view (NULL = not ordered) |
-| `created_at` | TIMESTAMPTZ | NOT NULL DEFAULT NOW() | Record creation timestamp |
-| `updated_at` | TIMESTAMPTZ | NOT NULL DEFAULT NOW() | Last update timestamp |
+| Column                       | Type        | Constraints                             | Description                                       |
+| ---------------------------- | ----------- | --------------------------------------- | ------------------------------------------------- |
+| `id`                         | UUID        | PRIMARY KEY, DEFAULT uuid_generate_v4() | Unique song identifier                            |
+| `title`                      | TEXT        | NOT NULL                                | Song title                                        |
+| `artist`                     | TEXT        | NOT NULL                                | Artist/composer name                              |
+| `duration`                   | TEXT        |                                         | Song duration (e.g., "3:45")                      |
+| `bpm`                        | INTEGER     |                                         | Beats per minute                                  |
+| `key`                        | TEXT        |                                         | Musical key (e.g., "Am", "C")                     |
+| `is_original`                | BOOLEAN     | NOT NULL DEFAULT FALSE                  | Original composition flag                         |
+| `status`                     | TEXT        | NOT NULL                                | "To Learn", "In Progress", or "Performance Ready" |
+| `target_date`                | DATE        |                                         | Target date for learning completion               |
+| `charts`                     | JSONB       | NOT NULL DEFAULT '[]'                   | Array of SongChart objects                        |
+| `assignments`                | JSONB       | NOT NULL DEFAULT '[]'                   | Array of Assignment objects                       |
+| `parts`                      | JSONB       | NOT NULL DEFAULT '[]'                   | Array of SongPart objects                         |
+| `backing_track_url`          | TEXT        |                                         | Signed Storage URL for backing track audio file   |
+| `backing_track_storage_path` | TEXT        |                                         | Storage bucket path (audio/{songId}/{fileId}.ext) |
+| `ai_analysis`                | TEXT        |                                         | AI-generated practice tips                        |
+| `lyrics`                     | TEXT        |                                         | Song lyrics (legacy field)                        |
+| `sort_order`                 | INTEGER     |                                         | Position in setlist view (NULL = not ordered)     |
+| `created_at`                 | TIMESTAMPTZ | NOT NULL DEFAULT NOW()                  | Record creation timestamp                         |
+| `updated_at`                 | TIMESTAMPTZ | NOT NULL DEFAULT NOW()                  | Last update timestamp                             |
 
 **JSONB Structures:**
 
@@ -82,6 +82,7 @@ Stores song information with nested data in JSONB.
 ```
 
 **Note on file storage:**
+
 - `TEXT` charts: Use `content` field for raw text/tablature
 - `IMAGE`/`PDF`/`GP` charts: Files are uploaded to Supabase Storage (`band-files` bucket)
 - `url` contains signed Storage URL (1-year expiry) or base64 data URI for fallback
@@ -123,17 +124,17 @@ Stores song information with nested data in JSONB.
 
 Stores practice schedule, gigs, and other events.
 
-| Column | Type | Constraints | Description |
-|--------|------|-------------|-------------|
-| `id` | UUID | PRIMARY KEY, DEFAULT uuid_generate_v4() | Unique event identifier |
-| `title` | TEXT | NOT NULL | Event name/description |
-| `date` | DATE | NOT NULL | Event date |
-| `time` | TIME | | Event time (optional) |
-| `type` | TEXT | NOT NULL | "PRACTICE", "GIG", or "OTHER" |
-| `location` | TEXT | | Venue or location |
-| `notes` | TEXT | | Additional notes |
-| `created_at` | TIMESTAMPTZ | NOT NULL DEFAULT NOW() | Record creation timestamp |
-| `updated_at` | TIMESTAMPTZ | NOT NULL DEFAULT NOW() | Last update timestamp |
+| Column       | Type        | Constraints                             | Description                   |
+| ------------ | ----------- | --------------------------------------- | ----------------------------- |
+| `id`         | UUID        | PRIMARY KEY, DEFAULT uuid_generate_v4() | Unique event identifier       |
+| `title`      | TEXT        | NOT NULL                                | Event name/description        |
+| `date`       | DATE        | NOT NULL                                | Event date                    |
+| `time`       | TIME        |                                         | Event time (optional)         |
+| `type`       | TEXT        | NOT NULL                                | "PRACTICE", "GIG", or "OTHER" |
+| `location`   | TEXT        |                                         | Venue or location             |
+| `notes`      | TEXT        |                                         | Additional notes              |
+| `created_at` | TIMESTAMPTZ | NOT NULL DEFAULT NOW()                  | Record creation timestamp     |
+| `updated_at` | TIMESTAMPTZ | NOT NULL DEFAULT NOW()                  | Last update timestamp         |
 
 **Indexes:**
 
@@ -147,11 +148,11 @@ Stores practice schedule, gigs, and other events.
 
 Simple lookup table for available instrument/role options.
 
-| Column | Type | Constraints | Description |
-|--------|------|-------------|-------------|
-| `id` | UUID | PRIMARY KEY, DEFAULT uuid_generate_v4() | Unique role identifier |
-| `name` | TEXT | UNIQUE NOT NULL | Role name (e.g., "Lead Guitar") |
-| `created_at` | TIMESTAMPTZ | NOT NULL DEFAULT NOW() | Record creation timestamp |
+| Column       | Type        | Constraints                             | Description                     |
+| ------------ | ----------- | --------------------------------------- | ------------------------------- |
+| `id`         | UUID        | PRIMARY KEY, DEFAULT uuid_generate_v4() | Unique role identifier          |
+| `name`       | TEXT        | UNIQUE NOT NULL                         | Role name (e.g., "Lead Guitar") |
+| `created_at` | TIMESTAMPTZ | NOT NULL DEFAULT NOW()                  | Record creation timestamp       |
 
 **Indexes:**
 
@@ -164,15 +165,15 @@ Simple lookup table for available instrument/role options.
 
 Tracks uploaded files stored in Supabase Storage.
 
-| Column | Type | Constraints | Description |
-|--------|------|-------------|-------------|
-| `id` | UUID | PRIMARY KEY, DEFAULT uuid_generate_v4() | Unique file identifier |
-| `storage_path` | TEXT | NOT NULL | Path in Supabase Storage bucket |
-| `file_name` | TEXT | NOT NULL | Original filename |
-| `mime_type` | TEXT | NOT NULL | MIME type (e.g., "application/pdf") |
-| `file_size` | BIGINT | NOT NULL | File size in bytes |
-| `uploaded_by` | TEXT | | User identifier (for future multi-user) |
-| `created_at` | TIMESTAMPTZ | NOT NULL DEFAULT NOW() | Upload timestamp |
+| Column         | Type        | Constraints                             | Description                             |
+| -------------- | ----------- | --------------------------------------- | --------------------------------------- |
+| `id`           | UUID        | PRIMARY KEY, DEFAULT uuid_generate_v4() | Unique file identifier                  |
+| `storage_path` | TEXT        | NOT NULL                                | Path in Supabase Storage bucket         |
+| `file_name`    | TEXT        | NOT NULL                                | Original filename                       |
+| `mime_type`    | TEXT        | NOT NULL                                | MIME type (e.g., "application/pdf")     |
+| `file_size`    | BIGINT      | NOT NULL                                | File size in bytes                      |
+| `uploaded_by`  | TEXT        |                                         | User identifier (for future multi-user) |
+| `created_at`   | TIMESTAMPTZ | NOT NULL DEFAULT NOW()                  | Upload timestamp                        |
 
 **Indexes:**
 
@@ -237,12 +238,16 @@ Frontend can subscribe to changes:
 ```typescript
 supabase
   .channel('band-updates')
-  .on('postgres_changes', {
-    event: '*',
-    schema: 'public',
-    table: 'songs'
-  }, handleSongUpdate)
-  .subscribe()
+  .on(
+    'postgres_changes',
+    {
+      event: '*',
+      schema: 'public',
+      table: 'songs',
+    },
+    handleSongUpdate
+  )
+  .subscribe();
 ```
 
 ---
@@ -257,12 +262,14 @@ The `sort_order` column enables persistent song ordering for the setlist view:
 - **Sync across users**: Real-time subscriptions ensure all users see the same song order
 
 **Example query:**
+
 ```sql
 SELECT * FROM songs
 ORDER BY sort_order ASC NULLS LAST, title ASC;
 ```
 
 This ensures:
+
 1. Songs with `sort_order` appear first, in order
 2. Songs without `sort_order` appear after, alphabetically
 
@@ -278,6 +285,7 @@ The app supports importing data from JSON backup files:
 4. **JSONB preservation**: Nested structures (charts, assignments, parts) are stored as-is
 
 **Import flow:**
+
 - User selects JSON backup file in Settings
 - App reads file and validates format
 - Files are extracted and uploaded to Storage

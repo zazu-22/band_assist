@@ -16,11 +16,14 @@ class StorageServiceWrapper implements IStorageService {
   constructor() {
     // Require Supabase configuration
     if (!isSupabaseConfigured()) {
-      console.error('❌ Supabase is not configured. Please set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.');
-      throw new Error('Supabase configuration required. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your environment variables.');
+      console.error(
+        'Supabase is not configured. Please set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY.'
+      );
+      throw new Error(
+        'Supabase configuration required. Set VITE_SUPABASE_URL and VITE_SUPABASE_ANON_KEY in your environment variables.'
+      );
     }
 
-    console.log('✅ Using Supabase for data persistence');
     this.activeService = supabaseStorageService;
   }
 
@@ -46,12 +49,7 @@ class StorageServiceWrapper implements IStorageService {
   /**
    * Export data to JSON file
    */
-  exportData(
-    songs: Song[],
-    members: BandMember[],
-    roles: string[],
-    events: BandEvent[]
-  ): void {
+  exportData(songs: Song[], members: BandMember[], roles: string[], events: BandEvent[]): void {
     this.activeService.exportData(songs, members, roles, events);
   }
 
@@ -82,7 +80,10 @@ class StorageServiceWrapper implements IStorageService {
    * Set the current band context (required for multi-user Supabase mode)
    */
   setCurrentBand(bandId: string): void {
-    if ('setCurrentBand' in this.activeService && typeof this.activeService.setCurrentBand === 'function') {
+    if (
+      'setCurrentBand' in this.activeService &&
+      typeof this.activeService.setCurrentBand === 'function'
+    ) {
       this.activeService.setCurrentBand(bandId);
     }
   }
@@ -91,7 +92,10 @@ class StorageServiceWrapper implements IStorageService {
    * Get the current band ID
    */
   getCurrentBandId(): string | null {
-    if ('getCurrentBandId' in this.activeService && typeof this.activeService.getCurrentBandId === 'function') {
+    if (
+      'getCurrentBandId' in this.activeService &&
+      typeof this.activeService.getCurrentBandId === 'function'
+    ) {
       return this.activeService.getCurrentBandId();
     }
     return null;

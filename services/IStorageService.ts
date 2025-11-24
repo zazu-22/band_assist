@@ -33,19 +33,12 @@ export interface IStorageService {
   /**
    * Export all data to a downloadable JSON file
    */
-  exportData(
-    songs: Song[],
-    members: BandMember[],
-    roles: string[],
-    events: BandEvent[]
-  ): void;
+  exportData(songs: Song[], members: BandMember[], roles: string[], events: BandEvent[]): void;
 
   /**
    * Import data from a JSON file
    */
-  importData(
-    file: File
-  ): Promise<{
+  importData(file: File): Promise<{
     songs: Song[];
     members: BandMember[];
     roles: string[];

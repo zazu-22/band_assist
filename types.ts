@@ -1,4 +1,3 @@
-
 export enum Instrument {
   LEAD_GUITAR = 'Lead Guitar',
   RHYTHM_GUITAR = 'Rhythm Guitar',
@@ -6,7 +5,7 @@ export enum Instrument {
   DRUMS = 'Drums',
   SYNTH = 'Synthesizer',
   LEAD_VOCALS = 'Lead Vocals',
-  BACKING_VOCALS = 'Backing Vocals'
+  BACKING_VOCALS = 'Backing Vocals',
 }
 
 export interface BandMember {
@@ -25,7 +24,7 @@ export interface SongPart {
   id: string;
   name: string; // e.g., "Intro", "Solo 1"
   instrument: string; // Changed from Instrument enum to string for flexibility
-  content: string; 
+  content: string;
   assignedToMemberId?: string; // Reference to BandMember.id
 }
 
@@ -90,7 +89,15 @@ export interface Setlist {
   id: string;
   name: string;
   date: string;
-  songs: string[]; 
+  songs: string[];
 }
 
-export type ViewState = 'DASHBOARD' | 'SETLIST' | 'SONG_DETAIL' | 'PRACTICE_ROOM' | 'SETTINGS' | 'BAND_DASHBOARD' | 'PERFORMANCE_MODE' | 'SCHEDULE';
+export type ViewState =
+  | 'DASHBOARD'
+  | 'SETLIST'
+  | 'SONG_DETAIL'
+  | 'PRACTICE_ROOM'
+  | 'SETTINGS'
+  | 'BAND_DASHBOARD'
+  | 'PERFORMANCE_MODE'
+  | 'SCHEDULE';

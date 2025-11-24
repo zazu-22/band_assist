@@ -150,20 +150,20 @@ git commit -m "test: verify automation setup"
 
 ### Automated Workflows
 
-| Workflow | Trigger | Purpose |
-|----------|---------|---------|
-| **CI** | Push, PR | Type checking, linting, building |
-| **Deploy (Vercel)** | Push to main/dev, PR | Deploy to Vercel |
-| **Dependency Update** | Weekly (Mon 9AM) | Update dependencies |
-| **Security Scan** | Weekly (Sun 12AM) | Security analysis |
-| **Release** | Version tags | Create releases |
-| **Claude Code Review** | PR opened | AI code review |
+| Workflow               | Trigger              | Purpose                          |
+| ---------------------- | -------------------- | -------------------------------- |
+| **CI**                 | Push, PR             | Type checking, linting, building |
+| **Deploy (Vercel)**    | Push to main/dev, PR | Deploy to Vercel                 |
+| **Dependency Update**  | Weekly (Mon 9AM)     | Update dependencies              |
+| **Security Scan**      | Weekly (Sun 12AM)    | Security analysis                |
+| **Release**            | Version tags         | Create releases                  |
+| **Claude Code Review** | PR opened            | AI code review                   |
 
 ### Git Hooks
 
-| Hook | Purpose |
-|------|---------|
-| **pre-commit** | Type check, lint, file size check |
+| Hook           | Purpose                            |
+| -------------- | ---------------------------------- |
+| **pre-commit** | Type check, lint, file size check  |
 | **commit-msg** | Enforce conventional commit format |
 
 ## Common Commands

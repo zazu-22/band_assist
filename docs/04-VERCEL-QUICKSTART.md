@@ -41,11 +41,12 @@ Vercel should auto-detect these (verify they match):
 
 Click **"Environment Variables"** and add:
 
-| Name | Value |
-|------|-------|
+| Name             | Value                      |
+| ---------------- | -------------------------- |
 | `GEMINI_API_KEY` | Your actual Gemini API key |
 
 **Important Notes:**
+
 - The Vite config will automatically map this to `process.env.API_KEY` for the app
 - Don't add `VITE_SUPABASE_*` variables unless you want to use Supabase
 - Without Supabase vars, the app uses localStorage (current behavior)
@@ -118,6 +119,7 @@ After deployment, verify:
 **Symptom:** `band.jasonshaffer.me` doesn't load
 
 **Fix:**
+
 - Wait up to 24 hours for DNS propagation (usually 15-30 min)
 - Check DNS: `nslookup band.jasonshaffer.me`
 - Verify CNAME in SiteGround points to `cname.vercel-dns.com`
@@ -127,6 +129,7 @@ After deployment, verify:
 **Symptom:** Vercel shows "Build failed"
 
 **Fix:**
+
 1. Check build logs in Vercel dashboard
 2. Run `npm run build` locally to reproduce
 3. Fix TypeScript/build errors
@@ -137,6 +140,7 @@ After deployment, verify:
 **Symptom:** Chat assistant shows errors
 
 **Fix:**
+
 1. Verify `GEMINI_API_KEY` is set in Vercel environment variables
 2. Check the API key is valid in Google AI Studio
 3. Redeploy after adding/changing env vars
@@ -146,6 +150,7 @@ After deployment, verify:
 **Symptom:** Changes not appearing on live site
 
 **Fix:**
+
 1. Check Vercel deployments - is latest commit deployed?
 2. Hard refresh browser (Ctrl+Shift+R or Cmd+Shift+R)
 3. Clear browser cache
@@ -177,6 +182,7 @@ We can add real-time syncing with Supabase later if needed!
 **Want to add real-time sync later?**
 
 Follow these docs (in order):
+
 1. `/docs/01-SETUP.md` - Set up Supabase
 2. `/docs/03-DEPLOYMENT.md` - Add Supabase env vars to Vercel
 3. Redeploy - App will auto-detect Supabase and enable sync

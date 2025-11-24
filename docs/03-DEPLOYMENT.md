@@ -114,11 +114,11 @@ git push origin main
 
 In Vercel project settings, add these environment variables:
 
-| Variable Name | Value | Where to Find |
-|---------------|-------|---------------|
-| `VITE_SUPABASE_URL` | Your Supabase project URL | Supabase Dashboard → Settings → API → Project URL |
-| `VITE_SUPABASE_ANON_KEY` | Your Supabase anon key | Supabase Dashboard → Settings → API → anon public key |
-| `VITE_API_KEY` or `GEMINI_API_KEY` | Your Google Gemini API key | (existing, keep it) |
+| Variable Name                      | Value                      | Where to Find                                         |
+| ---------------------------------- | -------------------------- | ----------------------------------------------------- |
+| `VITE_SUPABASE_URL`                | Your Supabase project URL  | Supabase Dashboard → Settings → API → Project URL     |
+| `VITE_SUPABASE_ANON_KEY`           | Your Supabase anon key     | Supabase Dashboard → Settings → API → anon public key |
+| `VITE_API_KEY` or `GEMINI_API_KEY` | Your Google Gemini API key | (existing, keep it)                                   |
 
 **Important:** All Vite environment variables must be prefixed with `VITE_`
 

@@ -1,4 +1,3 @@
-
 import React, { useState, useEffect } from 'react';
 import { Session } from '@supabase/supabase-js';
 import { Navigation } from './components/Navigation';
@@ -24,7 +23,7 @@ const App: React.FC = () => {
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
   const [currentBandId, setCurrentBandId] = useState<string | null>(null);
   const [currentBandName, setCurrentBandName] = useState<string>('');
-  const [userBands, setUserBands] = useState<Array<{ id: string; name: string }>>([]);
+  const [_userBands, setUserBands] = useState<Array<{ id: string; name: string }>>([]);
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
 
   // -- State Initialization --
@@ -52,11 +51,15 @@ const App: React.FC = () => {
 
       try {
         // Check for existing session
-        const { data: { session: existingSession } } = await supabase.auth.getSession();
+        const {
+          data: { session: existingSession },
+        } = await supabase.auth.getSession();
         setSession(existingSession);
 
         // Listen for auth changes
-        const { data: { subscription } } = supabase.auth.onAuthStateChange((_event, newSession) => {
+        const {
+          data: { subscription },
+        } = supabase.auth.onAuthStateChange((_event, newSession) => {
           setSession(newSession);
         });
 
@@ -92,10 +95,22 @@ const App: React.FC = () => {
 
       try {
         // Fetch user's bands with role information
-        const { data: userBandsData, error: fetchError } = await supabase
+        type UserBandWithBand = {
+          band_id: string;
+          role: string;
+          bands: {
+            id: string;
+            name: string;
+          } | null;
+        };
+
+        const { data: userBandsData, error: fetchError } = (await supabase
           .from('user_bands')
           .select('band_id, role, bands(id, name)')
-          .eq('user_id', session.user.id);
+          .eq('user_id', session.user.id)) as {
+          data: UserBandWithBand[] | null;
+          error: Error | null;
+        };
 
         if (fetchError) {
           console.error('Error fetching bands:', fetchError);
@@ -105,10 +120,18 @@ const App: React.FC = () => {
 
         // If user has bands, use the first one
         if (userBandsData && userBandsData.length > 0) {
-          const bands = userBandsData.map((ub: any) => ({
-            id: ub.bands.id,
-            name: ub.bands.name
-          }));
+          const bands = userBandsData
+            .filter(ub => ub.bands !== null)
+            .map(ub => ({
+              id: ub.bands!.id,
+              name: ub.bands!.name,
+            }));
+
+          if (bands.length === 0) {
+            setIsLoading(false);
+            return;
+          }
+
           setUserBands(bands);
           setCurrentBandId(bands[0].id);
           setCurrentBandName(bands[0].name);
@@ -120,35 +143,33 @@ const App: React.FC = () => {
 
           // Set band context in storage service
           StorageService.setCurrentBand?.(bands[0].id);
-
-          console.log('✅ Band loaded:', bands[0].name, `(${userRole})`);
         } else {
           // No bands found - create a new one for this user
-          console.log('No bands found, creating new band...');
-
-          const { data: newBand, error: createError } = await supabase
+          const bandData = {
+            name: 'My Band',
+            created_by: session.user.id,
+          };
+          const { data: newBand, error: createError } = (await supabase
             .from('bands')
-            .insert({
-              name: 'My Band',
-              created_by: session.user.id
-            })
+            .insert(bandData as never)
             .select()
-            .single();
+            .single()) as { data: { id: string; name: string } | null; error: Error | null };
 
-          if (createError) {
+          if (createError || !newBand) {
             console.error('Error creating band:', createError);
             setIsLoading(false);
             return;
           }
 
           // Add user to the band as admin
+          const userBandData = {
+            user_id: session.user.id,
+            band_id: newBand.id,
+            role: 'admin',
+          };
           const { error: joinError } = await supabase
             .from('user_bands')
-            .insert({
-              user_id: session.user.id,
-              band_id: newBand.id,
-              role: 'admin'
-            });
+            .insert(userBandData as never);
 
           if (joinError) {
             console.error('Error joining band:', joinError);
@@ -163,8 +184,6 @@ const App: React.FC = () => {
 
           // Set band context in storage service
           StorageService.setCurrentBand?.(newBand.id);
-
-          console.log('✅ New band created:', newBand.name, '(admin)');
         }
       } catch (error) {
         console.error('Error setting up band:', error);
@@ -191,21 +210,48 @@ const App: React.FC = () => {
         const data = await StorageService.load();
 
         setSongs(data.songs || INITIAL_SONGS);
-        setMembers(data.members || [
-          { id: '1763776021452', name: 'Jason', roles: [], avatarColor: 'bg-red-500' },
-          { id: '1763776022630', name: 'Jeff', roles: [], avatarColor: 'bg-blue-500' },
-          { id: '1763776023343', name: 'Joe', roles: [], avatarColor: 'bg-green-500' },
-          { id: '1763776025207', name: 'Berry', roles: [], avatarColor: 'bg-yellow-500' },
-          { id: '1763776026538', name: 'Lori', roles: [], avatarColor: 'bg-purple-500' },
-          { id: '1763776028016', name: 'Hunter', roles: [], avatarColor: 'bg-red-500' },
-        ]);
-        setAvailableRoles(data.roles || [
-          'Lead Guitar', 'Rhythm Guitar', 'Bass Guitar', 'Drums', 'Synthesizer', 'Lead Vocals', 'Backing Vocals'
-        ]);
-        setEvents(data.events || [
-          { id: '1', title: 'Thanksgiving Rehearsal', date: '2025-11-27', type: 'PRACTICE', time: '16:00', location: 'Jeff\'s House', notes: '- Just Got Paid\n- Tush' },
-          { id: '1763776277014', title: 'Christmas Performance', date: '2025-12-28', time: '19:00', type: 'GIG', location: 'Covert View Drive' }
-        ]);
+        setMembers(
+          data.members || [
+            { id: '1763776021452', name: 'Jason', roles: [], avatarColor: 'bg-red-500' },
+            { id: '1763776022630', name: 'Jeff', roles: [], avatarColor: 'bg-blue-500' },
+            { id: '1763776023343', name: 'Joe', roles: [], avatarColor: 'bg-green-500' },
+            { id: '1763776025207', name: 'Berry', roles: [], avatarColor: 'bg-yellow-500' },
+            { id: '1763776026538', name: 'Lori', roles: [], avatarColor: 'bg-purple-500' },
+            { id: '1763776028016', name: 'Hunter', roles: [], avatarColor: 'bg-red-500' },
+          ]
+        );
+        setAvailableRoles(
+          data.roles || [
+            'Lead Guitar',
+            'Rhythm Guitar',
+            'Bass Guitar',
+            'Drums',
+            'Synthesizer',
+            'Lead Vocals',
+            'Backing Vocals',
+          ]
+        );
+        setEvents(
+          data.events || [
+            {
+              id: '1',
+              title: 'Thanksgiving Rehearsal',
+              date: '2025-11-27',
+              type: 'PRACTICE',
+              time: '16:00',
+              location: "Jeff's House",
+              notes: '- Just Got Paid\n- Tush',
+            },
+            {
+              id: '1763776277014',
+              title: 'Christmas Performance',
+              date: '2025-12-28',
+              time: '19:00',
+              type: 'GIG',
+              location: 'Covert View Drive',
+            },
+          ]
+        );
       } catch (error) {
         console.error('Error loading data:', error);
         // Fall back to defaults on error
@@ -219,11 +265,32 @@ const App: React.FC = () => {
           { id: '1763776028016', name: 'Hunter', roles: [], avatarColor: 'bg-red-500' },
         ]);
         setAvailableRoles([
-          'Lead Guitar', 'Rhythm Guitar', 'Bass Guitar', 'Drums', 'Synthesizer', 'Lead Vocals', 'Backing Vocals'
+          'Lead Guitar',
+          'Rhythm Guitar',
+          'Bass Guitar',
+          'Drums',
+          'Synthesizer',
+          'Lead Vocals',
+          'Backing Vocals',
         ]);
         setEvents([
-          { id: '1', title: 'Thanksgiving Rehearsal', date: '2025-11-27', type: 'PRACTICE', time: '16:00', location: 'Jeff\'s House', notes: '- Just Got Paid\n- Tush' },
-          { id: '1763776277014', title: 'Christmas Performance', date: '2025-12-28', time: '19:00', type: 'GIG', location: 'Covert View Drive' }
+          {
+            id: '1',
+            title: 'Thanksgiving Rehearsal',
+            date: '2025-11-27',
+            type: 'PRACTICE',
+            time: '16:00',
+            location: "Jeff's House",
+            notes: '- Just Got Paid\n- Tush',
+          },
+          {
+            id: '1763776277014',
+            title: 'Christmas Performance',
+            date: '2025-12-28',
+            time: '19:00',
+            type: 'GIG',
+            location: 'Covert View Drive',
+          },
         ]);
       } finally {
         setIsLoading(false);
@@ -231,7 +298,7 @@ const App: React.FC = () => {
     };
 
     loadData();
-  }, [isCheckingAuth, currentBandId]);
+  }, [isCheckingAuth, currentBandId, session]);
 
   // -- Auto-Save Effect --
   // Whenever core data changes, save to storage (debounced to avoid excessive saves)
@@ -260,7 +327,7 @@ const App: React.FC = () => {
   };
 
   const handleUpdateSong = (updatedSong: Song) => {
-    setSongs(songs.map(s => s.id === updatedSong.id ? updatedSong : s));
+    setSongs(songs.map(s => (s.id === updatedSong.id ? updatedSong : s)));
   };
 
   const handleLogout = async () => {
@@ -281,11 +348,11 @@ const App: React.FC = () => {
       const song = songs.find(s => s.id === selectedSongId);
       if (song) {
         return (
-          <SongDetail 
-            song={song} 
+          <SongDetail
+            song={song}
             members={members}
             availableRoles={availableRoles}
-            onBack={() => setCurrentView('DASHBOARD')} 
+            onBack={() => setCurrentView('DASHBOARD')}
             onUpdateSong={handleUpdateSong}
           />
         );
@@ -293,53 +360,52 @@ const App: React.FC = () => {
     }
 
     if (currentView === 'PERFORMANCE_MODE') {
-        return (
-            <PerformanceMode 
-                songs={songs} 
-                onExit={() => setCurrentView('DASHBOARD')} 
-            />
-        );
+      return <PerformanceMode songs={songs} onExit={() => setCurrentView('DASHBOARD')} />;
     }
 
     switch (currentView) {
       case 'DASHBOARD':
         return <Dashboard songs={songs} onNavigateToSong={handleSelectSong} events={events} />;
       case 'SCHEDULE':
-        return <ScheduleManager events={events} setEvents={setEvents} songs={songs} onNavigateToSong={handleSelectSong} />;
+        return (
+          <ScheduleManager
+            events={events}
+            setEvents={setEvents}
+            songs={songs}
+            onNavigateToSong={handleSelectSong}
+          />
+        );
       case 'BAND_DASHBOARD':
-        return <BandDashboard members={members} songs={songs} onNavigateToSong={handleSelectSong} />;
+        return (
+          <BandDashboard members={members} songs={songs} onNavigateToSong={handleSelectSong} />
+        );
       case 'SETLIST':
         return <SetlistManager songs={songs} setSongs={setSongs} onSelectSong={handleSelectSong} />;
       case 'SETTINGS':
         return (
-            <Settings
-                members={members}
-                setMembers={setMembers}
-                availableRoles={availableRoles}
-                setAvailableRoles={setAvailableRoles}
-                songs={songs}
-                setSongs={setSongs}
-                events={events}
-                setEvents={setEvents}
-                currentBandId={currentBandId || undefined}
-                currentUserId={session?.user?.id}
-                isAdmin={isAdmin}
-            />
+          <Settings
+            members={members}
+            setMembers={setMembers}
+            availableRoles={availableRoles}
+            setAvailableRoles={setAvailableRoles}
+            songs={songs}
+            setSongs={setSongs}
+            events={events}
+            setEvents={setEvents}
+            currentBandId={currentBandId || undefined}
+            currentUserId={session?.user?.id}
+            isAdmin={isAdmin}
+          />
         );
       case 'PRACTICE_ROOM':
-        return (
-            <PracticeRoom 
-                songs={songs}
-                onNavigateToSong={handleSelectSong}
-            />
-        );
+        return <PracticeRoom songs={songs} onNavigateToSong={handleSelectSong} />;
       default:
         return <Dashboard songs={songs} onNavigateToSong={handleSelectSong} events={events} />;
     }
   };
 
   if (currentView === 'PERFORMANCE_MODE') {
-      return renderContent();
+    return renderContent();
   }
 
   // Show loading screen while checking authentication
@@ -356,10 +422,14 @@ const App: React.FC = () => {
 
   // Show login screen if Supabase is configured but user is not authenticated
   if (isSupabaseConfigured() && !session) {
-    return <Login onLoginSuccess={() => {
-      // Session will be set by the auth state change listener
-      // Just need to trigger re-render
-    }} />;
+    return (
+      <Login
+        onLoginSuccess={() => {
+          // Session will be set by the auth state change listener
+          // Just need to trigger re-render
+        }}
+      />
+    );
   }
 
   // Show loading screen while data is loading
@@ -387,9 +457,7 @@ const App: React.FC = () => {
         showLogout={isSupabaseConfigured() && !!session}
         currentBandName={currentBandName}
       />
-      <main className="flex-1 h-screen overflow-y-auto">
-        {renderContent()}
-      </main>
+      <main className="flex-1 h-screen overflow-y-auto">{renderContent()}</main>
     </div>
   );
 };

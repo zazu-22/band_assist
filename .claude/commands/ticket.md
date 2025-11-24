@@ -11,11 +11,13 @@ Execute ticket **$ARGUMENTS** following the implementation plan documented in th
 **Read these files in order**:
 
 1. **Ticket file** (your primary instructions):
+
    ```text
    docs/ai_docs/$ARGUMENTS*.md
    ```
 
 2. **Project documentation** (for architectural context):
+
    ```text
    CLAUDE.md
    ```
@@ -99,15 +101,18 @@ If the ticket doesn't have a **Completion Notes** or **Implementation Notes** se
 **Implemented**: YYYY-MM-DD
 **Testing Results**: <summary of test results>
 **Changes Made**:
+
 - <file_path>:<line_range> - <description of changes>
 - <file_path>:<line_range> - <description of changes>
 
 **Verification**:
+
 - All testing checklist items pass
 - No console errors
 - <any specific metrics or measurements>
 
 **Notes**:
+
 - <any notable findings, deviations from plan, or future considerations>
 ```
 
@@ -138,6 +143,7 @@ Implements: docs/ai_docs/$ARGUMENTS*.md
 ```
 
 **Commit type options**:
+
 - `feat`: New feature or enhancement
 - `fix`: Bug fix
 - `style`: Visual/CSS changes
@@ -147,6 +153,7 @@ Implements: docs/ai_docs/$ARGUMENTS*.md
 - `test`: Test additions or modifications
 
 **Scope options**:
+
 - `alphatab`: AlphaTab player/renderer
 - `ui`: General UI components
 - `state`: State management
@@ -191,6 +198,7 @@ Implements: docs/ai_docs/T-001-alphatab-player-enhancements.md
 ### State Updates
 
 Always use callback props from App.tsx:
+
 - `onUpdateSong(updatedSong)` - For song modifications
 - `setSongs(newSongs)` - For bulk song operations
 - `setMembers(newMembers)` - For band roster updates
@@ -199,6 +207,7 @@ Always use callback props from App.tsx:
 ### File Uploads
 
 All files are converted to Base64 data URIs:
+
 ```typescript
 const dataUri = `data:${mimeType};base64,${base64String}`;
 ```
@@ -206,6 +215,7 @@ const dataUri = `data:${mimeType};base64,${base64String}`;
 ### AlphaTab API Usage
 
 Always check for API availability:
+
 ```typescript
 if (apiRef.current) {
   apiRef.current.methodName();
@@ -213,6 +223,7 @@ if (apiRef.current) {
 ```
 
 Always check if mounted in event handlers:
+
 ```typescript
 api.eventName.on((e: any) => {
   if (!isMounted) return;
@@ -223,6 +234,7 @@ api.eventName.on((e: any) => {
 ### Component Props
 
 Read-only mode pattern for viewers:
+
 ```typescript
 readOnly?: boolean;  // Disables interactive features
 ```
@@ -230,9 +242,10 @@ readOnly?: boolean;  // Disables interactive features
 ### Error Handling
 
 Check for API key in AI features:
+
 ```typescript
 if (!process.env.API_KEY) {
-  return "Error: API key not configured";
+  return 'Error: API key not configured';
 }
 ```
 

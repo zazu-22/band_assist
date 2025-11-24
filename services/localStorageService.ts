@@ -5,7 +5,7 @@ const STORAGE_KEYS = {
   SONGS: 'sdb_songs',
   MEMBERS: 'sdb_members',
   ROLES: 'sdb_roles',
-  EVENTS: 'sdb_events'
+  EVENTS: 'sdb_events',
 };
 
 /**
@@ -21,8 +21,10 @@ export class LocalStorageService implements IStorageService {
       localStorage.setItem(STORAGE_KEYS.ROLES, JSON.stringify(roles));
       localStorage.setItem(STORAGE_KEYS.EVENTS, JSON.stringify(events));
     } catch (e) {
-      console.error("Storage Quota Exceeded or Error", e);
-      alert("Warning: Browser storage is full. Large files (PDFs/Audio) might not be saved locally. Try deleting unused songs or using the Export Backup feature.");
+      console.error('Storage Quota Exceeded or Error', e);
+      alert(
+        'Warning: Browser storage is full. Large files (PDFs/Audio) might not be saved locally. Try deleting unused songs or using the Export Backup feature.'
+      );
     }
   }
 
@@ -46,26 +48,26 @@ export class LocalStorageService implements IStorageService {
 
           // If legacy content exists but hasn't been migrated to charts yet
           if (migratedCharts.length === 0) {
-             if (song.tabContent) {
-                migratedCharts.push({
-                    id: `legacy-text-${song.id}`,
-                    name: 'Master Tab',
-                    instrument: 'Lead Guitar',
-                    type: 'TEXT',
-                    content: song.tabContent,
-                    annotations: song.annotations || []
-                });
-             }
-             if (song.tabUrl) {
-                 const isPdf = song.tabUrl.includes('application/pdf');
-                 migratedCharts.push({
-                     id: `legacy-file-${song.id}`,
-                     name: isPdf ? 'Sheet Music (PDF)' : 'Chart Image',
-                     instrument: 'Lead Guitar',
-                     type: isPdf ? 'PDF' : 'IMAGE',
-                     url: song.tabUrl
-                 });
-             }
+            if (song.tabContent) {
+              migratedCharts.push({
+                id: `legacy-text-${song.id}`,
+                name: 'Master Tab',
+                instrument: 'Lead Guitar',
+                type: 'TEXT',
+                content: song.tabContent,
+                annotations: song.annotations || [],
+              });
+            }
+            if (song.tabUrl) {
+              const isPdf = song.tabUrl.includes('application/pdf');
+              migratedCharts.push({
+                id: `legacy-file-${song.id}`,
+                name: isPdf ? 'Sheet Music (PDF)' : 'Chart Image',
+                instrument: 'Lead Guitar',
+                type: isPdf ? 'PDF' : 'IMAGE',
+                url: song.tabUrl,
+              });
+            }
           }
           return { ...song, charts: migratedCharts };
         });
@@ -75,10 +77,10 @@ export class LocalStorageService implements IStorageService {
         songs,
         members,
         roles,
-        events
+        events,
       };
     } catch (e) {
-      console.error("Error loading data from storage", e);
+      console.error('Error loading data from storage', e);
       return { songs: null, members: null, roles: null, events: null };
     }
   }
@@ -87,12 +89,12 @@ export class LocalStorageService implements IStorageService {
   exportData(songs: Song[], members: BandMember[], roles: string[], events: BandEvent[]): void {
     const data = {
       version: 3,
-      appName: "SharpDressedBand",
+      appName: 'SharpDressedBand',
       timestamp: new Date().toISOString(),
       songs,
       members,
       roles,
-      events
+      events,
     };
     const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
     const url = URL.createObjectURL(blob);
@@ -107,30 +109,32 @@ export class LocalStorageService implements IStorageService {
   }
 
   // Import data from a JSON file
-  importData(file: File): Promise<{ songs: Song[], members: BandMember[], roles: string[], events: BandEvent[] }> {
+  importData(
+    file: File
+  ): Promise<{ songs: Song[]; members: BandMember[]; roles: string[]; events: BandEvent[] }> {
     return new Promise((resolve, reject) => {
       const reader = new FileReader();
-      reader.onload = (e) => {
+      reader.onload = e => {
         try {
           const text = e.target?.result as string;
           const data = JSON.parse(text);
 
           // Basic validation
           if (!data.songs || !Array.isArray(data.songs) || !data.members) {
-            throw new Error("Invalid backup file format");
+            throw new Error('Invalid backup file format');
           }
 
           resolve({
             songs: data.songs,
             members: data.members,
             roles: data.roles || [],
-            events: data.events || []
+            events: data.events || [],
           });
         } catch (err) {
           reject(err);
         }
       };
-      reader.onerror = () => reject(new Error("Failed to read file"));
+      reader.onerror = () => reject(new Error('Failed to read file'));
       reader.readAsText(file);
     });
   }

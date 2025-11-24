@@ -7,10 +7,9 @@
  * - Preserving all metadata and relationships
  */
 
-import { Song, BandMember, BandEvent, SongChart } from '../types';
+import { Song, SongChart } from '../types';
 import { localStorageService } from './localStorageService';
-import { supabaseStorageService } from './supabaseStorageService';
-import { SupabaseStorageService } from './supabaseStorageService';
+import { supabaseStorageService, SupabaseStorageService } from './supabaseStorageService';
 
 export interface MigrationProgress {
   phase: 'loading' | 'uploading_files' | 'saving_data' | 'complete' | 'error';
@@ -45,7 +44,7 @@ export class MigrationService {
       membersCount: 0,
       eventsCount: 0,
       filesUploaded: 0,
-      errors: []
+      errors: [],
     };
 
     try {
@@ -54,7 +53,7 @@ export class MigrationService {
         phase: 'loading',
         current: 0,
         total: 100,
-        message: 'Loading data from localStorage...'
+        message: 'Loading data from localStorage...',
       });
 
       const localData = localStorageService.load();
@@ -73,7 +72,7 @@ export class MigrationService {
         phase: 'uploading_files',
         current: 0,
         total: songs.length,
-        message: 'Uploading files to Supabase Storage...'
+        message: 'Uploading files to Supabase Storage...',
       });
 
       const migratedSongs = await this.migrateSongFiles(songs);
@@ -84,7 +83,7 @@ export class MigrationService {
         phase: 'saving_data',
         current: 0,
         total: 100,
-        message: 'Saving data to Supabase...'
+        message: 'Saving data to Supabase...',
       });
 
       await supabaseStorageService.save(migratedSongs, members, roles, events);
@@ -98,7 +97,7 @@ export class MigrationService {
         phase: 'complete',
         current: 100,
         total: 100,
-        message: 'Migration complete!'
+        message: 'Migration complete!',
       });
 
       result.success = true;
@@ -111,7 +110,7 @@ export class MigrationService {
         phase: 'error',
         current: 0,
         total: 100,
-        message: `Migration failed: ${errorMessage}`
+        message: `Migration failed: ${errorMessage}`,
       });
 
       return result;
@@ -131,7 +130,7 @@ export class MigrationService {
         phase: 'uploading_files',
         current: i + 1,
         total: songs.length,
-        message: `Uploading files for "${song.title}"...`
+        message: `Uploading files for "${song.title}"...`,
       });
 
       try {
@@ -143,18 +142,19 @@ export class MigrationService {
         // Migrate backing track
         let migratedBackingTrackUrl = song.backingTrackUrl;
         if (song.backingTrackUrl && this.isBase64DataURI(song.backingTrackUrl)) {
-          migratedBackingTrackUrl = await this.uploadBase64File(
-            song.backingTrackUrl,
-            `backing-track-${song.id}.mp3`,
-            song.id,
-            'audio'
-          );
+          migratedBackingTrackUrl =
+            (await this.uploadBase64File(
+              song.backingTrackUrl,
+              `backing-track-${song.id}.mp3`,
+              song.id,
+              'audio'
+            )) || undefined;
         }
 
         migratedSongs.push({
           ...song,
           charts: migratedCharts,
-          backingTrackUrl: migratedBackingTrackUrl
+          backingTrackUrl: migratedBackingTrackUrl,
         });
       } catch (error) {
         console.error(`Error migrating song "${song.title}":`, error);
@@ -182,7 +182,7 @@ export class MigrationService {
 
       return {
         ...chart,
-        url: storageUrl || chart.url // Keep original if upload fails
+        url: storageUrl || chart.url, // Keep original if upload fails
       };
     } catch (error) {
       console.error(`Error migrating chart "${chart.name}":`, error);
@@ -252,7 +252,7 @@ export class MigrationService {
 
       return {
         blob: new Blob([arrayBuffer], { type: mimeType }),
-        mimeType
+        mimeType,
       };
     } catch (error) {
       console.error('Error converting data URI to blob:', error);
@@ -338,13 +338,15 @@ export class MigrationService {
 
       return {
         isValid: issues.length === 0,
-        issues
+        issues,
       };
     } catch (error) {
-      issues.push(`Verification error: ${error instanceof Error ? error.message : 'Unknown error'}`);
+      issues.push(
+        `Verification error: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
       return {
         isValid: false,
-        issues
+        issues,
       };
     }
   }

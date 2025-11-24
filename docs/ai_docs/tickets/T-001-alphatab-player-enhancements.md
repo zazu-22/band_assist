@@ -63,7 +63,7 @@ Guitar Pro File (Base64)
 AlphaTab uses an event-driven architecture. Events are registered with `.on()`:
 
 ```typescript
-api.eventName.on((eventData) => {
+api.eventName.on(eventData => {
   // Handle event
 });
 ```
@@ -91,10 +91,10 @@ Events fire asynchronously and may have slight latency due to audio buffering.
 
 ```typescript
 interface AlphaTabRendererProps {
-  fileData: string;        // Base64 Data URI of .gp file
-  isPlaying?: boolean;     // External playback state control
-  onPlaybackChange?: (isPlaying: boolean) => void;  // Callback
-  readOnly?: boolean;      // Disables player when true
+  fileData: string; // Base64 Data URI of .gp file
+  isPlaying?: boolean; // External playback state control
+  onPlaybackChange?: (isPlaying: boolean) => void; // Callback
+  readOnly?: boolean; // Disables player when true
 }
 ```
 
@@ -118,19 +118,19 @@ interface AlphaTabRendererProps {
 ```typescript
 const settings = {
   core: {
-    fontDirectory: '/font/',      // Local Bravura fonts
-    includeNoteBounds: false,     // Performance optimization
-    useWorkers: true              // Enable web workers
+    fontDirectory: '/font/', // Local Bravura fonts
+    includeNoteBounds: false, // Performance optimization
+    useWorkers: true, // Enable web workers
   },
   player: {
-    enablePlayer: !readOnly,      // Conditional based on prop
-    soundFont: 'CDN_URL',         // MIDI synthesizer samples
-    scrollElement: rootRef.current // Auto-scroll target
+    enablePlayer: !readOnly, // Conditional based on prop
+    soundFont: 'CDN_URL', // MIDI synthesizer samples
+    scrollElement: rootRef.current, // Auto-scroll target
   },
   display: {
-    layoutMode: 'page',           // Vertical wrapping layout
-    staveProfile: 'Default'       // Standard notation display
-  }
+    layoutMode: 'page', // Vertical wrapping layout
+    staveProfile: 'Default', // Standard notation display
+  },
 };
 ```
 
@@ -241,7 +241,7 @@ api.playerPositionChanged.on((e: any) => {
 
 api.playerFinished.on(() => {
   if (!isMounted) return;
-  console.log("[AlphaTab] Playback finished");
+  console.log('[AlphaTab] Playback finished');
   setInternalIsPlaying(false);
   if (onPlaybackChange) onPlaybackChange(false);
 });
@@ -343,7 +343,7 @@ const formatTime = (milliseconds: number): string => {
 
 ```typescript
 const [isLooping, setIsLooping] = useState(false);
-const [loopRange, setLoopRange] = useState<{start: number, end: number} | null>(null);
+const [loopRange, setLoopRange] = useState<{ start: number; end: number } | null>(null);
 const [selectionStart, setSelectionStart] = useState<number | null>(null);
 ```
 
@@ -381,7 +381,7 @@ api.beatMouseDown.on((e: any) => {
     if (selectionStart === null) {
       // First click - set start point
       setSelectionStart(beatStart);
-      console.log("[AlphaTab] Loop start set:", beatStart);
+      console.log('[AlphaTab] Loop start set:', beatStart);
     } else {
       // Second click - create range
       const startTick = Math.min(selectionStart, beatStart);
@@ -391,7 +391,7 @@ api.beatMouseDown.on((e: any) => {
       setLoopRange({ start: startTick, end: endTick });
       setSelectionStart(null);
 
-      console.log("[AlphaTab] Loop range set:", startTick, "-", endTick);
+      console.log('[AlphaTab] Loop range set:', startTick, '-', endTick);
     }
   }
 });
@@ -510,7 +510,7 @@ AlphaTab automatically adds CSS classes to elements during playback:
 **Step 2**: Link CSS in `index.html` (after Tailwind, before closing `</head>`):
 
 ```html
-<link rel="stylesheet" href="/alphatab-custom.css">
+<link rel="stylesheet" href="/alphatab-custom.css" />
 ```
 
 **Testing**:
@@ -529,7 +529,7 @@ AlphaTab automatically adds CSS classes to elements during playback:
 **Current Configuration**:
 
 ```typescript
-scrollElement: rootRef.current  // Line 117
+scrollElement: rootRef.current; // Line 117
 ```
 
 **Testing Checklist**:
@@ -571,9 +571,7 @@ const [metronomeDuration, setMetronomeDuration] = useState<number>(0);
 
 ```typescript
 // Configure to only listen for metronome events (performance)
-api.midiEventsPlayedFilter = [
-  window.alphaTab.midi.MidiEventType.AlphaTabMetronome
-];
+api.midiEventsPlayedFilter = [window.alphaTab.midi.MidiEventType.AlphaTabMetronome];
 
 api.midiEventsPlayed.on((e: any) => {
   if (!isMounted) return;

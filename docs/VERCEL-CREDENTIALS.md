@@ -5,6 +5,7 @@ This guide explains how to get the Vercel credentials needed for automated deplo
 ## Required Credentials
 
 You need three pieces of information:
+
 1. `VERCEL_TOKEN` - Authentication token
 2. `VERCEL_ORG_ID` - Your organization/team ID
 3. `VERCEL_PROJECT_ID` - Your project ID
@@ -35,6 +36,7 @@ vercel link
 ```
 
 Follow the prompts:
+
 - Set up and deploy? **Yes**
 - Which scope? Select your account/team
 - Link to existing project? **No** (if first time) or **Yes** (if project exists)
@@ -58,6 +60,7 @@ You'll see something like:
 ```
 
 **Save these values:**
+
 - `orgId` → Use as `VERCEL_ORG_ID` in GitHub secrets
 - `projectId` → Use as `VERCEL_PROJECT_ID` in GitHub secrets
 
@@ -85,6 +88,7 @@ If you already have a project deployed on Vercel:
 The organization ID is **different from your user ID**.
 
 **For Personal Account:**
+
 ```bash
 # Run this after logging in with CLI
 vercel whoami
@@ -93,6 +97,7 @@ vercel whoami
 The output shows your username. Your org ID is usually `team_` followed by a hash.
 
 **Alternative - From Project Settings:**
+
 1. Go to your project on Vercel dashboard
 2. Click Settings
 3. Scroll to "General"
@@ -100,6 +105,7 @@ The output shows your username. Your org ID is usually `team_` followed by a has
 5. Run `vercel list` to see project details including team ID
 
 **From Browser Console (Advanced):**
+
 1. Open your Vercel dashboard
 2. Open browser DevTools (F12)
 3. Go to Network tab
@@ -109,6 +115,7 @@ The output shows your username. Your org ID is usually `team_` followed by a has
 ### Get Project ID
 
 **Option 1 - From CLI:**
+
 ```bash
 vercel list
 ```
@@ -116,6 +123,7 @@ vercel list
 This shows all projects with their IDs.
 
 **Option 2 - From Project Settings:**
+
 1. Go to your project in Vercel dashboard
 2. Settings → General
 3. The project ID is at the bottom: "Project ID: prj_xxxxxxxxx"
@@ -130,16 +138,19 @@ Once you have all three values:
 4. Add each secret:
 
 ### Add VERCEL_TOKEN
+
 - Name: `VERCEL_TOKEN`
 - Value: (paste your token from Vercel)
 - Click "Add secret"
 
 ### Add VERCEL_ORG_ID
+
 - Name: `VERCEL_ORG_ID`
 - Value: (paste the `orgId` from `.vercel/project.json`)
 - Click "Add secret"
 
 ### Add VERCEL_PROJECT_ID
+
 - Name: `VERCEL_PROJECT_ID`
 - Value: (paste the `projectId` from `.vercel/project.json`)
 - Click "Add secret"
@@ -198,6 +209,7 @@ Once you have all three values:
 To verify your setup works:
 
 1. **Test locally:**
+
    ```bash
    export VERCEL_TOKEN="your_token"
    export VERCEL_ORG_ID="your_org_id"

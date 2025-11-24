@@ -27,7 +27,7 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
     try {
       const { data, error: authError } = await supabase.auth.signInWithPassword({
         email,
-        password
+        password,
       });
 
       if (authError) {
@@ -40,9 +40,7 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
     } catch (err) {
       console.error('Login error:', err);
       setError(
-        err instanceof Error
-          ? err.message
-          : 'Failed to sign in. Check your email and password.'
+        err instanceof Error ? err.message : 'Failed to sign in. Check your email and password.'
       );
     } finally {
       setIsLoading(false);
@@ -58,7 +56,7 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
             <Music className="w-8 h-8 text-white" />
           </div>
           <h1 className="text-3xl font-bold text-zinc-100 mb-2">Band Assist</h1>
-          <p className="text-zinc-400">Sign in to access your band's workspace</p>
+          <p className="text-zinc-400">Sign in to access your band&apos;s workspace</p>
         </div>
 
         {/* Login Form */}
@@ -73,7 +71,7 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
                 id="email"
                 type="email"
                 value={email}
-                onChange={(e) => setEmail(e.target.value)}
+                onChange={e => setEmail(e.target.value)}
                 required
                 autoComplete="email"
                 className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-md text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -91,7 +89,7 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
                 id="password"
                 type="password"
                 value={password}
-                onChange={(e) => setPassword(e.target.value)}
+                onChange={e => setPassword(e.target.value)}
                 required
                 autoComplete="current-password"
                 className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-md text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
@@ -126,9 +124,7 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess }) => {
 
           {/* Help Text */}
           <div className="mt-6 text-center">
-            <p className="text-sm text-zinc-400">
-              Don't have the password?
-            </p>
+            <p className="text-sm text-zinc-400">Don&apos;t have the password?</p>
             <p className="text-xs text-zinc-500 mt-1">
               Contact your band administrator to get access
             </p>
