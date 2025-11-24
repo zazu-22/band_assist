@@ -16,6 +16,12 @@ export interface LoadResult {
 
 export interface IStorageService {
   /**
+   * Set the current band context for multi-band operations
+   * Optional for LocalStorageService, required for SupabaseStorageService
+   */
+  setCurrentBand?(bandId: string): void;
+
+  /**
    * Save all application state
    */
   save(

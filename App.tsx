@@ -112,16 +112,22 @@ const App: React.FC = () => {
   // -- Fetch/Create Band for User --
   // After authentication, fetch user's bands or create a new one
   useEffect(() => {
+    let cancelled = false;
+
     const setupBand = async () => {
       // Skip if not using Supabase or no session
       if (!isSupabaseConfigured() || !session) {
-        setIsLoading(false);
+        if (!cancelled) {
+          setIsLoading(false);
+        }
         return;
       }
 
       const supabase = getSupabaseClient();
       if (!supabase) {
-        setIsLoading(false);
+        if (!cancelled) {
+          setIsLoading(false);
+        }
         return;
       }
 
@@ -144,6 +150,8 @@ const App: React.FC = () => {
           error: Error | null;
         };
 
+        if (cancelled) return;
+
         if (fetchError) {
           console.error('Error fetching bands:', fetchError);
           setIsLoading(false);
@@ -160,9 +168,13 @@ const App: React.FC = () => {
             }));
 
           if (bands.length === 0) {
-            setIsLoading(false);
+            if (!cancelled) {
+              setIsLoading(false);
+            }
             return;
           }
+
+          if (cancelled) return;
 
           setUserBands(bands);
           setCurrentBandId(bands[0].id);
@@ -187,6 +199,8 @@ const App: React.FC = () => {
             .select()
             .single()) as { data: { id: string; name: string } | null; error: Error | null };
 
+          if (cancelled) return;
+
           if (createError || !newBand) {
             console.error('Error creating band:', createError);
             setIsLoading(false);
@@ -203,6 +217,8 @@ const App: React.FC = () => {
             .from('user_bands')
             .insert(userBandData as never);
 
+          if (cancelled) return;
+
           if (joinError) {
             console.error('Error joining band:', joinError);
             setIsLoading(false);
@@ -218,14 +234,20 @@ const App: React.FC = () => {
           StorageService.setCurrentBand?.(newBand.id);
         }
       } catch (error) {
-        console.error('Error setting up band:', error);
-        setIsLoading(false);
+        if (!cancelled) {
+          console.error('Error setting up band:', error);
+          setIsLoading(false);
+        }
       }
     };
 
     if (!isCheckingAuth) {
       setupBand();
     }
+
+    return () => {
+      cancelled = true;
+    };
   }, [session, isCheckingAuth]);
 
   // -- Load Data on Mount --
