@@ -34,10 +34,10 @@ export const Navigation: React.FC<NavigationProps> = ({
 }) => {
   const navItems = [
     { id: 'DASHBOARD', label: 'Dashboard', icon: LayoutDashboard },
+    { id: 'PRACTICE_ROOM', label: 'Practice Room', icon: Mic2 },
+    { id: 'SETLIST', label: 'Setlist Builder', icon: ListMusic },
     { id: 'SCHEDULE', label: 'Schedule', icon: CalendarClock },
     { id: 'BAND_DASHBOARD', label: 'Band Lineup', icon: Users },
-    { id: 'SETLIST', label: 'Setlist Builder', icon: ListMusic },
-    { id: 'PRACTICE_ROOM', label: 'Practice Room', icon: Mic2 },
   ];
 
   return (
@@ -47,9 +47,9 @@ export const Navigation: React.FC<NavigationProps> = ({
           <Music className="text-white w-6 h-6" />
         </div>
         <h1 className="hidden lg:block text-xl font-bold tracking-tighter text-zinc-100">
-          SHARP
+          BAND
           <br />
-          <span className="text-amber-600">DRESSED</span> APP
+          <span className="text-amber-600">ASSIST</span>
         </h1>
       </div>
 
@@ -67,11 +67,10 @@ export const Navigation: React.FC<NavigationProps> = ({
           <button
             key={item.id}
             onClick={() => onNavigate(item.id as ViewState)}
-            className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 group ${
-              currentView === item.id
-                ? 'bg-zinc-800 text-amber-500 shadow-inner'
-                : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-100'
-            }`}
+            className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 group ${currentView === item.id
+              ? 'bg-zinc-800 text-amber-500 shadow-inner'
+              : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-100'
+              }`}
           >
             <item.icon
               className={`w-6 h-6 ${currentView === item.id ? 'stroke-amber-500' : 'group-hover:stroke-zinc-100'}`}
@@ -85,16 +84,15 @@ export const Navigation: React.FC<NavigationProps> = ({
           <div className="h-px bg-zinc-800 mb-4"></div>
           <button
             onClick={() => onNavigate('PERFORMANCE_MODE')}
-            className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 group ${
-              currentView === 'PERFORMANCE_MODE'
-                ? 'bg-red-900/20 text-red-500 shadow-inner border border-red-900/50'
-                : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-red-400'
-            }`}
+            className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 group ${currentView === 'PERFORMANCE_MODE'
+              ? 'bg-red-900/20 text-red-500 shadow-inner border border-red-900/50'
+              : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-red-400'
+              }`}
           >
             <Radio
               className={`w-6 h-6 ${currentView === 'PERFORMANCE_MODE' ? 'stroke-red-500' : 'group-hover:stroke-red-400'}`}
             />
-            <span className="hidden lg:block font-bold tracking-wide">LIVE GIG</span>
+            <span className="hidden lg:block font-bold tracking-wide">Performance Mode</span>
           </button>
         </div>
       </nav>

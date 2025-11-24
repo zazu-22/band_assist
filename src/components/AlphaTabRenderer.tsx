@@ -167,6 +167,7 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
   const [tracks, setTracks] = useState<AlphaTabTrack[]>([]);
   const [currentSpeed, setCurrentSpeed] = useState(1.0);
   const [internalIsPlaying, setInternalIsPlaying] = useState(false);
+  const [playerReady, setPlayerReady] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [retryKey, setRetryKey] = useState(0);
   const [currentTrackIndex, setCurrentTrackIndex] = useState<number | null>(null);
@@ -262,6 +263,7 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
 
       setLoading(true);
       setError(null);
+      setPlayerReady(false);
 
       // Set a timeout for loading
       timeoutId = setTimeout(() => {
@@ -351,6 +353,7 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
 
         const handlePlayerReady = () => {
           if (!isMounted) return;
+          setPlayerReady(true);
         };
 
         const handleRenderStarted = () => {
@@ -778,7 +781,15 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
             <>
               <button
                 onClick={togglePlay}
-                className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${internalIsPlaying ? 'bg-amber-500 text-white' : 'bg-zinc-200 hover:bg-zinc-300 text-zinc-700'}`}
+                disabled={!playerReady}
+                className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
+                  !playerReady
+                    ? 'bg-zinc-200 text-zinc-400 cursor-not-allowed'
+                    : internalIsPlaying
+                      ? 'bg-amber-500 text-white'
+                      : 'bg-zinc-200 hover:bg-zinc-300 text-zinc-700'
+                }`}
+                title={!playerReady ? 'Loading player...' : internalIsPlaying ? 'Pause' : 'Play'}
               >
                 {internalIsPlaying ? <Pause size={20} /> : <Play size={20} className="ml-1" />}
               </button>
