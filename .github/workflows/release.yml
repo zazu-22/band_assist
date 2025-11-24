@@ -85,7 +85,7 @@ jobs:
           echo "$CHANGELOG" | grep -v "^- feat" | grep -v "^- fix" | grep -v "^- docs" >> CHANGELOG_FORMATTED.md || echo "_No other changes_" >> CHANGELOG_FORMATTED.md
 
       - name: Create GitHub Release
-        uses: actions/github-script@v6
+        uses: actions/github-script@v8
         env:
           VERSION: ${{ steps.version.outputs.version }}
         with:
@@ -144,7 +144,7 @@ jobs:
           # This will be handled by the deploy-vercel.yml workflow
 
       - name: Notify release
-        uses: actions/github-script@v6
+        uses: actions/github-script@v8
         with:
           script: |
             const version = '${{ steps.version.outputs.version }}';
