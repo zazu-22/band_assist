@@ -1005,27 +1005,25 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
               )}
 
               {/* BPM Slider Control */}
-              {!readOnly && originalTempo && (
-                <div className="flex items-center gap-2 bg-zinc-200 rounded px-3 py-2">
-                  <Timer size={14} className="text-zinc-500" />
-                  <div className="flex flex-col gap-1">
-                    <input
-                      type="range"
-                      min={Math.round(originalTempo * 0.25)}
-                      max={Math.round(originalTempo * 2.0)}
-                      step="1"
-                      value={currentBPM || originalTempo}
-                      onChange={e => handleBPMChange(parseInt(e.target.value))}
-                      className="w-32 h-1 bg-zinc-300 rounded-lg appearance-none cursor-pointer accent-amber-500"
-                    />
-                    <div className="flex justify-between text-[10px] text-zinc-500">
-                      <span>{Math.round(originalTempo * 0.25)}</span>
-                      <span className="font-semibold text-zinc-700">{currentBPM}</span>
-                      <span>{Math.round(originalTempo * 2.0)}</span>
-                    </div>
+              <div className="flex items-center gap-2 bg-zinc-200 rounded px-3 py-2">
+                <Timer size={14} className="text-zinc-500" />
+                <div className="flex flex-col gap-1">
+                  <input
+                    type="range"
+                    min={Math.round(originalTempo * 0.25)}
+                    max={Math.round(originalTempo * 2.0)}
+                    step="1"
+                    value={currentBPM || originalTempo}
+                    onChange={e => handleBPMChange(parseInt(e.target.value))}
+                    className="w-32 h-1 bg-zinc-300 rounded-lg appearance-none cursor-pointer accent-amber-500"
+                  />
+                  <div className="flex justify-between text-[10px] text-zinc-500">
+                    <span>{Math.round(originalTempo * 0.25)}</span>
+                    <span className="font-semibold text-zinc-700">{currentBPM}</span>
+                    <span>{Math.round(originalTempo * 2.0)}</span>
                   </div>
                 </div>
-              )}
+              </div>
 
               {/* Metronome beat indicators */}
               <div className="flex items-center gap-1 bg-zinc-200 rounded px-2 py-1">
