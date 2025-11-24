@@ -250,6 +250,23 @@ describe('AlphaTabRenderer', () => {
       });
     });
 
+    it('should not issue duplicate play commands when toggled before state updates', async () => {
+      await waitFor(() => {
+        expect(mockApiInstance.playerReady.on).toHaveBeenCalled();
+      });
+
+      const playerReadyHandler = mockApiInstance.playerReady.on.mock.calls[0][0];
+      act(() => {
+        playerReadyHandler();
+      });
+
+      const playButton = await screen.findByTitle('Play');
+      fireEvent.click(playButton);
+      fireEvent.click(playButton);
+
+      expect(mockApiInstance.play).toHaveBeenCalledTimes(1);
+    });
+
     it('should stop playback when stop button is clicked', async () => {
       // First set playing state
       const stateHandler = mockApiInstance.playerStateChanged.on.mock.calls[0][0];
@@ -404,6 +421,50 @@ describe('AlphaTabRenderer', () => {
 
       await waitFor(() => {
         expect(mockApiInstance.pause).not.toHaveBeenCalled();
+      });
+    });
+
+    it('should not force pause when switching from controlled to uncontrolled playback', async () => {
+      const { rerender } = render(<AlphaTabRenderer fileData={mockFileData} isPlaying={true} />);
+
+      await waitFor(() => {
+        expect(mockApiInstance.play).toHaveBeenCalled();
+      });
+
+      await waitFor(() => {
+        expect(mockApiInstance.playerStateChanged.on).toHaveBeenCalled();
+      });
+
+      const stateHandler = mockApiInstance.playerStateChanged.on.mock.calls[0][0];
+      act(() => {
+        stateHandler({ state: 1 });
+      });
+
+      mockApiInstance.pause.mockClear();
+
+      rerender(<AlphaTabRenderer fileData={mockFileData} />);
+
+      expect(mockApiInstance.pause).not.toHaveBeenCalled();
+    });
+
+    it('should sync playback when switching from uncontrolled to controlled mid-playback', async () => {
+      const { rerender } = render(<AlphaTabRenderer fileData={mockFileData} />);
+
+      await waitFor(() => {
+        expect(mockApiInstance.playerStateChanged.on).toHaveBeenCalled();
+      });
+
+      const stateHandler = mockApiInstance.playerStateChanged.on.mock.calls[0][0];
+      act(() => {
+        stateHandler({ state: 1 });
+      });
+
+      mockApiInstance.pause.mockClear();
+
+      rerender(<AlphaTabRenderer fileData={mockFileData} isPlaying={false} />);
+
+      await waitFor(() => {
+        expect(mockApiInstance.pause).toHaveBeenCalled();
       });
     });
 

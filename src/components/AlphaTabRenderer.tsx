@@ -17,6 +17,8 @@ import {
 // Constants
 const POSITION_UPDATE_THROTTLE_MS = 100; // Throttle position updates to ~10 FPS for performance
 const METRONOME_HIGHLIGHT_DURATION_FACTOR = 0.3; // Duration factor for metronome beat highlight
+const PLAYBACK_RETRY_DELAY_MS = 100; // Delay before retrying failed play/pause operations
+type PlaybackAction = 'play' | 'pause';
 
 // AlphaTab type definitions
 interface AlphaTabScore {
@@ -199,6 +201,33 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
   const [scrollSpeed, setScrollSpeed] = useState(0.5); // Default to middle speed
   const autoScrollRef = useRef<number | null>(null);
   const lastScrollTimeRef = useRef<number>(0);
+  const playbackRetryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingPlaybackActionRef = useRef<PlaybackAction | null>(null);
+  const internalIsPlayingRef = useRef(internalIsPlaying);
+  const lastExternalSyncRef = useRef<boolean | undefined>(undefined);
+
+  const getEffectiveIsPlaying = () =>
+    pendingPlaybackActionRef.current !== null
+      ? pendingPlaybackActionRef.current === 'play'
+      : internalIsPlayingRef.current;
+
+  useEffect(() => {
+    internalIsPlayingRef.current = internalIsPlaying;
+
+    const pendingAction = pendingPlaybackActionRef.current;
+    if (pendingAction !== null && (pendingAction === 'play') === internalIsPlaying) {
+      pendingPlaybackActionRef.current = null;
+    }
+  }, [internalIsPlaying]);
+
+  useEffect(() => {
+    return () => {
+      if (playbackRetryTimeoutRef.current) {
+        clearTimeout(playbackRetryTimeoutRef.current);
+        playbackRetryTimeoutRef.current = null;
+      }
+    };
+  }, []);
 
   // Close mixer when clicking outside
   useEffect(() => {
@@ -551,22 +580,6 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fileData, readOnly, retryKey]);
 
-  // External Playback Sync
-  useEffect(() => {
-    if (externalIsPlaying === undefined || !apiRef.current) {
-      return;
-    }
-
-    // Only sync when component is controlled externally; uncontrolled mode should not flip playback
-    if (externalIsPlaying !== internalIsPlaying) {
-      if (externalIsPlaying) {
-        apiRef.current.play();
-      } else {
-        apiRef.current.pause();
-      }
-    }
-  }, [externalIsPlaying, internalIsPlaying]);
-
   // Auto-scroll Logic
   useEffect(() => {
     if (!autoScrollEnabled || !rootRef.current) {
@@ -609,37 +622,82 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
     };
   }, [autoScrollEnabled, scrollSpeed]);
 
-  const togglePlay = () => {
-    if (apiRef.current && playerReady) {
+  const runPlaybackAction = useCallback(
+    (action: PlaybackAction, isRetry = false) => {
+      if (!apiRef.current) {
+        if (!isRetry) {
+          pendingPlaybackActionRef.current = null;
+        }
+        return;
+      }
+
+      if (playbackRetryTimeoutRef.current) {
+        clearTimeout(playbackRetryTimeoutRef.current);
+        playbackRetryTimeoutRef.current = null;
+      }
+
       try {
-        // Use play()/pause() separately instead of playPause() to avoid
-        // AlphaTab calling stop() internally on unstarted audio nodes
-        if (internalIsPlaying) {
-          apiRef.current.pause();
-        } else {
+        if (action === 'play') {
           apiRef.current.play();
+        } else {
+          apiRef.current.pause();
         }
       } catch (error) {
-        console.warn('[AlphaTab] Playback error, retrying...', error);
-        // Try again after a short delay to allow audio context to initialize
-        setTimeout(() => {
-          if (apiRef.current && playerReady) {
-            try {
-              if (internalIsPlaying) {
-                apiRef.current.pause();
-              } else {
-                apiRef.current.play();
-              }
-            } catch (e) {
-              console.error('[AlphaTab] Playback failed:', e);
-              // If playback fails, ensure state reflects reality
-              setInternalIsPlaying(false);
-              if (onPlaybackChange) onPlaybackChange(false);
-            }
+        if (isRetry) {
+          console.error(`[AlphaTab] Playback ${action} failed:`, error);
+          pendingPlaybackActionRef.current = null;
+          if (action === 'play') {
+            setInternalIsPlaying(false);
+            if (onPlaybackChange) onPlaybackChange(false);
           }
-        }, 100);
+          return;
+        }
+
+        console.warn(`[AlphaTab] Playback ${action} error, retrying...`, error);
+        playbackRetryTimeoutRef.current = setTimeout(() => {
+          playbackRetryTimeoutRef.current = null;
+          runPlaybackAction(action, true);
+        }, PLAYBACK_RETRY_DELAY_MS);
       }
+    },
+    [onPlaybackChange]
+  );
+
+  // External Playback Sync
+  useEffect(() => {
+    if (!apiRef.current) {
+      return;
     }
+
+    if (externalIsPlaying === undefined) {
+      lastExternalSyncRef.current = undefined;
+      return;
+    }
+
+    if (lastExternalSyncRef.current === externalIsPlaying) {
+      return;
+    }
+
+    lastExternalSyncRef.current = externalIsPlaying;
+
+    const effectiveIsPlaying = getEffectiveIsPlaying();
+    if (externalIsPlaying === effectiveIsPlaying) {
+      return;
+    }
+
+    const action: PlaybackAction = externalIsPlaying ? 'play' : 'pause';
+    pendingPlaybackActionRef.current = action;
+    runPlaybackAction(action);
+  }, [externalIsPlaying, runPlaybackAction]);
+
+  const togglePlay = () => {
+    if (!apiRef.current || !playerReady) {
+      return;
+    }
+
+    const nextAction: PlaybackAction = getEffectiveIsPlaying() ? 'pause' : 'play';
+    pendingPlaybackActionRef.current = nextAction;
+    runPlaybackAction(nextAction);
   };
 
   // Manual scroll functions
@@ -785,6 +843,12 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
 
   // New transport control handlers
   const stopPlayback = () => {
+    pendingPlaybackActionRef.current = null;
+    if (playbackRetryTimeoutRef.current) {
+      clearTimeout(playbackRetryTimeoutRef.current);
+      playbackRetryTimeoutRef.current = null;
+    }
+
     if (apiRef.current) {
       // Only call stop() if playback is actually active
       // This prevents "InvalidStateError: cannot call stop without calling start first"
