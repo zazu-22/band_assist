@@ -108,7 +108,7 @@ export const SmartTabEditor: React.FC<SmartTabEditorProps> = ({
     if (activeAnnotationLine === null || !newNoteText.trim()) return;
 
     const newAnnotation: Annotation = {
-      id: Date.now().toString(),
+      id: crypto.randomUUID(),
       lineIndex: activeAnnotationLine,
       text: newNoteText,
       color: 'yellow',

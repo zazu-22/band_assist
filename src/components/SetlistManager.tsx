@@ -38,7 +38,7 @@ export const SetlistManager: React.FC<SetlistManagerProps> = ({
     if (!newSongTitle.trim()) return;
 
     const newSong: Song = {
-      id: Date.now().toString(),
+      id: crypto.randomUUID(),
       title: newSongTitle,
       artist: 'ZZ Top',
       duration: '3:30', // Default placeholder

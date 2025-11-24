@@ -30,7 +30,7 @@ export const ScheduleManager: React.FC<ScheduleManagerProps> = ({
       setEvents(events.map(e => (e.id === editingId ? ({ ...e, ...newEvent } as BandEvent) : e)));
     } else {
       const event: BandEvent = {
-        id: Date.now().toString(),
+        id: crypto.randomUUID(),
         title: newEvent.title!,
         date: newEvent.date!,
         time: newEvent.time,
