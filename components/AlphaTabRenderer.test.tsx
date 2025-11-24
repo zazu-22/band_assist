@@ -1,5 +1,5 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, waitFor, fireEvent } from '@testing-library/react';
+import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
 import { AlphaTabRenderer } from './AlphaTabRenderer';
 
 interface MockTrack {
@@ -246,10 +246,33 @@ describe('AlphaTabRenderer', () => {
     });
 
     it('should change playback speed', async () => {
-      const speedSelect = screen.getByRole('combobox');
-      fireEvent.change(speedSelect, { target: { value: '0.75' } });
+      render(<AlphaTabRenderer fileData={mockFileData} />);
 
-      expect(mockApiInstance.playbackSpeed).toBe(0.75);
+      // Wait for API to be created
+      await waitFor(() => {
+        expect(mockApiInstance.scoreLoaded.on).toHaveBeenCalled();
+      });
+
+      // Simulate scoreLoaded event with tracks to make BPM slider appear
+      const scoreLoadedHandler = mockApiInstance.scoreLoaded.on.mock.calls[0][0];
+      const mockTracks = [{ name: 'Guitar', playbackInfo: { isMute: false, isSolo: false } }];
+
+      act(() => {
+        scoreLoadedHandler({ tracks: mockTracks, tempo: 120 });
+      });
+      mockApiInstance.score.tracks = mockTracks;
+
+      // The UI now uses a BPM slider instead of a speed selector
+      // Wait for the BPM slider to appear
+      const bpmSlider = await waitFor(() => screen.getByRole('slider'));
+
+      // Simulate changing BPM (which internally changes playback speed)
+      // If original tempo is 120, setting to 90 should give speed of 0.75
+      fireEvent.change(bpmSlider, { target: { value: '90' } });
+
+      await waitFor(() => {
+        expect(mockApiInstance.playbackSpeed).toBe(0.75);
+      });
     });
   });
 
@@ -437,7 +460,7 @@ describe('AlphaTabRenderer', () => {
 
       // Open mixer first
       const settingsButton = screen.getAllByRole('button').find(btn =>
-        btn.querySelector('svg')?.classList.toString().includes('lucide-layers')
+        btn.querySelector('svg')?.classList.toString().includes('lucide-sliders-vertical')
       );
       if (settingsButton) fireEvent.click(settingsButton);
 
