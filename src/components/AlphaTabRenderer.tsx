@@ -17,6 +17,8 @@ import {
 // Constants
 const POSITION_UPDATE_THROTTLE_MS = 100; // Throttle position updates to ~10 FPS for performance
 const METRONOME_HIGHLIGHT_DURATION_FACTOR = 0.3; // Duration factor for metronome beat highlight
+const PLAYBACK_RETRY_DELAY_MS = 100; // Delay before retrying failed play/pause operations
+type PlaybackAction = 'play' | 'pause';
 
 // AlphaTab type definitions
 interface AlphaTabScore {
@@ -161,6 +163,8 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
   const apiRef = useRef<AlphaTabApi | null>(null);
   const metronomeTimeoutsRef = useRef<Set<NodeJS.Timeout>>(new Set());
   const cleanupEventListenersRef = useRef<(() => void) | null>(null);
+  const mixerButtonRef = useRef<HTMLButtonElement | null>(null);
+  const mixerPanelRef = useRef<HTMLDivElement | null>(null);
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -197,6 +201,53 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
   const [scrollSpeed, setScrollSpeed] = useState(0.5); // Default to middle speed
   const autoScrollRef = useRef<number | null>(null);
   const lastScrollTimeRef = useRef<number>(0);
+  const playbackRetryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingPlaybackActionRef = useRef<PlaybackAction | null>(null);
+  const internalIsPlayingRef = useRef(internalIsPlaying);
+  const lastExternalSyncRef = useRef<boolean | undefined>(undefined);
+
+  const getEffectiveIsPlaying = () =>
+    pendingPlaybackActionRef.current !== null
+      ? pendingPlaybackActionRef.current === 'play'
+      : internalIsPlayingRef.current;
+
+  useEffect(() => {
+    internalIsPlayingRef.current = internalIsPlaying;
+
+    const pendingAction = pendingPlaybackActionRef.current;
+    if (pendingAction !== null && (pendingAction === 'play') === internalIsPlaying) {
+      pendingPlaybackActionRef.current = null;
+    }
+  }, [internalIsPlaying]);
+
+  useEffect(() => {
+    return () => {
+      if (playbackRetryTimeoutRef.current) {
+        clearTimeout(playbackRetryTimeoutRef.current);
+        playbackRetryTimeoutRef.current = null;
+      }
+    };
+  }, []);
+
+  // Close mixer when clicking outside
+  useEffect(() => {
+    if (!showSettings) return;
+
+    const handlePointerDown = (event: MouseEvent | TouchEvent) => {
+      const target = event.target as Node | null;
+      if (!target) return;
+      if (mixerPanelRef.current?.contains(target)) return;
+      if (mixerButtonRef.current?.contains(target)) return;
+      setShowSettings(false);
+    };
+
+    document.addEventListener('mousedown', handlePointerDown);
+    document.addEventListener('touchstart', handlePointerDown);
+    return () => {
+      document.removeEventListener('mousedown', handlePointerDown);
+      document.removeEventListener('touchstart', handlePointerDown);
+    };
+  }, [showSettings]);
 
   // Helper to convert Base64 DataURI to Uint8Array
   const prepareData = (uri: string): Uint8Array | null => {
@@ -385,6 +436,13 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
 
         const handlePlayerFinished = () => {
           if (!isMounted) return;
+
+          // AlphaTab fires playerFinished at the end of every loop iteration.
+          // Ignore these notifications while looping so play/pause/stop stay in sync.
+          if (apiRef.current?.isLooping) {
+            return;
+          }
+
           setInternalIsPlaying(false);
           if (onPlaybackChange) onPlaybackChange(false);
         };
@@ -522,17 +580,6 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fileData, readOnly, retryKey]);
 
-  // External Playback Sync
-  useEffect(() => {
-    if (!apiRef.current) return;
-
-    if (externalIsPlaying && !internalIsPlaying) {
-      apiRef.current.play();
-    } else if (!externalIsPlaying && internalIsPlaying) {
-      apiRef.current.pause();
-    }
-  }, [externalIsPlaying, internalIsPlaying]);
-
   // Auto-scroll Logic
   useEffect(() => {
     if (!autoScrollEnabled || !rootRef.current) {
@@ -575,24 +622,82 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
     };
   }, [autoScrollEnabled, scrollSpeed]);
 
-  const togglePlay = () => {
-    if (apiRef.current && playerReady) {
-      try {
-        apiRef.current.playPause();
-      } catch (error) {
-        console.warn('[AlphaTab] Playback error, retrying...', error);
-        // Try again after a short delay to allow audio context to initialize
-        setTimeout(() => {
-          if (apiRef.current) {
-            try {
-              apiRef.current.playPause();
-            } catch (e) {
-              console.error('[AlphaTab] Playback failed:', e);
-            }
-          }
-        }, 100);
+  const runPlaybackAction = useCallback(
+    (action: PlaybackAction, isRetry = false) => {
+      if (!apiRef.current) {
+        if (!isRetry) {
+          pendingPlaybackActionRef.current = null;
+        }
+        return;
       }
+
+      if (playbackRetryTimeoutRef.current) {
+        clearTimeout(playbackRetryTimeoutRef.current);
+        playbackRetryTimeoutRef.current = null;
+      }
+
+      try {
+        if (action === 'play') {
+          apiRef.current.play();
+        } else {
+          apiRef.current.pause();
+        }
+      } catch (error) {
+        if (isRetry) {
+          console.error(`[AlphaTab] Playback ${action} failed:`, error);
+          pendingPlaybackActionRef.current = null;
+          if (action === 'play') {
+            setInternalIsPlaying(false);
+            if (onPlaybackChange) onPlaybackChange(false);
+          }
+          return;
+        }
+
+        console.warn(`[AlphaTab] Playback ${action} error, retrying...`, error);
+        playbackRetryTimeoutRef.current = setTimeout(() => {
+          playbackRetryTimeoutRef.current = null;
+          runPlaybackAction(action, true);
+        }, PLAYBACK_RETRY_DELAY_MS);
+      }
+    },
+    [onPlaybackChange]
+  );
+
+  // External Playback Sync
+  useEffect(() => {
+    if (!apiRef.current) {
+      return;
     }
+
+    if (externalIsPlaying === undefined) {
+      lastExternalSyncRef.current = undefined;
+      return;
+    }
+
+    if (lastExternalSyncRef.current === externalIsPlaying) {
+      return;
+    }
+
+    lastExternalSyncRef.current = externalIsPlaying;
+
+    const effectiveIsPlaying = getEffectiveIsPlaying();
+    if (externalIsPlaying === effectiveIsPlaying) {
+      return;
+    }
+
+    const action: PlaybackAction = externalIsPlaying ? 'play' : 'pause';
+    pendingPlaybackActionRef.current = action;
+    runPlaybackAction(action);
+  }, [externalIsPlaying, runPlaybackAction]);
+
+  const togglePlay = () => {
+    if (!apiRef.current || !playerReady) {
+      return;
+    }
+
+    const nextAction: PlaybackAction = getEffectiveIsPlaying() ? 'pause' : 'play';
+    pendingPlaybackActionRef.current = nextAction;
+    runPlaybackAction(nextAction);
   };
 
   // Manual scroll functions
@@ -738,8 +843,22 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
 
   // New transport control handlers
   const stopPlayback = () => {
+    pendingPlaybackActionRef.current = null;
+    if (playbackRetryTimeoutRef.current) {
+      clearTimeout(playbackRetryTimeoutRef.current);
+      playbackRetryTimeoutRef.current = null;
+    }
+
     if (apiRef.current) {
-      apiRef.current.stop();
+      // Only call stop() if playback is actually active
+      // This prevents "InvalidStateError: cannot call stop without calling start first"
+      if (internalIsPlaying) {
+        try {
+          apiRef.current.stop();
+        } catch (error) {
+          console.warn('[AlphaTab] Error stopping playback:', error);
+        }
+      }
       setInternalIsPlaying(false);
       if (onPlaybackChange) onPlaybackChange(false);
     }
@@ -793,7 +912,7 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
   );
 
   return (
-    <div className="flex flex-col max-h-full bg-white text-black rounded-xl relative border border-zinc-200">
+    <div className="flex flex-col max-h-full bg-white text-black rounded-xl relative border border-zinc-200 overflow-hidden">
       {/* Toolbar */}
       <div className="bg-zinc-100 border-b border-zinc-300 p-2 flex items-center justify-between shrink-0">
         {/* Left: Transport controls */}
@@ -803,13 +922,12 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
               <button
                 onClick={togglePlay}
                 disabled={!playerReady}
-                className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
-                  !playerReady
+                className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${!playerReady
                     ? 'bg-zinc-200 text-zinc-400 cursor-not-allowed'
                     : internalIsPlaying
                       ? 'bg-amber-500 text-white'
                       : 'bg-zinc-200 hover:bg-zinc-300 text-zinc-700'
-                }`}
+                  }`}
                 title={!playerReady ? 'Loading player...' : internalIsPlaying ? 'Pause' : 'Play'}
               >
                 {internalIsPlaying ? <Pause size={20} /> : <Play size={20} className="ml-1" />}
@@ -829,11 +947,10 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
               <div className="flex items-center gap-1">
                 <button
                   onClick={toggleLoop}
-                  className={`p-2 rounded transition-colors ${
-                    isLooping
+                  className={`p-2 rounded transition-colors ${isLooping
                       ? 'bg-amber-500 text-white'
                       : 'bg-zinc-200 hover:bg-zinc-300 text-zinc-700'
-                  }`}
+                    }`}
                   title="Toggle loop"
                 >
                   <Repeat size={16} />
@@ -857,12 +974,12 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
         <div className="flex items-center justify-center flex-1">
           {currentTrackIndex !== null && tracks[currentTrackIndex] && (
             <button
+              ref={mixerButtonRef}
               onClick={() => setShowSettings(!showSettings)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${
-                showSettings
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${showSettings
                   ? 'bg-amber-500 text-white shadow-md'
                   : 'bg-zinc-200 hover:bg-zinc-300 text-zinc-800 hover:shadow-sm'
-              }`}
+                }`}
               title="Click to open mixer and switch tracks"
             >
               <div
@@ -882,11 +999,10 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
               <div className="flex items-center gap-2 bg-zinc-200 rounded px-2 py-1">
                 <button
                   onClick={() => setAutoScrollEnabled(!autoScrollEnabled)}
-                  className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-bold transition-colors ${
-                    autoScrollEnabled
+                  className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-bold transition-colors ${autoScrollEnabled
                       ? 'bg-amber-500 text-white'
                       : 'bg-white text-zinc-600 hover:bg-zinc-50'
-                  }`}
+                    }`}
                   title="Toggle auto-scroll"
                 >
                   <Scroll size={12} /> Auto
@@ -952,6 +1068,27 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
                 </button>
               )}
 
+              {/* BPM Slider Control */}
+              <div className="flex items-center gap-2 bg-zinc-200 rounded px-3 py-2">
+                <Timer size={14} className="text-zinc-500" />
+                <div className="flex flex-col gap-1">
+                  <input
+                    type="range"
+                    min={Math.round(originalTempo * 0.25)}
+                    max={Math.round(originalTempo * 2.0)}
+                    step="1"
+                    value={currentBPM || originalTempo}
+                    onChange={e => handleBPMChange(parseInt(e.target.value))}
+                    className="w-32 h-1 bg-zinc-300 rounded-lg appearance-none cursor-pointer accent-amber-500"
+                  />
+                  <div className="flex justify-between text-[10px] text-zinc-500">
+                    <span>{Math.round(originalTempo * 0.25)}</span>
+                    <span className="font-semibold text-zinc-700">{currentBPM}</span>
+                    <span>{Math.round(originalTempo * 2.0)}</span>
+                  </div>
+                </div>
+              </div>
+
               {/* Metronome beat indicators */}
               <div className="flex items-center gap-1 bg-zinc-200 rounded px-2 py-1">
                 <CircleGauge size={14} className="text-zinc-500" />
@@ -959,34 +1096,10 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
                   {[1, 2, 3, 4].map(beat => (
                     <div
                       key={beat}
-                      className={`w-2 h-2 rounded-full transition-all duration-75 ${
-                        metronomeBeat === beat ? 'bg-amber-500 scale-150' : 'bg-zinc-400'
-                      }`}
+                      className={`w-2 h-2 rounded-full transition-all duration-75 ${metronomeBeat === beat ? 'bg-amber-500 scale-150' : 'bg-zinc-400'
+                        }`}
                     />
                   ))}
-                </div>
-              </div>
-            </div>
-          )}
-
-          {/* BPM Slider Control */}
-          {!readOnly && originalTempo && (
-            <div className="flex items-center gap-2 bg-zinc-200 rounded px-3 py-2">
-              <Timer size={14} className="text-zinc-500" />
-              <div className="flex flex-col gap-1">
-                <input
-                  type="range"
-                  min={Math.round(originalTempo * 0.25)}
-                  max={Math.round(originalTempo * 2.0)}
-                  step="1"
-                  value={currentBPM || originalTempo}
-                  onChange={e => handleBPMChange(parseInt(e.target.value))}
-                  className="w-32 h-1 bg-zinc-300 rounded-lg appearance-none cursor-pointer accent-amber-500"
-                />
-                <div className="flex justify-between text-[10px] text-zinc-500">
-                  <span>{Math.round(originalTempo * 0.25)}</span>
-                  <span className="font-semibold text-zinc-700">{currentBPM}</span>
-                  <span>{Math.round(originalTempo * 2.0)}</span>
                 </div>
               </div>
             </div>
@@ -1038,7 +1151,10 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
 
       {/* Mixer Overlay */}
       {showSettings && (
-        <div className="absolute top-20 left-1/2 -translate-x-1/2 z-[9999] bg-white shadow-2xl border border-zinc-200 rounded-xl p-4 w-64 animate-in fade-in zoom-in-95 max-h-[80%] flex flex-col">
+        <div
+          ref={mixerPanelRef}
+          className="absolute top-20 left-1/2 -translate-x-1/2 z-[9999] bg-white shadow-2xl border border-zinc-200 rounded-xl p-4 w-64 animate-in fade-in zoom-in-95 max-h-[80%] flex flex-col"
+        >
           <div className="flex items-center justify-between mb-3">
             <h4 className="font-bold text-sm flex items-center gap-2">
               <Sliders size={14} /> Mixer
@@ -1055,27 +1171,24 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
             {tracks.map((track, i) => (
               <div
                 key={i}
-                className={`flex items-center justify-between p-2 rounded border transition-all ${
-                  currentTrackIndex === i
+                className={`flex items-center justify-between p-2 rounded border transition-all ${currentTrackIndex === i
                     ? 'bg-amber-50 border-amber-400 shadow-sm'
                     : 'bg-zinc-50 border-zinc-100'
-                }`}
+                  }`}
               >
                 <div
                   className="flex items-center gap-2 overflow-hidden cursor-pointer"
                   onClick={() => renderTrack(i)}
                 >
                   <div
-                    className={`w-3 h-3 rounded-full transition-all ${
-                      currentTrackIndex === i ? 'bg-amber-500' : 'bg-zinc-400'
-                    }`}
+                    className={`w-3 h-3 rounded-full transition-all ${currentTrackIndex === i ? 'bg-amber-500' : 'bg-zinc-400'
+                      }`}
                   ></div>
                   <span
-                    className={`text-xs truncate hover:underline ${
-                      currentTrackIndex === i
+                    className={`text-xs truncate hover:underline ${currentTrackIndex === i
                         ? 'font-bold text-amber-900'
                         : 'font-medium text-zinc-700'
-                    }`}
+                      }`}
                   >
                     {track.name}
                   </span>
@@ -1086,11 +1199,10 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
                       e.stopPropagation();
                       toggleTrackMute(i);
                     }}
-                    className={`text-[10px] font-bold px-2 py-1 rounded border transition-all ${
-                      track.playbackInfo.isMute
+                    className={`text-[10px] font-bold px-2 py-1 rounded border transition-all ${track.playbackInfo.isMute
                         ? 'bg-red-500 text-white border-red-600 shadow-sm'
                         : 'bg-white text-zinc-500 border-zinc-300 hover:bg-zinc-50'
-                    }`}
+                      }`}
                     title={track.playbackInfo.isMute ? 'Unmute track' : 'Mute track'}
                   >
                     M
@@ -1100,11 +1212,10 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
                       e.stopPropagation();
                       toggleTrackSolo(i);
                     }}
-                    className={`text-[10px] font-bold px-2 py-1 rounded border transition-all ${
-                      track.playbackInfo.isSolo
+                    className={`text-[10px] font-bold px-2 py-1 rounded border transition-all ${track.playbackInfo.isSolo
                         ? 'bg-amber-500 text-white border-amber-600 shadow-sm'
                         : 'bg-white text-zinc-500 border-zinc-300 hover:bg-zinc-50'
-                    }`}
+                      }`}
                     title={track.playbackInfo.isSolo ? 'Unsolo track' : 'Solo track'}
                   >
                     S
