@@ -215,18 +215,28 @@ describe('AlphaTabRenderer', () => {
     });
 
     it('should toggle play/pause when play button is clicked', async () => {
-      // Find the play/pause button by its className
-      const buttons = screen.getAllByRole('button');
-      const playButton = buttons.find(btn =>
-        btn.classList.contains('rounded-full') &&
-        (btn.querySelector('.lucide-play') || btn.querySelector('.lucide-pause'))
-      );
+      // Trigger playerReady event first
+      const playerReadyHandler = mockApiInstance.playerReady.on.mock.calls[0][0];
+      act(() => {
+        playerReadyHandler();
+      });
 
-      expect(playButton).toBeDefined();
-      if (playButton) {
-        fireEvent.click(playButton);
-        expect(mockApiInstance.playPause).toHaveBeenCalled();
-      }
+      await waitFor(() => {
+        // Find the play/pause button by its className
+        const buttons = screen.getAllByRole('button');
+        const playButton = buttons.find(btn =>
+          btn.classList.contains('rounded-full') &&
+          (btn.querySelector('.lucide-play') || btn.querySelector('.lucide-pause'))
+        );
+
+        expect(playButton).toBeDefined();
+        expect(playButton).not.toBeDisabled();
+
+        if (playButton) {
+          fireEvent.click(playButton);
+          expect(mockApiInstance.playPause).toHaveBeenCalled();
+        }
+      });
     });
 
     it('should stop playback when stop button is clicked', async () => {
