@@ -37,7 +37,10 @@ export const InvitationManager: React.FC<InvitationManagerProps> = ({
 
   const loadInvitations = useCallback(async () => {
     const supabase = getSupabaseClient();
-    if (!supabase) return [];
+    if (!supabase) {
+      setInvitations([]);
+      return;
+    }
 
     try {
       const { data, error } = (await supabase
@@ -50,31 +53,16 @@ export const InvitationManager: React.FC<InvitationManagerProps> = ({
       };
 
       if (error) throw error;
-      return data || [];
+      setInvitations(data || []);
     } catch (err) {
       console.error('Error loading invitations:', err);
-      return [];
+      setInvitations([]);
     }
   }, [bandId]);
 
-  // Load invitations with cancellation support
+  // Load invitations on mount and when bandId changes
   useEffect(() => {
-    let cancelled = false;
-
-    const loadData = async () => {
-      const data = await loadInvitations();
-
-      // Check cancellation before updating state
-      if (!cancelled) {
-        setInvitations(data);
-      }
-    };
-
-    loadData();
-
-    return () => {
-      cancelled = true;
-    };
+    loadInvitations();
   }, [loadInvitations]);
 
   const handleInvite = async (e: React.FormEvent) => {
@@ -185,6 +173,9 @@ export const InvitationManager: React.FC<InvitationManagerProps> = ({
     const supabase = getSupabaseClient();
     if (!supabase) return;
 
+    setError('');
+    setSuccessMessage('');
+
     try {
       const { error } = await supabase
         .from('invitations')
@@ -192,9 +183,11 @@ export const InvitationManager: React.FC<InvitationManagerProps> = ({
         .eq('id', invitationId);
 
       if (error) throw error;
+      setSuccessMessage('Invitation cancelled');
       loadInvitations();
     } catch (err) {
       console.error('Error cancelling invitation:', err);
+      setError('Failed to cancel invitation. Please try again.');
     }
   };
 
