@@ -45,7 +45,8 @@ CREATE INDEX IF NOT EXISTS idx_invitations_invited_at
 -- USAGE
 -- =============================================================================
 
--- The application MUST check the rate limit before creating invitations:
+-- The application SHOULD check the rate limit before creating invitations
+-- to provide fast, friendly feedback to users:
 --
 -- In TypeScript/JavaScript:
 -- const { data: canInvite } = await supabase
@@ -59,8 +60,9 @@ CREATE INDEX IF NOT EXISTS idx_invitations_invited_at
 -- // Proceed with invitation insert
 -- await supabase.from('invitations').insert({ ... });
 --
--- NOTE: Rate limiting is enforced at the APPLICATION layer, not via database
--- constraints, to avoid race conditions and TOCTOU issues.
+-- NOTE: This RPC function provides application-level UX (fast feedback).
+-- Actual security enforcement is done via database trigger (see migration 010)
+-- which runs atomically with INSERT to prevent TOCTOU race conditions.
 
 COMMENT ON FUNCTION check_invitation_rate_limit IS
-  'Checks if a band has exceeded the invitation rate limit (10 pending invitations per hour). Returns true if under limit. Must be called by application before creating invitations.';
+  'Checks if a band has exceeded the invitation rate limit (10 pending invitations per hour). Returns true if under limit. Recommended for application-level UX (fast feedback). Actual enforcement is via database trigger (migration 010).';

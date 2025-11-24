@@ -91,3 +91,89 @@ export function validateEmail(email: string): EmailValidationResult {
 export function normalizeEmail(email: string): string {
   return email.trim().toLowerCase();
 }
+
+/**
+ * Password validation result
+ */
+export interface PasswordValidationResult {
+  isValid: boolean;
+  error?: string;
+  strength?: 'weak' | 'medium' | 'strong';
+}
+
+/**
+ * Password requirement hint text for UI display
+ */
+export const PASSWORD_HINT = 'Must be at least 8 characters with at least 3 of: uppercase, lowercase, numbers, special characters';
+
+/**
+ * Validates password strength and security requirements.
+ *
+ * Requirements:
+ * - Minimum 8 characters (matches Supabase configuration)
+ * - At least 3 of: uppercase, lowercase, numbers, special characters
+ * - No common patterns (password, 12345, qwerty, abc123)
+ *
+ * @param password - Password to validate
+ * @returns Object with isValid flag, optional error message, and strength rating
+ */
+export function validatePassword(password: string): PasswordValidationResult {
+  // Enforce 8 character minimum (matches Supabase config)
+  if (password.length < 8) {
+    return {
+      isValid: false,
+      error: 'Password must be at least 8 characters long',
+      strength: 'weak',
+    };
+  }
+
+  // Check for character type diversity
+  const hasUpperCase = /[A-Z]/.test(password);
+  const hasLowerCase = /[a-z]/.test(password);
+  const hasNumber = /[0-9]/.test(password);
+  const hasSpecial = /[!@#$%^&*(),.?":{}|<>_\-+=[\]\\/'`~;]/.test(password);
+
+  const complexityScore = [hasUpperCase, hasLowerCase, hasNumber, hasSpecial].filter(Boolean)
+    .length;
+
+  if (complexityScore < 3) {
+    return {
+      isValid: false,
+      error: 'Password must include at least 3 of: uppercase, lowercase, numbers, special characters',
+      strength: 'weak',
+    };
+  }
+
+  // Check for common patterns
+  const commonPatterns = [
+    'password',
+    'pass123',
+    '12345678',
+    '123456',
+    'qwerty',
+    'abc123',
+    'letmein',
+    'welcome',
+    'admin',
+    'user',
+  ];
+
+  const lowerPassword = password.toLowerCase();
+  for (const pattern of commonPatterns) {
+    if (lowerPassword.includes(pattern)) {
+      return {
+        isValid: false,
+        error: 'Password contains common patterns and is too easy to guess',
+        strength: 'weak',
+      };
+    }
+  }
+
+  // Determine strength based on length and complexity
+  const strength = complexityScore === 4 && password.length >= 16 ? 'strong' : 'medium';
+
+  return {
+    isValid: true,
+    strength,
+  };
+}

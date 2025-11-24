@@ -125,30 +125,74 @@ Repeat for `002_enable_realtime.sql`
 
 ### Step 6: Set Up Authentication
 
-#### Option A: Shared Band Password (Recommended)
+#### Recommended: Individual User Accounts
+
+Band Assist now supports individual user accounts with an invitation system. This is the recommended approach for better security and user management.
+
+**Step 6.1: Configure Email Authentication**
 
 1. Go to **Authentication** → **Providers**
 2. Enable **Email** provider (should be enabled by default)
 3. Under "Email" settings:
-   - Disable "Confirm email" (toggle OFF)
-   - Disable "Secure email change" (toggle OFF)
-4. Go to **Authentication** → **Users**
-5. Click "Add user manually"
-6. Fill in:
+   - **Confirm email:** Toggle OFF (for simpler setup)
+   - **Secure email change:** Toggle OFF
+   - **Enable email confirmations:** Toggle OFF
+
+**Step 6.2: Run Multi-User Database Migration**
+
+1. In Supabase Dashboard, go to **SQL Editor**
+2. Open the file `/supabase/migrations/003_multi_user_bands.sql` from this repo
+3. Copy entire contents
+4. Paste into SQL Editor
+5. Click **Run**
+6. Verify success (should see "Success. No rows returned")
+
+This creates the `bands`, `user_bands`, and `invitations` tables needed for multi-user support.
+
+**Step 6.3: Create First Admin Account**
+
+1. Go to **Authentication** → **Users**
+2. Click "Add user manually"
+3. Fill in:
+   - **Email:** Your admin email address
+   - **Password:** Choose a strong password
+   - **Auto Confirm User:** YES (check the box)
+4. Click "Create user"
+
+When this user logs in for the first time, a band will be automatically created and they'll be set as admin.
+
+**Step 6.4: Invite Band Members**
+
+After logging in as admin:
+
+1. Go to **Settings** → **Band Roster**
+2. Click "Manage Invitations"
+3. Enter band member email addresses
+4. Send invitations
+
+**Step 6.5: Band Members Sign Up**
+
+Share the app URL with invited members. They can:
+
+1. Click "Don't have an account? Sign up" on the login page
+2. Create an account using their invited email address
+3. They'll be automatically added to the band (via database trigger)
+4. Start collaborating immediately
+
+#### Alternative: Shared Band Password (Simple but Less Secure)
+
+If you prefer a single shared login for the entire band:
+
+1. Follow Step 6.1 above
+2. Go to **Authentication** → **Users**
+3. Click "Add user manually"
+4. Fill in:
    - **Email:** `band@yourband.com` (or your choice)
    - **Password:** Choose a strong shared password
-   - **Auto Confirm User:** YES (check the box)
-7. Click "Create user"
+   - **Auto Confirm User:** YES
+5. Share these credentials with all band members
 
-**Share these credentials with your band members!**
-
-#### Option B: Individual Accounts (More Secure)
-
-If you prefer individual logins:
-
-1. Each band member creates their own account
-2. You'll need to add a signup UI (not currently implemented)
-3. See `/docs/AUTH_IMPLEMENTATION.md` for guidance
+**Note:** With shared credentials, the invitation system is not used.
 
 ### Step 7: Get API Credentials
 
