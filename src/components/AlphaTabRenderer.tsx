@@ -524,12 +524,17 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
 
   // External Playback Sync
   useEffect(() => {
-    if (!apiRef.current) return;
+    if (externalIsPlaying === undefined || !apiRef.current) {
+      return;
+    }
 
-    if (externalIsPlaying && !internalIsPlaying) {
-      apiRef.current.play();
-    } else if (!externalIsPlaying && internalIsPlaying) {
-      apiRef.current.pause();
+    // Only sync when component is controlled externally; uncontrolled mode should not flip playback
+    if (externalIsPlaying !== internalIsPlaying) {
+      if (externalIsPlaying) {
+        apiRef.current.play();
+      } else {
+        apiRef.current.pause();
+      }
     }
   }, [externalIsPlaying, internalIsPlaying]);
 

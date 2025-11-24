@@ -371,6 +371,21 @@ describe('AlphaTabRenderer', () => {
         expect(mockApiInstance.play).toHaveBeenCalled();
       });
     });
+
+    it('should not auto-sync playback when uncontrolled', async () => {
+      render(<AlphaTabRenderer fileData={mockFileData} />);
+
+      await waitFor(() => {
+        expect(mockApiInstance.playerStateChanged.on).toHaveBeenCalled();
+      });
+
+      const stateHandler = mockApiInstance.playerStateChanged.on.mock.calls[0][0];
+      stateHandler({ state: 1 });
+
+      await waitFor(() => {
+        expect(mockApiInstance.pause).not.toHaveBeenCalled();
+      });
+    });
   });
 
   describe('Memory Leak Prevention', () => {
