@@ -7,7 +7,7 @@ on:
     branches: [main]
   schedule:
     # Run security scan every Sunday at midnight
-    - cron: '0 0 * * 0'
+    - cron: "0 0 * * 0"
   workflow_dispatch:
 
 jobs:
@@ -21,13 +21,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        language: ['javascript', 'typescript']
+        language: ["javascript", "typescript"]
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
 
       - name: Initialize CodeQL
-        uses: github/codeql-action/init@v2
+        uses: github/codeql-action/init@v3
         with:
           languages: ${{ matrix.language }}
           queries: security-extended,security-and-quality
