@@ -60,7 +60,7 @@ jobs:
           npm audit --audit-level=moderate
 
       - name: Upload audit report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: npm-audit-report
           path: audit-report.json
@@ -77,15 +77,13 @@ jobs:
         uses: trufflesecurity/trufflehog@main
         with:
           path: ./
-          base: ${{ github.event.repository.default_branch }}
-          head: HEAD
           extra_args: --debug --only-verified
 
       - name: Check for .env files
         run: |
-          if find . -name ".env*" -not -path "./node_modules/*" -not -name ".env.example" -not -name ".env.template" | grep -q .; then
+          if find . -name ".env*" -not -path "./node_modules/*" -not -name ".env.example" -not -name ".env.template" -not -name ".env*.example" | grep -q .; then
             echo "⚠️ Warning: .env files found in repository!"
-            find . -name ".env*" -not -path "./node_modules/*" -not -name ".env.example" -not -name ".env.template"
+            find . -name ".env*" -not -path "./node_modules/*" -not -name ".env.example" -not -name ".env.template" -not -name ".env*.example"
             exit 1
           else
             echo "✅ No .env files found in repository"
@@ -173,7 +171,7 @@ jobs:
           fi
 
       - name: Upload license report
-        uses: actions/upload-artifact@v3
+        uses: actions/upload-artifact@v4
         with:
           name: license-report
           path: licenses.json
