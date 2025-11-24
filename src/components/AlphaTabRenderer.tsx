@@ -385,6 +385,13 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
 
         const handlePlayerFinished = () => {
           if (!isMounted) return;
+
+          // AlphaTab fires playerFinished at the end of every loop iteration.
+          // Ignore these notifications while looping so play/pause/stop stay in sync.
+          if (apiRef.current?.isLooping) {
+            return;
+          }
+
           setInternalIsPlaying(false);
           if (onPlaybackChange) onPlaybackChange(false);
         };

@@ -52,6 +52,8 @@ describe('AlphaTabRenderer', () => {
   beforeEach(() => {
     vi.clearAllMocks();
     MockAlphaTabApi.mockClear();
+    mockApiInstance.isLooping = false;
+    mockApiInstance.playbackRange = null;
 
     // Setup window.alphaTab mock - cast to constructor type expected by AlphaTab
     type AlphaTabConstructor = new (element: HTMLElement, settings: unknown) => typeof mockApiInstance;
@@ -385,6 +387,42 @@ describe('AlphaTabRenderer', () => {
       await waitFor(() => {
         expect(mockApiInstance.pause).not.toHaveBeenCalled();
       });
+    });
+
+    it('should ignore playerFinished events while looping', async () => {
+      const onPlaybackChange = vi.fn();
+      render(<AlphaTabRenderer fileData={mockFileData} onPlaybackChange={onPlaybackChange} />);
+
+      await waitFor(() => {
+        expect(mockApiInstance.playerFinished.on).toHaveBeenCalled();
+      });
+
+      const finishedHandler = mockApiInstance.playerFinished.on.mock.calls[0][0];
+      mockApiInstance.isLooping = true;
+
+      act(() => {
+        finishedHandler();
+      });
+
+      expect(onPlaybackChange).not.toHaveBeenCalled();
+    });
+
+    it('should mark playback stopped when loop mode is off', async () => {
+      const onPlaybackChange = vi.fn();
+      render(<AlphaTabRenderer fileData={mockFileData} onPlaybackChange={onPlaybackChange} />);
+
+      await waitFor(() => {
+        expect(mockApiInstance.playerFinished.on).toHaveBeenCalled();
+      });
+
+      const finishedHandler = mockApiInstance.playerFinished.on.mock.calls[0][0];
+      mockApiInstance.isLooping = false;
+
+      act(() => {
+        finishedHandler();
+      });
+
+      expect(onPlaybackChange).toHaveBeenCalledWith(false);
     });
   });
 
