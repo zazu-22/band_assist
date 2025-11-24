@@ -81,20 +81,3 @@ jobs:
               issue_number: context.issue.number,
               body: comment
             });
-
-      - name: Create deployment status
-        if: always()
-        uses: actions/github-script@v6
-        with:
-          script: |
-            const deploymentUrl = '${{ steps.deploy.outputs.url }}';
-            const state = '${{ job.status }}' === 'success' ? 'success' : 'failure';
-
-            github.rest.repos.createDeploymentStatus({
-              owner: context.repo.owner,
-              repo: context.repo.repo,
-              deployment_id: context.payload.deployment?.id || 0,
-              state: state,
-              environment_url: deploymentUrl,
-              description: state === 'success' ? 'Deployment successful' : 'Deployment failed'
-            });
