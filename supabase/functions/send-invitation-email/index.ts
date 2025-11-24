@@ -13,11 +13,12 @@
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 
+// Validate required environment variables at startup
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
 const APP_URL = Deno.env.get('APP_URL') || 'http://localhost:3000';
 const EMAIL_FROM = Deno.env.get('EMAIL_FROM') || 'Band Assist <noreply@example.com>';
-const SUPABASE_URL = Deno.env.get('SUPABASE_URL')!;
-const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!;
+const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
+const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
 interface WebhookPayload {
   type: 'INSERT' | 'UPDATE' | 'DELETE';
@@ -34,26 +35,68 @@ interface WebhookPayload {
   old_record: unknown;
 }
 
+/**
+ * Escapes HTML special characters to prevent XSS attacks in email templates.
+ * This is critical since band names and emails are user-provided.
+ */
+function escapeHtml(unsafe: string): string {
+  return unsafe
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#039;');
+}
+
+/**
+ * Validates that a webhook payload has all required fields for an invitation.
+ */
+function validatePayload(
+  record: WebhookPayload['record']
+): record is NonNullable<WebhookPayload['record']> {
+  if (!record) return false;
+  const { email, band_id, invited_by } = record;
+  return Boolean(email && band_id && invited_by);
+}
+
 serve(async (req: Request) => {
   if (req.method !== 'POST') {
     return new Response('Method not allowed', { status: 405 });
   }
 
+  // Validate required environment variables
+  if (!RESEND_API_KEY) {
+    console.error('RESEND_API_KEY secret is not set');
+    return new Response(JSON.stringify({ error: 'Server configuration error: missing RESEND_API_KEY' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+
+  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+    console.error('Missing Supabase environment variables');
+    return new Response(JSON.stringify({ error: 'Server configuration error: missing Supabase credentials' }), {
+      status: 500,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }
+
   try {
-    if (!RESEND_API_KEY) {
-      console.error('RESEND_API_KEY secret is not set');
-      return new Response(JSON.stringify({ error: 'Server configuration error' }), {
-        status: 500,
+    const payload: WebhookPayload = await req.json();
+
+    // Only process INSERT events on invitations table
+    if (payload.type !== 'INSERT') {
+      return new Response(JSON.stringify({ skipped: true, reason: 'Not an INSERT event' }), {
+        status: 200,
         headers: { 'Content-Type': 'application/json' },
       });
     }
 
-    const payload: WebhookPayload = await req.json();
-
-    // Only process INSERT events on invitations table
-    if (payload.type !== 'INSERT' || !payload.record) {
-      return new Response(JSON.stringify({ skipped: true, reason: 'Not an INSERT event' }), {
-        status: 200,
+    // Validate payload has required fields
+    if (!validatePayload(payload.record)) {
+      console.error('Invalid payload: missing required fields', payload.record);
+      return new Response(JSON.stringify({ error: 'Invalid payload: missing required fields' }), {
+        status: 400,
         headers: { 'Content-Type': 'application/json' },
       });
     }
@@ -63,7 +106,7 @@ serve(async (req: Request) => {
     // Create Supabase client with service role for admin access
     const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-    // Look up band name
+    // Look up band name - fail if we can't get it (indicates RLS or DB issue)
     const { data: band, error: bandError } = await supabase
       .from('bands')
       .select('name')
@@ -72,13 +115,22 @@ serve(async (req: Request) => {
 
     if (bandError) {
       console.error('Error fetching band:', bandError);
+      return new Response(JSON.stringify({ error: 'Failed to fetch band details', details: bandError.message }), {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' },
+      });
     }
 
-    const bandName = band?.name || 'a band';
+    const bandName = band?.name || 'your band';
 
     // Look up inviter's email
     const { data: inviter } = await supabase.auth.admin.getUserById(invited_by);
     const inviterEmail = inviter?.user?.email || 'A band member';
+
+    // Escape user-provided content to prevent XSS in email clients
+    const safeBandName = escapeHtml(bandName);
+    const safeInviterEmail = escapeHtml(inviterEmail);
+    const safeRecipientEmail = escapeHtml(email);
 
     // Send email via Resend
     const resendResponse = await fetch('https://api.resend.com/emails', {
@@ -94,11 +146,11 @@ serve(async (req: Request) => {
         html: `
           <div style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
             <h1 style="color: #18181b; font-size: 24px; margin-bottom: 16px;">
-              You're invited to join ${bandName}!
+              You're invited to join ${safeBandName}!
             </h1>
 
             <p style="color: #3f3f46; font-size: 16px; line-height: 1.6;">
-              ${inviterEmail} has invited you to collaborate on <strong>${bandName}</strong> using Band Assist.
+              ${safeInviterEmail} has invited you to collaborate on <strong>${safeBandName}</strong> using Band Assist.
             </p>
 
             <p style="color: #3f3f46; font-size: 16px; line-height: 1.6;">
@@ -113,7 +165,7 @@ serve(async (req: Request) => {
             </div>
 
             <p style="color: #71717a; font-size: 14px; line-height: 1.6;">
-              Sign up or log in with <strong>${email}</strong> to automatically join the band.
+              Sign up or log in with <strong>${safeRecipientEmail}</strong> to automatically join the band.
             </p>
 
             <hr style="border: none; border-top: 1px solid #e4e4e7; margin: 32px 0;" />

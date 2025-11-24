@@ -17,6 +17,23 @@ interface InvitationManagerProps {
   isAdmin: boolean;
 }
 
+/** PostgreSQL error structure returned by Supabase */
+interface PostgresError {
+  code?: string;
+  message?: string;
+  details?: string;
+  hint?: string;
+}
+
+/** Type guard to check if an error is a PostgreSQL error */
+function isPostgresError(error: unknown): error is PostgresError {
+  return (
+    typeof error === 'object' &&
+    error !== null &&
+    ('code' in error || 'message' in error)
+  );
+}
+
 /**
  * InvitationManager Component
  *
@@ -142,18 +159,16 @@ export const InvitationManager: React.FC<InvitationManagerProps> = ({
       if (inviteError) {
         // Check if error is due to rate limit trigger
         // The database trigger raises PostgreSQL exception code 'P0001' (RAISE EXCEPTION)
-        // Prioritize error code detection as it's more reliable than message text
-        const errorCode = (inviteError as { code?: string }).code;
-        const errorMessage = (inviteError as { message?: string }).message || '';
-
-        // Check both error code AND message text for robustness across client versions
-        if (errorCode === 'P0001' || errorMessage.includes('Rate limit exceeded')) {
-          setError('Rate limit exceeded. Maximum 10 invitations per hour per band.');
-        } else {
-          throw inviteError;
+        if (isPostgresError(inviteError)) {
+          const { code, message } = inviteError;
+          // Check both error code AND message text for robustness across client versions
+          if (code === 'P0001' || message?.includes('Rate limit exceeded')) {
+            setError('Rate limit exceeded. Maximum 10 invitations per hour per band.');
+            setIsLoading(false);
+            return;
+          }
         }
-        setIsLoading(false);
-        return;
+        throw inviteError;
       }
 
       setSuccessMessage(`Invitation sent to ${normalizedEmail}`);
