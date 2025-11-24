@@ -13,7 +13,7 @@
     "allowJs": true,
     "jsx": "react-jsx",
     "paths": {
-      "@/*": ["./*"]
+      "@/*": ["./src/*"]
     },
     "types": ["vitest/globals", "@testing-library/jest-dom"],
     "allowImportingTsExtensions": true,

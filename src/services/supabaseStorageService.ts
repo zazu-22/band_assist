@@ -2,7 +2,7 @@ import { Song, BandMember, BandEvent, SongChart, Assignment, SongPart } from '..
 import { IStorageService, LoadResult } from './IStorageService';
 import { getSupabaseClient, isSupabaseConfigured } from './supabaseClient';
 import { RealtimeChannel } from '@supabase/supabase-js';
-import type { Json } from '../src/types/database.types';
+import type { Json } from '../types/database.types';
 
 /**
  * Supabase-based persistence service
