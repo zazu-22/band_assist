@@ -38,14 +38,23 @@ ALTER TABLE roles DROP CONSTRAINT IF EXISTS roles_name_key;
 
 -- Create composite unique constraint allowing each band to have its own roles
 -- NULLS NOT DISTINCT ensures global roles (band_id IS NULL) have unique names
-ALTER TABLE roles ADD CONSTRAINT roles_name_band_id_key
-  UNIQUE NULLS NOT DISTINCT (name, band_id);
+-- Use DO block to make idempotent (skip if constraint already exists)
+DO $$
+BEGIN
+  IF NOT EXISTS (
+    SELECT 1 FROM pg_constraint WHERE conname = 'roles_name_band_id_key'
+  ) THEN
+    ALTER TABLE roles ADD CONSTRAINT roles_name_band_id_key
+      UNIQUE NULLS NOT DISTINCT (name, band_id);
+  END IF;
+END $$;
 
 -- =============================================================================
 -- 3. ADD STORAGE POLICIES FOR BAND-FILES BUCKET
 -- =============================================================================
 
 -- Allow authenticated users to upload files to their band's folder
+DROP POLICY IF EXISTS "Users can upload to their band folder" ON storage.objects;
 CREATE POLICY "Users can upload to their band folder"
 ON storage.objects FOR INSERT
 TO authenticated
@@ -58,6 +67,7 @@ WITH CHECK (
 );
 
 -- Allow users to view files from their bands
+DROP POLICY IF EXISTS "Users can view their band files" ON storage.objects;
 CREATE POLICY "Users can view their band files"
 ON storage.objects FOR SELECT
 TO authenticated
@@ -70,6 +80,7 @@ USING (
 );
 
 -- Allow users to delete files from their bands
+DROP POLICY IF EXISTS "Users can delete their band files" ON storage.objects;
 CREATE POLICY "Users can delete their band files"
 ON storage.objects FOR DELETE
 TO authenticated
