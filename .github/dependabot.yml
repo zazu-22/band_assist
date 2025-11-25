@@ -25,6 +25,9 @@ updates:
       # Husky - stay on v8, v9 requires hook reconfiguration (see PR #23)
       - dependency-name: "husky"
         update-types: ["version-update:semver-major"]
+      # React Router - stay on v6, v7 requires migration (see PR #41)
+      - dependency-name: "react-router-dom"
+        update-types: ["version-update:semver-major"]
     # Note: Groups removed - custom workflow (dependency-update.yml) handles
     # minor/patch updates with build verification before creating PRs
 
