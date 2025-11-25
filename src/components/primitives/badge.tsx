@@ -15,13 +15,13 @@ const badgeVariants = cva(
         destructive:
           'border-transparent bg-destructive text-destructive-foreground shadow hover:bg-destructive/80',
         outline: 'text-foreground',
-        // Custom variants for song status
+        // Semantic status variants using theme CSS variables
         success:
-          'border-green-900 bg-green-950/30 text-green-500',
+          'border-success/30 bg-success/20 text-success',
         info:
-          'border-blue-900 bg-blue-950/30 text-blue-500',
+          'border-info/30 bg-info/20 text-info',
         warning:
-          'border-amber-900 bg-amber-950/30 text-amber-500',
+          'border-warning/30 bg-warning/20 text-warning',
       },
     },
     defaultVariants: {

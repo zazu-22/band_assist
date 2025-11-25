@@ -15,9 +15,7 @@ interface StatCardProps {
   className?: string;
 }
 
-// Note: warning/info colors are hardcoded as the theme doesn't include
-// dedicated CSS variables for these semantic colors. These match the
-// Badge component variants for consistency.
+// Using semantic theme CSS variables for consistent styling
 const variantConfig: Record<
   StatVariant,
   { iconBg: string; iconColor: string; valueColor: string }
@@ -28,19 +26,19 @@ const variantConfig: Record<
     valueColor: 'text-foreground',
   },
   success: {
-    iconBg: 'bg-green-950/30',
-    iconColor: 'text-green-500',
-    valueColor: 'text-green-500',
+    iconBg: 'bg-success/20',
+    iconColor: 'text-success',
+    valueColor: 'text-success',
   },
   info: {
-    iconBg: 'bg-blue-950/30',
-    iconColor: 'text-blue-500',
-    valueColor: 'text-blue-500',
+    iconBg: 'bg-info/20',
+    iconColor: 'text-info',
+    valueColor: 'text-info',
   },
   warning: {
-    iconBg: 'bg-amber-950/30',
-    iconColor: 'text-amber-500',
-    valueColor: 'text-amber-500',
+    iconBg: 'bg-warning/20',
+    iconColor: 'text-warning',
+    valueColor: 'text-warning',
   },
 };
 

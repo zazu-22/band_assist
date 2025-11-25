@@ -184,7 +184,14 @@ Located in `src/index.css`. Key semantic colors:
 - `--background` - Page background
 - `--card` - Card backgrounds
 - `--destructive` - Red for danger actions
+- `--success` - Green for positive status (custom addition)
+- `--warning` - Amber for caution status (custom addition)
+- `--info` - Blue for informational status (custom addition)
 - `--sidebar-*` - Dedicated sidebar colors
+
+Note: `--success`, `--warning`, and `--info` were added as custom semantic colors
+to extend the base shadcn/ui theme. These support the status indicator variants
+used in Badge, StatCard, and ConfirmDialog components.
 
 ### Provider Hierarchy
 ```tsx

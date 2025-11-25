@@ -25,6 +25,7 @@ interface ConfirmDialogProps {
   variant?: DialogVariant;
 }
 
+// Using semantic theme CSS variables for consistent styling
 const variantConfig = {
   danger: {
     icon: Trash2,
@@ -34,15 +35,15 @@ const variantConfig = {
   },
   warning: {
     icon: AlertTriangle,
-    iconBg: 'bg-amber-900/30',
-    iconColor: 'text-amber-500',
-    actionClass: 'bg-amber-600 text-white hover:bg-amber-700',
+    iconBg: 'bg-warning/20',
+    iconColor: 'text-warning',
+    actionClass: 'bg-warning text-warning-foreground hover:bg-warning/90',
   },
   info: {
     icon: Info,
-    iconBg: 'bg-blue-900/30',
-    iconColor: 'text-blue-500',
-    actionClass: 'bg-blue-600 text-white hover:bg-blue-700',
+    iconBg: 'bg-info/20',
+    iconColor: 'text-info',
+    actionClass: 'bg-info text-info-foreground hover:bg-info/90',
   },
 };
 
