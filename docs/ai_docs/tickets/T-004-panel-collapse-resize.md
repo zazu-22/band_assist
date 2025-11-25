@@ -2,182 +2,187 @@
 
 **Status**: Ready for Implementation
 **Priority**: Medium
-**Estimated Effort**: 8-12 hours
-**Last Updated**: 2025-11-21
+**Estimated Effort**: 6-8 hours
+**Last Updated**: 2025-11-25
 
 ## Overview
 
-Implement collapsible and resizable panels throughout the application to improve space utilization and user control. This includes making the sidebar collapsible, the tab viewer resizable, and ensuring responsive behavior when the browser window is resized. This enhancement addresses the current issue where content gets cut off when the window shrinks.
+Implement collapsible and resizable panels throughout the application to improve space utilization and user control. This includes making the main navigation sidebar collapsible with a toggle, adding resizable panels in key views, and enhancing mobile responsiveness with a drawer navigation pattern.
 
 ## Current State
 
-### Existing Layout
+### What's Already Implemented
 
-**App Structure** (`App.tsx`):
+The codebase now uses **React Router v6** with layout routes and has basic responsive patterns:
 
-```
-┌─────────────────────────────────────────┐
-│  Navigation (Left Sidebar - 200px)     │
-├─────────────────────────────────────────┤
-│  Main Content Area (flex-1)            │
-│  - Dashboard / Song Detail / etc.      │
-└─────────────────────────────────────────┘
-```
+**Navigation Component** (`components/Navigation.tsx`):
+- Already responsive: `w-20` on mobile, `lg:w-64` on desktop
+- Icon-only on small screens, labels shown on `lg` breakpoint
+- Uses `useNavigate()` for explicit path navigation
 
-**PracticeRoom Layout** (example):
+**PracticeRoom** (`components/PracticeRoom.tsx`):
+- Has `showSongList` state for toggling song list visibility
+- Uses `hidden md:block` pattern for responsive sidebar
+- Fixed width of `w-64` when visible
 
-```
-┌────────┬────────────────────┬──────────┐
-│ Song   │  AlphaTab Viewer   │  (none)  │
-│ List   │                    │          │
-│ (Left) │    (Center)        │ (Right)  │
-└────────┴────────────────────┴──────────┘
-```
+**SongDetail** (`components/SongDetail.tsx`):
+- Responsive AI sidebar: `flex-col` on mobile, `lg:flex-row` on desktop
+- Sidebar takes `h-1/2` on mobile, `lg:w-96` on desktop
+- Full-screen route (no Navigation sidebar)
 
-### Current Limitations
+**App Layout** (`App.tsx`):
+- Layout route pattern with `<Outlet />` for sidebar pages
+- Flex container with Navigation + main content
+- Full-screen routes (song detail, performance) render without sidebar
 
-- ❌ Sidebar is fixed width, cannot collapse
-- ❌ Tab viewer is not resizable
-- ❌ No way to hide song list or other panels
-- ❌ Content gets cut off on small screens
-- ❌ No responsive breakpoints for mobile/tablet
-- ❌ Mixer with `fixed` positioning floats over sidebar when window shrinks
-- ❌ Cannot maximize tab viewer for focused practice
-- ❌ Layout breaks at narrow widths (< 1024px)
+### Remaining Gaps
 
-### User Impact
+- ❌ No user-controlled sidebar collapse toggle (auto-collapse only)
+- ❌ Panels are fixed-width, not resizable
+- ❌ No mobile drawer pattern for Navigation (just shrinks to icons)
+- ❌ No panel state persistence across sessions
+- ❌ No smooth collapse/expand animations
+- ❌ No keyboard shortcuts for panel control
+- ❌ No `useBreakpoint` hook for programmatic responsive behavior
 
-- Wastes screen space when panels aren't needed
-- Cannot focus on just the tab viewer
-- Difficult to use on smaller screens
-- Professional musicians often use tablets/iPads - current layout is desktop-only
+## Architecture Context
 
-## Technical Context
+### Current Tech Stack
 
-### Current Technology Stack
-
-- **Framework**: React 19.2.0 with TypeScript
-- **Styling**: Tailwind CSS (via CDN)
-- **State Management**: React useState in App.tsx (no Redux/Zustand)
+- **Framework**: React 19 with TypeScript
+- **Routing**: React Router v6 with layout routes
+- **Styling**: Tailwind CSS (locally installed)
+- **State**: Context API via `AppContext` + `useAppContext()`
 - **Icons**: Lucide React
 
 ### Component Hierarchy
 
 ```
-App.tsx (root state & layout)
-├── Navigation.tsx (sidebar)
-│   ├── Dashboard
-│   ├── Schedule
-│   ├── Band Lineup
-│   ├── Setlist Builder
-│   ├── Practice Room    ← Most common use case
-│   └── LIVE GIG
-│
-└── renderContent() (switches on currentView)
-    ├── Dashboard.tsx
-    ├── PracticeRoom.tsx
-    │   ├── Song list (left panel)
-    │   ├── AlphaTabRenderer (center - tab viewer)
-    │   └── (potential right panel for notes/AI)
-    ├── SongDetail.tsx
-    ├── SetlistBuilder.tsx
-    └── ...
+App.tsx (root state, context provider, route definitions)
+├── Routes
+│   ├── AppLayout (layout route with sidebar)
+│   │   ├── Navigation.tsx (sidebar)
+│   │   └── <Outlet /> (child routes)
+│   │       ├── Dashboard
+│   │       ├── PracticeRoom
+│   │       ├── SetlistManager
+│   │       ├── ScheduleManager
+│   │       ├── BandDashboard
+│   │       └── Settings
+│   │
+│   └── Full-Screen Routes (no sidebar)
+│       ├── SongDetailRoute → SongDetail
+│       └── PerformanceMode
 ```
 
-### Responsive Requirements
+### Key Patterns to Follow
 
-**Target Breakpoints**:
-
-- Desktop: 1024px+ (full layout)
-- Tablet: 768px-1023px (collapsible sidebar, single panel focus)
-- Mobile: < 768px (stack vertically, sidebar as drawer)
-
-**Priority Views** (implement in order):
-
-1. PracticeRoom (most important for tablet use)
-2. Song Detail
-3. Dashboard
-4. Setlist Builder
+1. **Layout Route Pattern**: Navigation lives in `AppLayout`, not `App.tsx`
+2. **Context for Shared State**: Use `AppContext` for layout preferences
+3. **Tailwind Responsive Classes**: Build on existing `lg:` and `md:` patterns
+4. **Explicit Navigation**: Use `navigate('/path')`, not `navigate(-1)`
 
 ## Implementation Plan
 
-### Phase 1: Global Sidebar Collapse
+### Phase 1: Collapsible Sidebar with User Toggle
 
-#### 1.1 Add Collapse State to App.tsx
+#### 1.1 Add Layout State to AppContext
+
+**File**: `App.tsx`
+
+Add layout preferences to the context:
 
 ```typescript
-// In App.tsx, add state:
-const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
+// Add to AppContextType interface
+interface AppContextType {
+  // ... existing fields
+  sidebarCollapsed: boolean;
+  setSidebarCollapsed: (collapsed: boolean) => void;
+}
 
-// Pass to Navigation component:
-<Navigation
-  onNavigate={handleNavigate}
-  currentView={currentView}
-  collapsed={sidebarCollapsed}
-  onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
-/>
+// In App component, add state:
+const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+  try {
+    return localStorage.getItem('sdb_sidebar_collapsed') === 'true';
+  } catch {
+    return false;
+  }
+});
+
+// Persist to localStorage
+useEffect(() => {
+  localStorage.setItem('sdb_sidebar_collapsed', String(sidebarCollapsed));
+}, [sidebarCollapsed]);
+
+// Add to context value (inside useMemo)
+const contextValue = useMemo(() => ({
+  // ... existing fields
+  sidebarCollapsed,
+  setSidebarCollapsed,
+}), [/* ... existing deps */, sidebarCollapsed]);
 ```
 
 #### 1.2 Update Navigation Component
 
 **File**: `components/Navigation.tsx`
 
-Add collapse button and conditional rendering:
+Add collapse toggle button and transition animations:
 
 ```typescript
-interface NavigationProps {
-  onNavigate: (view: ViewState) => void;
-  currentView: ViewState;
-  collapsed?: boolean;
-  onToggleCollapse?: () => void;
-}
+import { useAppContext } from '../App';
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 
-export const Navigation: React.FC<NavigationProps> = ({
-  onNavigate,
-  currentView,
-  collapsed = false,
-  onToggleCollapse
-}) => {
+export const Navigation: React.FC<NavigationProps> = ({ currentView }) => {
+  const { sidebarCollapsed, setSidebarCollapsed } = useAppContext();
+  const navigate = useNavigate();
+
   return (
-    <nav className={`bg-zinc-900 text-white flex flex-col transition-all duration-300 ${
-      collapsed ? 'w-16' : 'w-52'
-    }`}>
+    <nav className={`
+      sticky top-0 h-screen bg-zinc-900 text-zinc-100 flex flex-col
+      transition-all duration-300 ease-in-out
+      ${sidebarCollapsed ? 'w-16' : 'w-20 lg:w-64'}
+    `}>
       {/* Header with collapse toggle */}
-      <div className="p-4 border-b border-zinc-800 flex items-center justify-between">
-        {!collapsed && (
-          <div className="flex items-center gap-2">
-            <Music className="text-amber-500" size={24} />
-            <div>
-              <h1 className="font-bold text-sm">SHARP</h1>
-              <h1 className="font-bold text-sm text-amber-500">DRESSED APP</h1>
-            </div>
+      <div className="h-16 flex items-center justify-between px-3 border-b border-zinc-800">
+        {!sidebarCollapsed && (
+          <div className="hidden lg:flex items-center gap-2 overflow-hidden">
+            <Music className="text-amber-500 shrink-0" size={24} />
+            <span className="font-bold text-sm truncate">SHARP DRESSED</span>
           </div>
         )}
-        {onToggleCollapse && (
-          <button
-            onClick={onToggleCollapse}
-            className="p-2 hover:bg-zinc-800 rounded transition-colors"
-            title={collapsed ? "Expand sidebar" : "Collapse sidebar"}
-          >
-            {collapsed ? <ChevronRight size={20} /> : <ChevronLeft size={20} />}
-          </button>
+        {sidebarCollapsed && (
+          <Music className="text-amber-500 mx-auto" size={24} />
         )}
+
+        {/* Collapse toggle - visible on lg screens */}
+        <button
+          onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+          className="hidden lg:flex p-2 hover:bg-zinc-800 rounded-lg transition-colors"
+          title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+        >
+          {sidebarCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
+        </button>
       </div>
 
-      {/* Navigation items */}
-      <div className="flex-1 overflow-y-auto">
-        {NAV_ITEMS.map((item) => (
+      {/* Nav items - center icons when collapsed */}
+      <div className="flex-1 overflow-y-auto py-2">
+        {mainNavItems.map((item) => (
           <button
             key={item.view}
-            onClick={() => onNavigate(item.view)}
-            className={`w-full px-4 py-3 flex items-center gap-3 hover:bg-zinc-800 transition-colors ${
-              currentView === item.view ? 'bg-zinc-800 border-l-4 border-amber-500' : ''
-            }`}
+            onClick={() => navigate(viewToPath[item.view])}
+            className={`
+              w-full flex items-center gap-3 px-4 py-3
+              hover:bg-zinc-800 transition-colors
+              ${sidebarCollapsed ? 'justify-center px-2' : ''}
+              ${isActive(item.view) ? 'bg-zinc-800 border-l-4 border-amber-500' : ''}
+            `}
             title={item.label}
           >
             {item.icon}
-            {!collapsed && (
-              <span className="text-sm font-medium">{item.label}</span>
+            {!sidebarCollapsed && (
+              <span className="hidden lg:block text-sm font-medium truncate">
+                {item.label}
+              </span>
             )}
           </button>
         ))}
@@ -187,114 +192,198 @@ export const Navigation: React.FC<NavigationProps> = ({
 };
 ```
 
-**New Icons Needed**:
+#### 1.3 Update AppLayout
+
+**File**: `App.tsx` (AppLayout component)
+
+Ensure layout responds to sidebar state:
 
 ```typescript
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+const AppLayout: React.FC = () => {
+  const location = useLocation();
+  const { sidebarCollapsed } = useAppContext();
+
+  // ... currentView detection logic
+
+  return (
+    <div className="flex min-h-screen bg-zinc-950 font-sans text-zinc-100">
+      <Navigation currentView={currentView} />
+      <main className={`
+        flex-1 h-screen overflow-y-auto
+        transition-all duration-300 ease-in-out
+      `}>
+        <Outlet />
+      </main>
+    </div>
+  );
+};
 ```
 
-#### 1.3 Update App.tsx Layout
+### Phase 2: Mobile Drawer Navigation
 
-Adjust main layout to accommodate collapsed sidebar:
+#### 2.1 Add Mobile Drawer State
+
+**File**: `App.tsx`
 
 ```typescript
-return (
-  <div className="flex h-screen bg-zinc-50 overflow-hidden">
-    <Navigation
-      onNavigate={handleNavigate}
-      currentView={currentView}
-      collapsed={sidebarCollapsed}
-      onToggleCollapse={() => setSidebarCollapsed(!sidebarCollapsed)}
-    />
-
-    {/* Main content - flex-1 grows to fill remaining space */}
-    <main className="flex-1 overflow-hidden">
-      {renderContent()}
-    </main>
-  </div>
-);
-```
-
-### Phase 2: Resizable Tab Viewer (PracticeRoom)
-
-#### 2.1 Install or Create Resize Handler
-
-**Option A**: Use existing CSS resize
-
-```css
-.resizable-panel {
-  resize: horizontal;
-  overflow: auto;
+// Add to context
+interface AppContextType {
+  // ... existing
+  mobileNavOpen: boolean;
+  setMobileNavOpen: (open: boolean) => void;
 }
+
+// In App component
+const [mobileNavOpen, setMobileNavOpen] = useState(false);
 ```
 
-**Option B**: Create custom resize handle component
+#### 2.2 Create Drawer Overlay
 
-Create new file: `components/ResizablePanel.tsx`
+**File**: `App.tsx` (AppLayout component)
 
 ```typescript
-import React, { useRef, useState, useEffect } from 'react';
+const AppLayout: React.FC = () => {
+  const { mobileNavOpen, setMobileNavOpen } = useAppContext();
+  const location = useLocation();
+
+  // Close drawer on route change
+  useEffect(() => {
+    setMobileNavOpen(false);
+  }, [location.pathname, setMobileNavOpen]);
+
+  return (
+    <div className="flex min-h-screen bg-zinc-950 font-sans text-zinc-100">
+      {/* Mobile overlay */}
+      {mobileNavOpen && (
+        <div
+          className="fixed inset-0 bg-black/60 z-40 lg:hidden"
+          onClick={() => setMobileNavOpen(false)}
+        />
+      )}
+
+      {/* Sidebar - drawer on mobile, static on desktop */}
+      <div className={`
+        lg:relative lg:translate-x-0
+        fixed top-0 left-0 h-full z-50
+        transform transition-transform duration-300 ease-in-out
+        ${mobileNavOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+      `}>
+        <Navigation currentView={currentView} />
+      </div>
+
+      {/* Mobile menu button */}
+      <button
+        onClick={() => setMobileNavOpen(true)}
+        className="fixed top-4 left-4 z-30 p-2 bg-zinc-900 rounded-lg shadow-lg lg:hidden"
+      >
+        <Menu size={24} />
+      </button>
+
+      <main className="flex-1 h-screen overflow-y-auto">
+        <Outlet />
+      </main>
+    </div>
+  );
+};
+```
+
+### Phase 3: Resizable Panels
+
+#### 3.1 Create ResizablePanel Component
+
+**File**: `components/ui/ResizablePanel.tsx`
+
+```typescript
+import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { GripVertical } from 'lucide-react';
 
 interface ResizablePanelProps {
+  children: React.ReactNode;
   defaultWidth?: number;
   minWidth?: number;
   maxWidth?: number;
-  children: React.ReactNode;
+  storageKey?: string;
+  side?: 'left' | 'right';
   className?: string;
 }
 
 export const ResizablePanel: React.FC<ResizablePanelProps> = ({
-  defaultWidth = 300,
-  minWidth = 200,
-  maxWidth = 600,
   children,
-  className = ''
+  defaultWidth = 256,
+  minWidth = 180,
+  maxWidth = 480,
+  storageKey,
+  side = 'left',
+  className = '',
 }) => {
-  const [width, setWidth] = useState(defaultWidth);
+  const [width, setWidth] = useState(() => {
+    if (storageKey) {
+      const saved = localStorage.getItem(`sdb_panel_${storageKey}`);
+      if (saved) return Math.max(minWidth, Math.min(maxWidth, parseInt(saved, 10)));
+    }
+    return defaultWidth;
+  });
+
   const [isResizing, setIsResizing] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
 
+  const handleMouseMove = useCallback((e: MouseEvent) => {
+    if (!panelRef.current) return;
+    const rect = panelRef.current.getBoundingClientRect();
+    const newWidth = side === 'left'
+      ? e.clientX - rect.left
+      : rect.right - e.clientX;
+    setWidth(Math.max(minWidth, Math.min(maxWidth, newWidth)));
+  }, [minWidth, maxWidth, side]);
+
+  const handleMouseUp = useCallback(() => {
+    setIsResizing(false);
+    if (storageKey) {
+      localStorage.setItem(`sdb_panel_${storageKey}`, String(width));
+    }
+  }, [storageKey, width]);
+
   useEffect(() => {
     if (!isResizing) return;
-
-    const handleMouseMove = (e: MouseEvent) => {
-      if (panelRef.current) {
-        const newWidth = e.clientX - panelRef.current.getBoundingClientRect().left;
-        setWidth(Math.max(minWidth, Math.min(maxWidth, newWidth)));
-      }
-    };
-
-    const handleMouseUp = () => {
-      setIsResizing(false);
-    };
-
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mouseup', handleMouseUp);
+    document.body.style.cursor = 'col-resize';
+    document.body.style.userSelect = 'none';
 
     return () => {
       document.removeEventListener('mousemove', handleMouseMove);
       document.removeEventListener('mouseup', handleMouseUp);
+      document.body.style.cursor = '';
+      document.body.style.userSelect = '';
     };
-  }, [isResizing, minWidth, maxWidth]);
+  }, [isResizing, handleMouseMove, handleMouseUp]);
+
+  const handlePosition = side === 'left' ? 'right-0' : 'left-0';
 
   return (
     <div
       ref={panelRef}
-      className={`relative ${className}`}
-      style={{ width: `${width}px`, flexShrink: 0 }}
+      className={`relative shrink-0 ${className}`}
+      style={{ width }}
     >
       {children}
 
       {/* Resize handle */}
       <div
-        className={`absolute top-0 right-0 w-1 h-full cursor-col-resize hover:bg-amber-500 transition-colors ${
-          isResizing ? 'bg-amber-500' : 'bg-zinc-300'
-        }`}
+        className={`
+          absolute top-0 ${handlePosition} w-1 h-full cursor-col-resize
+          hover:bg-amber-500/50 transition-colors group
+          ${isResizing ? 'bg-amber-500' : 'bg-transparent'}
+        `}
         onMouseDown={() => setIsResizing(true)}
       >
-        <div className="absolute top-1/2 right-0 -translate-y-1/2 translate-x-1/2 bg-zinc-200 rounded p-1 opacity-0 hover:opacity-100 transition-opacity">
-          <GripVertical size={16} className="text-zinc-600" />
+        <div className={`
+          absolute top-1/2 -translate-y-1/2
+          ${side === 'left' ? 'translate-x-1/2' : '-translate-x-1/2'}
+          opacity-0 group-hover:opacity-100 transition-opacity
+          bg-zinc-700 rounded p-0.5
+        `}>
+          <GripVertical size={12} className="text-zinc-400" />
         </div>
       </div>
     </div>
@@ -302,356 +391,208 @@ export const ResizablePanel: React.FC<ResizablePanelProps> = ({
 };
 ```
 
-#### 2.2 Update PracticeRoom Layout
+#### 3.2 Create useBreakpoint Hook
 
-**File**: `components/PracticeRoom.tsx`
-
-Wrap song list in resizable panel:
-
-```typescript
-import { ResizablePanel } from './ResizablePanel';
-
-export const PracticeRoom: React.FC<PracticeRoomProps> = ({ ... }) => {
-  const [showSongList, setShowSongList] = useState(true);
-
-  return (
-    <div className="flex h-full">
-      {/* Collapsible Song List */}
-      {showSongList && (
-        <ResizablePanel
-          defaultWidth={280}
-          minWidth={200}
-          maxWidth={500}
-          className="bg-zinc-900 text-white flex flex-col"
-        >
-          {/* Existing song list content */}
-          <div className="p-4 border-b border-zinc-800 flex items-center justify-between">
-            <h2 className="font-bold">Songs</h2>
-            <button
-              onClick={() => setShowSongList(false)}
-              className="p-1 hover:bg-zinc-800 rounded"
-              title="Hide song list"
-            >
-              <PanelLeftClose size={16} />
-            </button>
-          </div>
-          {/* Song list items... */}
-        </ResizablePanel>
-      )}
-
-      {/* Main content area */}
-      <div className="flex-1 flex flex-col overflow-hidden">
-        {/* Show song list button when hidden */}
-        {!showSongList && (
-          <button
-            onClick={() => setShowSongList(true)}
-            className="absolute top-4 left-4 z-10 p-2 bg-zinc-900 text-white rounded-lg shadow-lg hover:bg-zinc-800"
-            title="Show song list"
-          >
-            <PanelLeftOpen size={20} />
-          </button>
-        )}
-
-        {/* AlphaTab viewer and controls */}
-        {selectedSong ? (
-          <AlphaTabRenderer /* ... */ />
-        ) : (
-          <div className="flex-1 flex items-center justify-center text-zinc-400">
-            Select a song to practice
-          </div>
-        )}
-      </div>
-    </div>
-  );
-};
-```
-
-**New Icons**:
-
-```typescript
-import { PanelLeftClose, PanelLeftOpen } from 'lucide-react';
-```
-
-### Phase 3: Responsive Breakpoints
-
-#### 3.1 Add Responsive Utilities Hook
-
-Create: `hooks/useBreakpoint.ts`
+**File**: `hooks/useBreakpoint.ts`
 
 ```typescript
 import { useState, useEffect } from 'react';
 
-export type Breakpoint = 'mobile' | 'tablet' | 'desktop';
+export type Breakpoint = 'sm' | 'md' | 'lg' | 'xl' | '2xl';
+
+const BREAKPOINTS = {
+  sm: 640,
+  md: 768,
+  lg: 1024,
+  xl: 1280,
+  '2xl': 1536,
+} as const;
 
 export const useBreakpoint = (): Breakpoint => {
-  const [breakpoint, setBreakpoint] = useState<Breakpoint>('desktop');
+  const [breakpoint, setBreakpoint] = useState<Breakpoint>('lg');
 
   useEffect(() => {
-    const handleResize = () => {
+    const getBreakpoint = (): Breakpoint => {
       const width = window.innerWidth;
-      if (width < 768) {
-        setBreakpoint('mobile');
-      } else if (width < 1024) {
-        setBreakpoint('tablet');
-      } else {
-        setBreakpoint('desktop');
-      }
+      if (width >= BREAKPOINTS['2xl']) return '2xl';
+      if (width >= BREAKPOINTS.xl) return 'xl';
+      if (width >= BREAKPOINTS.lg) return 'lg';
+      if (width >= BREAKPOINTS.md) return 'md';
+      return 'sm';
     };
 
-    handleResize(); // Initial check
+    const handleResize = () => setBreakpoint(getBreakpoint());
+    handleResize();
+
     window.addEventListener('resize', handleResize);
     return () => window.removeEventListener('resize', handleResize);
   }, []);
 
   return breakpoint;
 };
+
+export const useIsMobile = (): boolean => {
+  const bp = useBreakpoint();
+  return bp === 'sm' || bp === 'md';
+};
+
+export const useIsDesktop = (): boolean => {
+  const bp = useBreakpoint();
+  return bp === 'lg' || bp === 'xl' || bp === '2xl';
+};
 ```
 
-#### 3.2 Apply Responsive Logic
+#### 3.3 Apply to PracticeRoom
 
-**In PracticeRoom.tsx**:
+**File**: `components/PracticeRoom.tsx`
 
 ```typescript
-import { useBreakpoint } from '../hooks/useBreakpoint';
+import { ResizablePanel } from './ui/ResizablePanel';
+import { useIsMobile } from '../hooks/useBreakpoint';
+import { PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 
 export const PracticeRoom: React.FC<PracticeRoomProps> = ({ ... }) => {
-  const breakpoint = useBreakpoint();
-  const [showSongList, setShowSongList] = useState(breakpoint === 'desktop');
+  const isMobile = useIsMobile();
+  const [showSongList, setShowSongList] = useState(!isMobile);
 
-  // Auto-hide song list on mobile/tablet
+  // Auto-hide on mobile when song selected
   useEffect(() => {
-    if (breakpoint !== 'desktop' && selectedSong) {
+    if (isMobile && selectedSong) {
       setShowSongList(false);
     }
-  }, [breakpoint, selectedSong]);
+  }, [isMobile, selectedSong]);
 
   return (
-    <div className={`flex h-full ${breakpoint === 'mobile' ? 'flex-col' : ''}`}>
-      {/* Responsive layout */}
-    </div>
-  );
-};
-```
-
-#### 3.3 Mobile Drawer for Sidebar
-
-**In App.tsx**:
-
-```typescript
-import { useBreakpoint } from './hooks/useBreakpoint';
-
-const App: React.FC = () => {
-  const breakpoint = useBreakpoint();
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
-  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
-
-  // Auto-collapse sidebar on mobile
-  useEffect(() => {
-    if (breakpoint === 'mobile') {
-      setSidebarCollapsed(true);
-    }
-  }, [breakpoint]);
-
-  return (
-    <div className="flex h-screen bg-zinc-50 overflow-hidden">
-      {/* Mobile: Overlay drawer */}
-      {breakpoint === 'mobile' && mobileSidebarOpen && (
-        <div
-          className="fixed inset-0 bg-black/50 z-40"
-          onClick={() => setMobileSidebarOpen(false)}
-        />
-      )}
-
-      {/* Sidebar */}
-      <div className={`${
-        breakpoint === 'mobile'
-          ? `fixed top-0 left-0 h-full z-50 transition-transform ${
-              mobileSidebarOpen ? 'translate-x-0' : '-translate-x-full'
-            }`
-          : ''
-      }`}>
-        <Navigation /* ... */ />
+    <div className="h-full flex flex-col bg-zinc-950 text-zinc-100">
+      {/* Toolbar */}
+      <div className="h-16 border-b border-zinc-800 bg-zinc-900 flex items-center px-4 shrink-0">
+        <button
+          onClick={() => setShowSongList(!showSongList)}
+          className="p-2 hover:bg-zinc-800 rounded-lg mr-2"
+          title={showSongList ? "Hide songs" : "Show songs"}
+        >
+          {showSongList ? <PanelLeftClose size={20} /> : <PanelLeftOpen size={20} />}
+        </button>
+        {/* ... rest of toolbar */}
       </div>
 
-      {/* Mobile menu button */}
-      {breakpoint === 'mobile' && (
-        <button
-          onClick={() => setMobileSidebarOpen(true)}
-          className="fixed top-4 left-4 z-30 p-2 bg-zinc-900 text-white rounded-lg shadow-lg"
-        >
-          <Menu size={24} />
-        </button>
-      )}
+      <div className="flex-1 flex overflow-hidden">
+        {/* Song List - resizable on desktop, fixed on mobile */}
+        {showSongList && (
+          isMobile ? (
+            <div className="w-64 bg-zinc-900 border-r border-zinc-800 overflow-y-auto shrink-0">
+              {/* Song list content */}
+            </div>
+          ) : (
+            <ResizablePanel
+              defaultWidth={256}
+              minWidth={200}
+              maxWidth={400}
+              storageKey="practice_songlist"
+              className="bg-zinc-900 border-r border-zinc-800 overflow-y-auto"
+            >
+              {/* Song list content */}
+            </ResizablePanel>
+          )
+        )}
 
-      <main className="flex-1 overflow-hidden">
-        {renderContent()}
-      </main>
+        {/* Main Stage */}
+        <div className="flex-1 flex flex-col relative overflow-hidden">
+          {/* Chart viewer content */}
+        </div>
+      </div>
     </div>
   );
 };
 ```
 
-### Phase 4: Persist Panel States
+### Phase 4: Keyboard Shortcuts (Optional)
 
-#### 4.1 Save to localStorage
+#### 4.1 Create useKeyboardShortcuts Hook
 
-Add helper functions:
+**File**: `hooks/useKeyboardShortcuts.ts`
 
 ```typescript
-// utils/panelState.ts
-const PANEL_STATE_KEY = 'sdb_panel_states';
+import { useEffect } from 'react';
+import { useAppContext } from '../App';
 
-interface PanelState {
-  sidebarCollapsed: boolean;
-  songListWidth: number;
-  songListVisible: boolean;
-}
+export const useLayoutShortcuts = () => {
+  const { sidebarCollapsed, setSidebarCollapsed } = useAppContext();
 
-export const savePanelState = (state: Partial<PanelState>) => {
-  const current = loadPanelState();
-  localStorage.setItem(PANEL_STATE_KEY, JSON.stringify({ ...current, ...state }));
-};
-
-export const loadPanelState = (): PanelState => {
-  try {
-    const saved = localStorage.getItem(PANEL_STATE_KEY);
-    return saved
-      ? JSON.parse(saved)
-      : {
-          sidebarCollapsed: false,
-          songListWidth: 280,
-          songListVisible: true,
-        };
-  } catch {
-    return {
-      sidebarCollapsed: false,
-      songListWidth: 280,
-      songListVisible: true,
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Cmd/Ctrl + B = toggle sidebar
+      if ((e.metaKey || e.ctrlKey) && e.key === 'b') {
+        e.preventDefault();
+        setSidebarCollapsed(!sidebarCollapsed);
+      }
     };
-  }
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [sidebarCollapsed, setSidebarCollapsed]);
 };
 ```
 
-#### 4.2 Apply on Mount
+Use in `AppLayout`:
 
 ```typescript
-// In App.tsx
-const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
-  return loadPanelState().sidebarCollapsed;
-});
-
-// Save when changed
-useEffect(() => {
-  savePanelState({ sidebarCollapsed });
-}, [sidebarCollapsed]);
+const AppLayout: React.FC = () => {
+  useLayoutShortcuts();
+  // ... rest of component
+};
 ```
-
-## UI/UX Patterns
-
-### Visual Indicators
-
-1. **Resize Handles**: Vertical grip icon, highlight on hover
-2. **Collapse Buttons**: Chevron icons that rotate to indicate direction
-3. **Panel Transitions**: Smooth 300ms animations
-4. **Focus States**: Highlight active panel with subtle border
-
-### Keyboard Shortcuts (Optional Enhancement)
-
-- `Cmd/Ctrl + B` - Toggle sidebar
-- `Cmd/Ctrl + L` - Toggle song list
-- `F11` - Toggle fullscreen mode
 
 ## Testing Plan
 
 ### Functional Testing
 
-- [ ] Sidebar collapses/expands smoothly
-- [ ] Song list panel is resizable
-- [ ] Song list can be hidden/shown
-- [ ] Panel states persist across sessions
-- [ ] Responsive breakpoints trigger correctly
-- [ ] Mobile drawer opens/closes properly
+- [ ] Sidebar collapse toggle works on desktop
+- [ ] Collapsed state persists across page refresh
+- [ ] Mobile drawer opens/closes correctly
+- [ ] Drawer closes on route change
+- [ ] ResizablePanel drag works smoothly
+- [ ] Panel widths persist in localStorage
+- [ ] Keyboard shortcut (Cmd+B) toggles sidebar
 
 ### Responsive Testing
 
-- [ ] Desktop (1920x1080): Full layout works
-- [ ] Laptop (1366x768): All panels visible and functional
-- [ ] Tablet landscape (1024x768): Sidebar collapses, panels work
-- [ ] Tablet portrait (768x1024): Song list auto-hides
-- [ ] Mobile (375x667): Drawer navigation works
+- [ ] **Desktop (1280px+)**: Full sidebar, resizable panels
+- [ ] **Laptop (1024px)**: Sidebar collapsible, panels work
+- [ ] **Tablet (768px)**: Drawer navigation, panels auto-hide
+- [ ] **Mobile (< 768px)**: Drawer navigation, stacked layouts
 
-### Cross-Browser Testing
+### Browser Testing
 
-- [ ] Chrome
-- [ ] Firefox
-- [ ] Safari (important for iPad musicians)
-- [ ] Edge
+- [ ] Chrome (latest)
+- [ ] Firefox (latest)
+- [ ] Safari (important for iPad users)
+- [ ] Edge (latest)
 
-### Performance Testing
+## Files to Create
 
-- [ ] No lag during resize
-- [ ] Transitions are smooth (60fps)
-- [ ] No layout shift issues
-- [ ] localStorage doesn't grow unbounded
+- `components/ui/ResizablePanel.tsx` - Reusable resizable panel
+- `hooks/useBreakpoint.ts` - Responsive breakpoint detection
+- `hooks/useKeyboardShortcuts.ts` - Keyboard shortcut handling (optional)
 
-## Known Issues & Limitations
+## Files to Modify
 
-1. **AlphaTab Rendering**: AlphaTab may need to recalculate layout when container resizes. May need to call `api.updateSettings()` or trigger re-render.
-
-2. **Touch Devices**: Resize handles may be difficult on touch screens. Consider larger hit areas or alternative UI for tablets.
-
-3. **Very Small Screens**: On screens < 375px width, layout may still have issues. These are outside target use cases.
-
-4. **localStorage Limits**: Storing panel states in localStorage is fine, but don't store large data here (songs, etc.)
-
-## Future Enhancements
-
-- **Preset Layouts**: "Focus Mode", "Practice Mode", "Overview Mode"
-- **Drag-and-Drop Panels**: Rearrange panel positions
-- **Multi-Monitor Support**: Remember panel states per monitor
-- **Panel Opacity**: Overlay panels with transparency
-- **Split View**: Show two songs side by side
-
-## Resources
-
-### React Resize Libraries (if custom is too complex)
-
-- `react-resizable-panels`: <https://github.com/bvaughn/react-resizable-panels>
-- `react-split`: <https://github.com/nathancahill/split/tree/master/packages/react-split>
-- `re-resizable`: <https://github.com/bokuweb/re-resizable>
-
-### Tailwind Responsive Design
-
-- Breakpoints: <https://tailwindcss.com/docs/responsive-design>
-- Flexbox: <https://tailwindcss.com/docs/flex>
-- Grid: <https://tailwindcss.com/docs/grid-template-columns>
+- `App.tsx` - Add layout state to context, update AppLayout
+- `components/Navigation.tsx` - Add collapse toggle, animations
+- `components/PracticeRoom.tsx` - Add ResizablePanel, toggle button
+- `components/SongDetail.tsx` - Consider adding collapsible AI sidebar (optional)
 
 ## Acceptance Criteria
 
-1. ✅ Sidebar can collapse to icon-only view
-2. ✅ Song list panel is resizable with visual handle
-3. ✅ Song list can be hidden/shown
-4. ✅ Panel states persist across sessions
-5. ✅ Responsive breakpoints work on mobile/tablet
-6. ✅ No content cutoff on window resize
-7. ✅ Smooth animations for all panel transitions
-8. ✅ AlphaTab viewer remains functional when resized
-9. ✅ All testing checklist items pass
-10. ✅ Works on target devices (desktop, laptop, iPad)
+1. ✅ Sidebar has visible collapse/expand toggle button
+2. ✅ Sidebar collapse state persists across sessions
+3. ✅ Mobile users see drawer navigation with overlay
+4. ✅ PracticeRoom song list is resizable with drag handle
+5. ✅ Panel widths persist across sessions
+6. ✅ Smooth 300ms animations on all transitions
+7. ✅ No layout shift or content cutoff on resize
+8. ✅ Works on desktop, laptop, tablet, and mobile
 
 ---
 
-**Files to Create:**
-
-- `components/ResizablePanel.tsx` - Reusable resize component
-- `hooks/useBreakpoint.ts` - Responsive breakpoint hook
-- `utils/panelState.ts` - localStorage persistence
-
-**Files to Modify:**
-
-- `App.tsx` - Add sidebar collapse state
-- `components/Navigation.tsx` - Add collapse button and conditional rendering
-- `components/PracticeRoom.tsx` - Add resizable song list panel
-- Possibly: `components/SongDetail.tsx`, `components/Dashboard.tsx` for consistency
-
-**Estimated Lines of Code:** ~400-500 lines across all files
+**Estimated Lines of Code:** ~300-400 lines across all files
