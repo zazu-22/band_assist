@@ -57,30 +57,11 @@ export const Navigation: React.FC<NavigationProps> = ({
   return (
     <div
       className={`
-        bg-zinc-900 border-r border-zinc-800 flex flex-col h-screen sticky top-0 relative group
+        bg-zinc-900 border-r border-zinc-800 flex flex-col h-screen sticky top-0
         transition-[width] duration-300 ease-in-out motion-reduce:transition-none
         ${sidebarCollapsed ? 'w-16' : 'w-20 lg:w-64'}
       `}
     >
-      {/* Edge handle collapse toggle (VS Code style) - visible on lg screens */}
-      <button
-        type="button"
-        onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-        className={`
-          hidden lg:flex absolute right-0 top-20 translate-x-1/2 z-10
-          w-6 h-12 bg-zinc-800 border border-zinc-700 rounded-r-lg
-          items-center justify-center
-          transition-all duration-200 motion-reduce:transition-none
-          hover:bg-zinc-700 hover:border-amber-500 hover:text-amber-500
-          focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none
-          ${sidebarCollapsed ? 'opacity-100 text-zinc-300' : 'opacity-0 group-hover:opacity-100 text-zinc-400'}
-        `}
-        title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-        aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-      >
-        {sidebarCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
-      </button>
-
       {/* Header */}
       <div className="p-4 lg:p-6 flex items-center justify-center lg:justify-start">
         {!sidebarCollapsed && (
@@ -167,11 +148,33 @@ export const Navigation: React.FC<NavigationProps> = ({
       </nav>
 
       <div className="p-4 border-t border-zinc-800 space-y-2">
+        {/* Collapse toggle - desktop only */}
+        <button
+          type="button"
+          onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+          className={`
+            hidden lg:flex w-full items-center gap-3 px-3 py-3 text-zinc-500 rounded-xl
+            hover:bg-zinc-800 hover:text-zinc-100 transition-colors motion-reduce:transition-none
+            ${sidebarCollapsed ? 'justify-center' : ''}
+          `}
+          title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+        >
+          {sidebarCollapsed ? (
+            <ChevronRight className="w-5 h-5 shrink-0" />
+          ) : (
+            <>
+              <ChevronLeft className="w-5 h-5 shrink-0" />
+              <span className="text-sm font-medium">Collapse</span>
+            </>
+          )}
+        </button>
+
         <button
           type="button"
           onClick={() => navigate(ROUTES.SETTINGS)}
           className={`
-            w-full flex items-center gap-3 px-3 py-3 text-zinc-500 rounded-xl hover:bg-zinc-800 hover:text-zinc-100 transition-all
+            w-full flex items-center gap-3 px-3 py-3 text-zinc-500 rounded-xl hover:bg-zinc-800 hover:text-zinc-100 transition-colors motion-reduce:transition-none
             ${sidebarCollapsed ? 'justify-center' : ''}
             ${isActive(ROUTES.SETTINGS) ? 'bg-zinc-800 text-white' : ''}
           `}
