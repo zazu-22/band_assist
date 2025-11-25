@@ -5,6 +5,8 @@ import { getMusicAnalysis } from '../services/geminiService';
 import { SmartTabEditor } from './SmartTabEditor';
 import { isSupabaseConfigured } from '../services/supabaseClient';
 import { supabaseStorageService } from '../services/supabaseStorageService';
+import { toast } from './ui/Toast';
+import { ConfirmDialog } from './ui/ConfirmDialog';
 import {
   Music2,
   Users,
@@ -73,6 +75,20 @@ export const SongDetail: React.FC<SongDetailProps> = ({
   const [isAddingChart, setIsAddingChart] = useState(false);
   const [newChartName, setNewChartName] = useState('');
   const [newChartInstrument, setNewChartInstrument] = useState('Lead Guitar');
+
+  // Confirm Dialog State
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    onConfirm: () => {},
+  });
+  const closeConfirmDialog = () => setConfirmDialog(prev => ({ ...prev, isOpen: false }));
 
   const activeChart = song.charts.find(c => c.id === activeChartId);
 
@@ -156,7 +172,7 @@ export const SongDetail: React.FC<SongDetailProps> = ({
     if (!file) return;
 
     if (file.size > 50 * 1024 * 1024) {
-      alert('File is too large (Limit: 50MB). Please compress the file.');
+      toast.error('File is too large (Limit: 50MB). Please compress the file.');
       return;
     }
 
@@ -175,7 +191,7 @@ export const SongDetail: React.FC<SongDetailProps> = ({
         );
 
         if (!uploadResult) {
-          alert('Failed to upload file. Please try again.');
+          toast.error('Failed to upload file. Please try again.');
           return;
         }
 
@@ -198,7 +214,7 @@ export const SongDetail: React.FC<SongDetailProps> = ({
         if (fileInputRef.current) fileInputRef.current.value = '';
       } catch (error) {
         console.error('Error uploading chart:', error);
-        alert('Error uploading file. Please try again.');
+        toast.error('Error uploading file. Please try again.');
       }
     } else {
       // Fallback for text files or when Supabase not configured
@@ -232,13 +248,19 @@ export const SongDetail: React.FC<SongDetailProps> = ({
   };
 
   const handleDeleteChart = (chartId: string) => {
-    if (window.confirm('Delete this chart?')) {
-      const updatedCharts = song.charts.filter(c => c.id !== chartId);
-      onUpdateSong({ ...song, charts: updatedCharts });
-      if (activeChartId === chartId) {
-        setActiveChartId(updatedCharts.length > 0 ? updatedCharts[0].id : null);
-      }
-    }
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Delete Chart',
+      message: 'Are you sure you want to delete this chart? This action cannot be undone.',
+      onConfirm: () => {
+        const updatedCharts = song.charts.filter(c => c.id !== chartId);
+        onUpdateSong({ ...song, charts: updatedCharts });
+        if (activeChartId === chartId) {
+          setActiveChartId(updatedCharts.length > 0 ? updatedCharts[0].id : null);
+        }
+        closeConfirmDialog();
+      },
+    });
   };
 
   const handleUpdateChartContent = (chartId: string, newContent: string) => {
@@ -262,7 +284,7 @@ export const SongDetail: React.FC<SongDetailProps> = ({
     if (!file) return;
 
     if (file.size > 10 * 1024 * 1024) {
-      alert('Audio file is too large (Limit: 10MB). Please use a compressed MP3 or shorter clip.');
+      toast.error('Audio file is too large (Limit: 10MB). Please use a compressed MP3 or shorter clip.');
       return;
     }
 
@@ -277,7 +299,7 @@ export const SongDetail: React.FC<SongDetailProps> = ({
         );
 
         if (!uploadResult) {
-          alert('Failed to upload audio file. Please try again.');
+          toast.error('Failed to upload audio file. Please try again.');
           return;
         }
 
@@ -289,7 +311,7 @@ export const SongDetail: React.FC<SongDetailProps> = ({
         if (audioInputRef.current) audioInputRef.current.value = '';
       } catch (error) {
         console.error('Error uploading audio:', error);
-        alert('Error uploading audio file. Please try again.');
+        toast.error('Error uploading audio file. Please try again.');
       }
     } else {
       // Fallback to base64 if Supabase not configured
@@ -328,6 +350,7 @@ export const SongDetail: React.FC<SongDetailProps> = ({
               <button
                 onClick={onBack}
                 className="p-2 hover:bg-zinc-800 rounded-full transition-colors"
+                aria-label="Go back"
               >
                 <ChevronLeft className="text-zinc-400" />
               </button>
@@ -379,6 +402,7 @@ export const SongDetail: React.FC<SongDetailProps> = ({
                 <button
                   onClick={() => setIsEditingMetadata(true)}
                   className="text-zinc-500 hover:text-white p-2"
+                  aria-label="Edit song metadata"
                 >
                   <Edit3 size={18} />
                 </button>
@@ -593,6 +617,7 @@ export const SongDetail: React.FC<SongDetailProps> = ({
                     <button
                       onClick={() => handleDeleteChart(activeChart.id)}
                       className="p-2 text-zinc-500 hover:text-red-500 hover:bg-zinc-800 rounded-lg transition-colors"
+                      aria-label="Delete chart"
                     >
                       <Trash2 size={16} />
                     </button>
@@ -976,6 +1001,18 @@ export const SongDetail: React.FC<SongDetailProps> = ({
           </div>
         </div>
       </div>
+
+      {/* Confirm Dialog */}
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        variant="danger"
+        onConfirm={confirmDialog.onConfirm}
+        onCancel={closeConfirmDialog}
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+      />
     </div>
   );
 };

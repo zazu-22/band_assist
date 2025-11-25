@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { SmartTabEditor } from './SmartTabEditor';
 import { AlphaTabRenderer } from './AlphaTabRenderer';
+import { EmptyState } from './ui/EmptyState';
 
 interface PracticeRoomProps {
   songs: Song[];
@@ -155,6 +156,19 @@ export const PracticeRoom: React.FC<PracticeRoomProps> = ({ songs }) => {
   const activeChart = selectedSong?.charts.find(c => c.id === activeChartId);
   const isGuitarPro = activeChart?.type === 'GP';
 
+  // Show empty state if no songs
+  if (songs.length === 0) {
+    return (
+      <div className="h-full flex items-center justify-center bg-zinc-950">
+        <EmptyState
+          icon={Music}
+          title="No songs to practice"
+          description="Add songs to your setlist to start practicing with charts, backing tracks, and metronome."
+        />
+      </div>
+    );
+  }
+
   return (
     <div className="h-full flex flex-col bg-zinc-950 text-zinc-100">
       {/* Top Toolbar: Song Select & Metronome */}
@@ -163,6 +177,7 @@ export const PracticeRoom: React.FC<PracticeRoomProps> = ({ songs }) => {
           <button
             onClick={() => setShowSongList(!showSongList)}
             className={`p-2 rounded-lg transition-colors ${showSongList ? 'bg-zinc-800 text-white' : 'text-zinc-500 hover:text-white'}`}
+            aria-label="Toggle song list"
           >
             <ListMusic size={20} />
           </button>
@@ -294,6 +309,7 @@ export const PracticeRoom: React.FC<PracticeRoomProps> = ({ songs }) => {
                     if (audioRef.current) audioRef.current.currentTime -= 5;
                   }}
                   className="text-zinc-400 hover:text-white"
+                  aria-label="Rewind 5 seconds"
                 >
                   <Rewind size={20} />
                 </button>
@@ -301,6 +317,7 @@ export const PracticeRoom: React.FC<PracticeRoomProps> = ({ songs }) => {
                   onClick={togglePlay}
                   disabled={!audioSrc}
                   className={`w-12 h-12 rounded-full flex items-center justify-center text-white transition-all ${audioSrc ? 'bg-amber-600 hover:bg-amber-700 shadow-lg hover:scale-105' : 'bg-zinc-800 text-zinc-600 cursor-not-allowed'}`}
+                  aria-label={isPlaying ? 'Pause' : 'Play'}
                 >
                   {isPlaying ? <Pause size={20} /> : <Play size={20} className="ml-1" />}
                 </button>
@@ -309,6 +326,7 @@ export const PracticeRoom: React.FC<PracticeRoomProps> = ({ songs }) => {
                     if (audioRef.current) audioRef.current.currentTime += 5;
                   }}
                   className="text-zinc-400 hover:text-white"
+                  aria-label="Forward 5 seconds"
                 >
                   <FastForward size={20} />
                 </button>
