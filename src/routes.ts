@@ -56,10 +56,17 @@ export const NAV_ITEMS = [
 /**
  * Check if a path matches a route pattern.
  * Handles exact matches and prefix matches for dynamic routes.
+ * Examples:
+ * - matchRoute('/songs/123', '/songs') -> true (prefix with slash boundary)
+ * - matchRoute('/songs', '/songs') -> true (exact match)
+ * - matchRoute('/songs', '/') -> false (root is special-cased)
+ * - matchRoute('/', '/') -> true
+ *
  * @param pathname - The current URL pathname
  * @param route - The route to match against
  * @returns true if the path matches the route
  */
+
 export const matchRoute = (pathname: string, route: string): boolean => {
   if (route === '/') {
     return pathname === '/';

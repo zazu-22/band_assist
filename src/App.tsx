@@ -55,7 +55,7 @@ const AppContext = React.createContext<AppContextValue | null>(null);
 export const useAppContext = (): AppContextValue => {
   const context = React.useContext(AppContext);
   if (!context) {
-    throw new Error('useAppContext must be used within App component (inside BrowserRouter)');
+    throw new Error('useAppContext must be used within App component (inside BrowserRouter and AppContext.Provider)');
   }
   return context;
 };
