@@ -7,9 +7,10 @@ export function ToastProvider() {
       theme="dark"
       toastOptions={{
         style: {
-          background: 'var(--card)',
+          // Using --popover for floating UI elements (semantically appropriate)
+          background: 'var(--popover)',
           border: '1px solid var(--border)',
-          color: 'var(--card-foreground)',
+          color: 'var(--popover-foreground)',
         },
         classNames: {
           // Using semantic theme variables for consistency

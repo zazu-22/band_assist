@@ -28,3 +28,5 @@ export const StatusBadge: React.FC<StatusBadgeProps> = memo(function StatusBadge
     </Badge>
   );
 });
+
+StatusBadge.displayName = 'StatusBadge';

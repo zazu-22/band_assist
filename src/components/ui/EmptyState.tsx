@@ -45,3 +45,5 @@ export const EmptyState: React.FC<EmptyStateProps> = memo(function EmptyState({
     </Card>
   );
 });
+
+EmptyState.displayName = 'EmptyState';

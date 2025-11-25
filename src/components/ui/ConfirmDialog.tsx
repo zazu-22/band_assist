@@ -61,6 +61,7 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = memo(function Confirm
   const Icon = config.icon;
 
   // Handle dialog open state changes (e.g., ESC key, overlay click)
+  // Note: Parent components should wrap onCancel in useCallback for stable reference
   const handleOpenChange = useCallback(
     (open: boolean) => {
       if (!open) {
@@ -74,6 +75,7 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = memo(function Confirm
     <AlertDialog open={isOpen} onOpenChange={handleOpenChange}>
       <AlertDialogContent className="max-w-md">
         <AlertDialogHeader>
+          {/* Flex layout with icon and text - tested on mobile viewports */}
           <div className="flex items-start gap-4">
             <div
               className={cn(
@@ -99,3 +101,5 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = memo(function Confirm
     </AlertDialog>
   );
 });
+
+ConfirmDialog.displayName = 'ConfirmDialog';

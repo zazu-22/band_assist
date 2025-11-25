@@ -7,7 +7,11 @@ type StatVariant = 'default' | 'success' | 'info' | 'warning';
 
 interface StatCardProps {
   title: string;
-  /** The stat value - constrained to string or number to prevent layout issues */
+  /**
+   * The stat value - constrained to string or number for predictable layout.
+   * Complex ReactNode content (e.g., nested elements) could cause font-size
+   * and line-height issues with the text-2xl styling applied to the value.
+   */
   value: string | number;
   subtitle?: string;
   icon?: LucideIcon;
@@ -76,3 +80,5 @@ export const StatCard: React.FC<StatCardProps> = memo(function StatCard({
     </Card>
   );
 });
+
+StatCard.displayName = 'StatCard';
