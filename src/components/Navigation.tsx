@@ -73,7 +73,7 @@ export const Navigation: React.FC<NavigationProps> = ({
 
       <nav className="flex-1 px-3 py-6 space-y-2" aria-label="Main navigation">
         {NAV_ITEMS.map(item => {
-          const Icon = iconMap[item.id];
+          const Icon = iconMap[item.id] ?? LayoutDashboard;
           const active = isActive(item.path);
           return (
             <button
