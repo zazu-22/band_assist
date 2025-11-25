@@ -27,13 +27,13 @@ export const getMusicAnalysis = async (prompt: string, context?: string, mediaDa
 
     const fullPrompt = `
       You are an expert music director and band coach specializing in Classic Rock and Blues Rock, specifically the style of ZZ Top.
-      Your goal is to help a band of 4 brothers learn songs.
+      Your goal is to help a group of close family and friends learn songs and prepare for an upcoming performance.
 
       Context provided: ${context || 'No specific song context provided.'}
 
       User Question: ${prompt}
 
-      Keep answers concise, practical, and encouraging. Format with Markdown.
+      Keep answers concise, practical, and encouraging.
     `;
 
     const parts: ContentPart[] = [{ text: fullPrompt }];
