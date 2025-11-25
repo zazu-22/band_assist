@@ -1,5 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { Routes, Route, Navigate, useNavigate, useParams, useLocation } from 'react-router-dom';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { Routes, Route, Navigate, useNavigate, useParams, useLocation, Outlet } from 'react-router-dom';
+import { toast } from './components/ui/Toast';
 import { Session } from '@supabase/supabase-js';
 import { Navigation } from './components/Navigation';
 import { Dashboard } from './components/Dashboard';
@@ -64,6 +65,7 @@ const SongDetailRoute: React.FC = () => {
   const song = songs.find(s => s.id === songId);
 
   if (!song) {
+    toast.error('Song not found');
     return <Navigate to="/" replace />;
   }
 
@@ -72,7 +74,7 @@ const SongDetailRoute: React.FC = () => {
       song={song}
       members={members}
       availableRoles={availableRoles}
-      onBack={() => navigate(-1)}
+      onBack={() => navigate('/')}
       onUpdateSong={handleUpdateSong}
     />
   );
@@ -93,13 +95,12 @@ const PracticeRoomRoute: React.FC = () => {
 
 // Layout wrapper for authenticated routes with navigation sidebar
 const AppLayout: React.FC<{
-  children: React.ReactNode;
   onLogout: () => void;
   showLogout: boolean;
   currentBandName: string;
   userBands: Array<{ id: string; name: string }>;
   onSelectBand: (bandId: string) => void;
-}> = ({ children, onLogout, showLogout, currentBandName, userBands, onSelectBand }) => {
+}> = ({ onLogout, showLogout, currentBandName, userBands, onSelectBand }) => {
   const location = useLocation();
 
   // Map URL path to view name for Navigation active state
@@ -127,7 +128,9 @@ const AppLayout: React.FC<{
         userBands={userBands}
         onSelectBand={onSelectBand}
       />
-      <main className="flex-1 h-screen overflow-y-auto">{children}</main>
+      <main className="flex-1 h-screen overflow-y-auto">
+        <Outlet />
+      </main>
     </div>
   );
 };
@@ -450,9 +453,9 @@ const App: React.FC = () => {
     saveData();
   }, [songs, members, availableRoles, events, isLoading]);
 
-  const handleUpdateSong = (updatedSong: Song) => {
-    setSongs(songs.map(s => (s.id === updatedSong.id ? updatedSong : s)));
-  };
+  const handleUpdateSong = useCallback((updatedSong: Song) => {
+    setSongs(prevSongs => prevSongs.map(s => (s.id === updatedSong.id ? updatedSong : s)));
+  }, []);
 
   const handleLogout = async () => {
     const supabase = getSupabaseClient();
@@ -526,21 +529,24 @@ const App: React.FC = () => {
     }
   };
 
-  // Context value for child routes
-  const contextValue: AppContextValue = {
-    songs,
-    setSongs,
-    members,
-    setMembers,
-    availableRoles,
-    setAvailableRoles,
-    events,
-    setEvents,
-    handleUpdateSong,
-    session,
-    currentBandId,
-    isAdmin,
-  };
+  // Context value for child routes - memoized to prevent unnecessary re-renders
+  const contextValue = useMemo<AppContextValue>(
+    () => ({
+      songs,
+      setSongs,
+      members,
+      setMembers,
+      availableRoles,
+      setAvailableRoles,
+      events,
+      setEvents,
+      handleUpdateSong,
+      session,
+      currentBandId,
+      isAdmin,
+    }),
+    [songs, members, availableRoles, events, session, currentBandId, isAdmin, handleUpdateSong]
+  );
 
   // Show loading screen while checking authentication
   if (isCheckingAuth) {
@@ -616,7 +622,7 @@ const App: React.FC = () => {
         {/* Performance Mode - Full screen, no sidebar */}
         <Route
           path="/performance"
-          element={<PerformanceMode songs={songs} onExit={() => navigate(-1)} />}
+          element={<PerformanceMode songs={songs} onExit={() => navigate('/')} />}
         />
 
         {/* Song Detail - Full screen, no sidebar */}
@@ -625,9 +631,8 @@ const App: React.FC = () => {
         {/* Practice Room with specific song */}
         <Route path="/songs/:songId/practice" element={<PracticeRoomRoute />} />
 
-        {/* All other routes with sidebar layout */}
+        {/* Layout route for sidebar pages */}
         <Route
-          path="*"
           element={
             <AppLayout
               onLogout={handleLogout}
@@ -635,82 +640,80 @@ const App: React.FC = () => {
               currentBandName={currentBandName}
               userBands={userBands}
               onSelectBand={handleSelectBand}
-            >
-              <Routes>
-                <Route
-                  path="/"
-                  element={
-                    <Dashboard
-                      songs={songs}
-                      onNavigateToSong={(id) => navigate(`/songs/${id}`)}
-                      events={events}
-                    />
-                  }
-                />
-                <Route
-                  path="/setlist"
-                  element={
-                    <SetlistManager
-                      songs={songs}
-                      setSongs={setSongs}
-                      onSelectSong={(id) => navigate(`/songs/${id}`)}
-                    />
-                  }
-                />
-                <Route
-                  path="/practice"
-                  element={
-                    <PracticeRoom
-                      songs={songs}
-                      onNavigateToSong={(id) => navigate(`/songs/${id}`)}
-                    />
-                  }
-                />
-                <Route
-                  path="/schedule"
-                  element={
-                    <ScheduleManager
-                      events={events}
-                      setEvents={setEvents}
-                      songs={songs}
-                      onNavigateToSong={(id) => navigate(`/songs/${id}`)}
-                    />
-                  }
-                />
-                <Route
-                  path="/band"
-                  element={
-                    <BandDashboard
-                      members={members}
-                      songs={songs}
-                      onNavigateToSong={(id) => navigate(`/songs/${id}`)}
-                    />
-                  }
-                />
-                <Route
-                  path="/settings"
-                  element={
-                    <Settings
-                      members={members}
-                      setMembers={setMembers}
-                      availableRoles={availableRoles}
-                      setAvailableRoles={setAvailableRoles}
-                      songs={songs}
-                      setSongs={setSongs}
-                      events={events}
-                      setEvents={setEvents}
-                      currentBandId={currentBandId || undefined}
-                      currentUserId={session?.user?.id}
-                      isAdmin={isAdmin}
-                    />
-                  }
-                />
-                {/* Redirect any unknown routes to dashboard */}
-                <Route path="*" element={<Navigate to="/" replace />} />
-              </Routes>
-            </AppLayout>
+            />
           }
-        />
+        >
+          <Route
+            index
+            element={
+              <Dashboard
+                songs={songs}
+                onNavigateToSong={(id) => navigate(`/songs/${id}`)}
+                events={events}
+              />
+            }
+          />
+          <Route
+            path="/setlist"
+            element={
+              <SetlistManager
+                songs={songs}
+                setSongs={setSongs}
+                onSelectSong={(id) => navigate(`/songs/${id}`)}
+              />
+            }
+          />
+          <Route
+            path="/practice"
+            element={
+              <PracticeRoom
+                songs={songs}
+                onNavigateToSong={(id) => navigate(`/songs/${id}`)}
+              />
+            }
+          />
+          <Route
+            path="/schedule"
+            element={
+              <ScheduleManager
+                events={events}
+                setEvents={setEvents}
+                songs={songs}
+                onNavigateToSong={(id) => navigate(`/songs/${id}`)}
+              />
+            }
+          />
+          <Route
+            path="/band"
+            element={
+              <BandDashboard
+                members={members}
+                songs={songs}
+                onNavigateToSong={(id) => navigate(`/songs/${id}`)}
+              />
+            }
+          />
+          <Route
+            path="/settings"
+            element={
+              <Settings
+                members={members}
+                setMembers={setMembers}
+                availableRoles={availableRoles}
+                setAvailableRoles={setAvailableRoles}
+                songs={songs}
+                setSongs={setSongs}
+                events={events}
+                setEvents={setEvents}
+                currentBandId={currentBandId || undefined}
+                currentUserId={session?.user?.id}
+                isAdmin={isAdmin}
+              />
+            }
+          />
+          {/* Redirect any unknown routes to dashboard */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Route>
       </Routes>
     </AppContext.Provider>
   );
