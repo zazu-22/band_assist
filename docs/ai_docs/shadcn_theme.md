@@ -1,10 +1,14 @@
-@import 'tailwindcss';
+# Shadcn/ui Theme Specifications
 
-/* ============================================
-   Band Assist Theme - shadcn/ui + Custom Theme
-   Generated from: https://tweakcn.com/themes/cmiezyoen000l04js88p34kce
-   ============================================ */
+The following spec was developed on <https://tweakcn.com>.
 
+Link to theme: <https://tweakcn.com/themes/cmiezyoen000l04js88p34kce>
+
+Command to install directly: `npx shadcn@latest add https://tweakcn.com/r/themes/cmiezyoen000l04js88p34kce`
+
+Raw index.css spec for theme (Tailwind v4, oklch color spec)
+
+```css
 :root {
   --background: oklch(1 0 0);
   --foreground: oklch(0.2686 0 0);
@@ -93,9 +97,26 @@
   --sidebar-accent-foreground: oklch(0.9243 0.1151 95.7459);
   --sidebar-border: oklch(0.3715 0 0);
   --sidebar-ring: oklch(0.7686 0.1647 70.0804);
+  --font-sans: Barlow, ui-sans-serif, sans-serif, system-ui;
+  --font-serif: Brawler, ui-serif, serif;
+  --font-mono: JetBrains Mono, monospace;
+  --radius: 0.5rem;
+  --shadow-x: 0px;
+  --shadow-y: 4px;
+  --shadow-blur: 10px;
+  --shadow-spread: -1px;
+  --shadow-opacity: 0.08;
+  --shadow-color: hsl(0 0% 0%);
+  --shadow-2xs: 0px 4px 10px -1px hsl(0 0% 0% / 0.04);
+  --shadow-xs: 0px 4px 10px -1px hsl(0 0% 0% / 0.04);
+  --shadow-sm: 0px 4px 10px -1px hsl(0 0% 0% / 0.08), 0px 1px 2px -2px hsl(0 0% 0% / 0.08);
+  --shadow: 0px 4px 10px -1px hsl(0 0% 0% / 0.08), 0px 1px 2px -2px hsl(0 0% 0% / 0.08);
+  --shadow-md: 0px 4px 10px -1px hsl(0 0% 0% / 0.08), 0px 2px 4px -2px hsl(0 0% 0% / 0.08);
+  --shadow-lg: 0px 4px 10px -1px hsl(0 0% 0% / 0.08), 0px 4px 6px -2px hsl(0 0% 0% / 0.08);
+  --shadow-xl: 0px 4px 10px -1px hsl(0 0% 0% / 0.08), 0px 8px 10px -2px hsl(0 0% 0% / 0.08);
+  --shadow-2xl: 0px 4px 10px -1px hsl(0 0% 0% / 0.2);
 }
 
-/* Tailwind v4 theme mapping */
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
@@ -148,122 +169,4 @@
   --shadow-xl: var(--shadow-xl);
   --shadow-2xl: var(--shadow-2xl);
 }
-
-/* ============================================
-   Base Layer Styles
-   ============================================ */
-@layer base {
-  * {
-    @apply border-border;
-  }
-
-  body {
-    @apply bg-background text-foreground;
-  }
-
-  /* Global cursor styles for interactive elements */
-  button,
-  [role="button"],
-  [type="button"],
-  [type="submit"],
-  [type="reset"],
-  select,
-  summary,
-  [tabindex]:not([tabindex="-1"]) {
-    cursor: pointer;
-  }
-
-  /* Disabled elements should show not-allowed cursor */
-  button:disabled,
-  [disabled] {
-    cursor: not-allowed;
-  }
-}
-
-/* ============================================
-   Animation Utilities
-   ============================================ */
-@layer utilities {
-  /* Fade in */
-  @keyframes fade-in {
-    from { opacity: 0; }
-    to { opacity: 1; }
-  }
-
-  /* Slide in from bottom */
-  @keyframes slide-in-from-bottom {
-    from { transform: translateY(16px); opacity: 0; }
-    to { transform: translateY(0); opacity: 1; }
-  }
-
-  /* Slide in from top */
-  @keyframes slide-in-from-top {
-    from { transform: translateY(-16px); opacity: 0; }
-    to { transform: translateY(0); opacity: 1; }
-  }
-
-  /* Slide in from left */
-  @keyframes slide-in-from-left {
-    from { transform: translateX(-100%); }
-    to { transform: translateX(0); }
-  }
-
-  /* Slide in from right */
-  @keyframes slide-in-from-right {
-    from { transform: translateX(100%); }
-    to { transform: translateX(0); }
-  }
-
-  /* Scale in */
-  @keyframes scale-in {
-    from { transform: scale(0.95); opacity: 0; }
-    to { transform: scale(1); opacity: 1; }
-  }
-
-  /* Accordion animations */
-  @keyframes accordion-down {
-    from { height: 0; }
-    to { height: var(--radix-accordion-content-height); }
-  }
-
-  @keyframes accordion-up {
-    from { height: var(--radix-accordion-content-height); }
-    to { height: 0; }
-  }
-
-  /* Utility animation classes */
-  .animate-fade-in {
-    animation: fade-in 200ms ease-out;
-  }
-
-  .animate-slide-in-from-bottom {
-    animation: slide-in-from-bottom 300ms ease-out;
-  }
-
-  .animate-slide-in-from-top {
-    animation: slide-in-from-top 300ms ease-out;
-  }
-
-  .animate-scale-in {
-    animation: scale-in 200ms ease-out;
-  }
-
-  .animate-accordion-down {
-    animation: accordion-down 300ms ease-out;
-  }
-
-  .animate-accordion-up {
-    animation: accordion-up 300ms ease-out;
-  }
-
-  /* Respect user preferences for reduced motion */
-  @media (prefers-reduced-motion: reduce) {
-    *,
-    *::before,
-    *::after {
-      animation-duration: 0.01ms !important;
-      animation-iteration-count: 1 !important;
-      transition-duration: 0.01ms !important;
-    }
-  }
-}
+```

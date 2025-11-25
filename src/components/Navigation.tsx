@@ -16,7 +16,7 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import { BandSelector } from './BandSelector';
-import { useAppContext } from '../App';
+import { useSidebar } from './layout/SidebarProvider';
 
 interface NavigationProps {
   onLogout?: () => void;
@@ -45,7 +45,7 @@ export const Navigation: React.FC<NavigationProps> = ({
 }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  const { sidebarCollapsed, setSidebarCollapsed } = useAppContext();
+  const { collapsed: sidebarCollapsed, setCollapsed: setSidebarCollapsed } = useSidebar();
 
   /**
    * Check if a nav item is currently active based on the URL path.

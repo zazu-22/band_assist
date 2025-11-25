@@ -1,36 +1,53 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="en" class="dark">
 
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Band Assist</title>
+  <!-- Theme Fonts: Barlow (sans), Brawler (serif), JetBrains Mono (mono) -->
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Barlow:ital,wght@0,100;0,200;0,300;0,400;0,500;0,600;0,700;0,800;0,900;1,100;1,200;1,300;1,400;1,500;1,600;1,700;1,800;1,900&family=Brawler:wght@400;700&family=JetBrains+Mono:ital,wght@0,100..800;1,100..800&display=swap" rel="stylesheet">
   <!-- AlphaTab for Guitar Pro files -->
   <script src="https://cdn.jsdelivr.net/npm/@coderline/alphatab@latest/dist/alphaTab.js"></script>
   <style>
-    /* Custom Scrollbar for that dark mode aesthetic */
+    /* Custom Scrollbar - adapts to light/dark mode */
     ::-webkit-scrollbar {
       width: 8px;
       height: 8px;
     }
 
     ::-webkit-scrollbar-track {
-      background: #18181b;
+      background: oklch(0.2393 0 0); /* muted in dark mode */
     }
 
     ::-webkit-scrollbar-thumb {
-      background: #3f3f46;
+      background: oklch(0.3715 0 0); /* border in dark mode */
       border-radius: 4px;
     }
 
     ::-webkit-scrollbar-thumb:hover {
-      background: #52525b;
+      background: oklch(0.4732 0 0);
+    }
+
+    /* Light mode scrollbar */
+    :root:not(.dark) ::-webkit-scrollbar-track {
+      background: oklch(0.9846 0.0017 247.8389);
+    }
+
+    :root:not(.dark) ::-webkit-scrollbar-thumb {
+      background: oklch(0.9276 0.0058 264.5313);
+    }
+
+    :root:not(.dark) ::-webkit-scrollbar-thumb:hover {
+      background: oklch(0.8 0 0);
     }
   </style>
   <link rel="stylesheet" href="/alphatab-custom.css">
 </head>
 
-<body class="bg-zinc-950 text-zinc-100 antialiased selection:bg-amber-600 selection:text-white">
+<body class="antialiased selection:bg-primary selection:text-primary-foreground">
   <div id="root"></div>
   <script type="module" src="/src/index.tsx"></script>
 </body>
