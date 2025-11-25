@@ -132,6 +132,25 @@ export const InvitationManager: React.FC<InvitationManagerProps> = ({
         return;
       }
 
+      // Check if email belongs to an existing band member
+      const { data: isMember, error: memberCheckError } = await supabase.rpc(
+        'is_email_band_member',
+        { p_band_id: bandId, p_email: normalizedEmail }
+      );
+
+      if (memberCheckError) {
+        console.error('Member check error:', memberCheckError);
+        setError('Unable to verify membership. Please try again.');
+        setIsLoading(false);
+        return;
+      }
+
+      if (isMember) {
+        setError('This email address is already a member of the band.');
+        setIsLoading(false);
+        return;
+      }
+
       // Check if invitation already exists
       const { data: existing } = await supabase
         .from('invitations')

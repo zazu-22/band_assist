@@ -348,6 +348,13 @@ export type Database = {
         }
         Returns: boolean
       }
+      is_email_band_member: {
+        Args: {
+          p_band_id: string
+          p_email: string
+        }
+        Returns: boolean
+      }
     }
     Enums: {
       [_ in never]: never
