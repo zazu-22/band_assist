@@ -26,15 +26,18 @@ export const useConfirmDialog = (defaultVariant: ConfirmDialogVariant = 'danger'
     onConfirm: () => {},
   });
 
-  const open = useCallback((options: ConfirmDialogOptions) => {
-    setState({
-      isOpen: true,
-      title: options.title,
-      message: options.message,
-      variant: options.variant || defaultVariant,
-      onConfirm: options.onConfirm,
-    });
-  }, [defaultVariant]);
+  const open = useCallback(
+    (options: ConfirmDialogOptions) => {
+      setState({
+        isOpen: true,
+        title: options.title,
+        message: options.message,
+        variant: options.variant || defaultVariant,
+        onConfirm: options.onConfirm,
+      });
+    },
+    [defaultVariant]
+  );
 
   const close = useCallback(() => {
     setState(prev => ({ ...prev, isOpen: false }));

@@ -82,18 +82,24 @@ serve(async (req: Request) => {
   // Validate required environment variables
   if (!RESEND_API_KEY) {
     console.error('RESEND_API_KEY secret is not set');
-    return new Response(JSON.stringify({ error: 'Server configuration error: missing RESEND_API_KEY' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return new Response(
+      JSON.stringify({ error: 'Server configuration error: missing RESEND_API_KEY' }),
+      {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' },
+      }
+    );
   }
 
   if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
     console.error('Missing Supabase environment variables');
-    return new Response(JSON.stringify({ error: 'Server configuration error: missing Supabase credentials' }), {
-      status: 500,
-      headers: { 'Content-Type': 'application/json' },
-    });
+    return new Response(
+      JSON.stringify({ error: 'Server configuration error: missing Supabase credentials' }),
+      {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' },
+      }
+    );
   }
 
   try {
@@ -139,10 +145,13 @@ serve(async (req: Request) => {
 
     if (bandError) {
       console.error('Error fetching band:', bandError);
-      return new Response(JSON.stringify({ error: 'Failed to fetch band details', details: bandError.message }), {
-        status: 500,
-        headers: { 'Content-Type': 'application/json' },
-      });
+      return new Response(
+        JSON.stringify({ error: 'Failed to fetch band details', details: bandError.message }),
+        {
+          status: 500,
+          headers: { 'Content-Type': 'application/json' },
+        }
+      );
     }
 
     const bandName = band?.name || 'your band';
@@ -160,7 +169,7 @@ serve(async (req: Request) => {
     const resendResponse = await fetch('https://api.resend.com/emails', {
       method: 'POST',
       headers: {
-        'Authorization': `Bearer ${RESEND_API_KEY}`,
+        Authorization: `Bearer ${RESEND_API_KEY}`,
         'Content-Type': 'application/json',
       },
       body: JSON.stringify({
@@ -229,7 +238,6 @@ If you didn't expect this invitation, you can safely ignore this email.`,
       status: 200,
       headers: { 'Content-Type': 'application/json' },
     });
-
   } catch (error: unknown) {
     const message = error instanceof Error ? error.message : 'Unknown error';
     console.error('Error processing invitation:', message);

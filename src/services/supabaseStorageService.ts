@@ -592,32 +592,33 @@ export class SupabaseStorageService implements IStorageService {
             filter: `band_id=eq.${bandId}`,
           },
           payload => {
-          if (payload.new && callbacks.onSongsChange) {
-            const dbSong = payload.new as DbSong;
-            // Validate band_id to prevent stale updates from band switches
-            if (dbSong.band_id !== bandId) {
-              return;
+            if (payload.new && callbacks.onSongsChange) {
+              const dbSong = payload.new as DbSong;
+              // Validate band_id to prevent stale updates from band switches
+              if (dbSong.band_id !== bandId) {
+                return;
+              }
+              const song: Song = {
+                id: dbSong.id,
+                title: dbSong.title,
+                artist: dbSong.artist,
+                duration: dbSong.duration || '',
+                bpm: dbSong.bpm || 120,
+                key: dbSong.key || 'C',
+                isOriginal: dbSong.is_original,
+                status: dbSong.status as 'To Learn' | 'In Progress' | 'Performance Ready',
+                targetDate: dbSong.target_date,
+                charts: (dbSong.charts as []) || [],
+                assignments: (dbSong.assignments as []) || [],
+                parts: (dbSong.parts as []) || [],
+                backingTrackUrl: dbSong.backing_track_url,
+                aiAnalysis: dbSong.ai_analysis,
+                lyrics: dbSong.lyrics,
+              };
+              callbacks.onSongsChange(song);
             }
-            const song: Song = {
-              id: dbSong.id,
-              title: dbSong.title,
-              artist: dbSong.artist,
-              duration: dbSong.duration || '',
-              bpm: dbSong.bpm || 120,
-              key: dbSong.key || 'C',
-              isOriginal: dbSong.is_original,
-              status: dbSong.status as 'To Learn' | 'In Progress' | 'Performance Ready',
-              targetDate: dbSong.target_date,
-              charts: (dbSong.charts as []) || [],
-              assignments: (dbSong.assignments as []) || [],
-              parts: (dbSong.parts as []) || [],
-              backingTrackUrl: dbSong.backing_track_url,
-              aiAnalysis: dbSong.ai_analysis,
-              lyrics: dbSong.lyrics,
-            };
-            callbacks.onSongsChange(song);
           }
-        })
+        )
         .subscribe();
 
       this.realtimeChannels.push(songsChannel);
@@ -670,24 +671,25 @@ export class SupabaseStorageService implements IStorageService {
             filter: `band_id=eq.${bandId}`,
           },
           payload => {
-          if (payload.new && callbacks.onEventsChange) {
-            const dbEvent = payload.new as DbEvent;
-            // Validate band_id to prevent stale updates from band switches
-            if (dbEvent.band_id !== bandId) {
-              return;
+            if (payload.new && callbacks.onEventsChange) {
+              const dbEvent = payload.new as DbEvent;
+              // Validate band_id to prevent stale updates from band switches
+              if (dbEvent.band_id !== bandId) {
+                return;
+              }
+              const event: BandEvent = {
+                id: dbEvent.id,
+                title: dbEvent.title,
+                date: dbEvent.date,
+                time: dbEvent.time,
+                type: dbEvent.type as 'PRACTICE' | 'GIG' | 'OTHER',
+                location: dbEvent.location,
+                notes: dbEvent.notes,
+              };
+              callbacks.onEventsChange(event);
             }
-            const event: BandEvent = {
-              id: dbEvent.id,
-              title: dbEvent.title,
-              date: dbEvent.date,
-              time: dbEvent.time,
-              type: dbEvent.type as 'PRACTICE' | 'GIG' | 'OTHER',
-              location: dbEvent.location,
-              notes: dbEvent.notes,
-            };
-            callbacks.onEventsChange(event);
           }
-        })
+        )
         .subscribe();
 
       this.realtimeChannels.push(eventsChannel);

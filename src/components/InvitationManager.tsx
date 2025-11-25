@@ -116,8 +116,10 @@ export const InvitationManager: React.FC<InvitationManagerProps> = ({
 
     try {
       // Check rate limit (10 invitations per hour per band)
-      const { data: rateLimitCheck, error: rateLimitError } = await supabase
-        .rpc('check_invitation_rate_limit', { p_band_id: bandId });
+      const { data: rateLimitCheck, error: rateLimitError } = await supabase.rpc(
+        'check_invitation_rate_limit',
+        { p_band_id: bandId }
+      );
 
       if (rateLimitError) {
         console.error('Rate limit check error:', rateLimitError);
@@ -167,14 +169,12 @@ export const InvitationManager: React.FC<InvitationManagerProps> = ({
       }
 
       // Create invitation
-      const { error: inviteError } = await supabase
-        .from('invitations')
-        .insert({
-          band_id: bandId,
-          email: normalizedEmail,
-          invited_by: currentUserId,
-          status: 'pending',
-        });
+      const { error: inviteError } = await supabase.from('invitations').insert({
+        band_id: bandId,
+        email: normalizedEmail,
+        invited_by: currentUserId,
+        status: 'pending',
+      });
 
       if (inviteError) {
         // Check if error is due to rate limit trigger
@@ -305,7 +305,9 @@ export const InvitationManager: React.FC<InvitationManagerProps> = ({
 
           {error && (
             <div className="bg-red-900/20 border border-red-800 rounded-lg p-3" role="alert">
-              <p id="invitation-error" className="text-sm text-red-400">{error}</p>
+              <p id="invitation-error" className="text-sm text-red-400">
+                {error}
+              </p>
             </div>
           )}
 

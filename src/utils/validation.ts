@@ -104,7 +104,8 @@ export interface PasswordValidationResult {
 /**
  * Password requirement hint text for UI display
  */
-export const PASSWORD_HINT = 'Must be at least 8 characters with at least 3 of: uppercase, lowercase, numbers, special characters';
+export const PASSWORD_HINT =
+  'Must be at least 8 characters with at least 3 of: uppercase, lowercase, numbers, special characters';
 
 /**
  * Validates password strength and security requirements.
@@ -133,13 +134,15 @@ export function validatePassword(password: string): PasswordValidationResult {
   const hasNumber = /[0-9]/.test(password);
   const hasSpecial = /[!@#$%^&*(),.?":{}|<>_\-+=[\]\\/'`~;]/.test(password);
 
-  const complexityScore = [hasUpperCase, hasLowerCase, hasNumber, hasSpecial].filter(Boolean)
-    .length;
+  const complexityScore = [hasUpperCase, hasLowerCase, hasNumber, hasSpecial].filter(
+    Boolean
+  ).length;
 
   if (complexityScore < 3) {
     return {
       isValid: false,
-      error: 'Password must include at least 3 of: uppercase, lowercase, numbers, special characters',
+      error:
+        'Password must include at least 3 of: uppercase, lowercase, numbers, special characters',
       strength: 'weak',
     };
   }

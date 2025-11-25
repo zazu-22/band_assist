@@ -24,7 +24,7 @@ interface NavigationProps {
 }
 
 /** Map nav item IDs to their icons */
-type NavItemId = typeof NAV_ITEMS[number]['id'];
+type NavItemId = (typeof NAV_ITEMS)[number]['id'];
 const iconMap: Record<NavItemId, LucideIcon> = {
   DASHBOARD: LayoutDashboard,
   PRACTICE: Mic2,
@@ -80,10 +80,11 @@ export const Navigation: React.FC<NavigationProps> = ({
             <button
               key={item.id}
               onClick={() => navigate(item.path)}
-              className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 group ${active
-                ? 'bg-zinc-800 text-amber-500 shadow-inner'
-                : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-100'
-                }`}
+              className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 group ${
+                active
+                  ? 'bg-zinc-800 text-amber-500 shadow-inner'
+                  : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-100'
+              }`}
               aria-label={item.label}
               aria-current={active ? 'page' : undefined}
             >
@@ -100,10 +101,11 @@ export const Navigation: React.FC<NavigationProps> = ({
           <div className="h-px bg-zinc-800 mb-4"></div>
           <button
             onClick={() => navigate(ROUTES.PERFORMANCE)}
-            className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 group ${isActive(ROUTES.PERFORMANCE)
-              ? 'bg-red-900/20 text-red-500 shadow-inner border border-red-900/50'
-              : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-red-400'
-              }`}
+            className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 group ${
+              isActive(ROUTES.PERFORMANCE)
+                ? 'bg-red-900/20 text-red-500 shadow-inner border border-red-900/50'
+                : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-red-400'
+            }`}
             aria-label="Performance Mode"
             aria-current={isActive(ROUTES.PERFORMANCE) ? 'page' : undefined}
           >
@@ -118,8 +120,9 @@ export const Navigation: React.FC<NavigationProps> = ({
       <div className="p-4 border-t border-zinc-800 space-y-2">
         <button
           onClick={() => navigate(ROUTES.SETTINGS)}
-          className={`w-full flex items-center gap-3 px-3 py-3 text-zinc-500 rounded-xl hover:bg-zinc-800 hover:text-zinc-100 transition-all ${isActive(ROUTES.SETTINGS) ? 'bg-zinc-800 text-white' : ''
-            }`}
+          className={`w-full flex items-center gap-3 px-3 py-3 text-zinc-500 rounded-xl hover:bg-zinc-800 hover:text-zinc-100 transition-all ${
+            isActive(ROUTES.SETTINGS) ? 'bg-zinc-800 text-white' : ''
+          }`}
           aria-label="Settings"
           aria-current={isActive(ROUTES.SETTINGS) ? 'page' : undefined}
         >

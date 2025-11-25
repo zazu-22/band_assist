@@ -1,5 +1,13 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { Routes, Route, Navigate, useNavigate, useParams, useLocation, Outlet } from 'react-router-dom';
+import {
+  Routes,
+  Route,
+  Navigate,
+  useNavigate,
+  useParams,
+  useLocation,
+  Outlet,
+} from 'react-router-dom';
 import { toast, LoadingScreen } from './components/ui';
 import { Session } from '@supabase/supabase-js';
 import { Navigation } from './components/Navigation';
@@ -16,7 +24,13 @@ import { Signup } from './components/Signup';
 import { PasswordReset } from './components/PasswordReset';
 import { PasswordUpdate } from './components/PasswordUpdate';
 import { Song, BandMember, BandEvent } from './types';
-import { INITIAL_SONGS, DEFAULT_MEMBERS, DEFAULT_ROLES, DEFAULT_EVENTS, withDefaults } from './constants';
+import {
+  INITIAL_SONGS,
+  DEFAULT_MEMBERS,
+  DEFAULT_ROLES,
+  DEFAULT_EVENTS,
+  withDefaults,
+} from './constants';
 import { StorageService } from './services/storageService';
 import { getSupabaseClient, isSupabaseConfigured } from './services/supabaseClient';
 import { ROUTES, getSongDetailRoute } from './routes';
@@ -55,7 +69,9 @@ const AppContext = React.createContext<AppContextValue | null>(null);
 export const useAppContext = (): AppContextValue => {
   const context = React.useContext(AppContext);
   if (!context) {
-    throw new Error('useAppContext must be used within App component (inside BrowserRouter and AppContext.Provider)');
+    throw new Error(
+      'useAppContext must be used within App component (inside BrowserRouter and AppContext.Provider)'
+    );
   }
   return context;
 };
@@ -103,12 +119,7 @@ const PracticeRoomRoute: React.FC = () => {
   const navigate = useNavigate();
   const { songs } = useAppContext();
 
-  return (
-    <PracticeRoom
-      songs={songs}
-      onNavigateToSong={(id) => navigate(getSongDetailRoute(id))}
-    />
-  );
+  return <PracticeRoom songs={songs} onNavigateToSong={id => navigate(getSongDetailRoute(id))} />;
 };
 
 /**
@@ -651,7 +662,7 @@ const App: React.FC = () => {
             element={
               <Dashboard
                 songs={songs}
-                onNavigateToSong={(id) => navigate(getSongDetailRoute(id))}
+                onNavigateToSong={id => navigate(getSongDetailRoute(id))}
                 events={events}
               />
             }
@@ -662,7 +673,7 @@ const App: React.FC = () => {
               <SetlistManager
                 songs={songs}
                 setSongs={setSongs}
-                onSelectSong={(id) => navigate(getSongDetailRoute(id))}
+                onSelectSong={id => navigate(getSongDetailRoute(id))}
               />
             }
           />
@@ -671,7 +682,7 @@ const App: React.FC = () => {
             element={
               <PracticeRoom
                 songs={songs}
-                onNavigateToSong={(id) => navigate(getSongDetailRoute(id))}
+                onNavigateToSong={id => navigate(getSongDetailRoute(id))}
               />
             }
           />
@@ -682,7 +693,7 @@ const App: React.FC = () => {
                 events={events}
                 setEvents={setEvents}
                 songs={songs}
-                onNavigateToSong={(id) => navigate(getSongDetailRoute(id))}
+                onNavigateToSong={id => navigate(getSongDetailRoute(id))}
               />
             }
           />
@@ -692,7 +703,7 @@ const App: React.FC = () => {
               <BandDashboard
                 members={members}
                 songs={songs}
-                onNavigateToSong={(id) => navigate(getSongDetailRoute(id))}
+                onNavigateToSong={id => navigate(getSongDetailRoute(id))}
               />
             }
           />

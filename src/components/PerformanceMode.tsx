@@ -374,7 +374,10 @@ export const PerformanceMode: React.FC<PerformanceModeProps> = ({ songs, onExit 
                     title="PDF Chart Viewer"
                   />
                 ) : activeChart.type === 'GP' ? (
-                  <AlphaTabRenderer fileData={activeChart.storageBase64 || activeChart.url!} readOnly={true} />
+                  <AlphaTabRenderer
+                    fileData={activeChart.storageBase64 || activeChart.url!}
+                    readOnly={true}
+                  />
                 ) : (
                   <img src={activeChart.url} alt="Chart" className="w-full h-auto" />
                 )

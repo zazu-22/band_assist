@@ -286,7 +286,10 @@ export const PracticeRoom: React.FC<PracticeRoomProps> = ({ songs }) => {
                     title="PDF Chart Viewer"
                   />
                 ) : activeChart.type === 'GP' ? (
-                  <AlphaTabRenderer fileData={activeChart.storageBase64 || activeChart.url!} readOnly={false} />
+                  <AlphaTabRenderer
+                    fileData={activeChart.storageBase64 || activeChart.url!}
+                    readOnly={false}
+                  />
                 ) : (
                   <img src={activeChart.url} alt="Chart" className="w-full h-auto" />
                 )}

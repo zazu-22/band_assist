@@ -44,17 +44,17 @@ export const BandDashboard: React.FC<BandDashboardProps> = ({
           title="No band members"
           description="Add members in Settings to start tracking assignments and responsibilities."
           action={{
-            label: "Go to Settings",
+            label: 'Go to Settings',
             onClick: () => navigate('/settings'),
           }}
         />
       ) : (
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
-        {members.map(member => (
-          <div
-            key={member.id}
-            onClick={() => setSelectedMemberId(member.id)}
-            className={`
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
+          {members.map(member => (
+            <div
+              key={member.id}
+              onClick={() => setSelectedMemberId(member.id)}
+              className={`
                     relative overflow-hidden rounded-2xl border p-6 cursor-pointer transition-all duration-200 group
                     ${
                       selectedMemberId === member.id
@@ -62,31 +62,31 @@ export const BandDashboard: React.FC<BandDashboardProps> = ({
                         : 'bg-zinc-900 border-zinc-800 hover:bg-zinc-800 hover:border-zinc-700'
                     }
                 `}
-          >
-            <div className="flex flex-col items-center text-center gap-4">
-              <div
-                className={`w-20 h-20 rounded-full ${member.avatarColor || 'bg-zinc-700'} flex items-center justify-center text-3xl font-bold text-white shadow-inner`}
-              >
-                {member.name.charAt(0).toUpperCase()}
-              </div>
-              <div>
-                <h3 className="text-lg font-bold text-white group-hover:text-amber-500 transition-colors">
-                  {member.name}
-                </h3>
-                <p className="text-xs text-zinc-500 mt-1">
-                  {/* Count total assignments */}
-                  {songs.reduce(
-                    (acc, song) =>
-                      acc + song.assignments.filter(a => a.memberId === member.id).length,
-                    0
-                  )}{' '}
-                  Active Roles
-                </p>
+            >
+              <div className="flex flex-col items-center text-center gap-4">
+                <div
+                  className={`w-20 h-20 rounded-full ${member.avatarColor || 'bg-zinc-700'} flex items-center justify-center text-3xl font-bold text-white shadow-inner`}
+                >
+                  {member.name.charAt(0).toUpperCase()}
+                </div>
+                <div>
+                  <h3 className="text-lg font-bold text-white group-hover:text-amber-500 transition-colors">
+                    {member.name}
+                  </h3>
+                  <p className="text-xs text-zinc-500 mt-1">
+                    {/* Count total assignments */}
+                    {songs.reduce(
+                      (acc, song) =>
+                        acc + song.assignments.filter(a => a.memberId === member.id).length,
+                      0
+                    )}{' '}
+                    Active Roles
+                  </p>
+                </div>
               </div>
             </div>
-          </div>
-        ))}
-      </div>
+          ))}
+        </div>
       )}
 
       {/* Detail View (Gig Sheet) */}

@@ -128,7 +128,9 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
 
         <div className="p-6">
           {/* Icon */}
-          <div className={`w-12 h-12 ${config.iconBg} rounded-full flex items-center justify-center mb-4`}>
+          <div
+            className={`w-12 h-12 ${config.iconBg} rounded-full flex items-center justify-center mb-4`}
+          >
             <Icon className={`w-6 h-6 ${config.iconColor}`} />
           </div>
 

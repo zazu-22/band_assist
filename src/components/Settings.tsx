@@ -93,7 +93,8 @@ export const Settings: React.FC<SettingsProps> = ({
     setConfirmDialog({
       isOpen: true,
       title: 'Remove Member',
-      message: 'Are you sure? Assignments for this member in songs will remain but might look orphaned.',
+      message:
+        'Are you sure? Assignments for this member in songs will remain but might look orphaned.',
       variant: 'danger',
       onConfirm: () => {
         setMembers(members.filter(m => m.id !== id));
