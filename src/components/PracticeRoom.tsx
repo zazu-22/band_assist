@@ -12,12 +12,14 @@ import {
   File,
   Music2,
   Clock,
-  ListMusic,
   Guitar,
+  PanelLeftClose,
+  PanelLeftOpen,
 } from 'lucide-react';
 import { SmartTabEditor } from './SmartTabEditor';
 import { AlphaTabRenderer } from './AlphaTabRenderer';
-import { EmptyState } from './ui';
+import { EmptyState, ResizablePanel } from './ui';
+import { useIsMobile } from '../hooks/useBreakpoint';
 
 interface PracticeRoomProps {
   songs: Song[];
@@ -25,6 +27,8 @@ interface PracticeRoomProps {
 }
 
 export const PracticeRoom: React.FC<PracticeRoomProps> = ({ songs }) => {
+  const isMobile = useIsMobile();
+
   const [selectedSongId, setSelectedSongId] = useState<string | null>(
     songs.length > 0 ? songs[0].id : null
   );
@@ -37,8 +41,8 @@ export const PracticeRoom: React.FC<PracticeRoomProps> = ({ songs }) => {
   const [metronomeActive, setMetronomeActive] = useState(false);
   const [activeChartId, setActiveChartId] = useState<string | null>(null);
 
-  // Sidebar toggle for song list
-  const [showSongList, setShowSongList] = useState(true);
+  // Sidebar toggle for song list - default to hidden on mobile
+  const [showSongList, setShowSongList] = useState(!isMobile);
 
   const audioRef = useRef<HTMLAudioElement>(null);
   const metronomeInterval = useRef<NodeJS.Timeout | null>(null);
@@ -175,11 +179,13 @@ export const PracticeRoom: React.FC<PracticeRoomProps> = ({ songs }) => {
       <div className="h-16 border-b border-zinc-800 bg-zinc-900 flex items-center justify-between px-4 shrink-0">
         <div className="flex items-center gap-4">
           <button
+            type="button"
             onClick={() => setShowSongList(!showSongList)}
             className={`p-2 rounded-lg transition-colors ${showSongList ? 'bg-zinc-800 text-white' : 'text-zinc-500 hover:text-white'}`}
-            aria-label="Toggle song list"
+            title={showSongList ? 'Hide songs' : 'Show songs'}
+            aria-label={showSongList ? 'Hide songs' : 'Show songs'}
           >
-            <ListMusic size={20} />
+            {showSongList ? <PanelLeftClose size={20} /> : <PanelLeftOpen size={20} />}
           </button>
           <h2 className="font-bold text-lg flex items-center gap-2">
             {selectedSong?.title || 'Select a Song'}
@@ -214,21 +220,43 @@ export const PracticeRoom: React.FC<PracticeRoomProps> = ({ songs }) => {
       </div>
 
       <div className="flex-1 flex overflow-hidden">
-        {/* Left Sidebar: Songs */}
-        {showSongList && (
-          <div className="w-64 bg-zinc-900 border-r border-zinc-800 overflow-y-auto shrink-0 hidden md:block">
-            {songs.map(song => (
-              <button
-                key={song.id}
-                onClick={() => setSelectedSongId(song.id)}
-                className={`w-full text-left p-4 border-b border-zinc-800 hover:bg-zinc-800 transition-colors ${selectedSongId === song.id ? 'bg-zinc-800 border-l-4 border-l-amber-500' : ''}`}
-              >
-                <p className="font-bold text-sm truncate">{song.title}</p>
-                <p className="text-xs text-zinc-500 truncate">{song.artist}</p>
-              </button>
-            ))}
-          </div>
-        )}
+        {/* Left Sidebar: Songs - fixed on mobile, resizable on desktop */}
+        {showSongList &&
+          (isMobile ? (
+            <div className="w-64 bg-zinc-900 border-r border-zinc-800 overflow-y-auto shrink-0">
+              {songs.map(song => (
+                <button
+                  type="button"
+                  key={song.id}
+                  onClick={() => setSelectedSongId(song.id)}
+                  className={`w-full text-left p-4 border-b border-zinc-800 hover:bg-zinc-800 transition-colors motion-reduce:transition-none ${selectedSongId === song.id ? 'bg-zinc-800 border-l-4 border-l-amber-500' : ''}`}
+                >
+                  <p className="font-bold text-sm truncate">{song.title}</p>
+                  <p className="text-xs text-zinc-500 truncate">{song.artist}</p>
+                </button>
+              ))}
+            </div>
+          ) : (
+            <ResizablePanel
+              defaultWidth={256}
+              minWidth={200}
+              maxWidth={400}
+              storageKey="practice_songlist"
+              className="bg-zinc-900 border-r border-zinc-800 overflow-y-auto hidden md:block"
+            >
+              {songs.map(song => (
+                <button
+                  type="button"
+                  key={song.id}
+                  onClick={() => setSelectedSongId(song.id)}
+                  className={`w-full text-left p-4 border-b border-zinc-800 hover:bg-zinc-800 transition-colors motion-reduce:transition-none ${selectedSongId === song.id ? 'bg-zinc-800 border-l-4 border-l-amber-500' : ''}`}
+                >
+                  <p className="font-bold text-sm truncate">{song.title}</p>
+                  <p className="text-xs text-zinc-500 truncate">{song.artist}</p>
+                </button>
+              ))}
+            </ResizablePanel>
+          ))}
 
         {/* Main Stage */}
         <div className="flex-1 flex flex-col relative">
@@ -239,7 +267,7 @@ export const PracticeRoom: React.FC<PracticeRoomProps> = ({ songs }) => {
                 <button
                   key={chart.id}
                   onClick={() => setActiveChartId(chart.id)}
-                  className={`px-3 py-1.5 rounded-lg text-sm font-medium flex items-center gap-2 border transition-all ${
+                  className={`px-3 py-1.5 rounded-lg text-sm font-medium flex items-center gap-2 border transition-colors motion-reduce:transition-none ${
                     activeChartId === chart.id
                       ? 'bg-amber-600/20 border-amber-600/50 text-amber-500'
                       : 'bg-zinc-800 border-zinc-700 text-zinc-400 hover:text-white'
