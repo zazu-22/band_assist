@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Song, BandEvent } from '../types';
 import { Activity, CalendarDays, CheckCircle2, Disc, Music } from 'lucide-react';
 import { EmptyState } from './ui';
+import { ROUTES } from '../routes';
 
 interface DashboardProps {
   songs: Song[];
@@ -93,43 +94,43 @@ export const Dashboard: React.FC<DashboardProps> = ({ songs, onNavigateToSong, e
               title="No songs yet"
               description="Add your first song to start building your setlist and tracking progress."
               action={{
-                label: "Add Song",
-                onClick: () => navigate('/setlist'),
+                label: 'Add Song',
+                onClick: () => navigate(ROUTES.SETLIST),
               }}
             />
           ) : (
-          <div className="space-y-4">
-            {songs.slice(0, 5).map(song => (
-              <div
-                key={song.id}
-                onClick={() => onNavigateToSong(song.id)}
-                className="flex items-center justify-between p-4 bg-zinc-950/50 rounded-xl hover:bg-zinc-800 cursor-pointer transition-colors border border-zinc-800/50 hover:border-zinc-700"
-              >
-                <div className="flex items-center gap-4">
-                  <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center text-xs font-bold text-zinc-400">
-                    {song.bpm}
+            <div className="space-y-4">
+              {songs.slice(0, 5).map(song => (
+                <div
+                  key={song.id}
+                  onClick={() => onNavigateToSong(song.id)}
+                  className="flex items-center justify-between p-4 bg-zinc-950/50 rounded-xl hover:bg-zinc-800 cursor-pointer transition-colors border border-zinc-800/50 hover:border-zinc-700"
+                >
+                  <div className="flex items-center gap-4">
+                    <div className="w-10 h-10 rounded-full bg-zinc-800 flex items-center justify-center text-xs font-bold text-zinc-400">
+                      {song.bpm}
+                    </div>
+                    <div>
+                      <p className="font-semibold text-white">{song.title}</p>
+                      <p className="text-sm text-zinc-500">{song.artist}</p>
+                    </div>
                   </div>
-                  <div>
-                    <p className="font-semibold text-white">{song.title}</p>
-                    <p className="text-sm text-zinc-500">{song.artist}</p>
+                  <div className="flex items-center gap-3">
+                    <span
+                      className={`px-3 py-1 rounded-full text-xs font-medium border ${
+                        song.status === 'Performance Ready'
+                          ? 'bg-green-950/30 text-green-500 border-green-900'
+                          : song.status === 'In Progress'
+                            ? 'bg-blue-950/30 text-blue-500 border-blue-900'
+                            : 'bg-amber-950/30 text-amber-500 border-amber-900'
+                      }`}
+                    >
+                      {song.status}
+                    </span>
                   </div>
                 </div>
-                <div className="flex items-center gap-3">
-                  <span
-                    className={`px-3 py-1 rounded-full text-xs font-medium border ${
-                      song.status === 'Performance Ready'
-                        ? 'bg-green-950/30 text-green-500 border-green-900'
-                        : song.status === 'In Progress'
-                          ? 'bg-blue-950/30 text-blue-500 border-blue-900'
-                          : 'bg-amber-950/30 text-amber-500 border-amber-900'
-                    }`}
-                  >
-                    {song.status}
-                  </span>
-                </div>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
           )}
         </div>
 

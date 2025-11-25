@@ -922,12 +922,13 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
               <button
                 onClick={togglePlay}
                 disabled={!playerReady}
-                className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${!playerReady
+                className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
+                  !playerReady
                     ? 'bg-zinc-200 text-zinc-400 cursor-not-allowed'
                     : internalIsPlaying
                       ? 'bg-amber-500 text-white'
                       : 'bg-zinc-200 hover:bg-zinc-300 text-zinc-700'
-                  }`}
+                }`}
                 title={!playerReady ? 'Loading player...' : internalIsPlaying ? 'Pause' : 'Play'}
               >
                 {internalIsPlaying ? <Pause size={20} /> : <Play size={20} className="ml-1" />}
@@ -947,10 +948,11 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
               <div className="flex items-center gap-1">
                 <button
                   onClick={toggleLoop}
-                  className={`p-2 rounded transition-colors ${isLooping
+                  className={`p-2 rounded transition-colors ${
+                    isLooping
                       ? 'bg-amber-500 text-white'
                       : 'bg-zinc-200 hover:bg-zinc-300 text-zinc-700'
-                    }`}
+                  }`}
                   title="Toggle loop"
                 >
                   <Repeat size={16} />
@@ -976,10 +978,11 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
             <button
               ref={mixerButtonRef}
               onClick={() => setShowSettings(!showSettings)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${showSettings
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${
+                showSettings
                   ? 'bg-amber-500 text-white shadow-md'
                   : 'bg-zinc-200 hover:bg-zinc-300 text-zinc-800 hover:shadow-sm'
-                }`}
+              }`}
               title="Click to open mixer and switch tracks"
             >
               <div
@@ -999,10 +1002,11 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
               <div className="flex items-center gap-2 bg-zinc-200 rounded px-2 py-1">
                 <button
                   onClick={() => setAutoScrollEnabled(!autoScrollEnabled)}
-                  className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-bold transition-colors ${autoScrollEnabled
+                  className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-bold transition-colors ${
+                    autoScrollEnabled
                       ? 'bg-amber-500 text-white'
                       : 'bg-white text-zinc-600 hover:bg-zinc-50'
-                    }`}
+                  }`}
                   title="Toggle auto-scroll"
                 >
                   <Scroll size={12} /> Auto
@@ -1096,8 +1100,9 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
                   {[1, 2, 3, 4].map(beat => (
                     <div
                       key={beat}
-                      className={`w-2 h-2 rounded-full transition-all duration-75 ${metronomeBeat === beat ? 'bg-amber-500 scale-150' : 'bg-zinc-400'
-                        }`}
+                      className={`w-2 h-2 rounded-full transition-all duration-75 ${
+                        metronomeBeat === beat ? 'bg-amber-500 scale-150' : 'bg-zinc-400'
+                      }`}
                     />
                   ))}
                 </div>
@@ -1171,24 +1176,27 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
             {tracks.map((track, i) => (
               <div
                 key={i}
-                className={`flex items-center justify-between p-2 rounded border transition-all ${currentTrackIndex === i
+                className={`flex items-center justify-between p-2 rounded border transition-all ${
+                  currentTrackIndex === i
                     ? 'bg-amber-50 border-amber-400 shadow-sm'
                     : 'bg-zinc-50 border-zinc-100'
-                  }`}
+                }`}
               >
                 <div
                   className="flex items-center gap-2 overflow-hidden cursor-pointer"
                   onClick={() => renderTrack(i)}
                 >
                   <div
-                    className={`w-3 h-3 rounded-full transition-all ${currentTrackIndex === i ? 'bg-amber-500' : 'bg-zinc-400'
-                      }`}
+                    className={`w-3 h-3 rounded-full transition-all ${
+                      currentTrackIndex === i ? 'bg-amber-500' : 'bg-zinc-400'
+                    }`}
                   ></div>
                   <span
-                    className={`text-xs truncate hover:underline ${currentTrackIndex === i
+                    className={`text-xs truncate hover:underline ${
+                      currentTrackIndex === i
                         ? 'font-bold text-amber-900'
                         : 'font-medium text-zinc-700'
-                      }`}
+                    }`}
                   >
                     {track.name}
                   </span>
@@ -1199,10 +1207,11 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
                       e.stopPropagation();
                       toggleTrackMute(i);
                     }}
-                    className={`text-[10px] font-bold px-2 py-1 rounded border transition-all ${track.playbackInfo.isMute
+                    className={`text-[10px] font-bold px-2 py-1 rounded border transition-all ${
+                      track.playbackInfo.isMute
                         ? 'bg-red-500 text-white border-red-600 shadow-sm'
                         : 'bg-white text-zinc-500 border-zinc-300 hover:bg-zinc-50'
-                      }`}
+                    }`}
                     title={track.playbackInfo.isMute ? 'Unmute track' : 'Mute track'}
                   >
                     M
@@ -1212,10 +1221,11 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
                       e.stopPropagation();
                       toggleTrackSolo(i);
                     }}
-                    className={`text-[10px] font-bold px-2 py-1 rounded border transition-all ${track.playbackInfo.isSolo
+                    className={`text-[10px] font-bold px-2 py-1 rounded border transition-all ${
+                      track.playbackInfo.isSolo
                         ? 'bg-amber-500 text-white border-amber-600 shadow-sm'
                         : 'bg-white text-zinc-500 border-zinc-300 hover:bg-zinc-50'
-                      }`}
+                    }`}
                     title={track.playbackInfo.isSolo ? 'Unsolo track' : 'Solo track'}
                   >
                     S

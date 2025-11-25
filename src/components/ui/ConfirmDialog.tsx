@@ -47,52 +47,53 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
 }) => {
   const dialogRef = useRef<HTMLDivElement>(null);
   const cancelButtonRef = useRef<HTMLButtonElement>(null);
-  const previousActiveElement = useRef<Element | null>(null);
 
   const config = variantConfig[variant];
   const Icon = config.icon;
 
   // Focus management and keyboard handling
   useEffect(() => {
-    if (isOpen) {
-      // Store the previously focused element
-      previousActiveElement.current = document.activeElement;
-      // Focus the cancel button when dialog opens
-      cancelButtonRef.current?.focus();
+    if (!isOpen) return;
 
-      // Handle Escape key
-      const handleKeyDown = (e: KeyboardEvent) => {
-        if (e.key === 'Escape') {
-          onCancel();
-        }
-        // Trap focus within dialog
-        if (e.key === 'Tab' && dialogRef.current) {
-          const focusableElements = dialogRef.current.querySelectorAll(
-            'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
-          );
-          const firstElement = focusableElements[0] as HTMLElement;
-          const lastElement = focusableElements[focusableElements.length - 1] as HTMLElement;
+    // Store the previously focused element
+    const elementToRestore = document.activeElement;
 
-          if (e.shiftKey && document.activeElement === firstElement) {
-            e.preventDefault();
-            lastElement.focus();
-          } else if (!e.shiftKey && document.activeElement === lastElement) {
-            e.preventDefault();
-            firstElement.focus();
-          }
-        }
-      };
+    // Focus the cancel button when dialog opens
+    cancelButtonRef.current?.focus();
 
-      document.addEventListener('keydown', handleKeyDown);
-      return () => {
-        document.removeEventListener('keydown', handleKeyDown);
-      };
-    } else {
-      // Return focus to previously focused element
-      if (previousActiveElement.current instanceof HTMLElement) {
-        previousActiveElement.current.focus();
+    // Handle Escape key
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        onCancel();
       }
-    }
+      // Trap focus within dialog
+      if (e.key === 'Tab' && dialogRef.current) {
+        const focusableElements = dialogRef.current.querySelectorAll(
+          'button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])'
+        );
+        const firstElement = focusableElements[0] as HTMLElement;
+        const lastElement = focusableElements[focusableElements.length - 1] as HTMLElement;
+
+        if (e.shiftKey && document.activeElement === firstElement) {
+          e.preventDefault();
+          lastElement.focus();
+        } else if (!e.shiftKey && document.activeElement === lastElement) {
+          e.preventDefault();
+          firstElement.focus();
+        }
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+
+    // Cleanup: remove listener and restore focus
+    return () => {
+      document.removeEventListener('keydown', handleKeyDown);
+      // Return focus to previously focused element
+      if (elementToRestore instanceof HTMLElement) {
+        elementToRestore.focus();
+      }
+    };
   }, [isOpen, onCancel]);
 
   if (!isOpen) return null;
@@ -127,7 +128,9 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
 
         <div className="p-6">
           {/* Icon */}
-          <div className={`w-12 h-12 ${config.iconBg} rounded-full flex items-center justify-center mb-4`}>
+          <div
+            className={`w-12 h-12 ${config.iconBg} rounded-full flex items-center justify-center mb-4`}
+          >
             <Icon className={`w-6 h-6 ${config.iconColor}`} />
           </div>
 

@@ -1,6 +1,14 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
-import { Routes, Route, Navigate, useNavigate, useParams, useLocation, Outlet } from 'react-router-dom';
-import { toast } from './components/ui';
+import {
+  Routes,
+  Route,
+  Navigate,
+  useNavigate,
+  useParams,
+  useLocation,
+  Outlet,
+} from 'react-router-dom';
+import { toast, LoadingScreen } from './components/ui';
 import { Session } from '@supabase/supabase-js';
 import { Navigation } from './components/Navigation';
 import { Dashboard } from './components/Dashboard';
@@ -15,22 +23,22 @@ import { Login } from './components/Login';
 import { Signup } from './components/Signup';
 import { PasswordReset } from './components/PasswordReset';
 import { PasswordUpdate } from './components/PasswordUpdate';
-import { Song, BandMember, BandEvent, ViewState } from './types';
-import { INITIAL_SONGS, DEFAULT_MEMBERS, DEFAULT_ROLES, DEFAULT_EVENTS, withDefaults } from './constants';
+import { Song, BandMember, BandEvent } from './types';
+import {
+  INITIAL_SONGS,
+  DEFAULT_MEMBERS,
+  DEFAULT_ROLES,
+  DEFAULT_EVENTS,
+  withDefaults,
+} from './constants';
 import { StorageService } from './services/storageService';
 import { getSupabaseClient, isSupabaseConfigured } from './services/supabaseClient';
+import { ROUTES, getSongDetailRoute } from './routes';
 
-// Loading screen component
-const LoadingScreen: React.FC<{ message: string }> = ({ message }) => (
-  <div className="flex items-center justify-center min-h-screen bg-zinc-950 text-zinc-100">
-    <div className="text-center">
-      <div className="inline-block w-8 h-8 border-4 border-zinc-700 border-t-blue-500 rounded-full animate-spin mb-4"></div>
-      <p className="text-lg">{message}</p>
-    </div>
-  </div>
-);
-
-// App context for sharing state with route components
+/**
+ * Context value interface for the AppContext.
+ * Contains all shared application state and update functions.
+ */
 interface AppContextValue {
   songs: Song[];
   setSongs: React.Dispatch<React.SetStateAction<Song[]>>;
@@ -46,17 +54,33 @@ interface AppContextValue {
   isAdmin: boolean;
 }
 
+/**
+ * React Context for sharing application state across route components.
+ * Must be used within the App component tree (inside BrowserRouter).
+ */
 const AppContext = React.createContext<AppContextValue | null>(null);
 
-export const useAppContext = () => {
+/**
+ * Hook to access the application context.
+ * Provides access to songs, members, roles, events, and their update functions.
+ * @throws Error if used outside of the App component tree
+ * @returns The application context value
+ */
+export const useAppContext = (): AppContextValue => {
   const context = React.useContext(AppContext);
   if (!context) {
-    throw new Error('useAppContext must be used within App component (inside BrowserRouter)');
+    throw new Error(
+      'useAppContext must be used within App component (inside BrowserRouter and AppContext.Provider)'
+    );
   }
   return context;
 };
 
-// Wrapper component for SongDetail that gets songId from URL params
+/**
+ * Route wrapper component for SongDetail.
+ * Extracts songId from URL params and connects to AppContext.
+ * Handles missing songs with toast notification and redirect.
+ */
 const SongDetailRoute: React.FC = () => {
   const { songId } = useParams<{ songId: string }>();
   const navigate = useNavigate();
@@ -68,7 +92,7 @@ const SongDetailRoute: React.FC = () => {
   useEffect(() => {
     if (!song) {
       toast.error('Song not found');
-      navigate('/', { replace: true });
+      navigate(ROUTES.DASHBOARD, { replace: true });
     }
   }, [song, navigate]);
 
@@ -81,26 +105,27 @@ const SongDetailRoute: React.FC = () => {
       song={song}
       members={members}
       availableRoles={availableRoles}
-      onBack={() => navigate('/')}
+      onBack={() => navigate(ROUTES.DASHBOARD)}
       onUpdateSong={handleUpdateSong}
     />
   );
 };
 
-// Wrapper component for PracticeRoom with optional songId
+/**
+ * Route wrapper component for PracticeRoom.
+ * Provides song navigation callback using route constants.
+ */
 const PracticeRoomRoute: React.FC = () => {
   const navigate = useNavigate();
   const { songs } = useAppContext();
 
-  return (
-    <PracticeRoom
-      songs={songs}
-      onNavigateToSong={(id) => navigate(`/songs/${id}`)}
-    />
-  );
+  return <PracticeRoom songs={songs} onNavigateToSong={id => navigate(getSongDetailRoute(id))} />;
 };
 
-// Layout wrapper for authenticated routes with navigation sidebar
+/**
+ * Layout wrapper for authenticated routes with navigation sidebar.
+ * Uses React Router's Outlet for rendering nested route content.
+ */
 const AppLayout: React.FC<{
   onLogout: () => void;
   showLogout: boolean;
@@ -108,27 +133,9 @@ const AppLayout: React.FC<{
   userBands: Array<{ id: string; name: string }>;
   onSelectBand: (bandId: string) => void;
 }> = ({ onLogout, showLogout, currentBandName, userBands, onSelectBand }) => {
-  const location = useLocation();
-
-  // Map URL path to view name for Navigation active state
-  const getViewFromPath = (pathname: string): ViewState => {
-    if (pathname === '/') return 'DASHBOARD';
-    if (pathname.startsWith('/songs/')) return 'SONG_DETAIL';
-    if (pathname === '/setlist') return 'SETLIST';
-    if (pathname === '/practice') return 'PRACTICE_ROOM';
-    if (pathname === '/schedule') return 'SCHEDULE';
-    if (pathname === '/band') return 'BAND_DASHBOARD';
-    if (pathname === '/settings') return 'SETTINGS';
-    if (pathname === '/performance') return 'PERFORMANCE_MODE';
-    return 'DASHBOARD';
-  };
-
-  const currentView: ViewState = getViewFromPath(location.pathname);
-
   return (
     <div className="flex min-h-screen bg-zinc-950 font-sans text-zinc-100">
       <Navigation
-        currentView={currentView}
         onLogout={onLogout}
         showLogout={showLogout}
         currentBandName={currentBandName}
@@ -181,14 +188,14 @@ const App: React.FC = () => {
 
     // Check for our custom redirect (#password-update)
     if (hash === '#password-update') {
-      navigate('/password-update', { replace: true });
+      navigate(ROUTES.PASSWORD_UPDATE, { replace: true });
       return;
     }
 
     // Check for Supabase recovery token in hash
     // Format: #access_token=...&type=recovery&...
     if (hash.includes('type=recovery')) {
-      navigate('/password-update', { replace: true });
+      navigate(ROUTES.PASSWORD_UPDATE, { replace: true });
     }
   }, [isCheckingAuth, navigate]);
 
@@ -471,7 +478,7 @@ const App: React.FC = () => {
     try {
       await supabase.auth.signOut();
       setSession(null);
-      navigate('/login');
+      navigate(ROUTES.LOGIN);
     } catch (error) {
       console.error('Error logging out:', error);
     }
@@ -563,17 +570,17 @@ const App: React.FC = () => {
   // Show auth screens if Supabase is configured but user is not authenticated
   if (isSupabaseConfigured() && !session) {
     // Check if we're on the password-update route
-    if (location.pathname === '/password-update') {
+    if (location.pathname === ROUTES.PASSWORD_UPDATE) {
       return (
         <PasswordUpdate
           onSuccess={() => {
             // Clear the hash and redirect to login
             window.location.hash = '';
-            navigate('/login');
+            navigate(ROUTES.LOGIN);
           }}
           onNavigate={(view: string) => {
-            if (view === 'LOGIN') navigate('/login');
-            else if (view === 'SIGNUP') navigate('/signup');
+            if (view === 'LOGIN') navigate(ROUTES.LOGIN);
+            else if (view === 'SIGNUP') navigate(ROUTES.SIGNUP);
           }}
         />
       );
@@ -582,22 +589,22 @@ const App: React.FC = () => {
     return (
       <Routes>
         <Route
-          path="/signup"
+          path={ROUTES.SIGNUP}
           element={
             <Signup
-              onSignupSuccess={() => navigate('/')}
+              onSignupSuccess={() => navigate(ROUTES.DASHBOARD)}
               onNavigate={(view: string) => {
-                if (view === 'LOGIN') navigate('/login');
+                if (view === 'LOGIN') navigate(ROUTES.LOGIN);
               }}
             />
           }
         />
         <Route
-          path="/password-reset"
+          path={ROUTES.PASSWORD_RESET}
           element={
             <PasswordReset
               onNavigate={(view: string) => {
-                if (view === 'LOGIN') navigate('/login');
+                if (view === 'LOGIN') navigate(ROUTES.LOGIN);
               }}
             />
           }
@@ -606,10 +613,10 @@ const App: React.FC = () => {
           path="*"
           element={
             <Login
-              onLoginSuccess={() => navigate('/')}
+              onLoginSuccess={() => navigate(ROUTES.DASHBOARD)}
               onNavigate={(view: string) => {
-                if (view === 'SIGNUP') navigate('/signup');
-                else if (view === 'PASSWORD_RESET') navigate('/password-reset');
+                if (view === 'SIGNUP') navigate(ROUTES.SIGNUP);
+                else if (view === 'PASSWORD_RESET') navigate(ROUTES.PASSWORD_RESET);
               }}
             />
           }
@@ -628,15 +635,15 @@ const App: React.FC = () => {
       <Routes>
         {/* Performance Mode - Full screen, no sidebar */}
         <Route
-          path="/performance"
-          element={<PerformanceMode songs={songs} onExit={() => navigate('/')} />}
+          path={ROUTES.PERFORMANCE}
+          element={<PerformanceMode songs={songs} onExit={() => navigate(ROUTES.DASHBOARD)} />}
         />
 
         {/* Song Detail - Full screen, no sidebar */}
-        <Route path="/songs/:songId" element={<SongDetailRoute />} />
+        <Route path={`${ROUTES.SONG_DETAIL}/:songId`} element={<SongDetailRoute />} />
 
         {/* Practice Room with specific song */}
-        <Route path="/songs/:songId/practice" element={<PracticeRoomRoute />} />
+        <Route path={`${ROUTES.SONG_DETAIL}/:songId/practice`} element={<PracticeRoomRoute />} />
 
         {/* Layout route for sidebar pages */}
         <Route
@@ -655,53 +662,53 @@ const App: React.FC = () => {
             element={
               <Dashboard
                 songs={songs}
-                onNavigateToSong={(id) => navigate(`/songs/${id}`)}
+                onNavigateToSong={id => navigate(getSongDetailRoute(id))}
                 events={events}
               />
             }
           />
           <Route
-            path="/setlist"
+            path={ROUTES.SETLIST}
             element={
               <SetlistManager
                 songs={songs}
                 setSongs={setSongs}
-                onSelectSong={(id) => navigate(`/songs/${id}`)}
+                onSelectSong={id => navigate(getSongDetailRoute(id))}
               />
             }
           />
           <Route
-            path="/practice"
+            path={ROUTES.PRACTICE}
             element={
               <PracticeRoom
                 songs={songs}
-                onNavigateToSong={(id) => navigate(`/songs/${id}`)}
+                onNavigateToSong={id => navigate(getSongDetailRoute(id))}
               />
             }
           />
           <Route
-            path="/schedule"
+            path={ROUTES.SCHEDULE}
             element={
               <ScheduleManager
                 events={events}
                 setEvents={setEvents}
                 songs={songs}
-                onNavigateToSong={(id) => navigate(`/songs/${id}`)}
+                onNavigateToSong={id => navigate(getSongDetailRoute(id))}
               />
             }
           />
           <Route
-            path="/band"
+            path={ROUTES.BAND}
             element={
               <BandDashboard
                 members={members}
                 songs={songs}
-                onNavigateToSong={(id) => navigate(`/songs/${id}`)}
+                onNavigateToSong={id => navigate(getSongDetailRoute(id))}
               />
             }
           />
           <Route
-            path="/settings"
+            path={ROUTES.SETTINGS}
             element={
               <Settings
                 members={members}
@@ -719,7 +726,7 @@ const App: React.FC = () => {
             }
           />
           {/* Redirect any unknown routes to dashboard */}
-          <Route path="*" element={<Navigate to="/" replace />} />
+          <Route path="*" element={<Navigate to={ROUTES.DASHBOARD} replace />} />
         </Route>
       </Routes>
     </AppContext.Provider>

@@ -99,9 +99,7 @@ export const PasswordUpdate: React.FC<PasswordUpdateProps> = ({ onSuccess }) => 
       onSuccess();
     } catch (err) {
       console.error('Password update error:', err);
-      setError(
-        err instanceof Error ? err.message : 'Failed to update password. Please try again.'
-      );
+      setError(err instanceof Error ? err.message : 'Failed to update password. Please try again.');
     } finally {
       setIsLoading(false);
     }
@@ -136,7 +134,9 @@ export const PasswordUpdate: React.FC<PasswordUpdateProps> = ({ onSuccess }) => 
               autoComplete="new-password"
               autoFocus
               aria-invalid={errorField === 'password'}
-              aria-describedby={errorField === 'password' ? 'form-error password-help' : 'password-help'}
+              aria-describedby={
+                errorField === 'password' ? 'form-error password-help' : 'password-help'
+              }
               className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-md text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="••••••••"
               disabled={isLoading}
@@ -170,7 +170,9 @@ export const PasswordUpdate: React.FC<PasswordUpdateProps> = ({ onSuccess }) => 
 
           {error && (
             <div className="bg-red-900/20 border border-red-800 rounded-md p-3" role="alert">
-              <p id="form-error" className="text-sm text-red-400">{error}</p>
+              <p id="form-error" className="text-sm text-red-400">
+                {error}
+              </p>
             </div>
           )}
 

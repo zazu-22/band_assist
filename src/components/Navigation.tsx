@@ -1,6 +1,6 @@
 import React from 'react';
-import { useNavigate } from 'react-router-dom';
-import { ViewState } from '../types';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { ROUTES, NAV_ITEMS, matchRoute } from '../routes';
 import {
   LayoutDashboard,
   Music,
@@ -11,11 +11,11 @@ import {
   CalendarClock,
   Radio,
   LogOut,
+  LucideIcon,
 } from 'lucide-react';
 import { BandSelector } from './BandSelector';
 
 interface NavigationProps {
-  currentView: ViewState;
   onLogout?: () => void;
   showLogout?: boolean;
   currentBandName?: string;
@@ -23,19 +23,17 @@ interface NavigationProps {
   onSelectBand?: (bandId: string) => void;
 }
 
-// Map view IDs to URL paths
-const viewToPath: Record<string, string> = {
-  DASHBOARD: '/',
-  PRACTICE_ROOM: '/practice',
-  SETLIST: '/setlist',
-  SCHEDULE: '/schedule',
-  BAND_DASHBOARD: '/band',
-  SETTINGS: '/settings',
-  PERFORMANCE_MODE: '/performance',
+/** Map nav item IDs to their icons */
+type NavItemId = (typeof NAV_ITEMS)[number]['id'];
+const iconMap: Record<NavItemId, LucideIcon> = {
+  DASHBOARD: LayoutDashboard,
+  PRACTICE: Mic2,
+  SETLIST: ListMusic,
+  SCHEDULE: CalendarClock,
+  BAND: Users,
 };
 
 export const Navigation: React.FC<NavigationProps> = ({
-  currentView,
   onLogout,
   showLogout = false,
   currentBandName,
@@ -43,18 +41,13 @@ export const Navigation: React.FC<NavigationProps> = ({
   onSelectBand,
 }) => {
   const navigate = useNavigate();
+  const location = useLocation();
 
-  const navItems = [
-    { id: 'DASHBOARD', label: 'Dashboard', icon: LayoutDashboard },
-    { id: 'PRACTICE_ROOM', label: 'Practice Room', icon: Mic2 },
-    { id: 'SETLIST', label: 'Setlist Builder', icon: ListMusic },
-    { id: 'SCHEDULE', label: 'Schedule', icon: CalendarClock },
-    { id: 'BAND_DASHBOARD', label: 'Band Lineup', icon: Users },
-  ];
-
-  const handleNavigate = (viewId: string) => {
-    const path = viewToPath[viewId] || '/';
-    navigate(path);
+  /**
+   * Check if a nav item is currently active based on the URL path.
+   */
+  const isActive = (path: string): boolean => {
+    return matchRoute(location.pathname, path);
   };
 
   return (
@@ -80,36 +73,44 @@ export const Navigation: React.FC<NavigationProps> = ({
       )}
 
       <nav className="flex-1 px-3 py-6 space-y-2" aria-label="Main navigation">
-        {navItems.map(item => (
-          <button
-            key={item.id}
-            onClick={() => handleNavigate(item.id)}
-            className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 group ${currentView === item.id
-              ? 'bg-zinc-800 text-amber-500 shadow-inner'
-              : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-100'
+        {NAV_ITEMS.map(item => {
+          const Icon = iconMap[item.id] ?? LayoutDashboard;
+          const active = isActive(item.path);
+          return (
+            <button
+              key={item.id}
+              onClick={() => navigate(item.path)}
+              className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 group ${
+                active
+                  ? 'bg-zinc-800 text-amber-500 shadow-inner'
+                  : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-100'
               }`}
-            aria-label={item.label}
-          >
-            <item.icon
-              className={`w-6 h-6 ${currentView === item.id ? 'stroke-amber-500' : 'group-hover:stroke-zinc-100'}`}
-            />
-            <span className="hidden lg:block font-medium">{item.label}</span>
-          </button>
-        ))}
+              aria-label={item.label}
+              aria-current={active ? 'page' : undefined}
+            >
+              <Icon
+                className={`w-6 h-6 ${active ? 'stroke-amber-500' : 'group-hover:stroke-zinc-100'}`}
+              />
+              <span className="hidden lg:block font-medium">{item.label}</span>
+            </button>
+          );
+        })}
 
         {/* Live Mode Separator */}
         <div className="pt-4 pb-2 px-3">
           <div className="h-px bg-zinc-800 mb-4"></div>
           <button
-            onClick={() => handleNavigate('PERFORMANCE_MODE')}
-            className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 group ${currentView === 'PERFORMANCE_MODE'
-              ? 'bg-red-900/20 text-red-500 shadow-inner border border-red-900/50'
-              : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-red-400'
-              }`}
+            onClick={() => navigate(ROUTES.PERFORMANCE)}
+            className={`w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 group ${
+              isActive(ROUTES.PERFORMANCE)
+                ? 'bg-red-900/20 text-red-500 shadow-inner border border-red-900/50'
+                : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-red-400'
+            }`}
             aria-label="Performance Mode"
+            aria-current={isActive(ROUTES.PERFORMANCE) ? 'page' : undefined}
           >
             <Radio
-              className={`w-6 h-6 ${currentView === 'PERFORMANCE_MODE' ? 'stroke-red-500' : 'group-hover:stroke-red-400'}`}
+              className={`w-6 h-6 ${isActive(ROUTES.PERFORMANCE) ? 'stroke-red-500' : 'group-hover:stroke-red-400'}`}
             />
             <span className="hidden lg:block font-bold tracking-wide">Performance Mode</span>
           </button>
@@ -118,9 +119,12 @@ export const Navigation: React.FC<NavigationProps> = ({
 
       <div className="p-4 border-t border-zinc-800 space-y-2">
         <button
-          onClick={() => handleNavigate('SETTINGS')}
-          className={`w-full flex items-center gap-3 px-3 py-3 text-zinc-500 rounded-xl hover:bg-zinc-800 hover:text-zinc-100 transition-all ${currentView === 'SETTINGS' ? 'bg-zinc-800 text-white' : ''}`}
+          onClick={() => navigate(ROUTES.SETTINGS)}
+          className={`w-full flex items-center gap-3 px-3 py-3 text-zinc-500 rounded-xl hover:bg-zinc-800 hover:text-zinc-100 transition-all ${
+            isActive(ROUTES.SETTINGS) ? 'bg-zinc-800 text-white' : ''
+          }`}
           aria-label="Settings"
+          aria-current={isActive(ROUTES.SETTINGS) ? 'page' : undefined}
         >
           <Settings className="w-5 h-5" />
           <span className="hidden lg:block text-sm font-medium">Config</span>

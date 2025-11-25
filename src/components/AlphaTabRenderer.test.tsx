@@ -42,7 +42,7 @@ const mockApiInstance = {
   midiEventsPlayedFilter: [],
 };
 
-const MockAlphaTabApi = vi.fn().mockImplementation(function() {
+const MockAlphaTabApi = vi.fn().mockImplementation(function () {
   return mockApiInstance;
 });
 
@@ -56,7 +56,10 @@ describe('AlphaTabRenderer', () => {
     mockApiInstance.playbackRange = null;
 
     // Setup window.alphaTab mock - cast to constructor type expected by AlphaTab
-    type AlphaTabConstructor = new (element: HTMLElement, settings: unknown) => typeof mockApiInstance;
+    type AlphaTabConstructor = new (
+      element: HTMLElement,
+      settings: unknown
+    ) => typeof mockApiInstance;
 
     window.alphaTab = {
       AlphaTabApi: MockAlphaTabApi as unknown as AlphaTabConstructor,
@@ -173,7 +176,9 @@ describe('AlphaTabRenderer', () => {
 
       // The component should handle this gracefully by showing an error
       await waitFor(() => {
-        expect(screen.getByText(/Invalid file data format\. Could not convert Base64 to binary\./)).toBeInTheDocument();
+        expect(
+          screen.getByText(/Invalid file data format\. Could not convert Base64 to binary\./)
+        ).toBeInTheDocument();
       });
     });
   });
@@ -234,9 +239,10 @@ describe('AlphaTabRenderer', () => {
       await waitFor(() => {
         // Find the play/pause button by its className
         const buttons = screen.getAllByRole('button');
-        const playButton = buttons.find(btn =>
-          btn.classList.contains('rounded-full') &&
-          (btn.querySelector('.lucide-play') || btn.querySelector('.lucide-pause'))
+        const playButton = buttons.find(
+          btn =>
+            btn.classList.contains('rounded-full') &&
+            (btn.querySelector('.lucide-play') || btn.querySelector('.lucide-pause'))
         );
 
         expect(playButton).toBeDefined();
@@ -275,9 +281,9 @@ describe('AlphaTabRenderer', () => {
       });
 
       await waitFor(() => {
-        const stopButton = screen.getAllByRole('button').find(btn =>
-          btn.querySelector('svg')?.classList.toString().includes('lucide-square')
-        );
+        const stopButton = screen
+          .getAllByRole('button')
+          .find(btn => btn.querySelector('svg')?.classList.toString().includes('lucide-square'));
         if (stopButton) {
           fireEvent.click(stopButton);
           expect(mockApiInstance.stop).toHaveBeenCalled();
@@ -297,9 +303,9 @@ describe('AlphaTabRenderer', () => {
       });
 
       await waitFor(() => {
-        const stopButton = screen.getAllByRole('button').find(btn =>
-          btn.querySelector('svg')?.classList.toString().includes('lucide-square')
-        );
+        const stopButton = screen
+          .getAllByRole('button')
+          .find(btn => btn.querySelector('svg')?.classList.toString().includes('lucide-square'));
 
         // The stop button exists but should be disabled when not playing
         expect(stopButton).toBeDefined();
@@ -328,9 +334,9 @@ describe('AlphaTabRenderer', () => {
       });
 
       await waitFor(() => {
-        const stopButton = screen.getAllByRole('button').find(btn =>
-          btn.querySelector('svg')?.classList.toString().includes('lucide-square')
-        );
+        const stopButton = screen
+          .getAllByRole('button')
+          .find(btn => btn.querySelector('svg')?.classList.toString().includes('lucide-square'));
 
         if (stopButton) {
           // Should not throw - error should be caught and handled gracefully
@@ -567,9 +573,12 @@ describe('AlphaTabRenderer', () => {
     it('should not use stale apiRef in beat mouse down handler', async () => {
       render(<AlphaTabRenderer fileData={mockFileData} />);
 
-      await waitFor(() => {
-        expect(mockApiInstance.beatMouseDown.on).toHaveBeenCalled();
-      }, { timeout: 3000 });
+      await waitFor(
+        () => {
+          expect(mockApiInstance.beatMouseDown.on).toHaveBeenCalled();
+        },
+        { timeout: 3000 }
+      );
 
       const beatHandler = mockApiInstance.beatMouseDown.on.mock.calls[0][0];
 
@@ -624,9 +633,12 @@ describe('AlphaTabRenderer', () => {
     it('should display mixer when settings button is clicked', async () => {
       render(<AlphaTabRenderer fileData={mockFileData} />);
 
-      await waitFor(() => {
-        expect(mockApiInstance.scoreLoaded.on).toHaveBeenCalled();
-      }, { timeout: 3000 });
+      await waitFor(
+        () => {
+          expect(mockApiInstance.scoreLoaded.on).toHaveBeenCalled();
+        },
+        { timeout: 3000 }
+      );
 
       const scoreLoadedHandler = mockApiInstance.scoreLoaded.on.mock.calls[0][0];
       act(() => {
@@ -638,9 +650,9 @@ describe('AlphaTabRenderer', () => {
         expect(screen.queryByText('Parsing Tab...')).not.toBeInTheDocument();
       });
 
-      const settingsButton = screen.getAllByRole('button').find(btn =>
-        btn.querySelector('svg')?.classList.toString().includes('lucide-layers')
-      );
+      const settingsButton = screen
+        .getAllByRole('button')
+        .find(btn => btn.querySelector('svg')?.classList.toString().includes('lucide-layers'));
 
       if (settingsButton) {
         fireEvent.click(settingsButton);
@@ -684,9 +696,12 @@ describe('AlphaTabRenderer', () => {
     it('should toggle track mute', async () => {
       render(<AlphaTabRenderer fileData={mockFileData} />);
 
-      await waitFor(() => {
-        expect(mockApiInstance.scoreLoaded.on).toHaveBeenCalled();
-      }, { timeout: 3000 });
+      await waitFor(
+        () => {
+          expect(mockApiInstance.scoreLoaded.on).toHaveBeenCalled();
+        },
+        { timeout: 3000 }
+      );
 
       const scoreLoadedHandler = mockApiInstance.scoreLoaded.on.mock.calls[0][0];
       act(() => {
@@ -699,9 +714,11 @@ describe('AlphaTabRenderer', () => {
       });
 
       // Open mixer first
-      const settingsButton = screen.getAllByRole('button').find(btn =>
-        btn.querySelector('svg')?.classList.toString().includes('lucide-sliders-vertical')
-      );
+      const settingsButton = screen
+        .getAllByRole('button')
+        .find(btn =>
+          btn.querySelector('svg')?.classList.toString().includes('lucide-sliders-vertical')
+        );
       if (settingsButton) fireEvent.click(settingsButton);
 
       await waitFor(() => {

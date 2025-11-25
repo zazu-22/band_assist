@@ -190,7 +190,7 @@ export const SetlistManager: React.FC<SetlistManagerProps> = ({
             title="No songs in setlist"
             description="Add your first song to start building your setlist and organizing your performance."
             action={{
-              label: "Add Song",
+              label: 'Add Song',
               onClick: () => setIsAdding(true),
             }}
           />
