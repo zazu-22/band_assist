@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Routes, Route, Navigate, useNavigate, useParams, useLocation, Outlet } from 'react-router-dom';
-import { toast } from './components/ui/Toast';
+import { toast } from './components/ui';
 import { Session } from '@supabase/supabase-js';
 import { Navigation } from './components/Navigation';
 import { Dashboard } from './components/Dashboard';
@@ -51,7 +51,7 @@ const AppContext = React.createContext<AppContextValue | null>(null);
 export const useAppContext = () => {
   const context = React.useContext(AppContext);
   if (!context) {
-    throw new Error('useAppContext must be used within AppProvider');
+    throw new Error('useAppContext must be used within App component (inside BrowserRouter)');
   }
   return context;
 };
@@ -64,9 +64,16 @@ const SongDetailRoute: React.FC = () => {
 
   const song = songs.find(s => s.id === songId);
 
+  // Handle missing song with useEffect to avoid toast on every render
+  useEffect(() => {
+    if (!song) {
+      toast.error('Song not found');
+      navigate('/', { replace: true });
+    }
+  }, [song, navigate]);
+
   if (!song) {
-    toast.error('Song not found');
-    return <Navigate to="/" replace />;
+    return null;
   }
 
   return (

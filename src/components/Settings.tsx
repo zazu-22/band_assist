@@ -16,8 +16,7 @@ import {
 import { StorageService } from '../services/storageService';
 import { InvitationManager } from './InvitationManager';
 import { isSupabaseConfigured } from '../services/supabaseClient';
-import { toast } from './ui/Toast';
-import { ConfirmDialog } from './ui/ConfirmDialog';
+import { toast, ConfirmDialog } from './ui';
 
 interface SettingsProps {
   members: BandMember[];

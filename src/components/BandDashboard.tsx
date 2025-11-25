@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { BandMember, Song } from '../types';
 import { Music, ArrowRight, X, Users } from 'lucide-react';
 import { INSTRUMENT_ICONS } from '../constants';
-import { EmptyState } from './ui/EmptyState';
+import { EmptyState } from './ui';
 
 interface BandDashboardProps {
   members: BandMember[];

@@ -2,8 +2,7 @@ import React, { useState } from 'react';
 import { Song } from '../types';
 import { GripVertical, Plus, Clock, Trash2, Music } from 'lucide-react';
 import { getMusicAnalysis } from '../services/geminiService';
-import { toast } from './ui/Toast';
-import { EmptyState } from './ui/EmptyState';
+import { toast, EmptyState } from './ui';
 
 interface SetlistManagerProps {
   songs: Song[];

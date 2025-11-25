@@ -2,7 +2,7 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Song, BandEvent } from '../types';
 import { Activity, CalendarDays, CheckCircle2, Disc, Music } from 'lucide-react';
-import { EmptyState } from './ui/EmptyState';
+import { EmptyState } from './ui';
 
 interface DashboardProps {
   songs: Song[];

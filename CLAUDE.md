@@ -28,7 +28,7 @@ npm run preview
 
 Before running the app, set `GEMINI_API_KEY` in `.env.local`:
 
-```
+```env
 GEMINI_API_KEY=your_api_key_here
 ```
 

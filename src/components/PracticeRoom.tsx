@@ -17,7 +17,7 @@ import {
 } from 'lucide-react';
 import { SmartTabEditor } from './SmartTabEditor';
 import { AlphaTabRenderer } from './AlphaTabRenderer';
-import { EmptyState } from './ui/EmptyState';
+import { EmptyState } from './ui';
 
 interface PracticeRoomProps {
   songs: Song[];

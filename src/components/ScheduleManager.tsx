@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import { BandEvent, Song } from '../types';
 import { Calendar, Clock, MapPin, Plus, Trash2, Guitar, Star, Edit2 } from 'lucide-react';
-import { ConfirmDialog } from './ui/ConfirmDialog';
+import { ConfirmDialog } from './ui';
 
 interface ScheduleManagerProps {
   events: BandEvent[];

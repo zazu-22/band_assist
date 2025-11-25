@@ -5,8 +5,7 @@ import { getMusicAnalysis } from '../services/geminiService';
 import { SmartTabEditor } from './SmartTabEditor';
 import { isSupabaseConfigured } from '../services/supabaseClient';
 import { supabaseStorageService } from '../services/supabaseStorageService';
-import { toast } from './ui/Toast';
-import { ConfirmDialog } from './ui/ConfirmDialog';
+import { toast, ConfirmDialog } from './ui';
 import {
   Music2,
   Users,
