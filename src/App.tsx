@@ -34,6 +34,8 @@ import {
 import { StorageService } from './services/storageService';
 import { getSupabaseClient, isSupabaseConfigured } from './services/supabaseClient';
 import { ROUTES, getSongDetailRoute } from './routes';
+import { Menu, X } from 'lucide-react';
+import { useLayoutShortcuts } from './hooks/useLayoutShortcuts';
 
 /**
  * Context value interface for the AppContext.
@@ -52,6 +54,12 @@ interface AppContextValue {
   session: Session | null;
   currentBandId: string | null;
   isAdmin: boolean;
+  // Layout state for collapsible sidebar
+  sidebarCollapsed: boolean;
+  setSidebarCollapsed: (collapsed: boolean) => void;
+  // Mobile drawer state
+  mobileNavOpen: boolean;
+  setMobileNavOpen: (open: boolean) => void;
 }
 
 /**
@@ -125,6 +133,7 @@ const PracticeRoomRoute: React.FC = () => {
 /**
  * Layout wrapper for authenticated routes with navigation sidebar.
  * Uses React Router's Outlet for rendering nested route content.
+ * Includes mobile drawer navigation with focus management.
  */
 const AppLayout: React.FC<{
   onLogout: () => void;
@@ -133,16 +142,102 @@ const AppLayout: React.FC<{
   userBands: Array<{ id: string; name: string }>;
   onSelectBand: (bandId: string) => void;
 }> = ({ onLogout, showLogout, currentBandName, userBands, onSelectBand }) => {
+  const { mobileNavOpen, setMobileNavOpen } = useAppContext();
+  const location = useLocation();
+
+  // Enable keyboard shortcuts for layout (Cmd/Ctrl+B to toggle sidebar)
+  useLayoutShortcuts();
+
+  // Refs for focus management
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
+
+  // Close drawer on route change
+  useEffect(() => {
+    setMobileNavOpen(false);
+  }, [location.pathname, setMobileNavOpen]);
+
+  // Focus management: focus close button when drawer opens, return focus when closed
+  useEffect(() => {
+    if (mobileNavOpen) {
+      closeButtonRef.current?.focus();
+    } else {
+      menuButtonRef.current?.focus();
+    }
+  }, [mobileNavOpen]);
+
+  // Handle Escape key to close drawer
+  useEffect(() => {
+    if (!mobileNavOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setMobileNavOpen(false);
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [mobileNavOpen, setMobileNavOpen]);
+
   return (
     <div className="flex min-h-screen bg-zinc-950 font-sans text-zinc-100">
-      <Navigation
-        onLogout={onLogout}
-        showLogout={showLogout}
-        currentBandName={currentBandName}
-        userBands={userBands}
-        onSelectBand={onSelectBand}
-      />
-      <main className="flex-1 h-screen overflow-y-auto">
+      {/* Mobile overlay - clicking closes drawer */}
+      {mobileNavOpen && (
+        <div
+          className="fixed inset-0 bg-black/60 z-40 lg:hidden"
+          onClick={() => setMobileNavOpen(false)}
+          aria-hidden="true"
+        />
+      )}
+
+      {/* Sidebar - drawer on mobile, static on desktop */}
+      <div
+        className={`
+          lg:relative lg:translate-x-0
+          fixed top-0 left-0 h-full z-50
+          transform transition-transform duration-300 ease-in-out motion-reduce:transition-none
+          ${mobileNavOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+        `}
+        role={mobileNavOpen ? 'dialog' : undefined}
+        aria-modal={mobileNavOpen ? 'true' : undefined}
+        aria-label={mobileNavOpen ? 'Navigation menu' : undefined}
+      >
+        {/* Close button inside drawer (mobile only) */}
+        {mobileNavOpen && (
+          <button
+            type="button"
+            ref={closeButtonRef}
+            onClick={() => setMobileNavOpen(false)}
+            className="absolute top-4 right-4 p-2 text-zinc-400 hover:text-zinc-100 z-10 lg:hidden"
+            aria-label="Close navigation menu"
+          >
+            <X size={24} />
+          </button>
+        )}
+        <Navigation
+          onLogout={onLogout}
+          showLogout={showLogout}
+          currentBandName={currentBandName}
+          userBands={userBands}
+          onSelectBand={onSelectBand}
+        />
+      </div>
+
+      {/* Mobile menu button */}
+      <button
+        type="button"
+        ref={menuButtonRef}
+        onClick={() => setMobileNavOpen(true)}
+        className="fixed top-4 left-4 z-30 p-2 bg-zinc-900 rounded-lg shadow-lg lg:hidden"
+        aria-label="Open navigation menu"
+        aria-expanded={mobileNavOpen}
+        aria-controls="mobile-nav"
+      >
+        <Menu size={24} />
+      </button>
+
+      <main className="flex-1 h-screen overflow-y-auto transition-all duration-300 ease-in-out">
         <Outlet />
       </main>
     </div>
@@ -172,6 +267,19 @@ const App: React.FC = () => {
   const [members, setMembers] = useState<BandMember[]>([]);
   const [availableRoles, setAvailableRoles] = useState<string[]>([]);
   const [events, setEvents] = useState<BandEvent[]>([]);
+
+  // -- Layout State --
+  // Sidebar collapsed state with localStorage persistence
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
+    try {
+      return localStorage.getItem('sdb_sidebar_collapsed') === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  // Mobile drawer state
+  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   // Keep ref in sync with currentBandId state
   useEffect(() => {
@@ -543,6 +651,15 @@ const App: React.FC = () => {
     }
   };
 
+  // Persist sidebar collapsed state to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('sdb_sidebar_collapsed', String(sidebarCollapsed));
+    } catch {
+      // localStorage may be unavailable
+    }
+  }, [sidebarCollapsed]);
+
   // Context value for child routes - memoized to prevent unnecessary re-renders
   const contextValue = useMemo<AppContextValue>(
     () => ({
@@ -558,8 +675,23 @@ const App: React.FC = () => {
       session,
       currentBandId,
       isAdmin,
+      sidebarCollapsed,
+      setSidebarCollapsed,
+      mobileNavOpen,
+      setMobileNavOpen,
     }),
-    [songs, members, availableRoles, events, session, currentBandId, isAdmin, handleUpdateSong]
+    [
+      songs,
+      members,
+      availableRoles,
+      events,
+      session,
+      currentBandId,
+      isAdmin,
+      handleUpdateSong,
+      sidebarCollapsed,
+      mobileNavOpen,
+    ]
   );
 
   // Show loading screen while checking authentication
