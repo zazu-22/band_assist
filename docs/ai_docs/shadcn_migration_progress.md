@@ -1,7 +1,7 @@
 # shadcn/ui Migration Progress - Handoff Document
 
 **Date:** 2025-11-25
-**Status:** Phase 5.2 Complete - Layout System Implemented
+**Status:** Phase 5.3 Complete - UI Components Migrated
 **Approach:** Clean Architecture (full redesign for long-term maintainability)
 
 ---
@@ -75,35 +75,43 @@ This document tracks progress on migrating Band Assist to shadcn/ui with a compl
 - Mobile navigation uses Sheet primitive (better focus trap, animations)
 - Theme toggle added to sidebar footer
 
+### Phase 5.3: UI Components ✅
+
+**Files Modified:**
+- `src/components/ui/ConfirmDialog.tsx` - Migrated to use AlertDialog primitive
+  - Now uses AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogFooter, etc.
+  - Removed manual focus trap code (Radix handles it)
+  - Kept variant system (danger/warning/info) with semantic color classes
+  - Uses `cn()` utility for class merging
+- `src/components/ui/EmptyState.tsx` - Updated to use Card + Button primitives
+  - Wrapped content in Card with dashed border styling
+  - Action button now uses Button primitive with default variant
+  - Uses semantic theme colors (muted, foreground, muted-foreground)
+- `src/components/ui/Toast.tsx` - Updated to use CSS variables
+  - Background uses `var(--card)`, border uses `var(--border)`
+  - Color uses `var(--card-foreground)`
+  - Consistent with theme system
+
+**Files Created:**
+- `src/components/ui/StatusBadge.tsx` - Song status badge component
+  - Maps song status to Badge variants: Performance Ready → success, In Progress → info, To Learn → warning
+  - Type-safe with Song['status'] type
+- `src/components/ui/StatCard.tsx` - Dashboard statistic card component
+  - Uses Card primitive with CardContent
+  - Props: title, value, subtitle, icon, variant (default/success/info/warning)
+  - Variant-specific icon backgrounds and value colors
+- `src/components/ui/index.ts` - Updated barrel export
+  - Added exports for StatusBadge, StatCard
+  - Added exports for ThemeProvider, useTheme, ThemeToggle, VisuallyHidden
+
+**Testing Results:**
+- TypeScript compilation: PASS
+- Production build: PASS (588.96 kB bundle)
+- Dev server: PASS (starts on port 3000)
+
 ---
 
 ## Remaining Work
-
-### Phase 5.3: UI Components (Pending)
-
-Migrate existing custom components to use shadcn primitives:
-
-1. **ConfirmDialog** (`src/components/ui/ConfirmDialog.tsx`)
-   - Replace with AlertDialog primitive
-   - Keep variant system (danger/warning/info)
-   - Remove manual focus trap code (Radix handles it)
-
-2. **EmptyState** (`src/components/ui/EmptyState.tsx`)
-   - Wrap with Card primitive
-   - Update button to use Button primitive
-
-3. **Create StatusBadge** (new)
-   - Use Badge primitive with success/info/warning variants
-   - Map song status: Performance Ready → success, In Progress → info, To Learn → warning
-
-4. **Create StatCard** (new)
-   - Use Card primitive
-   - Props: title, value, subtitle, icon, variant
-
-5. **Update Toast** (`src/components/ui/Toast.tsx`)
-   - Update styles to use CSS variables
-
-6. **Update ui/index.ts barrel export**
 
 ### Phase 5.4: Feature Components - Dashboard (Pending)
 
@@ -203,7 +211,7 @@ npm run dev        # Start dev server on port 3000
 
 ## Known Issues
 
-1. **Pre-existing lint errors** in `PerformanceMode.tsx` and `PracticeRoom.tsx` (setState in useEffect) - unrelated to this migration
+1. **Pre-existing lint errors** in `PerformanceMode.tsx`, `PracticeRoom.tsx`, and `ResizablePanel.tsx` (refs in render, setState in useEffect) - unrelated to this migration
 
 2. **Old Navigation.tsx still exists** - Now uses `useSidebar()` but will eventually be replaced by `layout/Sidebar.tsx`
 
@@ -211,7 +219,7 @@ npm run dev        # Start dev server on port 3000
 
 ## Next Session Recommendations
 
-1. Start with Phase 5.3 - Migrate ConfirmDialog to AlertDialog
-2. Create StatusBadge and StatCard components
-3. Then proceed to Dashboard migration (Phase 5.4)
+1. Start with Phase 5.4 - Migrate Dashboard.tsx to use StatCard and StatusBadge
+2. Then migrate Settings.tsx to use Tabs, Input, Label, and Button primitives
+3. Apply consistent component usage to remaining pages
 4. Test the app thoroughly after each component migration

@@ -7,15 +7,15 @@ export function ToastProvider() {
       theme="dark"
       toastOptions={{
         style: {
-          background: '#18181b', // zinc-900
-          border: '1px solid #27272a', // zinc-800
-          color: '#fafafa', // zinc-50
+          background: 'var(--card)',
+          border: '1px solid var(--border)',
+          color: 'var(--card-foreground)',
         },
         classNames: {
-          success: 'border-green-800',
-          error: 'border-red-800',
-          warning: 'border-amber-800',
-          info: 'border-blue-800',
+          success: 'border-green-900',
+          error: 'border-destructive',
+          warning: 'border-amber-900',
+          info: 'border-blue-900',
         },
       }}
       closeButton
