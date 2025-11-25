@@ -56,10 +56,10 @@ interface AppContextValue {
   isAdmin: boolean;
   // Layout state for collapsible sidebar
   sidebarCollapsed: boolean;
-  setSidebarCollapsed: (collapsed: boolean) => void;
+  setSidebarCollapsed: React.Dispatch<React.SetStateAction<boolean>>;
   // Mobile drawer state
   mobileNavOpen: boolean;
-  setMobileNavOpen: (open: boolean) => void;
+  setMobileNavOpen: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 /**

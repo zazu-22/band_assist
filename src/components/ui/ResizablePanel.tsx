@@ -29,7 +29,12 @@ export const ResizablePanel: React.FC<ResizablePanelProps> = ({
     if (storageKey) {
       try {
         const saved = localStorage.getItem(`sdb_panel_${storageKey}`);
-        if (saved) return Math.max(minWidth, Math.min(maxWidth, parseInt(saved, 10)));
+        if (saved) {
+          const parsed = parseInt(saved, 10);
+          if (!isNaN(parsed)) {
+            return Math.max(minWidth, Math.min(maxWidth, parsed));
+          }
+        }
       } catch {
         // localStorage may be unavailable or quota exceeded
       }

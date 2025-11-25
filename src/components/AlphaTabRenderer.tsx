@@ -203,6 +203,7 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
   const lastScrollTimeRef = useRef<number>(0);
   const playbackRetryTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingPlaybackActionRef = useRef<PlaybackAction | null>(null);
+  const resizeTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const internalIsPlayingRef = useRef(internalIsPlaying);
   const lastExternalSyncRef = useRef<boolean | undefined>(undefined);
 
@@ -626,12 +627,12 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
   useEffect(() => {
     if (!apiRef.current || !rootRef.current) return;
 
-    let resizeTimeoutId: ReturnType<typeof setTimeout>;
-
     const resizeObserver = new ResizeObserver(() => {
       // Debounce resize events to avoid excessive re-renders
-      clearTimeout(resizeTimeoutId);
-      resizeTimeoutId = setTimeout(() => {
+      if (resizeTimeoutRef.current) {
+        clearTimeout(resizeTimeoutRef.current);
+      }
+      resizeTimeoutRef.current = setTimeout(() => {
         if (!apiRef.current) return;
 
         // Force AlphaTab to recalculate layout by re-rendering current track
@@ -649,7 +650,10 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
     resizeObserver.observe(rootRef.current);
 
     return () => {
-      clearTimeout(resizeTimeoutId);
+      if (resizeTimeoutRef.current) {
+        clearTimeout(resizeTimeoutRef.current);
+        resizeTimeoutRef.current = null;
+      }
       resizeObserver.disconnect();
     };
   }, [currentTrackIndex]);
