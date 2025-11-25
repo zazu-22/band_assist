@@ -100,8 +100,11 @@ This document tracks progress on migrating Band Assist to shadcn/ui with a compl
 **Files Created:**
 - `src/components/ui/StatusBadge.tsx` - Song status badge component
   - Maps song status to Badge variants: Performance Ready → success, In Progress → info, To Learn → warning
+  - STATUS_VARIANT_MAP as const satisfies Record<...> at module level
   - Type-safe with Song['status'] type
   - React.memo for performance optimization
+- `src/components/ui/ThemeToggle.tsx` - Minor accessibility cleanup
+  - Removed redundant title attribute (aria-label is sufficient for screen readers)
 - `src/components/ui/StatCard.tsx` - Dashboard statistic card component
   - Uses Card primitive with CardContent
   - Props: title, value (string | number), subtitle, icon, variant
