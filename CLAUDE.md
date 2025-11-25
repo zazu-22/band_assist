@@ -4,7 +4,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Band Assist (Sharp Dressed Band) is a React SPA for band management. It helps bands manage songs, charts, setlists, practice schedules, and member assignments. The app supports two storage backends: browser localStorage (offline-first) and Supabase (team collaboration with authentication).
+Band Assist (Sharp Dressed Band) is a React SPA for band management. It helps bands manage songs, charts, setlists, practice schedules, and member assignments. The app uses Supabase for data persistence and authentication.
 
 **Tech Stack:** React 19, TypeScript, Vite, Tailwind CSS 4, Supabase, AlphaTab (Guitar Pro rendering), Google Gemini AI
 
@@ -41,14 +41,14 @@ Create `.env.local` with the following variables:
 # Required for AI features
 GEMINI_API_KEY=your_api_key_here
 
-# Optional - for team/cloud features (Supabase)
+# Required - Supabase configuration
 VITE_SUPABASE_URL=your_supabase_url
 VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 ```
 
 The Vite config maps `GEMINI_API_KEY` to `process.env.API_KEY` and `process.env.GEMINI_API_KEY` for compatibility.
 
-**Mode Selection:** If Supabase env vars are set, the app uses Supabase for storage with authentication. Otherwise, it falls back to localStorage (no login required).
+**Note:** Supabase configuration is required. The app will throw an error on startup if `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` are not set.
 
 ## Architecture Overview
 
@@ -85,8 +85,8 @@ src/
 │   ├── migrationService.ts # Local to Supabase migration
 │   └── IStorageService.ts # Storage interface
 ├── types/
-│   ├── types.ts         # Core data types
 │   └── database.types.ts # Supabase schema types
+├── types.ts             # Core data types
 ├── hooks/
 │   └── useConfirmDialog.ts # Reusable confirm dialog hook
 ├── utils/
@@ -153,7 +153,7 @@ Access context with the `useAppContext()` hook. The context value is memoized wi
 
 **Route Components:** `SongDetailRoute` and `PracticeRoomRoute` extract URL params and connect to context.
 
-### Data Models (types/types.ts)
+### Data Models (types.ts)
 
 **`Song`** - Central entity:
 - Basic metadata: `title`, `artist`, `bpm`, `key`, `duration`, `status`
@@ -179,22 +179,22 @@ Access context with the `useAppContext()` hook. The context value is memoized wi
 
 ### Data Persistence
 
-**Storage Service Architecture:** Pluggable storage via `IStorageService` interface.
+**Storage Service Architecture:** Uses `IStorageService` interface implemented by Supabase backend.
 
-**`storageService.ts`** - Main facade that wraps either:
-- `localStorageService.ts` - Browser localStorage (offline, single user)
-- `supabaseStorageService.ts` - Supabase backend (cloud, multi-user, multi-band)
+**`storageService.ts`** - Main facade wrapping `supabaseStorageService.ts`. Throws error if Supabase is not configured.
+
+**Note:** `localStorageService.ts` exists for data export/import and migration purposes but is not used as a runtime storage backend.
 
 **API:**
-- `save(songs, members, roles, events)` - Persist all state
-- `load()` - Load state (includes legacy migration)
+- `save(songs, members, roles, events)` - Persist all state to Supabase
+- `load()` - Load state from Supabase (includes legacy migration)
 - `exportData()` - Download JSON backup
 - `importData(file)` - Restore from JSON
-- `setCurrentBand(bandId)` - Set band context (Supabase only)
+- `setCurrentBand(bandId)` - Set band context for multi-band queries
 
-**Storage Keys (localStorage):** All use `sdb_` prefix
+**Band Context Lifecycle:** `setCurrentBand()` is called in `App.tsx` after authentication succeeds and before loading band data. It must be set before any data operations to scope queries to the correct band.
 
-**Migration:** Both services auto-migrate legacy `tabContent`/`tabUrl` to `charts[]` array on load.
+**Migration:** Auto-migrates legacy `tabContent`/`tabUrl` to `charts[]` array on load.
 
 ### AI Integration (services/geminiService.ts)
 
@@ -239,7 +239,7 @@ Guitar Pro file renderer wrapping AlphaTab library:
 - Track muting/soloing
 - Position tracking with throttled updates
 
-**Note:** AlphaTab is loaded from CDN in `index.html`. The `@coderline/alphatab` package is also available.
+**Note:** AlphaTab is loaded from CDN (`@coderline/alphatab@latest`) in `index.html`. The `@coderline/alphatab` npm package is also installed for type definitions.
 
 ### Settings (components/Settings.tsx)
 
@@ -328,9 +328,9 @@ npm test
 The app is static and can be deployed to any static host (Vercel, Netlify, GitHub Pages, etc.).
 
 **Required environment variables:**
-- `GEMINI_API_KEY` - For AI features
-- `VITE_SUPABASE_URL` - For team features (optional)
-- `VITE_SUPABASE_ANON_KEY` - For team features (optional)
+- `VITE_SUPABASE_URL` - Supabase project URL
+- `VITE_SUPABASE_ANON_KEY` - Supabase anonymous key
+- `GEMINI_API_KEY` - For AI features (optional, AI features disabled without it)
 
 **Build output:** `npm run build` creates production files in `dist/`
 
@@ -338,9 +338,9 @@ The app is static and can be deployed to any static host (Vercel, Netlify, GitHu
 
 1. **AlphaTab Global:** `AlphaTabRenderer` expects `window.alphaTab` from CDN. Ensure the script loads before React renders.
 
-2. **localStorage Quota:** Large files can fill localStorage. Export backups regularly. Consider Supabase mode for larger datasets.
+2. **Supabase Required:** The app requires Supabase configuration. Without `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`, the app will fail to start.
 
-3. **Legacy Data Migration:** Both storage services auto-migrate `tabContent`/`tabUrl` to `charts[]`. Manual updates should target `charts`.
+3. **Legacy Data Migration:** The storage service auto-migrates legacy `tabContent`/`tabUrl` to `charts[]`. Manual updates should target `charts`.
 
 4. **Gemini API Key:** If missing, AI features fail silently with error messages. Always verify env setup.
 
