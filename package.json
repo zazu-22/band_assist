@@ -34,7 +34,7 @@
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^14.6.1",
     "@types/node": "^24.10.1",
-    "@types/react": "^19.2.6",
+    "@types/react": "^19.2.7",
     "@types/react-dom": "^19.2.3",
     "@typescript-eslint/eslint-plugin": "^6.21.0",
     "@typescript-eslint/parser": "^6.21.0",
@@ -46,8 +46,8 @@
     "jsdom": "^27.2.0",
     "prettier": "^3.2.5",
     "tailwindcss": "^4.1.17",
-    "typescript": "~5.8.2",
+    "typescript": "~5.9.3",
     "vite": "^6.2.0",
-    "vitest": "^4.0.12"
+    "vitest": "^4.0.13"
   }
 }
