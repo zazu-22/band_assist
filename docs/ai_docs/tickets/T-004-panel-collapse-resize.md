@@ -93,9 +93,9 @@ App.tsx (root state, context provider, route definitions)
 Add layout preferences to the context:
 
 ```typescript
-// Add to AppContextType interface
-interface AppContextType {
-  // ... existing fields
+// Add to AppContextValue interface (defined in App.tsx around line 42)
+interface AppContextValue {
+  // ... existing fields (songs, members, events, availableRoles, etc.)
   sidebarCollapsed: boolean;
   setSidebarCollapsed: (collapsed: boolean) => void;
 }
@@ -151,36 +151,59 @@ const contextValue = useMemo(() => ({
 Add collapse toggle button and transition animations:
 
 ```typescript
+// Add to existing imports in Navigation.tsx
+import { ChevronLeft, ChevronRight } from 'lucide-react';
 import { useAppContext } from '../App';
-import { ChevronLeft, ChevronRight, Menu, Music } from 'lucide-react';
-import { useNavigate } from 'react-router-dom';
-// ViewState is defined in types.ts - represents valid navigation views
-import { ViewState } from '../types';
 
-interface NavigationProps {
-  currentView: ViewState; // ViewState from types.ts (e.g., 'songs' | 'setlist' | 'practice' | etc.)
-}
+// Existing NavigationProps interface remains unchanged:
+// interface NavigationProps {
+//   onLogout?: () => void;
+//   showLogout?: boolean;
+//   currentBandName?: string;
+//   userBands?: Array<{ id: string; name: string }>;
+//   onSelectBand?: (bandId: string) => void;
+// }
 
-export const Navigation: React.FC<NavigationProps> = ({ currentView }) => {
+// Update the Navigation component to access sidebar state from context:
+export const Navigation: React.FC<NavigationProps> = ({
+  onLogout,
+  showLogout = false,
+  currentBandName,
+  userBands = [],
+  onSelectBand,
+}) => {
+  // NEW: Access sidebar state from context
   const { sidebarCollapsed, setSidebarCollapsed } = useAppContext();
+
+  // Existing hooks (already present in Navigation.tsx)
   const navigate = useNavigate();
+  const location = useLocation();
+
+  // Existing isActive function uses route matching (already present)
+  const isActive = (path: string): boolean => matchRoute(location.pathname, path);
 
   return (
-    <nav className={`
-      sticky top-0 h-screen bg-zinc-900 text-zinc-100 flex flex-col
+    <div className={`
+      bg-zinc-900 border-r border-zinc-800 flex flex-col h-screen sticky top-0
       transition-all duration-300 ease-in-out
       ${sidebarCollapsed ? 'w-16' : 'w-20 lg:w-64'}
     `}>
       {/* Header with collapse toggle */}
-      <div className="h-16 flex items-center justify-between px-3 border-b border-zinc-800">
+      <div className="p-6 flex items-center justify-between">
         {!sidebarCollapsed && (
-          <div className="hidden lg:flex items-center gap-2 overflow-hidden">
-            <Music className="text-amber-500 shrink-0" size={24} />
-            <span className="font-bold text-sm truncate">SHARP DRESSED</span>
+          <div className="hidden lg:flex items-center gap-3">
+            <div className="w-10 h-10 bg-amber-600 rounded-lg flex items-center justify-center">
+              <Music className="text-white w-6 h-6" />
+            </div>
+            <h1 className="text-xl font-bold tracking-tighter text-zinc-100">
+              BAND<br /><span className="text-amber-600">ASSIST</span>
+            </h1>
           </div>
         )}
         {sidebarCollapsed && (
-          <Music className="text-amber-500 mx-auto" size={24} />
+          <div className="w-10 h-10 bg-amber-600 rounded-lg flex items-center justify-center mx-auto">
+            <Music className="text-white w-6 h-6" />
+          </div>
         )}
 
         {/* Collapse toggle - visible on lg screens */}
@@ -188,59 +211,73 @@ export const Navigation: React.FC<NavigationProps> = ({ currentView }) => {
           onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
           className="hidden lg:flex p-2 hover:bg-zinc-800 rounded-lg transition-colors"
           title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+          aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
         >
           {sidebarCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
         </button>
       </div>
 
-      {/* Nav items - center icons when collapsed */}
-      <div className="flex-1 overflow-y-auto py-2">
-        {mainNavItems.map((item) => (
-          <button
-            key={item.view}
-            onClick={() => navigate(viewToPath[item.view])}
-            className={`
-              w-full flex items-center gap-3 px-4 py-3
-              hover:bg-zinc-800 transition-colors
-              ${sidebarCollapsed ? 'justify-center px-2' : ''}
-              ${isActive(item.view) ? 'bg-zinc-800 border-l-4 border-amber-500' : ''}
-            `}
-            title={item.label}
-          >
-            {item.icon}
-            {!sidebarCollapsed && (
-              <span className="hidden lg:block text-sm font-medium truncate">
-                {item.label}
-              </span>
-            )}
-          </button>
-        ))}
-      </div>
-    </nav>
+      {/* Nav items - existing NAV_ITEMS loop with collapse support */}
+      <nav className="flex-1 px-3 py-6 space-y-2" aria-label="Main navigation">
+        {NAV_ITEMS.map(item => {
+          const Icon = iconMap[item.id] ?? LayoutDashboard;
+          const active = isActive(item.path);
+          return (
+            <button
+              key={item.id}
+              onClick={() => navigate(item.path)}
+              className={`
+                w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200
+                ${sidebarCollapsed ? 'justify-center' : ''}
+                ${active ? 'bg-zinc-800 text-amber-500' : 'text-zinc-400 hover:bg-zinc-800/50'}
+              `}
+              title={item.label}
+              aria-label={item.label}
+              aria-current={active ? 'page' : undefined}
+            >
+              <Icon className={`w-6 h-6 ${active ? 'stroke-amber-500' : ''}`} />
+              {!sidebarCollapsed && (
+                <span className="hidden lg:block font-medium">{item.label}</span>
+              )}
+            </button>
+          );
+        })}
+      </nav>
+
+      {/* ... rest of existing Navigation (settings, logout buttons) */}
+    </div>
   );
 };
 ```
 
 #### 1.3 Update AppLayout
 
-**File**: `App.tsx` (AppLayout component)
+**File**: `App.tsx` (AppLayout component is defined around line 129)
 
-Ensure layout responds to sidebar state:
+The existing AppLayout passes props to Navigation. Update it to respond to sidebar state:
 
 ```typescript
-const AppLayout: React.FC = () => {
-  const location = useLocation();
-  const { sidebarCollapsed } = useAppContext();
+// AppLayout is defined in App.tsx (around line 129) and used as a layout route
+// Current signature: AppLayout({ onLogout, showLogout, currentBandName, userBands, onSelectBand })
 
-  // ... currentView detection logic
-
+const AppLayout: React.FC<{
+  onLogout: () => void;
+  showLogout: boolean;
+  currentBandName: string;
+  userBands: Array<{ id: string; name: string }>;
+  onSelectBand: (bandId: string) => void;
+}> = ({ onLogout, showLogout, currentBandName, userBands, onSelectBand }) => {
+  // Navigation accesses sidebarCollapsed from context internally
   return (
     <div className="flex min-h-screen bg-zinc-950 font-sans text-zinc-100">
-      <Navigation currentView={currentView} />
-      <main className={`
-        flex-1 h-screen overflow-y-auto
-        transition-all duration-300 ease-in-out
-      `}>
+      <Navigation
+        onLogout={onLogout}
+        showLogout={showLogout}
+        currentBandName={currentBandName}
+        userBands={userBands}
+        onSelectBand={onSelectBand}
+      />
+      <main className="flex-1 h-screen overflow-y-auto transition-all duration-300 ease-in-out">
         <Outlet />
       </main>
     </div>
@@ -255,36 +292,75 @@ const AppLayout: React.FC = () => {
 **File**: `App.tsx`
 
 ```typescript
-// Add to context
-interface AppContextType {
-  // ... existing
+// Add to AppContextValue interface (in App.tsx)
+interface AppContextValue {
+  // ... existing fields
   mobileNavOpen: boolean;
   setMobileNavOpen: (open: boolean) => void;
 }
 
-// In App component
+// In App component, add state:
 const [mobileNavOpen, setMobileNavOpen] = useState(false);
+
+// Add to context value useMemo (no need to add setMobileNavOpen to deps - it's stable)
 ```
 
-#### 2.2 Create Drawer Overlay
+#### 2.2 Create Drawer Overlay with Focus Management
 
 **File**: `App.tsx` (AppLayout component)
 
 ```typescript
-import { Menu } from 'lucide-react';
+import { Menu, X } from 'lucide-react';
+import { useRef, useEffect } from 'react';
 
-const AppLayout: React.FC = () => {
+// Update AppLayout to handle mobile drawer with proper focus management
+const AppLayout: React.FC<AppLayoutProps> = ({
+  onLogout,
+  showLogout,
+  currentBandName,
+  userBands,
+  onSelectBand,
+}) => {
   const { mobileNavOpen, setMobileNavOpen } = useAppContext();
   const location = useLocation();
+
+  // Refs for focus management
+  const menuButtonRef = useRef<HTMLButtonElement>(null);
+  const closeButtonRef = useRef<HTMLButtonElement>(null);
 
   // Close drawer on route change
   useEffect(() => {
     setMobileNavOpen(false);
   }, [location.pathname, setMobileNavOpen]);
 
+  // Focus management: focus close button when drawer opens, return focus when closed
+  useEffect(() => {
+    if (mobileNavOpen) {
+      // Focus the close button when drawer opens
+      closeButtonRef.current?.focus();
+    } else {
+      // Return focus to menu button when drawer closes
+      menuButtonRef.current?.focus();
+    }
+  }, [mobileNavOpen]);
+
+  // Handle Escape key to close drawer
+  useEffect(() => {
+    if (!mobileNavOpen) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setMobileNavOpen(false);
+      }
+    };
+
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, [mobileNavOpen, setMobileNavOpen]);
+
   return (
     <div className="flex min-h-screen bg-zinc-950 font-sans text-zinc-100">
-      {/* Mobile overlay */}
+      {/* Mobile overlay - clicking closes drawer */}
       {mobileNavOpen && (
         <div
           className="fixed inset-0 bg-black/60 z-40 lg:hidden"
@@ -294,20 +370,45 @@ const AppLayout: React.FC = () => {
       )}
 
       {/* Sidebar - drawer on mobile, static on desktop */}
-      <div className={`
-        lg:relative lg:translate-x-0
-        fixed top-0 left-0 h-full z-50
-        transform transition-transform duration-300 ease-in-out motion-reduce:transition-none
-        ${mobileNavOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
-      `}>
-        <Navigation currentView={currentView} />
+      <div
+        className={`
+          lg:relative lg:translate-x-0
+          fixed top-0 left-0 h-full z-50
+          transform transition-transform duration-300 ease-in-out motion-reduce:transition-none
+          ${mobileNavOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
+        `}
+        role="dialog"
+        aria-modal={mobileNavOpen ? 'true' : undefined}
+        aria-label="Navigation menu"
+      >
+        {/* Close button inside drawer (mobile only) */}
+        {mobileNavOpen && (
+          <button
+            ref={closeButtonRef}
+            onClick={() => setMobileNavOpen(false)}
+            className="absolute top-4 right-4 p-2 text-zinc-400 hover:text-zinc-100 lg:hidden"
+            aria-label="Close navigation menu"
+          >
+            <X size={24} />
+          </button>
+        )}
+        <Navigation
+          onLogout={onLogout}
+          showLogout={showLogout}
+          currentBandName={currentBandName}
+          userBands={userBands}
+          onSelectBand={onSelectBand}
+        />
       </div>
 
       {/* Mobile menu button */}
       <button
+        ref={menuButtonRef}
         onClick={() => setMobileNavOpen(true)}
         className="fixed top-4 left-4 z-30 p-2 bg-zinc-900 rounded-lg shadow-lg lg:hidden"
         aria-label="Open navigation menu"
+        aria-expanded={mobileNavOpen}
+        aria-controls="mobile-nav"
       >
         <Menu size={24} />
       </button>
@@ -506,12 +607,25 @@ export const ResizablePanel: React.FC<ResizablePanelProps> = ({
         onKeyDown={(e) => {
           // Keyboard resize support (Arrow keys)
           const step = e.shiftKey ? 50 : 10;
+          let newWidth: number | null = null;
+
           if (e.key === 'ArrowLeft') {
             e.preventDefault();
-            setWidth((w) => Math.max(minWidth, w - step));
+            newWidth = Math.max(minWidth, widthRef.current - step);
+            setWidth(newWidth);
           } else if (e.key === 'ArrowRight') {
             e.preventDefault();
-            setWidth((w) => Math.min(maxWidth, w + step));
+            newWidth = Math.min(maxWidth, widthRef.current + step);
+            setWidth(newWidth);
+          }
+
+          // Persist keyboard resize to localStorage
+          if (newWidth !== null && storageKey) {
+            try {
+              localStorage.setItem(`sdb_panel_${storageKey}`, String(newWidth));
+            } catch {
+              // localStorage may be unavailable or quota exceeded
+            }
           }
         }}
       >
@@ -534,10 +648,11 @@ export const ResizablePanel: React.FC<ResizablePanelProps> = ({
 **File**: `hooks/useBreakpoint.ts`
 
 ```typescript
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 
 export type Breakpoint = 'sm' | 'md' | 'lg' | 'xl' | '2xl';
 
+// Tailwind CSS default breakpoints
 const BREAKPOINTS = {
   sm: 640,
   md: 768,
@@ -559,13 +674,17 @@ const getBreakpoint = (): Breakpoint => {
 };
 
 export const useBreakpoint = (): Breakpoint => {
-  // Lazy initialization to avoid layout flash
+  // Lazy initialization using function form to get actual value on first render
+  // This avoids layout flash that would occur with a hardcoded default
   const [breakpoint, setBreakpoint] = useState<Breakpoint>(getBreakpoint);
 
   useEffect(() => {
     let timeoutId: ReturnType<typeof setTimeout>;
 
-    // Debounced resize handler (~150ms) to avoid excessive updates
+    // Debounced resize handler to avoid excessive re-renders during window resize.
+    // 150ms delay balances responsiveness with performance - fast enough to feel
+    // responsive but slow enough to batch rapid resize events (e.g., during
+    // window drag resizing which can fire 60+ events per second).
     const handleResize = () => {
       clearTimeout(timeoutId);
       timeoutId = setTimeout(() => {
@@ -749,6 +868,17 @@ The implementation includes the following accessibility features:
 - [ ] Firefox (latest)
 - [ ] Safari (important for iPad users)
 - [ ] Edge (latest)
+
+### Edge Case Testing
+
+- [ ] localStorage disabled/unavailable (private browsing mode)
+- [ ] localStorage quota exceeded
+- [ ] Very rapid resize events (stress test debouncing)
+- [ ] Window resize during active panel drag
+- [ ] Multi-monitor setups with different DPIs
+- [ ] Browser zoom levels (50% - 200%)
+- [ ] Keyboard resize at min/max boundaries
+- [ ] Touch and mouse interaction on hybrid devices
 
 ## Files to Create
 
