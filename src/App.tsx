@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo, useCallback, memo } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
 import { Routes, Route, Navigate, useNavigate, useParams, useLocation, Outlet } from 'react-router-dom';
 import { toast, LoadingScreen } from './components/ui';
 import { Session } from '@supabase/supabase-js';
@@ -65,7 +65,7 @@ export const useAppContext = (): AppContextValue => {
  * Extracts songId from URL params and connects to AppContext.
  * Handles missing songs with toast notification and redirect.
  */
-const SongDetailRoute: React.FC = memo(() => {
+const SongDetailRoute: React.FC = () => {
   const { songId } = useParams<{ songId: string }>();
   const navigate = useNavigate();
   const { songs, members, availableRoles, handleUpdateSong } = useAppContext();
@@ -93,14 +93,13 @@ const SongDetailRoute: React.FC = memo(() => {
       onUpdateSong={handleUpdateSong}
     />
   );
-});
-SongDetailRoute.displayName = 'SongDetailRoute';
+};
 
 /**
  * Route wrapper component for PracticeRoom.
  * Provides song navigation callback using route constants.
  */
-const PracticeRoomRoute: React.FC = memo(() => {
+const PracticeRoomRoute: React.FC = () => {
   const navigate = useNavigate();
   const { songs } = useAppContext();
 
@@ -110,8 +109,7 @@ const PracticeRoomRoute: React.FC = memo(() => {
       onNavigateToSong={(id) => navigate(getSongDetailRoute(id))}
     />
   );
-});
-PracticeRoomRoute.displayName = 'PracticeRoomRoute';
+};
 
 /**
  * Layout wrapper for authenticated routes with navigation sidebar.

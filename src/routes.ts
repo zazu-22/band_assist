@@ -42,13 +42,6 @@ export const ROUTES = {
 export const getSongDetailRoute = (songId: string): string => `${ROUTES.SONG_DETAIL}/${songId}`;
 
 /**
- * Helper to build song practice route
- * @param songId - The song ID
- * @returns The full route path for practicing a specific song
- */
-export const getSongPracticeRoute = (songId: string): string => `${ROUTES.SONG_DETAIL}/${songId}/practice`;
-
-/**
  * Navigation items configuration for the sidebar.
  * Maps route identifiers to their display properties.
  */
@@ -71,5 +64,8 @@ export const matchRoute = (pathname: string, route: string): boolean => {
   if (route === '/') {
     return pathname === '/';
   }
-  return pathname === route || pathname.startsWith(`${route}/`);
+  // Exact match
+  if (pathname === route) return true;
+  // Prefix match with slash boundary
+  return pathname.startsWith(`${route}/`);
 };
