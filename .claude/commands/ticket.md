@@ -1,281 +1,125 @@
-# Execute Band Assist Ticket: $ARGUMENTS
+# Execute Task: $ARGUMENTS
 
-You are working on implementing features and fixes for the **Band Assist** project, a browser-based React SPA for band management.
+Execute the task specified in **$ARGUMENTS**, which may be a ticket, implementation project, or other documented work item.
 
-## Your Task
+## Step 1: Locate and Read the Task Document
 
-Execute ticket **$ARGUMENTS** following the implementation plan documented in the ticket file.
+Find the task document matching `$ARGUMENTS`:
 
-## Key Documentation
+```text
+docs/ai_docs/$ARGUMENTS*.md
+```
 
-**Read these files in order**:
+If no exact match is found, search for partial matches or ask the user for clarification.
 
-1. **Ticket file** (your primary instructions):
+**Read the document completely** to understand:
 
-   ```text
-   docs/ai_docs/$ARGUMENTS*.md
-   ```
+- The goal or objective
+- Current state (if applicable)
+- Implementation steps or instructions
+- Testing requirements (if specified)
+- Any dependencies or prerequisites
 
-2. **Project documentation** (for architectural context):
+## Step 2: Gather Context
 
-   ```text
-   CLAUDE.md
-   ```
+1. **Read `CLAUDE.md`** for architectural patterns, code conventions, and project-specific guidance
+2. **Read files mentioned** in the task document (e.g., "Files to Modify", "Current State", or referenced components)
+3. **Explore related code** if the task document references areas you need to understand
 
-3. **Related component files** (identified in the ticket's "Files to Modify" or "Current State" sections)
+The task document should contain implementation-specific details. CLAUDE.md contains project-wide patterns and conventions.
 
-## Execution Guidelines
+## Step 3: Execute the Task
 
-### Before You Start
+Follow the task document's instructions. General workflow:
 
-- [ ] Read the ticket file completely
-- [ ] Understand the current state and technical context
-- [ ] Review the implementation plan steps
-- [ ] Identify all files that will be modified
-- [ ] Check the ticket's dependencies (if any prerequisite work is mentioned)
+1. Review existing code before modifying it
+2. Follow implementation steps sequentially (if provided)
+3. Make incremental changes
+4. Test as you go
+5. Verify behavior matches expectations
 
-### Implementation Steps
+**If the task lacks detailed steps**: Use your judgment based on the stated goal and CLAUDE.md guidance. Ask the user if you're uncertain about approach.
 
-Follow the ticket's **Implementation Plan** section exactly. Typical workflow:
+## Step 4: Testing
 
-1. Review the current implementation (if modifying existing code)
-2. Follow each step in the plan sequentially
-3. Make incremental changes following the step-by-step instructions
-4. Test each change before moving to the next step
-5. Verify the implementation matches the expected behavior
+Complete any testing specified in the task document. General verification:
 
-### Testing Requirements
+- [ ] Implementation meets the stated objective
+- [ ] No console errors or warnings introduced
+- [ ] Existing functionality still works (no regressions)
+- [ ] Code follows project conventions (see CLAUDE.md)
 
-**Minimum tests** (from ticket's Testing Plan section):
+## Step 5: Update the Task Document
 
-- [ ] All items in the ticket's testing checklist pass
-- [ ] Visual inspection confirms expected UI/UX changes
-- [ ] No console errors or warnings
-- [ ] Cross-browser compatibility (if applicable)
-- [ ] Performance is acceptable (no lag or degradation)
+After completing the work, update the task document:
 
-**Component-specific testing**:
-
-- For AlphaTab changes: Test in Practice Room, Song Detail, and Performance Mode
-- For state changes: Verify localStorage persistence and data integrity
-- For UI changes: Test responsive behavior at different screen sizes
-- For AI features: Test with and without API key configured
-
-## After Completion
-
-### 1. Update Ticket Status
-
-**File**: `docs/ai_docs/$ARGUMENTS*.md` (the ticket you just completed)
-
-**Step 1**: Verify all implementation tasks are complete
-
-Review the Implementation Plan checklist and ensure every step was executed successfully.
-
-**Step 2**: Update ticket metadata
-
-Change the Status field at the top of the file:
+**Update status** (if a status field exists):
 
 ```markdown
 **Status**: COMPLETE
 ```
 
-If partially complete or blocked:
+Or if partially complete:
 
 ```markdown
 **Status**: IN PROGRESS
 ```
 
-or
-
-```markdown
-**Status**: BLOCKED - <reason>
-```
-
-**Step 3**: Add completion notes
-
-If the ticket doesn't have a **Completion Notes** or **Implementation Notes** section at the end, add one:
+**Add completion notes** (if not already present):
 
 ```markdown
 ## Completion Notes
 
-**Implemented**: YYYY-MM-DD
-**Testing Results**: <summary of test results>
+**Date**: YYYY-MM-DD
+
 **Changes Made**:
+- <file_path>:<line_range> - <description>
 
-- <file_path>:<line_range> - <description of changes>
-- <file_path>:<line_range> - <description of changes>
-
-**Verification**:
-
-- All testing checklist items pass
-- No console errors
-- <any specific metrics or measurements>
+**Testing Results**:
+- <summary of verification>
 
 **Notes**:
-
-- <any notable findings, deviations from plan, or future considerations>
+- <any deviations, findings, or follow-up considerations>
 ```
 
-### 2. Document Results
+## Step 6: Commit Changes
 
-**In your final response to the user**, provide:
-
-1. **Summary**: What was implemented (feature/fix description)
-2. **Files Modified**: List of changed files with line number references
-3. **Testing**: Summary of test results showing success
-4. **Visual Changes**: Screenshots or descriptions of UI/UX changes (if applicable)
-5. **Next Steps**: Recommendations for related work or follow-up tickets
-
-### 3. Commit Changes
-
-Create a commit with this format:
+Create a commit using conventional commit format:
 
 ```text
-<type>(<scope>): <ticket-id> - <short description>
+<type>(<scope>): <short description>
 
 <detailed description of changes>
 
 Testing:
 - <test category>: PASS
-- <test category>: PASS
 
-Implements: docs/ai_docs/$ARGUMENTS*.md
+Implements: docs/ai_docs/<task-file>.md
 ```
 
-**Commit type options**:
+**Types**: `feat`, `fix`, `style`, `refactor`, `perf`, `docs`, `test`, `chore`
 
-- `feat`: New feature or enhancement
-- `fix`: Bug fix
-- `style`: Visual/CSS changes
-- `refactor`: Code restructuring without behavior change
-- `perf`: Performance improvement
-- `docs`: Documentation only
-- `test`: Test additions or modifications
+**Scope**: Use a relevant area of the codebase (e.g., component name, feature area)
 
-**Scope options**:
+## Step 7: Report Results
 
-- `alphatab`: AlphaTab player/renderer
-- `ui`: General UI components
-- `state`: State management
-- `ai`: Gemini AI integration
-- `storage`: Data persistence
-- `perf`: Performance mode
-- `practice`: Practice room
+Provide the user with:
 
-**Example commit**:
-
-```text
-feat(alphatab): T-001 - Add transport controls and visual feedback
-
-- Implement stop button with api.stop()
-- Add progress bar with click-to-seek functionality
-- Add section loop with Shift+Click selection
-- Add visual metronome with beat indicators
-- Register playerPositionChanged, playerFinished, beatMouseDown events
-- Add CSS styling for cursor highlighting and loop selection
-
-Testing:
-- Transport controls: PASS
-- Visual feedback: PASS
-- Event handlers: PASS
-- Integration (Practice Room, Song Detail, Performance Mode): PASS
-
-Implements: docs/ai_docs/T-001-alphatab-player-enhancements.md
-```
-
-## Important Notes
-
-- **Do not skip testing** — Each ticket has specific verification steps that must be completed
-- **Follow the plan exactly** — The implementation plan is detailed for a reason; don't deviate without good cause
-- **Check for side effects** — Changes to shared components (AlphaTabRenderer, App.tsx) affect multiple views
-- **Verify localStorage** — Many changes persist data; test save/load cycles
-- **Ask questions** — If the ticket is unclear, has missing information, or you encounter blockers, ask the user before proceeding
-- **Maintain code style** — Follow existing patterns in the codebase (see CLAUDE.md)
-- **Update documentation** — If the change affects CLAUDE.md or other docs, update them
-
-## Common Patterns in Band Assist
-
-### State Updates
-
-Always use callback props from App.tsx:
-
-- `onUpdateSong(updatedSong)` - For song modifications
-- `setSongs(newSongs)` - For bulk song operations
-- `setMembers(newMembers)` - For band roster updates
-- Never mutate state directly; always create new objects/arrays
-
-### File Uploads
-
-All files are converted to Base64 data URIs:
-
-```typescript
-const dataUri = `data:${mimeType};base64,${base64String}`;
-```
-
-### AlphaTab API Usage
-
-Always check for API availability:
-
-```typescript
-if (apiRef.current) {
-  apiRef.current.methodName();
-}
-```
-
-Always check if mounted in event handlers:
-
-```typescript
-api.eventName.on((e: any) => {
-  if (!isMounted) return;
-  // Handle event
-});
-```
-
-### Component Props
-
-Read-only mode pattern for viewers:
-
-```typescript
-readOnly?: boolean;  // Disables interactive features
-```
-
-### Error Handling
-
-Check for API key in AI features:
-
-```typescript
-if (!process.env.API_KEY) {
-  return 'Error: API key not configured';
-}
-```
-
-## Debugging Tips
-
-If something doesn't work:
-
-1. **Check browser console** - AlphaTab logs with `[AlphaTab]` prefix
-2. **Verify AlphaTab loaded** - Check `window.alphaTab` is defined
-3. **Check localStorage quota** - Large files can exceed limits
-4. **Test in isolation** - Use Practice Room for player testing
-5. **Check event handlers** - Add console.logs to verify events fire
-6. **Verify file format** - Ensure Base64 data URIs are properly formatted
-
-## Known Project Limitations
-
-- AlphaTab loads from CDN (external dependency)
-- localStorage has size limits (~5-10MB depending on browser)
-- Large files (audio, PDFs, GP files) can cause quota issues
-- AI features require GEMINI_API_KEY environment variable
-- No backend - all data is client-side
-
-## Resources
-
-- **AlphaTab Documentation**: https://alphatab.net/docs
-- **React 19 Docs**: https://react.dev
-- **Tailwind CSS**: https://tailwindcss.com
-- **Lucide Icons**: https://lucide.dev/icons
-- **TypeScript Handbook**: https://www.typescriptlang.org/docs
+1. **Summary**: What was accomplished
+2. **Files Modified**: List with line number references
+3. **Testing**: Verification summary
+4. **Next Steps**: Follow-up work or recommendations (if any)
 
 ---
 
-**Ready to implement ticket $ARGUMENTS!**
+## Guidelines
+
+- **Follow the task document** — It contains the specific instructions for this work
+- **Consult CLAUDE.md** — For project patterns, conventions, and architectural guidance
+- **Ask questions** — If the task is unclear or you encounter blockers
+- **Update documentation** — If changes affect CLAUDE.md or other docs
+- **Don't skip testing** — Verify your changes work as expected
+
+---
+
+**Ready to execute: $ARGUMENTS**
