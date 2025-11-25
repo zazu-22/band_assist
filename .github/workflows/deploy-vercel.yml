@@ -62,7 +62,7 @@ jobs:
 
       - name: Comment PR with deployment URL
         if: github.event_name == 'pull_request'
-        uses: actions/github-script@v6
+        uses: actions/github-script@v8
         with:
           script: |
             const deploymentUrl = '${{ steps.deploy.outputs.url }}';
