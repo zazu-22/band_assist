@@ -115,19 +115,32 @@ useEffect(() => {
 }, [sidebarCollapsed]);
 
 // Add to context value (inside useMemo)
-// Note: setSidebarCollapsed is stable (from useState) so it doesn't need to be in deps
+// Note: State setters from useState are stable and don't need to be in deps
 const contextValue = useMemo(() => ({
-  // ... existing fields (songs, members, events, etc.)
-  sidebarCollapsed,
-  setSidebarCollapsed,
-}), [
+  // Existing data fields
   songs,
   members,
   events,
   availableRoles,
-  // ... other existing dependencies
+  // Existing callbacks (stable references from useState)
+  setSongs,
+  setMembers,
+  setEvents,
+  setAvailableRoles,
+  onUpdateSong,
+  // New layout state
   sidebarCollapsed,
-  // setSidebarCollapsed is stable, no need to include
+  setSidebarCollapsed,
+}), [
+  // All data values that trigger re-renders when changed
+  songs,
+  members,
+  events,
+  availableRoles,
+  sidebarCollapsed,
+  // Note: onUpdateSong should be wrapped in useCallback if not already
+  onUpdateSong,
+  // State setters (setSongs, setMembers, etc.) are stable - no need to include
 ]);
 ```
 
@@ -139,12 +152,13 @@ Add collapse toggle button and transition animations:
 
 ```typescript
 import { useAppContext } from '../App';
-import { ChevronLeft, ChevronRight, Music } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Menu, Music } from 'lucide-react';
 import { useNavigate } from 'react-router-dom';
+// ViewState is defined in types.ts - represents valid navigation views
 import { ViewState } from '../types';
 
 interface NavigationProps {
-  currentView: ViewState;
+  currentView: ViewState; // ViewState from types.ts (e.g., 'songs' | 'setlist' | 'practice' | etc.)
 }
 
 export const Navigation: React.FC<NavigationProps> = ({ currentView }) => {
@@ -313,7 +327,7 @@ const AppLayout: React.FC = () => {
 **File**: `components/ui/ResizablePanel.tsx`
 
 ```typescript
-import React, { useRef, useState, useEffect } from 'react';
+import React, { useRef, useState, useEffect, useCallback } from 'react';
 import { GripVertical } from 'lucide-react';
 
 interface ResizablePanelProps {
@@ -335,6 +349,7 @@ export const ResizablePanel: React.FC<ResizablePanelProps> = ({
   side = 'left',
   className = '',
 }) => {
+  // === State ===
   const [width, setWidth] = useState(() => {
     if (storageKey) {
       try {
@@ -348,59 +363,118 @@ export const ResizablePanel: React.FC<ResizablePanelProps> = ({
   });
 
   const [isResizing, setIsResizing] = useState(false);
+
+  // === Refs ===
   const panelRef = useRef<HTMLDivElement>(null);
 
   // Track initial position and width for accurate delta calculation
-  const dragStartRef = useRef<{ mouseX: number; width: number } | null>(null);
+  const dragStartRef = useRef<{ startX: number; startWidth: number } | null>(null);
 
   // Use refs to avoid stale closures in event handlers
+  // These refs keep current values accessible in event listeners without re-registering
   const widthRef = useRef(width);
   widthRef.current = width;
 
+  const minWidthRef = useRef(minWidth);
+  minWidthRef.current = minWidth;
+
+  const maxWidthRef = useRef(maxWidth);
+  maxWidthRef.current = maxWidth;
+
+  const sideRef = useRef(side);
+  sideRef.current = side;
+
+  // === Event Handlers (defined before useEffect for clarity) ===
+
+  // Start resize - works for both mouse and touch
+  const handleDragStart = useCallback((clientX: number) => {
+    dragStartRef.current = { startX: clientX, startWidth: widthRef.current };
+    setIsResizing(true);
+  }, []);
+
+  // Handle resize movement - works for both mouse and touch
+  const handleDragMove = useCallback((clientX: number) => {
+    if (!dragStartRef.current) return;
+
+    const delta = sideRef.current === 'left'
+      ? clientX - dragStartRef.current.startX
+      : dragStartRef.current.startX - clientX;
+
+    const newWidth = dragStartRef.current.startWidth + delta;
+    setWidth(Math.max(minWidthRef.current, Math.min(maxWidthRef.current, newWidth)));
+  }, []);
+
+  // End resize - persist to localStorage
+  const handleDragEnd = useCallback(() => {
+    setIsResizing(false);
+    dragStartRef.current = null;
+
+    if (storageKey) {
+      try {
+        localStorage.setItem(`sdb_panel_${storageKey}`, String(widthRef.current));
+      } catch {
+        // localStorage may be unavailable or quota exceeded
+      }
+    }
+  }, [storageKey]);
+
+  // Mouse event handlers
+  const handleMouseDown = useCallback((e: React.MouseEvent) => {
+    e.preventDefault();
+    handleDragStart(e.clientX);
+  }, [handleDragStart]);
+
+  // Touch event handlers (for tablets/iPads)
+  const handleTouchStart = useCallback((e: React.TouchEvent) => {
+    if (e.touches.length === 1) {
+      handleDragStart(e.touches[0].clientX);
+    }
+  }, [handleDragStart]);
+
+  // === Effects ===
+
+  // Global event listeners for drag (active only while resizing)
   useEffect(() => {
     if (!isResizing) return;
 
-    const handleMouseMove = (e: MouseEvent) => {
-      if (!dragStartRef.current) return;
+    // Mouse events
+    const onMouseMove = (e: MouseEvent) => handleDragMove(e.clientX);
+    const onMouseUp = () => handleDragEnd();
 
-      const delta = side === 'left'
-        ? e.clientX - dragStartRef.current.mouseX
-        : dragStartRef.current.mouseX - e.clientX;
-
-      const newWidth = dragStartRef.current.width + delta;
-      setWidth(Math.max(minWidth, Math.min(maxWidth, newWidth)));
-    };
-
-    const handleMouseUp = () => {
-      setIsResizing(false);
-      dragStartRef.current = null;
-
-      if (storageKey) {
-        try {
-          localStorage.setItem(`sdb_panel_${storageKey}`, String(widthRef.current));
-        } catch {
-          // localStorage may be unavailable or quota exceeded
-        }
+    // Touch events
+    const onTouchMove = (e: TouchEvent) => {
+      if (e.touches.length === 1) {
+        handleDragMove(e.touches[0].clientX);
       }
     };
+    const onTouchEnd = () => handleDragEnd();
 
-    document.addEventListener('mousemove', handleMouseMove);
-    document.addEventListener('mouseup', handleMouseUp);
+    // Register listeners
+    document.addEventListener('mousemove', onMouseMove);
+    document.addEventListener('mouseup', onMouseUp);
+    document.addEventListener('touchmove', onTouchMove, { passive: true });
+    document.addEventListener('touchend', onTouchEnd);
+    document.addEventListener('touchcancel', onTouchEnd);
+
+    // Visual feedback during resize
     document.body.style.cursor = 'col-resize';
     document.body.style.userSelect = 'none';
+    // Prevent text selection on touch devices
+    document.body.style.webkitUserSelect = 'none';
 
     return () => {
-      document.removeEventListener('mousemove', handleMouseMove);
-      document.removeEventListener('mouseup', handleMouseUp);
+      document.removeEventListener('mousemove', onMouseMove);
+      document.removeEventListener('mouseup', onMouseUp);
+      document.removeEventListener('touchmove', onTouchMove);
+      document.removeEventListener('touchend', onTouchEnd);
+      document.removeEventListener('touchcancel', onTouchEnd);
       document.body.style.cursor = '';
       document.body.style.userSelect = '';
+      document.body.style.webkitUserSelect = '';
     };
-  }, [isResizing, minWidth, maxWidth, side, storageKey]);
+  }, [isResizing, handleDragMove, handleDragEnd]);
 
-  const handleMouseDown = (e: React.MouseEvent) => {
-    dragStartRef.current = { mouseX: e.clientX, width };
-    setIsResizing(true);
-  };
+  // === Render ===
 
   const handlePosition = side === 'left' ? 'right-0' : 'left-0';
 
@@ -412,18 +486,34 @@ export const ResizablePanel: React.FC<ResizablePanelProps> = ({
     >
       {children}
 
-      {/* Resize handle */}
+      {/* Resize handle - supports both mouse and touch */}
       <div
         className={`
-          absolute top-0 ${handlePosition} w-1 h-full cursor-col-resize
-          hover:bg-amber-500/50 transition-colors group
+          absolute top-0 ${handlePosition} w-2 h-full cursor-col-resize
+          hover:bg-amber-500/50 active:bg-amber-500 transition-colors group
+          touch-none
           ${isResizing ? 'bg-amber-500' : 'bg-transparent'}
         `}
         onMouseDown={handleMouseDown}
+        onTouchStart={handleTouchStart}
         role="separator"
         aria-orientation="vertical"
         aria-label="Resize panel"
+        aria-valuenow={width}
+        aria-valuemin={minWidth}
+        aria-valuemax={maxWidth}
         tabIndex={0}
+        onKeyDown={(e) => {
+          // Keyboard resize support (Arrow keys)
+          const step = e.shiftKey ? 50 : 10;
+          if (e.key === 'ArrowLeft') {
+            e.preventDefault();
+            setWidth((w) => Math.max(minWidth, w - step));
+          } else if (e.key === 'ArrowRight') {
+            e.preventDefault();
+            setWidth((w) => Math.min(maxWidth, w + step));
+          }
+        }}
       >
         <div className={`
           absolute top-1/2 -translate-y-1/2
@@ -610,10 +700,12 @@ const AppLayout: React.FC = () => {
 The implementation includes the following accessibility features:
 
 - **ARIA Labels**: All interactive elements (buttons, resize handles) include proper `aria-label` attributes
-- **Keyboard Navigation**: Resize handles are focusable with `tabIndex={0}`
+- **ARIA Value Attributes**: Resize handles include `aria-valuenow`, `aria-valuemin`, and `aria-valuemax` for screen reader announcements
+- **Keyboard Navigation**: Resize handles are focusable with `tabIndex={0}` and support Arrow key resizing (10px steps, 50px with Shift)
 - **Reduced Motion**: Uses `motion-reduce:transition-none` for users who prefer reduced motion
 - **Semantic Roles**: Resize handles use `role="separator"` with `aria-orientation="vertical"`
 - **Screen Reader Support**: Mobile menu overlay uses `aria-hidden="true"` to prevent focus trapping
+- **Touch Support**: Full touch event support for tablet users (iPad, Android tablets) with `touch-none` CSS to prevent scroll interference
 
 ## Testing Plan
 
@@ -630,9 +722,19 @@ The implementation includes the following accessibility features:
 ### Accessibility Testing
 
 - [ ] Screen reader announces panel state changes
-- [ ] Resize handles are keyboard accessible
+- [ ] Resize handles are keyboard accessible (Arrow keys)
+- [ ] Shift+Arrow provides larger resize steps (50px)
 - [ ] Reduced motion preference is respected
 - [ ] Focus management works correctly in mobile drawer
+- [ ] ARIA value attributes update correctly during resize
+
+### Touch Device Testing
+
+- [ ] Touch drag resize works on iPad Safari
+- [ ] Touch drag resize works on Android Chrome
+- [ ] No scroll interference during panel resize
+- [ ] Touch targets are large enough (min 44px touch area)
+- [ ] Multi-touch is handled gracefully (single finger only)
 
 ### Responsive Testing
 
