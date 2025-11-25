@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { LucideIcon } from 'lucide-react';
 import { Card, CardContent, Button } from '@/components/primitives';
 import { cn } from '@/lib/utils';
@@ -14,15 +14,19 @@ interface EmptyStateProps {
   className?: string;
 }
 
-export const EmptyState: React.FC<EmptyStateProps> = ({
+export const EmptyState: React.FC<EmptyStateProps> = memo(function EmptyState({
   icon: Icon,
   title,
   description,
   action,
   className = '',
-}) => {
+}) {
   return (
-    <Card className={cn('border-dashed', className)}>
+    <Card
+      className={cn('border-dashed', className)}
+      role="status"
+      aria-live="polite"
+    >
       <CardContent className="flex flex-col items-center justify-center py-12 px-4">
         <div
           className="flex h-16 w-16 items-center justify-center rounded-full bg-muted mb-4"
@@ -40,4 +44,4 @@ export const EmptyState: React.FC<EmptyStateProps> = ({
       </CardContent>
     </Card>
   );
-};
+});

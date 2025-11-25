@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo, useCallback } from 'react';
 import { AlertTriangle, Trash2, Info } from 'lucide-react';
 import {
   AlertDialog,
@@ -46,7 +46,7 @@ const variantConfig = {
   },
 };
 
-export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
+export const ConfirmDialog: React.FC<ConfirmDialogProps> = memo(function ConfirmDialog({
   isOpen,
   title,
   message,
@@ -55,12 +55,22 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
   onConfirm,
   onCancel,
   variant = 'info',
-}) => {
+}) {
   const config = variantConfig[variant];
   const Icon = config.icon;
 
+  // Handle dialog open state changes (e.g., ESC key, overlay click)
+  const handleOpenChange = useCallback(
+    (open: boolean) => {
+      if (!open) {
+        onCancel();
+      }
+    },
+    [onCancel]
+  );
+
   return (
-    <AlertDialog open={isOpen} onOpenChange={(open) => !open && onCancel()}>
+    <AlertDialog open={isOpen} onOpenChange={handleOpenChange}>
       <AlertDialogContent className="max-w-md">
         <AlertDialogHeader>
           <div className="flex items-start gap-4">
@@ -79,7 +89,7 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
           </div>
         </AlertDialogHeader>
         <AlertDialogFooter>
-          <AlertDialogCancel onClick={onCancel}>{cancelLabel}</AlertDialogCancel>
+          <AlertDialogCancel>{cancelLabel}</AlertDialogCancel>
           <AlertDialogAction onClick={onConfirm} className={config.actionClass}>
             {confirmLabel}
           </AlertDialogAction>
@@ -87,4 +97,4 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = ({
       </AlertDialogContent>
     </AlertDialog>
   );
-};
+});

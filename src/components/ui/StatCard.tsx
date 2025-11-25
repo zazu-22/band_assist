@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { LucideIcon } from 'lucide-react';
 import { Card, CardContent } from '@/components/primitives';
 import { cn } from '@/lib/utils';
@@ -7,13 +7,17 @@ type StatVariant = 'default' | 'success' | 'info' | 'warning';
 
 interface StatCardProps {
   title: string;
-  value: string | number;
+  /** The stat value - accepts any renderable content for flexibility */
+  value: React.ReactNode;
   subtitle?: string;
   icon?: LucideIcon;
   variant?: StatVariant;
   className?: string;
 }
 
+// Note: warning/info colors are hardcoded as the theme doesn't include
+// dedicated CSS variables for these semantic colors. These match the
+// Badge component variants for consistency.
 const variantConfig: Record<
   StatVariant,
   { iconBg: string; iconColor: string; valueColor: string }
@@ -40,14 +44,14 @@ const variantConfig: Record<
   },
 };
 
-export const StatCard: React.FC<StatCardProps> = ({
+export const StatCard: React.FC<StatCardProps> = memo(function StatCard({
   title,
   value,
   subtitle,
   icon: Icon,
   variant = 'default',
   className,
-}) => {
+}) {
   const config = variantConfig[variant];
 
   return (
@@ -76,4 +80,4 @@ export const StatCard: React.FC<StatCardProps> = ({
       </CardContent>
     </Card>
   );
-};
+});

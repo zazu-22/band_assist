@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { Badge } from '@/components/primitives';
 import type { Song } from '@/types';
 
@@ -9,33 +9,20 @@ interface StatusBadgeProps {
   className?: string;
 }
 
-const statusConfig: Record<
-  SongStatus,
-  { label: string; variant: 'success' | 'info' | 'warning' }
-> = {
-  'Performance Ready': {
-    label: 'Performance Ready',
-    variant: 'success',
-  },
-  'In Progress': {
-    label: 'In Progress',
-    variant: 'info',
-  },
-  'To Learn': {
-    label: 'To Learn',
-    variant: 'warning',
-  },
+// Maps song status to Badge variant - status value is used directly as label
+const statusVariantMap: Record<SongStatus, 'success' | 'info' | 'warning'> = {
+  'Performance Ready': 'success',
+  'In Progress': 'info',
+  'To Learn': 'warning',
 };
 
-export const StatusBadge: React.FC<StatusBadgeProps> = ({
+export const StatusBadge: React.FC<StatusBadgeProps> = memo(function StatusBadge({
   status,
   className,
-}) => {
-  const config = statusConfig[status];
-
+}) {
   return (
-    <Badge variant={config.variant} className={className}>
-      {config.label}
+    <Badge variant={statusVariantMap[status]} className={className}>
+      {status}
     </Badge>
   );
-};
+});
