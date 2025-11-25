@@ -91,17 +91,3 @@ export interface Setlist {
   date: string;
   songs: string[];
 }
-
-export type ViewState =
-  | 'DASHBOARD'
-  | 'SETLIST'
-  | 'SONG_DETAIL'
-  | 'PRACTICE_ROOM'
-  | 'SETTINGS'
-  | 'BAND_DASHBOARD'
-  | 'PERFORMANCE_MODE'
-  | 'SCHEDULE'
-  | 'LOGIN'
-  | 'SIGNUP'
-  | 'PASSWORD_RESET'
-  | 'PASSWORD_UPDATE';
