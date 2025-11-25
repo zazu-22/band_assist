@@ -19,7 +19,7 @@ export const EmptyState: React.FC<EmptyStateProps> = memo(function EmptyState({
   title,
   description,
   action,
-  className = '',
+  className,
 }) {
   return (
     <Card

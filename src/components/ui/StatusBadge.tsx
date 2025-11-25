@@ -9,19 +9,21 @@ interface StatusBadgeProps {
   className?: string;
 }
 
+type BadgeVariant = 'success' | 'info' | 'warning';
+
 // Maps song status to Badge variant - status value is used directly as label
-const statusVariantMap: Record<SongStatus, 'success' | 'info' | 'warning'> = {
+const STATUS_VARIANT_MAP = {
   'Performance Ready': 'success',
   'In Progress': 'info',
   'To Learn': 'warning',
-};
+} as const satisfies Record<SongStatus, BadgeVariant>;
 
 export const StatusBadge: React.FC<StatusBadgeProps> = memo(function StatusBadge({
   status,
   className,
 }) {
   return (
-    <Badge variant={statusVariantMap[status]} className={className}>
+    <Badge variant={STATUS_VARIANT_MAP[status]} className={className}>
       {status}
     </Badge>
   );
