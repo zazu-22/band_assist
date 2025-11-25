@@ -7,8 +7,8 @@ type StatVariant = 'default' | 'success' | 'info' | 'warning';
 
 interface StatCardProps {
   title: string;
-  /** The stat value - accepts any renderable content for flexibility */
-  value: React.ReactNode;
+  /** The stat value - constrained to string or number to prevent layout issues */
+  value: string | number;
   subtitle?: string;
   icon?: LucideIcon;
   variant?: StatVariant;
@@ -16,10 +16,7 @@ interface StatCardProps {
 }
 
 // Using semantic theme CSS variables for consistent styling
-const variantConfig: Record<
-  StatVariant,
-  { iconBg: string; iconColor: string; valueColor: string }
-> = {
+const VARIANT_CONFIG = {
   default: {
     iconBg: 'bg-muted',
     iconColor: 'text-muted-foreground',
@@ -40,7 +37,7 @@ const variantConfig: Record<
     iconColor: 'text-warning',
     valueColor: 'text-warning',
   },
-};
+} as const satisfies Record<StatVariant, { iconBg: string; iconColor: string; valueColor: string }>;
 
 export const StatCard: React.FC<StatCardProps> = memo(function StatCard({
   title,
@@ -50,7 +47,7 @@ export const StatCard: React.FC<StatCardProps> = memo(function StatCard({
   variant = 'default',
   className,
 }) {
-  const config = variantConfig[variant];
+  const config = VARIANT_CONFIG[variant];
 
   return (
     <Card className={className}>

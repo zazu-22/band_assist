@@ -26,7 +26,7 @@ interface ConfirmDialogProps {
 }
 
 // Using semantic theme CSS variables for consistent styling
-const variantConfig = {
+const VARIANT_CONFIG = {
   danger: {
     icon: Trash2,
     iconBg: 'bg-destructive/20',
@@ -45,7 +45,7 @@ const variantConfig = {
     iconColor: 'text-info',
     actionClass: 'bg-info text-info-foreground hover:bg-info/90',
   },
-};
+} as const;
 
 export const ConfirmDialog: React.FC<ConfirmDialogProps> = memo(function ConfirmDialog({
   isOpen,
@@ -57,7 +57,7 @@ export const ConfirmDialog: React.FC<ConfirmDialogProps> = memo(function Confirm
   onCancel,
   variant = 'info',
 }) {
-  const config = variantConfig[variant];
+  const config = VARIANT_CONFIG[variant];
   const Icon = config.icon;
 
   // Handle dialog open state changes (e.g., ESC key, overlay click)

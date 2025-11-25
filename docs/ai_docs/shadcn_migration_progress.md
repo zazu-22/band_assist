@@ -83,31 +83,45 @@ This document tracks progress on migrating Band Assist to shadcn/ui with a compl
   - Removed manual focus trap code (Radix handles it)
   - Kept variant system (danger/warning/info) with semantic color classes
   - Uses `cn()` utility for class merging
+  - React.memo for performance optimization
+  - VARIANT_CONFIG as const at module level
 - `src/components/ui/EmptyState.tsx` - Updated to use Card + Button primitives
   - Wrapped content in Card with dashed border styling
   - Action button now uses Button primitive with default variant
   - Uses semantic theme colors (muted, foreground, muted-foreground)
+  - Added aria-live="polite" and role="status" for accessibility
+  - React.memo for performance optimization
 - `src/components/ui/Toast.tsx` - Updated to use CSS variables
   - Background uses `var(--card)`, border uses `var(--border)`
   - Color uses `var(--card-foreground)`
-  - Consistent with theme system
+  - Border colors use semantic theme variables (border-success, border-warning, etc.)
+- `src/components/primitives/badge.tsx` - Added displayName for React DevTools
 
 **Files Created:**
 - `src/components/ui/StatusBadge.tsx` - Song status badge component
   - Maps song status to Badge variants: Performance Ready → success, In Progress → info, To Learn → warning
   - Type-safe with Song['status'] type
+  - React.memo for performance optimization
 - `src/components/ui/StatCard.tsx` - Dashboard statistic card component
   - Uses Card primitive with CardContent
-  - Props: title, value, subtitle, icon, variant (default/success/info/warning)
-  - Variant-specific icon backgrounds and value colors
+  - Props: title, value (string | number), subtitle, icon, variant
+  - VARIANT_CONFIG as const satisfies Record<...> at module level
+  - React.memo for performance optimization
 - `src/components/ui/index.ts` - Updated barrel export
   - Added exports for StatusBadge, StatCard
   - Added exports for ThemeProvider, useTheme, ThemeToggle, VisuallyHidden
 
+**Theme Extensions (src/index.css):**
+- Added `--success`, `--warning`, `--info` semantic color variables
+- Both light and dark mode variants defined
+- Tailwind theme mappings via `@theme inline` block
+- Classes like `bg-success`, `text-warning`, `border-info` now available
+
 **Testing Results:**
 - TypeScript compilation: PASS
-- Production build: PASS (588.96 kB bundle)
+- Production build: PASS (~591 kB bundle)
 - Dev server: PASS (starts on port 3000)
+- Keyboard navigation (ConfirmDialog): ESC closes, focus trapped, overlay click cancels
 
 ---
 
@@ -221,6 +235,12 @@ npm run dev        # Start dev server on port 3000
 1. **Pre-existing lint errors** in `PerformanceMode.tsx`, `PracticeRoom.tsx`, and `ResizablePanel.tsx` (refs in render, setState in useEffect) - unrelated to this migration
 
 2. **Old Navigation.tsx still exists** - Now uses `useSidebar()` but will eventually be replaced by `layout/Sidebar.tsx`
+
+3. **Unit tests needed** - The following components should have unit tests added:
+   - `ConfirmDialog`: keyboard navigation, ESC key handling, callback invocation
+   - `StatusBadge`: variant mapping for all three status types
+   - `StatCard`: icon rendering, variant styling, subtitle display
+   - `EmptyState`: action button rendering, accessibility attributes
 
 ---
 

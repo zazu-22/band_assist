@@ -12,10 +12,11 @@ export function ToastProvider() {
           color: 'var(--card-foreground)',
         },
         classNames: {
-          success: 'border-green-900',
+          // Using semantic theme variables for consistency
+          success: 'border-success',
           error: 'border-destructive',
-          warning: 'border-amber-900',
-          info: 'border-blue-900',
+          warning: 'border-warning',
+          info: 'border-info',
         },
       }}
       closeButton
