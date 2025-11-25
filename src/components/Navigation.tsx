@@ -58,7 +58,7 @@ export const Navigation: React.FC<NavigationProps> = ({
     <div
       className={`
         bg-zinc-900 border-r border-zinc-800 flex flex-col h-screen sticky top-0
-        transition-all duration-300 ease-in-out
+        transition-[width] duration-300 ease-in-out motion-reduce:transition-none
         ${sidebarCollapsed ? 'w-16' : 'w-20 lg:w-64'}
       `}
     >
@@ -113,7 +113,7 @@ export const Navigation: React.FC<NavigationProps> = ({
               key={item.id}
               onClick={() => navigate(item.path)}
               className={`
-                w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 group
+                w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-colors duration-200 motion-reduce:transition-none group
                 ${sidebarCollapsed ? 'justify-center' : ''}
                 ${active ? 'bg-zinc-800 text-amber-500 shadow-inner' : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-zinc-100'}
               `}

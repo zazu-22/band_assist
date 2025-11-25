@@ -229,7 +229,7 @@ export const PracticeRoom: React.FC<PracticeRoomProps> = ({ songs }) => {
                   type="button"
                   key={song.id}
                   onClick={() => setSelectedSongId(song.id)}
-                  className={`w-full text-left p-4 border-b border-zinc-800 hover:bg-zinc-800 transition-colors ${selectedSongId === song.id ? 'bg-zinc-800 border-l-4 border-l-amber-500' : ''}`}
+                  className={`w-full text-left p-4 border-b border-zinc-800 hover:bg-zinc-800 transition-colors motion-reduce:transition-none ${selectedSongId === song.id ? 'bg-zinc-800 border-l-4 border-l-amber-500' : ''}`}
                 >
                   <p className="font-bold text-sm truncate">{song.title}</p>
                   <p className="text-xs text-zinc-500 truncate">{song.artist}</p>
@@ -249,7 +249,7 @@ export const PracticeRoom: React.FC<PracticeRoomProps> = ({ songs }) => {
                   type="button"
                   key={song.id}
                   onClick={() => setSelectedSongId(song.id)}
-                  className={`w-full text-left p-4 border-b border-zinc-800 hover:bg-zinc-800 transition-colors ${selectedSongId === song.id ? 'bg-zinc-800 border-l-4 border-l-amber-500' : ''}`}
+                  className={`w-full text-left p-4 border-b border-zinc-800 hover:bg-zinc-800 transition-colors motion-reduce:transition-none ${selectedSongId === song.id ? 'bg-zinc-800 border-l-4 border-l-amber-500' : ''}`}
                 >
                   <p className="font-bold text-sm truncate">{song.title}</p>
                   <p className="text-xs text-zinc-500 truncate">{song.artist}</p>
@@ -267,7 +267,7 @@ export const PracticeRoom: React.FC<PracticeRoomProps> = ({ songs }) => {
                 <button
                   key={chart.id}
                   onClick={() => setActiveChartId(chart.id)}
-                  className={`px-3 py-1.5 rounded-lg text-sm font-medium flex items-center gap-2 border transition-all ${
+                  className={`px-3 py-1.5 rounded-lg text-sm font-medium flex items-center gap-2 border transition-colors motion-reduce:transition-none ${
                     activeChartId === chart.id
                       ? 'bg-amber-600/20 border-amber-600/50 text-amber-500'
                       : 'bg-zinc-800 border-zinc-700 text-zinc-400 hover:text-white'

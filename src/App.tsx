@@ -237,7 +237,7 @@ const AppLayout: React.FC<{
         <Menu size={24} />
       </button>
 
-      <main className="flex-1 h-screen overflow-y-auto transition-all duration-300 ease-in-out">
+      <main className="flex-1 h-screen overflow-y-auto">
         <Outlet />
       </main>
     </div>
