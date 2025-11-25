@@ -1,6 +1,8 @@
 import React from 'react';
+import { useNavigate } from 'react-router-dom';
 import { Song, BandEvent } from '../types';
-import { Activity, CalendarDays, CheckCircle2, Disc } from 'lucide-react';
+import { Activity, CalendarDays, CheckCircle2, Disc, Music } from 'lucide-react';
+import { EmptyState } from './ui';
 
 interface DashboardProps {
   songs: Song[];
@@ -9,6 +11,7 @@ interface DashboardProps {
 }
 
 export const Dashboard: React.FC<DashboardProps> = ({ songs, onNavigateToSong, events = [] }) => {
+  const navigate = useNavigate();
   const totalSongs = songs.length;
   const readySongs = songs.filter(s => s.status === 'Performance Ready').length;
   const learningSongs = songs.filter(s => s.status === 'To Learn').length;
@@ -84,6 +87,17 @@ export const Dashboard: React.FC<DashboardProps> = ({ songs, onNavigateToSong, e
       <div className="grid lg:grid-cols-3 gap-8">
         <div className="lg:col-span-2 bg-zinc-900 border border-zinc-800 rounded-2xl p-6">
           <h3 className="text-xl font-bold text-white mb-4">Setlist Progress</h3>
+          {songs.length === 0 ? (
+            <EmptyState
+              icon={Music}
+              title="No songs yet"
+              description="Add your first song to start building your setlist and tracking progress."
+              action={{
+                label: "Add Song",
+                onClick: () => navigate('/setlist'),
+              }}
+            />
+          ) : (
           <div className="space-y-4">
             {songs.slice(0, 5).map(song => (
               <div
@@ -116,6 +130,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ songs, onNavigateToSong, e
               </div>
             ))}
           </div>
+          )}
         </div>
 
         <div className="bg-gradient-to-br from-zinc-900 to-zinc-800 border border-zinc-700 rounded-2xl p-6 text-white relative overflow-hidden">

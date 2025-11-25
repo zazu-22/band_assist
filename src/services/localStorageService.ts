@@ -1,5 +1,6 @@
 import { Song, BandMember, BandEvent } from '../types';
 import { IStorageService, LoadResult } from './IStorageService';
+import { toast } from 'sonner';
 
 const STORAGE_KEYS = {
   SONGS: 'sdb_songs',
@@ -22,8 +23,9 @@ export class LocalStorageService implements IStorageService {
       localStorage.setItem(STORAGE_KEYS.EVENTS, JSON.stringify(events));
     } catch (e) {
       console.error('Storage Quota Exceeded or Error', e);
-      alert(
-        'Warning: Browser storage is full. Large files (PDFs/Audio) might not be saved locally. Try deleting unused songs or using the Export Backup feature.'
+      toast.error(
+        'Browser storage is full. Large files may not be saved. Try deleting unused songs or using Export Backup.',
+        { duration: 8000 }
       );
     }
   }

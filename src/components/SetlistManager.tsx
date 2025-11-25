@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { Song } from '../types';
-import { GripVertical, Plus, Clock, Trash2 } from 'lucide-react';
+import { GripVertical, Plus, Clock, Trash2, Music } from 'lucide-react';
 import { getMusicAnalysis } from '../services/geminiService';
+import { toast, EmptyState } from './ui';
 
 interface SetlistManagerProps {
   songs: Song[];
@@ -60,7 +61,7 @@ export const SetlistManager: React.FC<SetlistManagerProps> = ({
     setLoadingSuggestion(true);
     const prompt = `Suggest 3 ZZ Top songs that would fit well in a setlist that already has: ${songs.map(s => s.title).join(', ')}. Just list the titles.`;
     const suggestion = await getMusicAnalysis(prompt);
-    alert(suggestion); // Simple alert for demo
+    toast.info(suggestion, { duration: 10000 }); // Show suggestion for 10 seconds
     setLoadingSuggestion(false);
   };
 
@@ -184,9 +185,15 @@ export const SetlistManager: React.FC<SetlistManagerProps> = ({
 
       <div className="space-y-0">
         {songs.length === 0 ? (
-          <div className="bg-zinc-900 rounded-2xl border border-zinc-800 p-12 text-center text-zinc-500">
-            <p>No songs in the setlist yet.</p>
-          </div>
+          <EmptyState
+            icon={Music}
+            title="No songs in setlist"
+            description="Add your first song to start building your setlist and organizing your performance."
+            action={{
+              label: "Add Song",
+              onClick: () => setIsAdding(true),
+            }}
+          />
         ) : (
           <ul className="space-y-3 pb-20">
             {songs.map((song, index) => {

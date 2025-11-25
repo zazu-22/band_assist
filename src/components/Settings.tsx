@@ -16,6 +16,7 @@ import {
 import { StorageService } from '../services/storageService';
 import { InvitationManager } from './InvitationManager';
 import { isSupabaseConfigured } from '../services/supabaseClient';
+import { toast, ConfirmDialog } from './ui';
 
 interface SettingsProps {
   members: BandMember[];
@@ -56,6 +57,23 @@ export const Settings: React.FC<SettingsProps> = ({
   // --- Role State ---
   const [newRoleName, setNewRoleName] = useState('');
 
+  // --- Confirm Dialog State ---
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean;
+    title: string;
+    message: string;
+    variant: 'danger' | 'warning' | 'info';
+    onConfirm: () => void;
+  }>({
+    isOpen: false,
+    title: '',
+    message: '',
+    variant: 'danger',
+    onConfirm: () => {},
+  });
+
+  const closeDialog = () => setConfirmDialog(prev => ({ ...prev, isOpen: false }));
+
   // --- Member Handlers ---
   const handleAddMember = () => {
     if (!newMemberName.trim()) return;
@@ -72,13 +90,16 @@ export const Settings: React.FC<SettingsProps> = ({
   };
 
   const handleRemoveMember = (id: string) => {
-    if (
-      window.confirm(
-        'Are you sure? Assignments for this member in songs will remain but might look orphaned.'
-      )
-    ) {
-      setMembers(members.filter(m => m.id !== id));
-    }
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Remove Member',
+      message: 'Are you sure? Assignments for this member in songs will remain but might look orphaned.',
+      variant: 'danger',
+      onConfirm: () => {
+        setMembers(members.filter(m => m.id !== id));
+        closeDialog();
+      },
+    });
   };
 
   const startEditing = (member: BandMember) => {
@@ -101,13 +122,16 @@ export const Settings: React.FC<SettingsProps> = ({
   };
 
   const handleRemoveRole = (role: string) => {
-    if (
-      window.confirm(
-        `Delete role "${role}"? It will still exist on old song assignments but won't be selectable for new ones.`
-      )
-    ) {
-      setAvailableRoles(availableRoles.filter(r => r !== role));
-    }
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Delete Role',
+      message: `Delete role "${role}"? It will still exist on old song assignments but won't be selectable for new ones.`,
+      variant: 'warning',
+      onConfirm: () => {
+        setAvailableRoles(availableRoles.filter(r => r !== role));
+        closeDialog();
+      },
+    });
   };
 
   // --- Data Handlers ---
@@ -119,20 +143,27 @@ export const Settings: React.FC<SettingsProps> = ({
     const file = e.target.files?.[0];
     if (!file || !setSongs || !setEvents) return;
 
-    if (window.confirm('Importing will OVERWRITE your current data. Are you sure?')) {
-      StorageService.importData(file)
-        .then(data => {
-          setSongs(data.songs);
-          setMembers(data.members);
-          setAvailableRoles(data.roles);
-          setEvents(data.events);
-          alert('Data imported successfully!');
-        })
-        .catch(err => {
-          console.error(err);
-          alert('Failed to import data. File might be corrupt.');
-        });
-    }
+    setConfirmDialog({
+      isOpen: true,
+      title: 'Import Data',
+      message: 'Importing will OVERWRITE your current data. Are you sure?',
+      variant: 'danger',
+      onConfirm: () => {
+        StorageService.importData(file)
+          .then(data => {
+            setSongs(data.songs);
+            setMembers(data.members);
+            setAvailableRoles(data.roles);
+            setEvents(data.events);
+            toast.success('Data imported successfully!');
+          })
+          .catch(err => {
+            console.error(err);
+            toast.error('Failed to import data. File might be corrupt.');
+          });
+        closeDialog();
+      },
+    });
     // Reset input
     if (fileInputRef.current) fileInputRef.current.value = '';
   };
@@ -233,12 +264,14 @@ export const Settings: React.FC<SettingsProps> = ({
                         <button
                           onClick={() => startEditing(member)}
                           className="p-2 text-zinc-600 hover:text-white"
+                          aria-label="Edit member"
                         >
                           <Edit2 size={18} />
                         </button>
                         <button
                           onClick={() => handleRemoveMember(member.id)}
                           className="p-2 text-zinc-600 hover:text-red-500"
+                          aria-label="Remove member"
                         >
                           <Trash2 size={18} />
                         </button>
@@ -392,6 +425,18 @@ export const Settings: React.FC<SettingsProps> = ({
           </section>
         </div>
       )}
+
+      {/* Confirm Dialog */}
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        title={confirmDialog.title}
+        message={confirmDialog.message}
+        variant={confirmDialog.variant}
+        onConfirm={confirmDialog.onConfirm}
+        onCancel={closeDialog}
+        confirmLabel="Confirm"
+        cancelLabel="Cancel"
+      />
     </div>
   );
 };

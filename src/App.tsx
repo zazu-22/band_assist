@@ -1,4 +1,6 @@
-import React, { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import { Routes, Route, Navigate, useNavigate, useParams, useLocation, Outlet } from 'react-router-dom';
+import { toast } from './components/ui';
 import { Session } from '@supabase/supabase-js';
 import { Navigation } from './components/Navigation';
 import { Dashboard } from './components/Dashboard';
@@ -13,14 +15,137 @@ import { Login } from './components/Login';
 import { Signup } from './components/Signup';
 import { PasswordReset } from './components/PasswordReset';
 import { PasswordUpdate } from './components/PasswordUpdate';
-import { Song, ViewState, BandMember, BandEvent } from './types';
+import { Song, BandMember, BandEvent, ViewState } from './types';
 import { INITIAL_SONGS, DEFAULT_MEMBERS, DEFAULT_ROLES, DEFAULT_EVENTS, withDefaults } from './constants';
 import { StorageService } from './services/storageService';
 import { getSupabaseClient, isSupabaseConfigured } from './services/supabaseClient';
 
+// Loading screen component
+const LoadingScreen: React.FC<{ message: string }> = ({ message }) => (
+  <div className="flex items-center justify-center min-h-screen bg-zinc-950 text-zinc-100">
+    <div className="text-center">
+      <div className="inline-block w-8 h-8 border-4 border-zinc-700 border-t-blue-500 rounded-full animate-spin mb-4"></div>
+      <p className="text-lg">{message}</p>
+    </div>
+  </div>
+);
+
+// App context for sharing state with route components
+interface AppContextValue {
+  songs: Song[];
+  setSongs: React.Dispatch<React.SetStateAction<Song[]>>;
+  members: BandMember[];
+  setMembers: React.Dispatch<React.SetStateAction<BandMember[]>>;
+  availableRoles: string[];
+  setAvailableRoles: React.Dispatch<React.SetStateAction<string[]>>;
+  events: BandEvent[];
+  setEvents: React.Dispatch<React.SetStateAction<BandEvent[]>>;
+  handleUpdateSong: (song: Song) => void;
+  session: Session | null;
+  currentBandId: string | null;
+  isAdmin: boolean;
+}
+
+const AppContext = React.createContext<AppContextValue | null>(null);
+
+export const useAppContext = () => {
+  const context = React.useContext(AppContext);
+  if (!context) {
+    throw new Error('useAppContext must be used within App component (inside BrowserRouter)');
+  }
+  return context;
+};
+
+// Wrapper component for SongDetail that gets songId from URL params
+const SongDetailRoute: React.FC = () => {
+  const { songId } = useParams<{ songId: string }>();
+  const navigate = useNavigate();
+  const { songs, members, availableRoles, handleUpdateSong } = useAppContext();
+
+  const song = songs.find(s => s.id === songId);
+
+  // Handle missing song with useEffect to avoid toast on every render
+  useEffect(() => {
+    if (!song) {
+      toast.error('Song not found');
+      navigate('/', { replace: true });
+    }
+  }, [song, navigate]);
+
+  if (!song) {
+    return null;
+  }
+
+  return (
+    <SongDetail
+      song={song}
+      members={members}
+      availableRoles={availableRoles}
+      onBack={() => navigate('/')}
+      onUpdateSong={handleUpdateSong}
+    />
+  );
+};
+
+// Wrapper component for PracticeRoom with optional songId
+const PracticeRoomRoute: React.FC = () => {
+  const navigate = useNavigate();
+  const { songs } = useAppContext();
+
+  return (
+    <PracticeRoom
+      songs={songs}
+      onNavigateToSong={(id) => navigate(`/songs/${id}`)}
+    />
+  );
+};
+
+// Layout wrapper for authenticated routes with navigation sidebar
+const AppLayout: React.FC<{
+  onLogout: () => void;
+  showLogout: boolean;
+  currentBandName: string;
+  userBands: Array<{ id: string; name: string }>;
+  onSelectBand: (bandId: string) => void;
+}> = ({ onLogout, showLogout, currentBandName, userBands, onSelectBand }) => {
+  const location = useLocation();
+
+  // Map URL path to view name for Navigation active state
+  const getViewFromPath = (pathname: string): ViewState => {
+    if (pathname === '/') return 'DASHBOARD';
+    if (pathname.startsWith('/songs/')) return 'SONG_DETAIL';
+    if (pathname === '/setlist') return 'SETLIST';
+    if (pathname === '/practice') return 'PRACTICE_ROOM';
+    if (pathname === '/schedule') return 'SCHEDULE';
+    if (pathname === '/band') return 'BAND_DASHBOARD';
+    if (pathname === '/settings') return 'SETTINGS';
+    if (pathname === '/performance') return 'PERFORMANCE_MODE';
+    return 'DASHBOARD';
+  };
+
+  const currentView: ViewState = getViewFromPath(location.pathname);
+
+  return (
+    <div className="flex min-h-screen bg-zinc-950 font-sans text-zinc-100">
+      <Navigation
+        currentView={currentView}
+        onLogout={onLogout}
+        showLogout={showLogout}
+        currentBandName={currentBandName}
+        userBands={userBands}
+        onSelectBand={onSelectBand}
+      />
+      <main className="flex-1 h-screen overflow-y-auto">
+        <Outlet />
+      </main>
+    </div>
+  );
+};
+
 const App: React.FC = () => {
-  const [currentView, setCurrentView] = useState<ViewState>('DASHBOARD');
-  const [selectedSongId, setSelectedSongId] = useState<string | null>(null);
+  const navigate = useNavigate();
+  const location = useLocation();
+
   const [isLoading, setIsLoading] = useState(true);
   const [session, setSession] = useState<Session | null>(null);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
@@ -56,16 +181,16 @@ const App: React.FC = () => {
 
     // Check for our custom redirect (#password-update)
     if (hash === '#password-update') {
-      setCurrentView('PASSWORD_UPDATE');
+      navigate('/password-update', { replace: true });
       return;
     }
 
     // Check for Supabase recovery token in hash
     // Format: #access_token=...&type=recovery&...
     if (hash.includes('type=recovery')) {
-      setCurrentView('PASSWORD_UPDATE');
+      navigate('/password-update', { replace: true });
     }
-  }, [isCheckingAuth]);
+  }, [isCheckingAuth, navigate]);
 
   // -- Authentication Check --
   // Check if Supabase is configured and user is authenticated
@@ -335,19 +460,9 @@ const App: React.FC = () => {
     saveData();
   }, [songs, members, availableRoles, events, isLoading]);
 
-  const handleNavigate = (view: ViewState) => {
-    setCurrentView(view);
-    setSelectedSongId(null);
-  };
-
-  const handleSelectSong = (songId: string) => {
-    setSelectedSongId(songId);
-    setCurrentView('SONG_DETAIL');
-  };
-
-  const handleUpdateSong = (updatedSong: Song) => {
-    setSongs(songs.map(s => (s.id === updatedSong.id ? updatedSong : s)));
-  };
+  const handleUpdateSong = useCallback((updatedSong: Song) => {
+    setSongs(prevSongs => prevSongs.map(s => (s.id === updatedSong.id ? updatedSong : s)));
+  }, []);
 
   const handleLogout = async () => {
     const supabase = getSupabaseClient();
@@ -356,7 +471,7 @@ const App: React.FC = () => {
     try {
       await supabase.auth.signOut();
       setSession(null);
-      // Data will be cleared when user logs back in
+      navigate('/login');
     } catch (error) {
       console.error('Error logging out:', error);
     }
@@ -421,157 +536,193 @@ const App: React.FC = () => {
     }
   };
 
-  const renderContent = () => {
-    if (currentView === 'SONG_DETAIL' && selectedSongId) {
-      const song = songs.find(s => s.id === selectedSongId);
-      if (song) {
-        return (
-          <SongDetail
-            song={song}
-            members={members}
-            availableRoles={availableRoles}
-            onBack={() => setCurrentView('DASHBOARD')}
-            onUpdateSong={handleUpdateSong}
-          />
-        );
-      }
-    }
-
-    if (currentView === 'PERFORMANCE_MODE') {
-      return <PerformanceMode songs={songs} onExit={() => setCurrentView('DASHBOARD')} />;
-    }
-
-    switch (currentView) {
-      case 'DASHBOARD':
-        return <Dashboard songs={songs} onNavigateToSong={handleSelectSong} events={events} />;
-      case 'SCHEDULE':
-        return (
-          <ScheduleManager
-            events={events}
-            setEvents={setEvents}
-            songs={songs}
-            onNavigateToSong={handleSelectSong}
-          />
-        );
-      case 'BAND_DASHBOARD':
-        return (
-          <BandDashboard members={members} songs={songs} onNavigateToSong={handleSelectSong} />
-        );
-      case 'SETLIST':
-        return <SetlistManager songs={songs} setSongs={setSongs} onSelectSong={handleSelectSong} />;
-      case 'SETTINGS':
-        return (
-          <Settings
-            members={members}
-            setMembers={setMembers}
-            availableRoles={availableRoles}
-            setAvailableRoles={setAvailableRoles}
-            songs={songs}
-            setSongs={setSongs}
-            events={events}
-            setEvents={setEvents}
-            currentBandId={currentBandId || undefined}
-            currentUserId={session?.user?.id}
-            isAdmin={isAdmin}
-          />
-        );
-      case 'PRACTICE_ROOM':
-        return <PracticeRoom songs={songs} onNavigateToSong={handleSelectSong} />;
-      default:
-        return <Dashboard songs={songs} onNavigateToSong={handleSelectSong} events={events} />;
-    }
-  };
-
-  if (currentView === 'PERFORMANCE_MODE') {
-    return renderContent();
-  }
+  // Context value for child routes - memoized to prevent unnecessary re-renders
+  const contextValue = useMemo<AppContextValue>(
+    () => ({
+      songs,
+      setSongs,
+      members,
+      setMembers,
+      availableRoles,
+      setAvailableRoles,
+      events,
+      setEvents,
+      handleUpdateSong,
+      session,
+      currentBandId,
+      isAdmin,
+    }),
+    [songs, members, availableRoles, events, session, currentBandId, isAdmin, handleUpdateSong]
+  );
 
   // Show loading screen while checking authentication
   if (isCheckingAuth) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-zinc-950 text-zinc-100">
-        <div className="text-center">
-          <div className="inline-block w-8 h-8 border-4 border-zinc-700 border-t-blue-500 rounded-full animate-spin mb-4"></div>
-          <p className="text-lg">Checking authentication...</p>
-        </div>
-      </div>
-    );
+    return <LoadingScreen message="Checking authentication..." />;
   }
 
   // Show auth screens if Supabase is configured but user is not authenticated
   if (isSupabaseConfigured() && !session) {
-    if (currentView === 'PASSWORD_UPDATE') {
+    // Check if we're on the password-update route
+    if (location.pathname === '/password-update') {
       return (
         <PasswordUpdate
           onSuccess={() => {
             // Clear the hash and redirect to login
             window.location.hash = '';
-            setCurrentView('LOGIN');
+            navigate('/login');
           }}
-          onNavigate={(view: string) => setCurrentView(view as ViewState)}
+          onNavigate={(view: string) => {
+            if (view === 'LOGIN') navigate('/login');
+            else if (view === 'SIGNUP') navigate('/signup');
+          }}
         />
       );
     }
 
-    if (currentView === 'SIGNUP') {
-      return (
-        <Signup
-          onSignupSuccess={() => {
-            // Session will be set by the auth state change listener
-            setCurrentView('DASHBOARD');
-          }}
-          onNavigate={(view: string) => setCurrentView(view as ViewState)}
-        />
-      );
-    }
-
-    if (currentView === 'PASSWORD_RESET') {
-      return (
-        <PasswordReset onNavigate={(view: string) => setCurrentView(view as ViewState)} />
-      );
-    }
-
-    // Default to login view
     return (
-      <Login
-        onLoginSuccess={() => {
-          // Session will be set by the auth state change listener
-          setCurrentView('DASHBOARD');
-        }}
-        onNavigate={(view: string) => setCurrentView(view as ViewState)}
-      />
+      <Routes>
+        <Route
+          path="/signup"
+          element={
+            <Signup
+              onSignupSuccess={() => navigate('/')}
+              onNavigate={(view: string) => {
+                if (view === 'LOGIN') navigate('/login');
+              }}
+            />
+          }
+        />
+        <Route
+          path="/password-reset"
+          element={
+            <PasswordReset
+              onNavigate={(view: string) => {
+                if (view === 'LOGIN') navigate('/login');
+              }}
+            />
+          }
+        />
+        <Route
+          path="*"
+          element={
+            <Login
+              onLoginSuccess={() => navigate('/')}
+              onNavigate={(view: string) => {
+                if (view === 'SIGNUP') navigate('/signup');
+                else if (view === 'PASSWORD_RESET') navigate('/password-reset');
+              }}
+            />
+          }
+        />
+      </Routes>
     );
   }
 
   // Show loading screen while data is loading
   if (isLoading) {
-    return (
-      <div className="flex items-center justify-center min-h-screen bg-zinc-950 text-zinc-100">
-        <div className="text-center">
-          <div className="inline-block w-8 h-8 border-4 border-zinc-700 border-t-blue-500 rounded-full animate-spin mb-4"></div>
-          <p className="text-lg">Loading Band Assist...</p>
-        </div>
-      </div>
-    );
-  }
-
-  if (currentView === 'SONG_DETAIL') {
-    return renderContent();
+    return <LoadingScreen message="Loading Band Assist..." />;
   }
 
   return (
-    <div className="flex min-h-screen bg-zinc-950 font-sans text-zinc-100">
-      <Navigation
-        currentView={currentView}
-        onNavigate={handleNavigate}
-        onLogout={handleLogout}
-        showLogout={isSupabaseConfigured() && !!session}
-        currentBandName={currentBandName}
-        userBands={userBands}
-        onSelectBand={handleSelectBand}
-      />
-      <main className="flex-1 h-screen overflow-y-auto">{renderContent()}</main>
-    </div>
+    <AppContext.Provider value={contextValue}>
+      <Routes>
+        {/* Performance Mode - Full screen, no sidebar */}
+        <Route
+          path="/performance"
+          element={<PerformanceMode songs={songs} onExit={() => navigate('/')} />}
+        />
+
+        {/* Song Detail - Full screen, no sidebar */}
+        <Route path="/songs/:songId" element={<SongDetailRoute />} />
+
+        {/* Practice Room with specific song */}
+        <Route path="/songs/:songId/practice" element={<PracticeRoomRoute />} />
+
+        {/* Layout route for sidebar pages */}
+        <Route
+          element={
+            <AppLayout
+              onLogout={handleLogout}
+              showLogout={isSupabaseConfigured() && !!session}
+              currentBandName={currentBandName}
+              userBands={userBands}
+              onSelectBand={handleSelectBand}
+            />
+          }
+        >
+          <Route
+            index
+            element={
+              <Dashboard
+                songs={songs}
+                onNavigateToSong={(id) => navigate(`/songs/${id}`)}
+                events={events}
+              />
+            }
+          />
+          <Route
+            path="/setlist"
+            element={
+              <SetlistManager
+                songs={songs}
+                setSongs={setSongs}
+                onSelectSong={(id) => navigate(`/songs/${id}`)}
+              />
+            }
+          />
+          <Route
+            path="/practice"
+            element={
+              <PracticeRoom
+                songs={songs}
+                onNavigateToSong={(id) => navigate(`/songs/${id}`)}
+              />
+            }
+          />
+          <Route
+            path="/schedule"
+            element={
+              <ScheduleManager
+                events={events}
+                setEvents={setEvents}
+                songs={songs}
+                onNavigateToSong={(id) => navigate(`/songs/${id}`)}
+              />
+            }
+          />
+          <Route
+            path="/band"
+            element={
+              <BandDashboard
+                members={members}
+                songs={songs}
+                onNavigateToSong={(id) => navigate(`/songs/${id}`)}
+              />
+            }
+          />
+          <Route
+            path="/settings"
+            element={
+              <Settings
+                members={members}
+                setMembers={setMembers}
+                availableRoles={availableRoles}
+                setAvailableRoles={setAvailableRoles}
+                songs={songs}
+                setSongs={setSongs}
+                events={events}
+                setEvents={setEvents}
+                currentBandId={currentBandId || undefined}
+                currentUserId={session?.user?.id}
+                isAdmin={isAdmin}
+              />
+            }
+          />
+          {/* Redirect any unknown routes to dashboard */}
+          <Route path="*" element={<Navigate to="/" replace />} />
+        </Route>
+      </Routes>
+    </AppContext.Provider>
   );
 };
 

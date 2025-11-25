@@ -28,7 +28,7 @@ npm run preview
 
 Before running the app, set `GEMINI_API_KEY` in `.env.local`:
 
-```
+```env
 GEMINI_API_KEY=your_api_key_here
 ```
 
@@ -46,26 +46,32 @@ All application state lives in `App.tsx` and flows down via props. There is NO e
 - `members: BandMember[]` - Band roster
 - `availableRoles: string[]` - Instrument/role options
 - `events: BandEvent[]` - Schedule (practices, gigs)
-- `currentView: ViewState` - Controls which page is rendered
 
 **State Initialization:** Uses lazy initialization with `StorageService.load()` to restore from localStorage, falling back to `INITIAL_SONGS` and default data if empty.
 
-**Auto-Save:** A `useEffect` in `App.tsx` (lines 54-56) automatically saves all state to localStorage whenever core data changes.
+**Auto-Save:** A `useEffect` in `App.tsx` automatically saves all state to localStorage whenever core data changes.
 
-### View System
+**Context API:** State is shared via `AppContext` (created in `App.tsx`) and accessed through the `useAppContext()` hook. The context value is memoized with `useMemo` for performance.
 
-Navigation is controlled by `currentView` state. The Navigation component triggers view changes via `onNavigate(view: ViewState)`.
+### Routing System (React Router)
 
-**Available Views:**
+Navigation uses React Router v6 with URL-based routing. The `Navigation` component uses `useNavigate()` internally for route changes.
 
-- `DASHBOARD` - Main song overview
-- `SONG_DETAIL` - Detailed song editor with AI assistant
-- `SETLIST` - Setlist builder
-- `PRACTICE_ROOM` - Practice interface with backing tracks
-- `PERFORMANCE_MODE` - Live performance view (full-screen, minimal UI)
-- `BAND_DASHBOARD` - Per-member assignment view
-- `SCHEDULE` - Event management
-- `SETTINGS` - Band roster, roles, data import/export
+**Route Structure:**
+
+- `/` - Dashboard (main song overview)
+- `/songs/:songId` - Song detail editor (full-screen, no sidebar)
+- `/songs/:songId/practice` - Practice room for specific song
+- `/setlist` - Setlist builder
+- `/practice` - Practice room (song selection)
+- `/schedule` - Event management
+- `/band` - Per-member assignment view
+- `/settings` - Band roster, roles, data import/export
+- `/performance` - Live performance view (full-screen, minimal UI)
+
+**Layout Routes:** Routes with sidebar use `AppLayout` as a layout route with `<Outlet />`. Full-screen routes (song detail, performance) render without the sidebar.
+
+**Route Components:** `SongDetailRoute` and `PracticeRoomRoute` are wrapper components that extract URL params and connect to context.
 
 ### Data Models (types.ts)
 
@@ -177,9 +183,24 @@ const mimeType = matches[1];
 const base64Data = matches[2];
 ```
 
-### View Navigation
+### URL Navigation
 
-Never manipulate `currentView` directly in child components. Always call the `onNavigate` prop or specific callbacks like `onBack()`, `onSelectSong(songId)`.
+Use React Router's `useNavigate()` hook for navigation. Common patterns:
+
+```typescript
+const navigate = useNavigate();
+
+// Navigate to song detail
+navigate(`/songs/${songId}`);
+
+// Navigate back to dashboard (prefer explicit paths over navigate(-1))
+navigate('/');
+
+// Navigate with replace (for redirects)
+navigate('/', { replace: true });
+```
+
+For components that receive navigation callbacks as props (e.g., `onNavigateToSong`, `onBack`), these should use explicit paths rather than `navigate(-1)` to ensure reliable behavior when users directly access URLs.
 
 ### State Updates
 
@@ -227,3 +248,7 @@ The app is static and can be deployed to any static host (Vercel, Netlify, GitHu
 4. **Gemini API Errors:** If `process.env.API_KEY` is undefined, AI features silently fail with error messages. Always check the env setup.
 
 5. **TypeScript Strictness:** The project uses `"strict": true`. Ensure all props are properly typed and avoid `any` unless absolutely necessary.
+
+6. **Direct URL Access:** Users can navigate directly to URLs like `/songs/123`. Handle missing resources gracefully with toast notifications and redirects. The `SongDetailRoute` component shows a toast and redirects to `/` if a song is not found.
+
+7. **Navigation History:** Avoid using `navigate(-1)` for back navigation as it relies on browser history that may not exist for direct URL access. Use explicit paths like `navigate('/')` instead.

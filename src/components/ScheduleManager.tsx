@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { BandEvent, Song } from '../types';
 import { Calendar, Clock, MapPin, Plus, Trash2, Guitar, Star, Edit2 } from 'lucide-react';
+import { ConfirmDialog } from './ui';
 
 interface ScheduleManagerProps {
   events: BandEvent[];
@@ -22,6 +23,13 @@ export const ScheduleManager: React.FC<ScheduleManagerProps> = ({
     date: new Date().toISOString().split('T')[0],
     time: '19:00',
   });
+
+  // Confirm Dialog State
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean;
+    eventId: string | null;
+  }>({ isOpen: false, eventId: null });
+  const closeConfirmDialog = () => setConfirmDialog({ isOpen: false, eventId: null });
 
   const handleSaveEvent = () => {
     if (!newEvent.title || !newEvent.date) return;
@@ -62,9 +70,14 @@ export const ScheduleManager: React.FC<ScheduleManagerProps> = ({
   };
 
   const handleDeleteEvent = (id: string) => {
-    if (window.confirm('Remove this event?')) {
-      setEvents(events.filter(e => e.id !== id));
+    setConfirmDialog({ isOpen: true, eventId: id });
+  };
+
+  const confirmDeleteEvent = () => {
+    if (confirmDialog.eventId) {
+      setEvents(events.filter(e => e.id !== confirmDialog.eventId));
     }
+    closeConfirmDialog();
   };
 
   // Combine Events and Song Targets into a single timeline
@@ -295,6 +308,7 @@ export const ScheduleManager: React.FC<ScheduleManagerProps> = ({
                             onClick={() => handleEditEvent(item)}
                             className="p-2 text-zinc-600 hover:text-white transition-colors"
                             title="Edit"
+                            aria-label="Edit event"
                           >
                             <Edit2 size={16} />
                           </button>
@@ -302,6 +316,7 @@ export const ScheduleManager: React.FC<ScheduleManagerProps> = ({
                             onClick={() => handleDeleteEvent(item.id)}
                             className="p-2 text-zinc-600 hover:text-red-500 transition-colors"
                             title="Delete"
+                            aria-label="Delete event"
                           >
                             <Trash2 size={16} />
                           </button>
@@ -315,6 +330,18 @@ export const ScheduleManager: React.FC<ScheduleManagerProps> = ({
           </div>
         )}
       </div>
+
+      {/* Confirm Dialog */}
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        title="Delete Event"
+        message="Are you sure you want to remove this event?"
+        variant="danger"
+        onConfirm={confirmDeleteEvent}
+        onCancel={closeConfirmDialog}
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+      />
     </div>
   );
 };

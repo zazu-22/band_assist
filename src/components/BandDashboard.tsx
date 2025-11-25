@@ -1,7 +1,9 @@
 import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
 import { BandMember, Song } from '../types';
-import { Music, ArrowRight, X } from 'lucide-react';
+import { Music, ArrowRight, X, Users } from 'lucide-react';
 import { INSTRUMENT_ICONS } from '../constants';
+import { EmptyState } from './ui';
 
 interface BandDashboardProps {
   members: BandMember[];
@@ -14,6 +16,7 @@ export const BandDashboard: React.FC<BandDashboardProps> = ({
   songs,
   onNavigateToSong,
 }) => {
+  const navigate = useNavigate();
   const [selectedMemberId, setSelectedMemberId] = useState<string | null>(null);
 
   const selectedMember = members.find(m => m.id === selectedMemberId);
@@ -35,6 +38,17 @@ export const BandDashboard: React.FC<BandDashboardProps> = ({
       </header>
 
       {/* Grid of Members */}
+      {members.length === 0 ? (
+        <EmptyState
+          icon={Users}
+          title="No band members"
+          description="Add members in Settings to start tracking assignments and responsibilities."
+          action={{
+            label: "Go to Settings",
+            onClick: () => navigate('/settings'),
+          }}
+        />
+      ) : (
       <div className="grid grid-cols-2 md:grid-cols-4 gap-6 mb-8">
         {members.map(member => (
           <div
@@ -73,6 +87,7 @@ export const BandDashboard: React.FC<BandDashboardProps> = ({
           </div>
         ))}
       </div>
+      )}
 
       {/* Detail View (Gig Sheet) */}
       {selectedMember ? (
@@ -94,6 +109,7 @@ export const BandDashboard: React.FC<BandDashboardProps> = ({
             <button
               onClick={() => setSelectedMemberId(null)}
               className="p-2 hover:bg-zinc-800 rounded-lg text-zinc-500 hover:text-white"
+              aria-label="Close member details"
             >
               <X size={20} />
             </button>
