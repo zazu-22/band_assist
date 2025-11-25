@@ -4,9 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-Band Assist (Sharp Dressed Band) is a browser-based React SPA for band management. It helps bands manage songs, charts, setlists, practice schedules, and member assignments. The app runs entirely client-side with localStorage persistence and integrates Google Gemini AI for music analysis.
+Band Assist (Sharp Dressed Band) is a React SPA for band management. It helps bands manage songs, charts, setlists, practice schedules, and member assignments. The app uses Supabase for data persistence and authentication.
 
-**Tech Stack:** React 19, TypeScript, Vite, Tailwind CSS, AlphaTab (Guitar Pro rendering), Google Gemini AI
+**Tech Stack:** React 19, TypeScript, Vite, Tailwind CSS 4, Supabase, AlphaTab (Guitar Pro rendering), Google Gemini AI
 
 ## Development Commands
 
@@ -22,233 +22,334 @@ npm run build
 
 # Preview production build
 npm run preview
+
+# Run tests
+npm test
+
+# Type check
+npm run typecheck
+
+# Lint
+npm run lint
 ```
 
 ## Environment Setup
 
-Before running the app, set `GEMINI_API_KEY` in `.env.local`:
+Create `.env.local` with the following variables:
 
 ```env
+# Required for AI features
 GEMINI_API_KEY=your_api_key_here
+
+# Required - Supabase configuration
+VITE_SUPABASE_URL=your_supabase_url
+VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
 ```
 
-The Vite config maps this to `process.env.API_KEY` and `process.env.GEMINI_API_KEY` for compatibility.
+The Vite config maps `GEMINI_API_KEY` to `process.env.API_KEY` and `process.env.GEMINI_API_KEY` for compatibility.
+
+**Note:** Supabase configuration is required. The app will throw an error on startup if `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY` are not set.
 
 ## Architecture Overview
 
+### Project Structure
+
+```
+src/
+├── components/           # React components
+│   ├── ui/              # Reusable UI components (Toast, ConfirmDialog, etc.)
+│   ├── Dashboard.tsx    # Main song overview
+│   ├── SongDetail.tsx   # Full song editor
+│   ├── SmartTabEditor.tsx # Text chart viewer/editor
+│   ├── AlphaTabRenderer.tsx # Guitar Pro renderer
+│   ├── PracticeRoom.tsx # Practice interface
+│   ├── PerformanceMode.tsx # Live performance view
+│   ├── SetlistManager.tsx # Setlist builder
+│   ├── ScheduleManager.tsx # Event scheduling
+│   ├── BandDashboard.tsx # Per-member view
+│   ├── Settings.tsx     # Band configuration
+│   ├── Navigation.tsx   # Sidebar navigation
+│   ├── BandSelector.tsx # Multi-band switcher
+│   ├── Login.tsx        # Authentication
+│   ├── Signup.tsx       # Registration
+│   ├── PasswordReset.tsx # Password reset request
+│   ├── PasswordUpdate.tsx # Password reset completion
+│   ├── AuthLayout.tsx   # Auth page template
+│   └── InvitationManager.tsx # Team invitations
+├── services/            # Business logic & data persistence
+│   ├── storageService.ts # Main storage facade
+│   ├── supabaseStorageService.ts # Supabase backend
+│   ├── localStorageService.ts # Browser localStorage
+│   ├── supabaseClient.ts # Supabase configuration
+│   ├── geminiService.ts # Google Gemini AI
+│   ├── migrationService.ts # Local to Supabase migration
+│   └── IStorageService.ts # Storage interface
+├── types/
+│   └── database.types.ts # Supabase schema types
+├── types.ts             # Core data types
+├── hooks/
+│   └── useConfirmDialog.ts # Reusable confirm dialog hook
+├── utils/
+│   └── validation.ts    # Email & password validation
+├── App.tsx              # Main app, routing, state management
+├── constants.ts         # Initial data & defaults
+└── index.css            # Tailwind imports
+```
+
 ### Core State Management Pattern
 
-All application state lives in `App.tsx` and flows down via props. There is NO external state management library (no Redux, Zustand, etc.). State updates flow back up through callback props like `onUpdateSong`.
+All application state lives in `App.tsx` and flows down via React Context. There is NO external state management library.
 
 **Key State:**
-
 - `songs: Song[]` - All songs in the repertoire
 - `members: BandMember[]` - Band roster
 - `availableRoles: string[]` - Instrument/role options
 - `events: BandEvent[]` - Schedule (practices, gigs)
+- `session: Session | null` - Supabase auth session
+- `currentBandId: string | null` - Active band for multi-band support
 
-**State Initialization:** Uses lazy initialization with `StorageService.load()` to restore from localStorage, falling back to `INITIAL_SONGS` and default data if empty.
+**AppContext Interface:**
+```typescript
+interface AppContextValue {
+  songs: Song[];
+  setSongs: React.Dispatch<React.SetStateAction<Song[]>>;
+  members: BandMember[];
+  setMembers: React.Dispatch<React.SetStateAction<BandMember[]>>;
+  availableRoles: string[];
+  setAvailableRoles: React.Dispatch<React.SetStateAction<string[]>>;
+  events: BandEvent[];
+  setEvents: React.Dispatch<React.SetStateAction<BandEvent[]>>;
+  handleUpdateSong: (song: Song) => void;
+  session: Session | null;
+  currentBandId: string | null;
+  isAdmin: boolean;
+}
+```
 
-**Auto-Save:** A `useEffect` in `App.tsx` automatically saves all state to localStorage whenever core data changes.
+Access context with the `useAppContext()` hook. The context value is memoized with `useMemo` for performance.
 
-**Context API:** State is shared via `AppContext` (created in `App.tsx`) and accessed through the `useAppContext()` hook. The context value is memoized with `useMemo` for performance.
+**Auto-Save:** A `useEffect` in `App.tsx` automatically saves all state via `StorageService.save()` whenever core data changes.
 
-### Routing System (React Router)
+### Routing System (React Router v6)
 
-Navigation uses React Router v6 with URL-based routing. The `Navigation` component uses `useNavigate()` internally for route changes.
+**Authentication Routes (Supabase mode only):**
+- `/login` - User login
+- `/signup` - Registration
+- `/password-reset` - Request password reset
+- `/password-update` - Complete password reset (from email link)
 
-**Route Structure:**
+**Full-Screen Routes (no sidebar):**
+- `/songs/:songId` - Song detail editor
+- `/songs/:songId/practice` - Practice room with specific song
+- `/performance` - Live performance view
 
-- `/` - Dashboard (main song overview)
-- `/songs/:songId` - Song detail editor (full-screen, no sidebar)
-- `/songs/:songId/practice` - Practice room for specific song
+**Layout Routes (with sidebar):**
+- `/` - Dashboard (index route)
 - `/setlist` - Setlist builder
 - `/practice` - Practice room (song selection)
 - `/schedule` - Event management
 - `/band` - Per-member assignment view
-- `/settings` - Band roster, roles, data import/export
-- `/performance` - Live performance view (full-screen, minimal UI)
+- `/settings` - Band roster, roles, team, data
 
-**Layout Routes:** Routes with sidebar use `AppLayout` as a layout route with `<Outlet />`. Full-screen routes (song detail, performance) render without the sidebar.
-
-**Route Components:** `SongDetailRoute` and `PracticeRoomRoute` are wrapper components that extract URL params and connect to context.
+**Route Components:** `SongDetailRoute` and `PracticeRoomRoute` extract URL params and connect to context.
 
 ### Data Models (types.ts)
 
-**`Song`** - Central entity containing:
-
-- Basic metadata (title, artist, bpm, key, duration, status)
+**`Song`** - Central entity:
+- Basic metadata: `title`, `artist`, `bpm`, `key`, `duration`, `status`
+- Status: `'To Learn' | 'In Progress' | 'Performance Ready'`
 - `charts: SongChart[]` - Multi-chart system (TEXT, IMAGE, PDF, GP)
-- `assignments: Assignment[]` - Links members to roles for this song
+- `assignments: Assignment[]` - Links members to roles
 - `parts: SongPart[]` - Song sections (Intro, Verse, Solo, etc.)
 - `backingTrackUrl?: string` - Base64 data URI for audio
-- Legacy fields (tabContent, tabUrl, lyrics) - kept for migration but use `charts` instead
+- `backingTrackStoragePath?: string` - Supabase Storage path
+- Legacy fields (`tabContent`, `tabUrl`, `lyrics`) - kept for migration
 
 **`SongChart`** - Flexible chart storage:
-
 - `type: 'TEXT' | 'IMAGE' | 'PDF' | 'GP'`
-- TEXT: Uses `content` field for raw text/tablature
-- IMAGE/PDF/GP: Uses `url` field for Base64 data URIs
-- `annotations: Annotation[]` - Line-based notes for TEXT charts
+- TEXT: Uses `content` field
+- IMAGE/PDF/GP: Uses `url` (Base64) or `storagePath` (Supabase)
+- `annotations: Annotation[]` - Line-based notes
 
-**`Assignment`** - Links a `memberId` to a `role` for a specific song
+**`Assignment`** - Links `memberId` to `role` for a song
 
-**`BandMember`** - Person in the band with `roles: string[]` (preferred instruments)
+**`BandMember`** - Person with `roles: string[]` (preferred instruments)
 
-**`BandEvent`** - Scheduled event (PRACTICE | GIG | OTHER)
+**`BandEvent`** - Scheduled event (`PRACTICE | GIG | OTHER`)
 
-### Data Persistence (services/storageService.ts)
+### Data Persistence
 
-**StorageService API:**
+**Storage Service Architecture:** Uses `IStorageService` interface implemented by Supabase backend.
 
-- `save(songs, members, roles, events)` - Saves to localStorage with keys `sdb_*`
-- `load()` - Loads from localStorage, includes legacy data migration
-- `exportData()` - Downloads JSON backup file
-- `importData(file)` - Restores from JSON backup
+**`storageService.ts`** - Main facade wrapping `supabaseStorageService.ts`. Throws error if Supabase is not configured.
 
-**Migration:** The `load()` function automatically migrates legacy `tabContent`/`tabUrl` to the new `charts[]` array format.
+**Note:** `localStorageService.ts` exists for data export/import and migration purposes but is not used as a runtime storage backend.
 
-**Storage Keys:** All use `sdb_` prefix (songs, members, roles, events)
+**API:**
+- `save(songs, members, roles, events)` - Persist all state to Supabase
+- `load()` - Load state from Supabase (includes legacy migration)
+- `exportData()` - Download JSON backup
+- `importData(file)` - Restore from JSON
+- `setCurrentBand(bandId)` - Set band context for multi-band queries
+
+**Band Context Lifecycle:** `setCurrentBand()` is called in `App.tsx` after authentication succeeds and before loading band data. It must be set before any data operations to scope queries to the correct band.
+
+**Migration:** Auto-migrates legacy `tabContent`/`tabUrl` to `charts[]` array on load.
 
 ### AI Integration (services/geminiService.ts)
 
-**Gemini Service Functions:**
+**Model:** `gemini-2.5-flash`
 
-- `getMusicAnalysis(prompt, context?, mediaData?)` - General-purpose music analysis/coaching
-- `extractPracticePlan(songTitle, difficulty)` - Generates 3-step practice routine
-- `extractSongParts(instruction, mediaData)` - Parses charts into structured JSON
+**Functions:**
+- `getMusicAnalysis(prompt, context?, mediaData?)` - General music analysis/coaching
+- `extractPracticePlan(songTitle, difficulty)` - 3-step practice routine
+- `extractSongParts(instruction, mediaData)` - Parse charts into structured JSON
 
-**Model:** Uses `gemini-2.5-flash`
+**Multimodal Support:** Accepts Base64-encoded images/PDFs alongside text prompts.
 
-**Multimodal Support:** Can send Base64-encoded images/PDFs alongside text prompts for chart analysis.
-
-**API Key:** Retrieved from `process.env.API_KEY` (injected by Vite from `GEMINI_API_KEY` env var). If missing, functions return graceful error messages.
+**Error Handling:** If `process.env.API_KEY` is undefined, functions return graceful error messages.
 
 ## Key Components
 
 ### SongDetail (components/SongDetail.tsx)
 
-The main song editing interface. Handles:
-
+Main song editing interface:
 - Metadata editing (title, artist, key, bpm, status)
-- Multi-chart system (create TEXT charts, upload PDF/images/GP files)
+- Multi-chart management (TEXT, PDF, images, Guitar Pro)
 - Member assignments per song
-- AI Studio Assistant chat interface
-- Backing track upload
+- AI Studio Assistant chat
+- Backing track upload & playback
+- Annotations system
 
-**Important:** When uploading files, they are converted to Base64 data URIs and stored inline in the `Song` object. Files >10MB are rejected.
-
-**Chart Upload Types:**
-
-- `.pdf` → type: 'PDF'
-- Images (`.png`, `.jpg`) → type: 'IMAGE'
-- Guitar Pro (`.gp`, `.gpx`, `.gp3-7`) → type: 'GP'
-- Manual text entry → type: 'TEXT'
+**File Upload:** Converts to Base64 data URIs. Files >10MB are rejected.
 
 ### SmartTabEditor (components/SmartTabEditor.tsx)
 
-Intelligent text chart viewer/editor. Used in SongDetail, PracticeRoom, and PerformanceMode.
-
-**Features:**
-
-- **Line Analysis:** Auto-detects CHORD, LYRIC, HEADER, TAB, or EMPTY lines using regex heuristics
-- **Chord Transposition:** Can shift all chords up/down by semitones
+Intelligent text chart viewer/editor:
+- **Line Analysis:** Auto-detects CHORD, LYRIC, HEADER, TAB, EMPTY via regex
+- **Chord Transposition:** Shift all chords up/down by semitones
 - **Annotations:** Add colored notes to specific lines
-
-**Transpose Logic:** Uses two note arrays (`NOTES` with sharps, `NOTES_FLAT` for detection) to handle enharmonic equivalents. Output prefers sharps.
+- **Two modes:** VIEW and EDIT
 
 ### AlphaTabRenderer (components/AlphaTabRenderer.tsx)
 
-React wrapper around the AlphaTab library for rendering Guitar Pro files (`.gp*`).
+Guitar Pro file renderer wrapping AlphaTab library:
+- Interactive sheet music/tablature
+- Playback controls with metronome
+- Track muting/soloing
+- Position tracking with throttled updates
 
-**Usage:** Pass Base64-encoded GP file data via the `fileData` prop. The component converts it to binary and renders interactive sheet music/tablature.
+**Note:** AlphaTab is loaded from CDN (`@coderline/alphatab@latest`) in `index.html`. The `@coderline/alphatab` npm package is also installed for type definitions.
 
-**Important:** AlphaTab is loaded globally from CDN in `index.html`. Ensure the global `alphaTab` object is available.
+### Settings (components/Settings.tsx)
+
+Band configuration with tabs:
+- **ROSTER** - Add/edit/delete band members
+- **ROLES** - Configure available instruments
+- **TEAM** - Invitation management (Supabase only)
+- **DATA** - Import/export JSON backups
+
+### UI Components (components/ui/)
+
+- `Toast.tsx` - Toast notifications (Sonner wrapper)
+- `ConfirmDialog.tsx` - Confirmation modals (danger/warning/info variants)
+- `EmptyState.tsx` - Empty state displays
+- `LoadingSpinner.tsx` - Loading indicator
+- `ErrorBoundary.tsx` - Error capture & display
 
 ## Important Patterns
 
-### File Uploads
+### File Uploads & Data URIs
 
-All uploaded files (PDFs, images, audio, GP files) are converted to Base64 data URIs and stored inline in the state. This eliminates the need for a backend but can cause localStorage quota issues with large files. The StorageService shows an alert if quota is exceeded.
+Files are converted to Base64 data URIs and stored inline (or in Supabase Storage).
 
-### Data URI Format
+**Format:** `data:{mimeType};base64,{base64String}`
 
-Files stored as: `data:{mimeType};base64,{base64String}`
-
-When passing to Gemini AI or other services, extract with:
-
+**Extraction:**
 ```typescript
 const matches = dataUri.match(/^data:(.+);base64,(.+)$/);
 const mimeType = matches[1];
 const base64Data = matches[2];
 ```
 
-### URL Navigation
-
-Use React Router's `useNavigate()` hook for navigation. Common patterns:
-
-```typescript
-const navigate = useNavigate();
-
-// Navigate to song detail
-navigate(`/songs/${songId}`);
-
-// Navigate back to dashboard (prefer explicit paths over navigate(-1))
-navigate('/');
-
-// Navigate with replace (for redirects)
-navigate('/', { replace: true });
-```
-
-For components that receive navigation callbacks as props (e.g., `onNavigateToSong`, `onBack`), these should use explicit paths rather than `navigate(-1)` to ensure reliable behavior when users directly access URLs.
-
 ### State Updates
 
-Always use the callback functions passed down from `App.tsx`:
-
-- `onUpdateSong(updatedSong)` - For modifying songs
-- `setMembers(newMembers)` - For updating band roster
-- `setSongs(newSongs)` - For bulk song operations
-- `setEvents(newEvents)` - For schedule changes
-
-Never mutate state objects directly. Always create new objects/arrays:
-
+Always use immutable updates:
 ```typescript
 // Good
-onUpdateSong({ ...song, title: 'New Title' });
-setSongs(songs.map(s => (s.id === song.id ? updatedSong : s)));
+handleUpdateSong({ ...song, title: 'New Title' });
+setSongs(songs.map(s => s.id === id ? updated : s));
 
-// Bad
-song.title = 'New Title'; // Direct mutation
+// Bad - never mutate directly
+song.title = 'New Title';
 ```
 
-## Testing Notes
+### URL Navigation
 
-This project does not currently have a test suite. When adding tests:
+Use React Router's `useNavigate()` with explicit paths:
+```typescript
+const navigate = useNavigate();
+navigate(`/songs/${songId}`);
+navigate('/'); // Prefer over navigate(-1)
+navigate('/', { replace: true }); // For redirects
+```
 
-- Test state update logic in App.tsx
-- Test StorageService save/load and migration
-- Test SmartTabEditor line analysis and transposition
-- Mock localStorage and geminiService API calls
+### Authentication Flow (Supabase Mode)
+
+1. App checks session on mount via Supabase auth listener
+2. If session exists, fetch/create user's band
+3. If no band, create default "My Band" with user as admin
+4. Set band context in StorageService
+5. Load band data
+
+### Multi-Band Support
+
+- Users can belong to multiple bands
+- `BandSelector` component for switching
+- `currentBandId` tracks active band
+- Band change triggers full data reload
+
+## Testing
+
+Testing is configured with Vitest and React Testing Library.
+
+```bash
+npm test
+```
+
+**Test targets:**
+- State update logic in App.tsx
+- StorageService save/load and migration
+- SmartTabEditor line analysis and transposition
+- Validation utilities
 
 ## Deployment
 
-The app is static and can be deployed to any static host (Vercel, Netlify, GitHub Pages, etc.). Ensure the `GEMINI_API_KEY` environment variable is set in your deployment platform.
+The app is static and can be deployed to any static host (Vercel, Netlify, GitHub Pages, etc.).
+
+**Required environment variables:**
+- `VITE_SUPABASE_URL` - Supabase project URL
+- `VITE_SUPABASE_ANON_KEY` - Supabase anonymous key
+- `GEMINI_API_KEY` - For AI features (optional, AI features disabled without it)
 
 **Build output:** `npm run build` creates production files in `dist/`
 
 ## Common Pitfalls
 
-1. **AlphaTab Global Dependency:** The `AlphaTabRenderer` component expects `window.alphaTab` to be available. Ensure the CDN script in `index.html` loads before React components render.
+1. **AlphaTab Global:** `AlphaTabRenderer` expects `window.alphaTab` from CDN. Ensure the script loads before React renders.
 
-2. **localStorage Quota:** Large files (audio, PDFs) can fill localStorage quickly. Users should export backups regularly and avoid storing very large files.
+2. **Supabase Required:** The app requires Supabase configuration. Without `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`, the app will fail to start.
 
-3. **Legacy Data:** When working with older songs, check for both `charts[]` (new) and `tabContent`/`tabUrl` (legacy). The migration in `storageService.ts` handles this on load, but manual updates should target `charts`.
+3. **Legacy Data Migration:** The storage service auto-migrates legacy `tabContent`/`tabUrl` to `charts[]`. Manual updates should target `charts`.
 
-4. **Gemini API Errors:** If `process.env.API_KEY` is undefined, AI features silently fail with error messages. Always check the env setup.
+4. **Gemini API Key:** If missing, AI features fail silently with error messages. Always verify env setup.
 
-5. **TypeScript Strictness:** The project uses `"strict": true`. Ensure all props are properly typed and avoid `any` unless absolutely necessary.
+5. **TypeScript Strictness:** Project uses `"strict": true`. Properly type all props; avoid `any`.
 
-6. **Direct URL Access:** Users can navigate directly to URLs like `/songs/123`. Handle missing resources gracefully with toast notifications and redirects. The `SongDetailRoute` component shows a toast and redirects to `/` if a song is not found.
+6. **Direct URL Access:** Handle missing resources gracefully. `SongDetailRoute` shows toast and redirects to `/` if song not found.
 
-7. **Navigation History:** Avoid using `navigate(-1)` for back navigation as it relies on browser history that may not exist for direct URL access. Use explicit paths like `navigate('/')` instead.
+7. **Navigation History:** Avoid `navigate(-1)`. Use explicit paths for reliable behavior with direct URL access.
+
+8. **Supabase Configuration:** If `VITE_SUPABASE_URL` is set but invalid, authentication will fail. Verify Supabase project setup.
+
+9. **Band Context:** In Supabase mode, always ensure `setCurrentBand()` is called before data operations to scope queries correctly.
