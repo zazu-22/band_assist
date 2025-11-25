@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { Song, BandEvent } from '../types';
 import { Activity, CalendarDays, CheckCircle2, Disc, Music } from 'lucide-react';
 import { EmptyState } from './ui';
+import { ROUTES } from '../routes';
 
 interface DashboardProps {
   songs: Song[];
@@ -94,7 +95,7 @@ export const Dashboard: React.FC<DashboardProps> = ({ songs, onNavigateToSong, e
               description="Add your first song to start building your setlist and tracking progress."
               action={{
                 label: 'Add Song',
-                onClick: () => navigate('/setlist'),
+                onClick: () => navigate(ROUTES.SETLIST),
               }}
             />
           ) : (

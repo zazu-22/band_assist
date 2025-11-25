@@ -4,6 +4,7 @@ import { BandMember, Song } from '../types';
 import { Music, ArrowRight, X, Users } from 'lucide-react';
 import { INSTRUMENT_ICONS } from '../constants';
 import { EmptyState } from './ui';
+import { ROUTES } from '../routes';
 
 interface BandDashboardProps {
   members: BandMember[];
@@ -45,7 +46,7 @@ export const BandDashboard: React.FC<BandDashboardProps> = ({
           description="Add members in Settings to start tracking assignments and responsibilities."
           action={{
             label: 'Go to Settings',
-            onClick: () => navigate('/settings'),
+            onClick: () => navigate(ROUTES.SETTINGS),
           }}
         />
       ) : (
