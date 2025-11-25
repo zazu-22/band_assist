@@ -2,7 +2,7 @@
 
 **Status**: Ready for Implementation
 **Priority**: Medium
-**Estimated Effort**: 6-8 hours
+**Estimated Effort**: 7-10 hours
 **Last Updated**: 2025-11-25
 
 ## Overview
@@ -115,11 +115,20 @@ useEffect(() => {
 }, [sidebarCollapsed]);
 
 // Add to context value (inside useMemo)
+// Note: setSidebarCollapsed is stable (from useState) so it doesn't need to be in deps
 const contextValue = useMemo(() => ({
-  // ... existing fields
+  // ... existing fields (songs, members, events, etc.)
   sidebarCollapsed,
   setSidebarCollapsed,
-}), [/* ... existing deps */, sidebarCollapsed]);
+}), [
+  songs,
+  members,
+  events,
+  availableRoles,
+  // ... other existing dependencies
+  sidebarCollapsed,
+  // setSidebarCollapsed is stable, no need to include
+]);
 ```
 
 #### 1.2 Update Navigation Component
@@ -130,7 +139,13 @@ Add collapse toggle button and transition animations:
 
 ```typescript
 import { useAppContext } from '../App';
-import { ChevronLeft, ChevronRight } from 'lucide-react';
+import { ChevronLeft, ChevronRight, Music } from 'lucide-react';
+import { useNavigate } from 'react-router-dom';
+import { ViewState } from '../types';
+
+interface NavigationProps {
+  currentView: ViewState;
+}
 
 export const Navigation: React.FC<NavigationProps> = ({ currentView }) => {
   const { sidebarCollapsed, setSidebarCollapsed } = useAppContext();
@@ -242,6 +257,8 @@ const [mobileNavOpen, setMobileNavOpen] = useState(false);
 **File**: `App.tsx` (AppLayout component)
 
 ```typescript
+import { Menu } from 'lucide-react';
+
 const AppLayout: React.FC = () => {
   const { mobileNavOpen, setMobileNavOpen } = useAppContext();
   const location = useLocation();
@@ -258,6 +275,7 @@ const AppLayout: React.FC = () => {
         <div
           className="fixed inset-0 bg-black/60 z-40 lg:hidden"
           onClick={() => setMobileNavOpen(false)}
+          aria-hidden="true"
         />
       )}
 
@@ -265,7 +283,7 @@ const AppLayout: React.FC = () => {
       <div className={`
         lg:relative lg:translate-x-0
         fixed top-0 left-0 h-full z-50
-        transform transition-transform duration-300 ease-in-out
+        transform transition-transform duration-300 ease-in-out motion-reduce:transition-none
         ${mobileNavOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
       `}>
         <Navigation currentView={currentView} />
@@ -275,6 +293,7 @@ const AppLayout: React.FC = () => {
       <button
         onClick={() => setMobileNavOpen(true)}
         className="fixed top-4 left-4 z-30 p-2 bg-zinc-900 rounded-lg shadow-lg lg:hidden"
+        aria-label="Open navigation menu"
       >
         <Menu size={24} />
       </button>
@@ -294,7 +313,7 @@ const AppLayout: React.FC = () => {
 **File**: `components/ui/ResizablePanel.tsx`
 
 ```typescript
-import React, { useRef, useState, useEffect, useCallback } from 'react';
+import React, { useRef, useState, useEffect } from 'react';
 import { GripVertical } from 'lucide-react';
 
 interface ResizablePanelProps {
@@ -318,8 +337,12 @@ export const ResizablePanel: React.FC<ResizablePanelProps> = ({
 }) => {
   const [width, setWidth] = useState(() => {
     if (storageKey) {
-      const saved = localStorage.getItem(`sdb_panel_${storageKey}`);
-      if (saved) return Math.max(minWidth, Math.min(maxWidth, parseInt(saved, 10)));
+      try {
+        const saved = localStorage.getItem(`sdb_panel_${storageKey}`);
+        if (saved) return Math.max(minWidth, Math.min(maxWidth, parseInt(saved, 10)));
+      } catch {
+        // localStorage may be unavailable or quota exceeded
+      }
     }
     return defaultWidth;
   });
@@ -327,24 +350,40 @@ export const ResizablePanel: React.FC<ResizablePanelProps> = ({
   const [isResizing, setIsResizing] = useState(false);
   const panelRef = useRef<HTMLDivElement>(null);
 
-  const handleMouseMove = useCallback((e: MouseEvent) => {
-    if (!panelRef.current) return;
-    const rect = panelRef.current.getBoundingClientRect();
-    const newWidth = side === 'left'
-      ? e.clientX - rect.left
-      : rect.right - e.clientX;
-    setWidth(Math.max(minWidth, Math.min(maxWidth, newWidth)));
-  }, [minWidth, maxWidth, side]);
+  // Track initial position and width for accurate delta calculation
+  const dragStartRef = useRef<{ mouseX: number; width: number } | null>(null);
 
-  const handleMouseUp = useCallback(() => {
-    setIsResizing(false);
-    if (storageKey) {
-      localStorage.setItem(`sdb_panel_${storageKey}`, String(width));
-    }
-  }, [storageKey, width]);
+  // Use refs to avoid stale closures in event handlers
+  const widthRef = useRef(width);
+  widthRef.current = width;
 
   useEffect(() => {
     if (!isResizing) return;
+
+    const handleMouseMove = (e: MouseEvent) => {
+      if (!dragStartRef.current) return;
+
+      const delta = side === 'left'
+        ? e.clientX - dragStartRef.current.mouseX
+        : dragStartRef.current.mouseX - e.clientX;
+
+      const newWidth = dragStartRef.current.width + delta;
+      setWidth(Math.max(minWidth, Math.min(maxWidth, newWidth)));
+    };
+
+    const handleMouseUp = () => {
+      setIsResizing(false);
+      dragStartRef.current = null;
+
+      if (storageKey) {
+        try {
+          localStorage.setItem(`sdb_panel_${storageKey}`, String(widthRef.current));
+        } catch {
+          // localStorage may be unavailable or quota exceeded
+        }
+      }
+    };
+
     document.addEventListener('mousemove', handleMouseMove);
     document.addEventListener('mouseup', handleMouseUp);
     document.body.style.cursor = 'col-resize';
@@ -356,14 +395,19 @@ export const ResizablePanel: React.FC<ResizablePanelProps> = ({
       document.body.style.cursor = '';
       document.body.style.userSelect = '';
     };
-  }, [isResizing, handleMouseMove, handleMouseUp]);
+  }, [isResizing, minWidth, maxWidth, side, storageKey]);
+
+  const handleMouseDown = (e: React.MouseEvent) => {
+    dragStartRef.current = { mouseX: e.clientX, width };
+    setIsResizing(true);
+  };
 
   const handlePosition = side === 'left' ? 'right-0' : 'left-0';
 
   return (
     <div
       ref={panelRef}
-      className={`relative shrink-0 ${className}`}
+      className={`relative shrink-0 motion-reduce:transition-none ${className}`}
       style={{ width }}
     >
       {children}
@@ -375,7 +419,11 @@ export const ResizablePanel: React.FC<ResizablePanelProps> = ({
           hover:bg-amber-500/50 transition-colors group
           ${isResizing ? 'bg-amber-500' : 'bg-transparent'}
         `}
-        onMouseDown={() => setIsResizing(true)}
+        onMouseDown={handleMouseDown}
+        role="separator"
+        aria-orientation="vertical"
+        aria-label="Resize panel"
+        tabIndex={0}
       >
         <div className={`
           absolute top-1/2 -translate-y-1/2
@@ -396,7 +444,7 @@ export const ResizablePanel: React.FC<ResizablePanelProps> = ({
 **File**: `hooks/useBreakpoint.ts`
 
 ```typescript
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useRef } from 'react';
 
 export type Breakpoint = 'sm' | 'md' | 'lg' | 'xl' | '2xl';
 
@@ -408,24 +456,38 @@ const BREAKPOINTS = {
   '2xl': 1536,
 } as const;
 
+const getBreakpoint = (): Breakpoint => {
+  // SSR-safe: default to 'lg' if window is not available
+  if (typeof window === 'undefined') return 'lg';
+
+  const width = window.innerWidth;
+  if (width >= BREAKPOINTS['2xl']) return '2xl';
+  if (width >= BREAKPOINTS.xl) return 'xl';
+  if (width >= BREAKPOINTS.lg) return 'lg';
+  if (width >= BREAKPOINTS.md) return 'md';
+  return 'sm';
+};
+
 export const useBreakpoint = (): Breakpoint => {
-  const [breakpoint, setBreakpoint] = useState<Breakpoint>('lg');
+  // Lazy initialization to avoid layout flash
+  const [breakpoint, setBreakpoint] = useState<Breakpoint>(getBreakpoint);
 
   useEffect(() => {
-    const getBreakpoint = (): Breakpoint => {
-      const width = window.innerWidth;
-      if (width >= BREAKPOINTS['2xl']) return '2xl';
-      if (width >= BREAKPOINTS.xl) return 'xl';
-      if (width >= BREAKPOINTS.lg) return 'lg';
-      if (width >= BREAKPOINTS.md) return 'md';
-      return 'sm';
+    let timeoutId: ReturnType<typeof setTimeout>;
+
+    // Debounced resize handler (~150ms) to avoid excessive updates
+    const handleResize = () => {
+      clearTimeout(timeoutId);
+      timeoutId = setTimeout(() => {
+        setBreakpoint(getBreakpoint());
+      }, 150);
     };
 
-    const handleResize = () => setBreakpoint(getBreakpoint());
-    handleResize();
-
     window.addEventListener('resize', handleResize);
-    return () => window.removeEventListener('resize', handleResize);
+    return () => {
+      clearTimeout(timeoutId);
+      window.removeEventListener('resize', handleResize);
+    };
   }, []);
 
   return breakpoint;
@@ -543,6 +605,16 @@ const AppLayout: React.FC = () => {
 };
 ```
 
+## Accessibility Considerations
+
+The implementation includes the following accessibility features:
+
+- **ARIA Labels**: All interactive elements (buttons, resize handles) include proper `aria-label` attributes
+- **Keyboard Navigation**: Resize handles are focusable with `tabIndex={0}`
+- **Reduced Motion**: Uses `motion-reduce:transition-none` for users who prefer reduced motion
+- **Semantic Roles**: Resize handles use `role="separator"` with `aria-orientation="vertical"`
+- **Screen Reader Support**: Mobile menu overlay uses `aria-hidden="true"` to prevent focus trapping
+
 ## Testing Plan
 
 ### Functional Testing
@@ -554,6 +626,13 @@ const AppLayout: React.FC = () => {
 - [ ] ResizablePanel drag works smoothly
 - [ ] Panel widths persist in localStorage
 - [ ] Keyboard shortcut (Cmd+B) toggles sidebar
+
+### Accessibility Testing
+
+- [ ] Screen reader announces panel state changes
+- [ ] Resize handles are keyboard accessible
+- [ ] Reduced motion preference is respected
+- [ ] Focus management works correctly in mobile drawer
 
 ### Responsive Testing
 
