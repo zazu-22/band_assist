@@ -679,7 +679,7 @@ describe('AlphaTabRenderer', () => {
         expect(screen.queryByText('Parsing Tab...')).not.toBeInTheDocument();
       });
 
-      const settingsButton = screen.getByTitle('Click to open mixer and switch tracks');
+      const settingsButton = screen.getByTitle(/Click to open mixer and switch tracks/);
       fireEvent.click(settingsButton);
 
       await waitFor(() => {

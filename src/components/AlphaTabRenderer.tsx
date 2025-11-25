@@ -622,6 +622,38 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
     };
   }, [autoScrollEnabled, scrollSpeed]);
 
+  // Container resize detection - force AlphaTab to recalculate layout
+  useEffect(() => {
+    if (!apiRef.current || !rootRef.current) return;
+
+    let resizeTimeoutId: ReturnType<typeof setTimeout>;
+
+    const resizeObserver = new ResizeObserver(() => {
+      // Debounce resize events to avoid excessive re-renders
+      clearTimeout(resizeTimeoutId);
+      resizeTimeoutId = setTimeout(() => {
+        if (!apiRef.current) return;
+
+        // Force AlphaTab to recalculate layout by re-rendering current track
+        try {
+          if (currentTrackIndex !== null && apiRef.current.score?.tracks?.[currentTrackIndex]) {
+            const track = apiRef.current.score.tracks[currentTrackIndex];
+            apiRef.current.renderTracks([track]);
+          }
+        } catch (error) {
+          console.warn('[AlphaTab] Error handling resize:', error);
+        }
+      }, 150); // 150ms debounce - balances responsiveness with performance
+    });
+
+    resizeObserver.observe(rootRef.current);
+
+    return () => {
+      clearTimeout(resizeTimeoutId);
+      resizeObserver.disconnect();
+    };
+  }, [currentTrackIndex]);
+
   const runPlaybackAction = useCallback(
     (action: PlaybackAction, isRetry = false) => {
       if (!apiRef.current) {
@@ -973,23 +1005,23 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
         </div>
 
         {/* Center: Track selector */}
-        <div className="flex items-center justify-center flex-1">
+        <div className="flex items-center justify-center flex-1 min-w-0">
           {currentTrackIndex !== null && tracks[currentTrackIndex] && (
             <button
               ref={mixerButtonRef}
               onClick={() => setShowSettings(!showSettings)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all ${
+              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all max-w-[200px] ${
                 showSettings
                   ? 'bg-amber-500 text-white shadow-md'
                   : 'bg-zinc-200 hover:bg-zinc-300 text-zinc-800 hover:shadow-sm'
               }`}
-              title="Click to open mixer and switch tracks"
+              title={`${tracks[currentTrackIndex].name} - Click to open mixer and switch tracks`}
             >
               <div
-                className={`w-2.5 h-2.5 rounded-full ${showSettings ? 'bg-white' : 'bg-amber-500'}`}
+                className={`w-2.5 h-2.5 rounded-full shrink-0 ${showSettings ? 'bg-white' : 'bg-amber-500'}`}
               ></div>
-              <span className="text-sm font-semibold">{tracks[currentTrackIndex].name}</span>
-              <Sliders size={16} className={showSettings ? 'opacity-90' : 'opacity-60'} />
+              <span className="text-sm font-semibold truncate">{tracks[currentTrackIndex].name}</span>
+              <Sliders size={16} className={`shrink-0 ${showSettings ? 'opacity-90' : 'opacity-60'}`} />
             </button>
           )}
         </div>

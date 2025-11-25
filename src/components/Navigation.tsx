@@ -57,13 +57,32 @@ export const Navigation: React.FC<NavigationProps> = ({
   return (
     <div
       className={`
-        bg-zinc-900 border-r border-zinc-800 flex flex-col h-screen sticky top-0
+        bg-zinc-900 border-r border-zinc-800 flex flex-col h-screen sticky top-0 relative group
         transition-[width] duration-300 ease-in-out motion-reduce:transition-none
         ${sidebarCollapsed ? 'w-16' : 'w-20 lg:w-64'}
       `}
     >
-      {/* Header with collapse toggle */}
-      <div className="p-4 lg:p-6 flex items-center justify-between">
+      {/* Edge handle collapse toggle (VS Code style) - visible on lg screens */}
+      <button
+        type="button"
+        onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
+        className={`
+          hidden lg:flex absolute right-0 top-20 translate-x-1/2 z-10
+          w-6 h-12 bg-zinc-800 border border-zinc-700 rounded-r-lg
+          items-center justify-center
+          transition-all duration-200 motion-reduce:transition-none
+          hover:bg-zinc-700 hover:border-amber-500 hover:text-amber-500
+          focus-visible:opacity-100 focus-visible:ring-2 focus-visible:ring-amber-500 focus-visible:outline-none
+          ${sidebarCollapsed ? 'opacity-100 text-zinc-300' : 'opacity-0 group-hover:opacity-100 text-zinc-400'}
+        `}
+        title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+        aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+      >
+        {sidebarCollapsed ? <ChevronRight size={14} /> : <ChevronLeft size={14} />}
+      </button>
+
+      {/* Header */}
+      <div className="p-4 lg:p-6 flex items-center justify-center lg:justify-start">
         {!sidebarCollapsed && (
           <div className="flex items-center gap-3">
             <div className="w-10 h-10 bg-amber-600 rounded-lg flex items-center justify-center shadow-lg shadow-amber-900/20">
@@ -77,21 +96,10 @@ export const Navigation: React.FC<NavigationProps> = ({
           </div>
         )}
         {sidebarCollapsed && (
-          <div className="w-10 h-10 bg-amber-600 rounded-lg flex items-center justify-center shadow-lg shadow-amber-900/20 mx-auto">
+          <div className="w-10 h-10 bg-amber-600 rounded-lg flex items-center justify-center shadow-lg shadow-amber-900/20">
             <Music className="text-white w-6 h-6" />
           </div>
         )}
-
-        {/* Collapse toggle - visible on lg screens */}
-        <button
-          type="button"
-          onClick={() => setSidebarCollapsed(!sidebarCollapsed)}
-          className="hidden lg:flex p-2 hover:bg-zinc-800 rounded-lg transition-colors text-zinc-400 hover:text-zinc-100"
-          title={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          aria-label={sidebarCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-        >
-          {sidebarCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
-        </button>
       </div>
 
       {/* Band Selector (only show if using Supabase and not collapsed) */}

@@ -1,5 +1,14 @@
 import '@testing-library/jest-dom';
 
+// Mock ResizeObserver for jsdom environment
+class ResizeObserverMock {
+  observe = vi.fn();
+  unobserve = vi.fn();
+  disconnect = vi.fn();
+}
+
+global.ResizeObserver = ResizeObserverMock;
+
 // Mock AlphaTab global - will be properly set up in individual test files
 // This is just a placeholder to prevent undefined errors
 interface WindowWithAlphaTab extends Window {

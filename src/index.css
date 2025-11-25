@@ -1,1 +1,21 @@
 @import 'tailwindcss';
+
+/* Global cursor styles for interactive elements */
+@layer base {
+  button,
+  [role="button"],
+  [type="button"],
+  [type="submit"],
+  [type="reset"],
+  select,
+  summary,
+  [tabindex]:not([tabindex="-1"]) {
+    cursor: pointer;
+  }
+
+  /* Disabled elements should show not-allowed cursor */
+  button:disabled,
+  [disabled] {
+    cursor: not-allowed;
+  }
+}
