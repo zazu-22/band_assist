@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Song } from '../types';
+import { Song } from '@/types';
 import {
   Play,
   Pause,
@@ -19,7 +19,7 @@ import {
 import { SmartTabEditor } from './SmartTabEditor';
 import { AlphaTabRenderer } from './AlphaTabRenderer';
 import { EmptyState, ResizablePanel } from './ui';
-import { useIsMobile } from '../hooks/useBreakpoint';
+import { useIsMobile } from '@/hooks/useBreakpoint';
 
 interface PracticeRoomProps {
   songs: Song[];
@@ -50,12 +50,17 @@ export const PracticeRoom: React.FC<PracticeRoomProps> = ({ songs }) => {
   const selectedSong = songs.find(s => s.id === selectedSongId);
 
   // Initialize state when song changes
+  // This is a valid state synchronization pattern - resetting derived state when the source
+  // (selectedSong) changes. Alternative would be key-based reset on parent component.
   useEffect(() => {
     if (selectedSong) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Resetting derived state when song prop changes
       setMetronomeBpm(selectedSong.bpm);
       if (selectedSong.charts.length > 0) {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- Resetting derived state when song prop changes
         setActiveChartId(selectedSong.charts[0].id);
       } else {
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- Resetting derived state when song prop changes
         setActiveChartId(null);
       }
     }
@@ -131,12 +136,14 @@ export const PracticeRoom: React.FC<PracticeRoomProps> = ({ songs }) => {
   };
 
   // Handle backing track URL loading from Data URI or Blob
+  // This effect synchronizes with the browser's Blob API (external system).
+  // Creating object URLs from base64 data requires cleanup (URL.revokeObjectURL),
+  // making useEffect the correct pattern for this external resource management.
   const [audioSrc, setAudioSrc] = useState<string | undefined>(undefined);
 
   useEffect(() => {
     if (selectedSong?.backingTrackUrl && selectedSong.backingTrackUrl.startsWith('data:audio')) {
       try {
-        // Simple check if it's a base64 data uri
         const mime = selectedSong.backingTrackUrl.split(';')[0].split(':')[1];
         const base64 = selectedSong.backingTrackUrl.split(',')[1];
         const byteCharacters = atob(base64);
@@ -147,12 +154,14 @@ export const PracticeRoom: React.FC<PracticeRoomProps> = ({ songs }) => {
         const byteArray = new Uint8Array(byteNumbers);
         const blob = new Blob([byteArray], { type: mime });
         const url = URL.createObjectURL(blob);
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- Synchronizing with browser Blob API; cleanup handled in return
         setAudioSrc(url);
         return () => URL.revokeObjectURL(url);
-      } catch (e) {
+      } catch {
         // Silently handle conversion errors
       }
     } else {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Clearing external resource reference
       setAudioSrc(undefined);
     }
   }, [selectedSong]);

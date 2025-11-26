@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback, lazy, Suspense } from 'react';
 import {
   Routes,
   Route,
@@ -6,23 +6,31 @@ import {
   useNavigate,
   useParams,
   useLocation,
-  Outlet,
 } from 'react-router-dom';
 import { toast, LoadingScreen } from './components/ui';
 import { Session } from '@supabase/supabase-js';
-import { Navigation } from './components/Navigation';
+
+// Eagerly loaded - small, frequently used components
 import { Dashboard } from './components/Dashboard';
 import { SetlistManager } from './components/SetlistManager';
-import { SongDetail } from './components/SongDetail';
 import { Settings } from './components/Settings';
 import { BandDashboard } from './components/BandDashboard';
-import { PerformanceMode } from './components/PerformanceMode';
 import { ScheduleManager } from './components/ScheduleManager';
-import { PracticeRoom } from './components/PracticeRoom';
 import { Login } from './components/Login';
 import { Signup } from './components/Signup';
 import { PasswordReset } from './components/PasswordReset';
 import { PasswordUpdate } from './components/PasswordUpdate';
+
+// Lazy loaded - heavy components that use AlphaTab or have complex features
+const SongDetail = lazy(() =>
+  import('./components/SongDetail').then(module => ({ default: module.SongDetail }))
+);
+const PerformanceMode = lazy(() =>
+  import('./components/PerformanceMode').then(module => ({ default: module.PerformanceMode }))
+);
+const PracticeRoom = lazy(() =>
+  import('./components/PracticeRoom').then(module => ({ default: module.PracticeRoom }))
+);
 import { Song, BandMember, BandEvent } from './types';
 import {
   INITIAL_SONGS,
@@ -34,12 +42,14 @@ import {
 import { StorageService } from './services/storageService';
 import { getSupabaseClient, isSupabaseConfigured } from './services/supabaseClient';
 import { ROUTES, getSongDetailRoute } from './routes';
-import { Menu, X } from 'lucide-react';
 import { useLayoutShortcuts } from './hooks/useLayoutShortcuts';
+import { ThemeProvider } from './components/ui/ThemeProvider';
+import { SidebarProvider, AppShell } from './components/layout';
 
 /**
  * Context value interface for the AppContext.
  * Contains all shared application state and update functions.
+ * Note: Layout state (sidebar, mobile nav) is now managed by SidebarProvider.
  */
 interface AppContextValue {
   songs: Song[];
@@ -54,12 +64,6 @@ interface AppContextValue {
   session: Session | null;
   currentBandId: string | null;
   isAdmin: boolean;
-  // Layout state for collapsible sidebar
-  sidebarCollapsed: boolean;
-  setSidebarCollapsed: React.Dispatch<React.SetStateAction<boolean>>;
-  // Mobile drawer state
-  mobileNavOpen: boolean;
-  setMobileNavOpen: React.Dispatch<React.SetStateAction<boolean>>;
 }
 
 /**
@@ -132,8 +136,7 @@ const PracticeRoomRoute: React.FC = () => {
 
 /**
  * Layout wrapper for authenticated routes with navigation sidebar.
- * Uses React Router's Outlet for rendering nested route content.
- * Includes mobile drawer navigation with focus management.
+ * Uses the new AppShell component with SidebarProvider for state management.
  */
 const AppLayout: React.FC<{
   onLogout: () => void;
@@ -142,105 +145,17 @@ const AppLayout: React.FC<{
   userBands: Array<{ id: string; name: string }>;
   onSelectBand: (bandId: string) => void;
 }> = ({ onLogout, showLogout, currentBandName, userBands, onSelectBand }) => {
-  const { mobileNavOpen, setMobileNavOpen } = useAppContext();
-  const location = useLocation();
-
   // Enable keyboard shortcuts for layout (Cmd/Ctrl+B to toggle sidebar)
   useLayoutShortcuts();
 
-  // Refs for focus management
-  const menuButtonRef = useRef<HTMLButtonElement>(null);
-  const closeButtonRef = useRef<HTMLButtonElement>(null);
-
-  // Close drawer on route change
-  useEffect(() => {
-    setMobileNavOpen(false);
-  }, [location.pathname, setMobileNavOpen]);
-
-  // Focus management: focus close button when drawer opens, return focus when closed
-  useEffect(() => {
-    if (mobileNavOpen) {
-      closeButtonRef.current?.focus();
-    } else {
-      menuButtonRef.current?.focus();
-    }
-  }, [mobileNavOpen]);
-
-  // Handle Escape key to close drawer
-  useEffect(() => {
-    if (!mobileNavOpen) return;
-
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape') {
-        setMobileNavOpen(false);
-      }
-    };
-
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
-  }, [mobileNavOpen, setMobileNavOpen]);
-
   return (
-    <div className="flex min-h-screen bg-zinc-950 font-sans text-zinc-100">
-      {/* Mobile overlay - clicking closes drawer */}
-      {mobileNavOpen && (
-        <div
-          className="fixed inset-0 bg-black/60 z-40 lg:hidden"
-          onClick={() => setMobileNavOpen(false)}
-          aria-hidden="true"
-        />
-      )}
-
-      {/* Sidebar - drawer on mobile, static on desktop */}
-      <div
-        className={`
-          lg:relative lg:translate-x-0
-          fixed top-0 left-0 h-full z-50
-          transform transition-transform duration-300 ease-in-out motion-reduce:transition-none
-          ${mobileNavOpen ? 'translate-x-0' : '-translate-x-full lg:translate-x-0'}
-        `}
-        role={mobileNavOpen ? 'dialog' : undefined}
-        aria-modal={mobileNavOpen ? 'true' : undefined}
-        aria-label={mobileNavOpen ? 'Navigation menu' : undefined}
-      >
-        {/* Close button inside drawer (mobile only) */}
-        {mobileNavOpen && (
-          <button
-            type="button"
-            ref={closeButtonRef}
-            onClick={() => setMobileNavOpen(false)}
-            className="absolute top-4 right-4 p-2 text-zinc-400 hover:text-zinc-100 z-10 lg:hidden"
-            aria-label="Close navigation menu"
-          >
-            <X size={24} />
-          </button>
-        )}
-        <Navigation
-          onLogout={onLogout}
-          showLogout={showLogout}
-          currentBandName={currentBandName}
-          userBands={userBands}
-          onSelectBand={onSelectBand}
-        />
-      </div>
-
-      {/* Mobile menu button */}
-      <button
-        type="button"
-        ref={menuButtonRef}
-        onClick={() => setMobileNavOpen(true)}
-        className="fixed top-4 left-4 z-30 p-2 bg-zinc-900 rounded-lg shadow-lg lg:hidden"
-        aria-label="Open navigation menu"
-        aria-expanded={mobileNavOpen}
-        aria-controls="mobile-nav"
-      >
-        <Menu size={24} />
-      </button>
-
-      <main className="flex-1 h-screen overflow-y-auto">
-        <Outlet />
-      </main>
-    </div>
+    <AppShell
+      onLogout={onLogout}
+      showLogout={showLogout}
+      currentBandName={currentBandName}
+      userBands={userBands}
+      onSelectBand={onSelectBand}
+    />
   );
 };
 
@@ -267,19 +182,6 @@ const App: React.FC = () => {
   const [members, setMembers] = useState<BandMember[]>([]);
   const [availableRoles, setAvailableRoles] = useState<string[]>([]);
   const [events, setEvents] = useState<BandEvent[]>([]);
-
-  // -- Layout State --
-  // Sidebar collapsed state with localStorage persistence
-  const [sidebarCollapsed, setSidebarCollapsed] = useState(() => {
-    try {
-      return localStorage.getItem('sdb_sidebar_collapsed') === 'true';
-    } catch {
-      return false;
-    }
-  });
-
-  // Mobile drawer state
-  const [mobileNavOpen, setMobileNavOpen] = useState(false);
 
   // Keep ref in sync with currentBandId state
   useEffect(() => {
@@ -651,16 +553,8 @@ const App: React.FC = () => {
     }
   };
 
-  // Persist sidebar collapsed state to localStorage
-  useEffect(() => {
-    try {
-      localStorage.setItem('sdb_sidebar_collapsed', String(sidebarCollapsed));
-    } catch {
-      // localStorage may be unavailable
-    }
-  }, [sidebarCollapsed]);
-
   // Context value for child routes - memoized to prevent unnecessary re-renders
+  // Note: Layout state (sidebar, mobile nav) is now managed by SidebarProvider
   const contextValue = useMemo<AppContextValue>(
     () => ({
       songs,
@@ -675,10 +569,6 @@ const App: React.FC = () => {
       session,
       currentBandId,
       isAdmin,
-      sidebarCollapsed,
-      setSidebarCollapsed,
-      mobileNavOpen,
-      setMobileNavOpen,
     }),
     [
       songs,
@@ -689,8 +579,6 @@ const App: React.FC = () => {
       currentBandId,
       isAdmin,
       handleUpdateSong,
-      sidebarCollapsed,
-      mobileNavOpen,
     ]
   );
 
@@ -763,19 +651,39 @@ const App: React.FC = () => {
   }
 
   return (
-    <AppContext.Provider value={contextValue}>
-      <Routes>
-        {/* Performance Mode - Full screen, no sidebar */}
+    <ThemeProvider defaultTheme="dark" storageKey="band-assist-theme">
+      <SidebarProvider>
+        <AppContext.Provider value={contextValue}>
+          <Routes>
+            {/* Performance Mode - Full screen, no sidebar (lazy loaded) */}
+            <Route
+              path={ROUTES.PERFORMANCE}
+              element={
+                <Suspense fallback={<LoadingScreen message="Loading Performance Mode..." />}>
+                  <PerformanceMode songs={songs} onExit={() => navigate(ROUTES.DASHBOARD)} />
+                </Suspense>
+              }
+            />
+
+        {/* Song Detail - Full screen, no sidebar (lazy loaded) */}
         <Route
-          path={ROUTES.PERFORMANCE}
-          element={<PerformanceMode songs={songs} onExit={() => navigate(ROUTES.DASHBOARD)} />}
+          path={`${ROUTES.SONG_DETAIL}/:songId`}
+          element={
+            <Suspense fallback={<LoadingScreen message="Loading Song Details..." />}>
+              <SongDetailRoute />
+            </Suspense>
+          }
         />
 
-        {/* Song Detail - Full screen, no sidebar */}
-        <Route path={`${ROUTES.SONG_DETAIL}/:songId`} element={<SongDetailRoute />} />
-
-        {/* Practice Room with specific song */}
-        <Route path={`${ROUTES.SONG_DETAIL}/:songId/practice`} element={<PracticeRoomRoute />} />
+        {/* Practice Room with specific song (lazy loaded) */}
+        <Route
+          path={`${ROUTES.SONG_DETAIL}/:songId/practice`}
+          element={
+            <Suspense fallback={<LoadingScreen message="Loading Practice Room..." />}>
+              <PracticeRoomRoute />
+            </Suspense>
+          }
+        />
 
         {/* Layout route for sidebar pages */}
         <Route
@@ -812,10 +720,12 @@ const App: React.FC = () => {
           <Route
             path={ROUTES.PRACTICE}
             element={
-              <PracticeRoom
-                songs={songs}
-                onNavigateToSong={id => navigate(getSongDetailRoute(id))}
-              />
+              <Suspense fallback={<LoadingScreen message="Loading Practice Room..." />}>
+                <PracticeRoom
+                  songs={songs}
+                  onNavigateToSong={id => navigate(getSongDetailRoute(id))}
+                />
+              </Suspense>
             }
           />
           <Route
@@ -857,11 +767,13 @@ const App: React.FC = () => {
               />
             }
           />
-          {/* Redirect any unknown routes to dashboard */}
-          <Route path="*" element={<Navigate to={ROUTES.DASHBOARD} replace />} />
-        </Route>
-      </Routes>
-    </AppContext.Provider>
+            {/* Redirect any unknown routes to dashboard */}
+            <Route path="*" element={<Navigate to={ROUTES.DASHBOARD} replace />} />
+          </Route>
+        </Routes>
+      </AppContext.Provider>
+    </SidebarProvider>
+  </ThemeProvider>
   );
 };
 

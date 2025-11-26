@@ -7,15 +7,17 @@ export function ToastProvider() {
       theme="dark"
       toastOptions={{
         style: {
-          background: '#18181b', // zinc-900
-          border: '1px solid #27272a', // zinc-800
-          color: '#fafafa', // zinc-50
+          // Using --popover for floating UI elements (semantically appropriate)
+          background: 'var(--popover)',
+          border: '1px solid var(--border)',
+          color: 'var(--popover-foreground)',
         },
         classNames: {
-          success: 'border-green-800',
-          error: 'border-red-800',
-          warning: 'border-amber-800',
-          info: 'border-blue-800',
+          // Using semantic theme variables for consistency
+          success: 'border-success',
+          error: 'border-destructive',
+          warning: 'border-warning',
+          info: 'border-info',
         },
       }}
       closeButton

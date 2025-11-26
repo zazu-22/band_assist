@@ -150,6 +150,8 @@ export const INSTRUMENT_ICONS: Record<string, string> = {
   default: '🎵',
 };
 
+// Note: Avatar utilities have been moved to @/lib/avatar.ts for better organization
+
 export const DEFAULT_MEMBERS: BandMember[] = [
   { id: '1763776021452', name: 'Jason', roles: [], avatarColor: 'bg-red-500' },
   { id: '1763776022630', name: 'Jeff', roles: [], avatarColor: 'bg-blue-500' },

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Song } from '../types';
+import { Song } from '@/types';
 import {
   X,
   ChevronLeft,
@@ -31,9 +31,23 @@ export const PerformanceMode: React.FC<PerformanceModeProps> = ({ songs, onExit 
 
   // Chart state
   const currentSong = songs[currentIndex];
+
   const [activeChartId, setActiveChartId] = useState<string | null>(
     currentSong.charts.length > 0 ? currentSong.charts[0].id : null
   );
+
+  // Reset active chart when song changes
+  // This is a valid state synchronization pattern - resetting derived state when the source
+  // (currentSong) changes. Alternative would be key-based reset on parent component.
+  useEffect(() => {
+    if (currentSong.charts.length > 0) {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Resetting derived state when song prop changes
+      setActiveChartId(currentSong.charts[0].id);
+    } else {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Resetting derived state when song prop changes
+      setActiveChartId(null);
+    }
+  }, [currentSong]);
 
   // Auto-scroll state
   const [autoScrollEnabled, setAutoScrollEnabled] = useState(false);
@@ -42,15 +56,6 @@ export const PerformanceMode: React.FC<PerformanceModeProps> = ({ songs, onExit 
   const autoScrollRef = useRef<number | null>(null);
   const lastScrollTimeRef = useRef<number>(0);
   const userScrollTimeoutRef = useRef<NodeJS.Timeout | null>(null);
-
-  useEffect(() => {
-    // Reset active chart when song changes
-    if (currentSong.charts.length > 0) {
-      setActiveChartId(currentSong.charts[0].id);
-    } else {
-      setActiveChartId(null);
-    }
-  }, [currentSong]);
 
   const activeChart = currentSong.charts.find(c => c.id === activeChartId);
   const isGuitarPro = activeChart?.type === 'GP';
@@ -67,6 +72,8 @@ export const PerformanceMode: React.FC<PerformanceModeProps> = ({ songs, onExit 
   }, [isPlaying]);
 
   // Metronome Logic (Skip if GP file is active as it has its own player)
+  // The tick state represents visual feedback synchronized with the interval timer (external system).
+  // Resetting it when the interval stops is valid external system synchronization.
   useEffect(() => {
     let interval: NodeJS.Timeout | undefined;
     if (metronomeActive && currentSong.bpm && !isGuitarPro) {
@@ -75,6 +82,7 @@ export const PerformanceMode: React.FC<PerformanceModeProps> = ({ songs, onExit 
         setTick(prev => !prev);
       }, msPerBeat);
     } else {
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Reset visual tick when interval timer stops
       setTick(false);
     }
     return () => clearInterval(interval);

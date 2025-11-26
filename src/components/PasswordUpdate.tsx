@@ -1,14 +1,17 @@
-import React, { useState, useEffect } from 'react';
-import { getSupabaseClient } from '../services/supabaseClient';
-import { validatePassword, PASSWORD_HINT } from '../utils/validation';
-import { AuthLayout } from './AuthLayout';
+import React, { memo, useState, useEffect, useCallback } from 'react';
+import { Loader2 } from 'lucide-react';
+import { Button, Input, Label } from '@/components/primitives';
+import { AuthLayout } from '@/components/AuthLayout';
+import { getSupabaseClient } from '@/services/supabaseClient';
+import { validatePassword, PASSWORD_HINT } from '@/utils/validation';
+import { clearAuthTokensFromUrl, hasRecoveryToken } from '@/lib/auth';
 
 interface PasswordUpdateProps {
   onSuccess: () => void;
   onNavigate: (view: string) => void;
 }
 
-export const PasswordUpdate: React.FC<PasswordUpdateProps> = ({ onSuccess }) => {
+export const PasswordUpdate: React.FC<PasswordUpdateProps> = memo(function PasswordUpdate({ onSuccess }) {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
@@ -17,7 +20,6 @@ export const PasswordUpdate: React.FC<PasswordUpdateProps> = ({ onSuccess }) => 
   const [isValidSession, setIsValidSession] = useState(true);
 
   useEffect(() => {
-    // Verify we have a valid recovery session (not just any authenticated session)
     const checkSession = async () => {
       const supabase = getSupabaseClient();
       if (!supabase) {
@@ -26,46 +28,33 @@ export const PasswordUpdate: React.FC<PasswordUpdateProps> = ({ onSuccess }) => 
         return;
       }
 
-      // Check for access_token and type=recovery in URL hash
-      // This ensures it's specifically a recovery session, not a regular login
-      const hashParams = new URLSearchParams(window.location.hash.substring(1));
-      const hasAccessToken = hashParams.has('access_token');
-      const tokenType = hashParams.get('type');
-
-      if (!hasAccessToken || tokenType !== 'recovery') {
+      // Use utility to check for recovery token in URL
+      if (!hasRecoveryToken()) {
         setError('Invalid or expired password reset link. Please request a new one.');
         setIsValidSession(false);
         return;
       }
 
-      // Verify the session is valid
       const { data } = await supabase.auth.getSession();
       if (!data.session) {
         setError('Invalid or expired password reset link. Please request a new one.');
         setIsValidSession(false);
+        return;
       }
+
+      // Clear sensitive tokens from URL after successful session verification
+      clearAuthTokensFromUrl();
     };
 
     checkSession();
-
-    // Cleanup: Clear hash on unmount to prevent persistence issues
-    return () => {
-      // Always clear hash when leaving password update screen
-      // to prevent accidental reuse or navigation issues
-      const hash = window.location.hash;
-      if (hash.includes('access_token') || hash.includes('type=recovery')) {
-        window.location.hash = '';
-      }
-    };
   }, []);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setErrorField(null);
     setIsLoading(true);
 
-    // Validate password
     const passwordValidation = validatePassword(password);
     if (!passwordValidation.isValid) {
       setError(passwordValidation.error || 'Invalid password');
@@ -95,7 +84,6 @@ export const PasswordUpdate: React.FC<PasswordUpdateProps> = ({ onSuccess }) => 
 
       if (updateError) throw updateError;
 
-      // Success - redirect to login
       onSuccess();
     } catch (err) {
       console.error('Password update error:', err);
@@ -103,29 +91,24 @@ export const PasswordUpdate: React.FC<PasswordUpdateProps> = ({ onSuccess }) => 
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [password, confirmPassword, onSuccess]);
 
   return (
     <AuthLayout title="Band Assist" subtitle="Set your new password">
       {!isValidSession ? (
         <div className="space-y-4">
-          <div className="bg-red-900/20 border border-red-800 rounded-md p-4">
-            <p className="text-sm text-red-400">{error}</p>
+          <div className="bg-destructive/10 border border-destructive/30 rounded-md p-4" role="alert">
+            <p className="text-sm text-destructive">{error}</p>
           </div>
-          <button
-            onClick={onSuccess}
-            className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 text-white font-medium rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-zinc-900"
-          >
+          <Button onClick={onSuccess} className="w-full">
             Back to Sign In
-          </button>
+          </Button>
         </div>
       ) : (
         <form onSubmit={handleSubmit} className="space-y-6">
-          <div>
-            <label htmlFor="password" className="block text-sm font-medium text-zinc-300 mb-2">
-              New Password
-            </label>
-            <input
+          <div className="space-y-2">
+            <Label htmlFor="password">New Password</Label>
+            <Input
               id="password"
               type="password"
               value={password}
@@ -137,23 +120,17 @@ export const PasswordUpdate: React.FC<PasswordUpdateProps> = ({ onSuccess }) => 
               aria-describedby={
                 errorField === 'password' ? 'form-error password-help' : 'password-help'
               }
-              className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-md text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="••••••••"
               disabled={isLoading}
             />
-            <p id="password-help" className="text-xs text-zinc-500 mt-1">
+            <p id="password-help" className="text-xs text-muted-foreground">
               {PASSWORD_HINT}
             </p>
           </div>
 
-          <div>
-            <label
-              htmlFor="confirmPassword"
-              className="block text-sm font-medium text-zinc-300 mb-2"
-            >
-              Confirm New Password
-            </label>
-            <input
+          <div className="space-y-2">
+            <Label htmlFor="confirmPassword">Confirm New Password</Label>
+            <Input
               id="confirmPassword"
               type="password"
               value={confirmPassword}
@@ -162,36 +139,33 @@ export const PasswordUpdate: React.FC<PasswordUpdateProps> = ({ onSuccess }) => 
               autoComplete="new-password"
               aria-invalid={errorField === 'confirmPassword'}
               aria-describedby={errorField === 'confirmPassword' ? 'form-error' : undefined}
-              className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-md text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               placeholder="••••••••"
               disabled={isLoading}
             />
           </div>
 
           {error && (
-            <div className="bg-red-900/20 border border-red-800 rounded-md p-3" role="alert">
-              <p id="form-error" className="text-sm text-red-400">
+            <div className="bg-destructive/10 border border-destructive/30 rounded-md p-3" role="alert">
+              <p id="form-error" className="text-sm text-destructive">
                 {error}
               </p>
             </div>
           )}
 
-          <button
-            type="submit"
-            disabled={isLoading}
-            className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 disabled:cursor-not-allowed text-white font-medium rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-zinc-900"
-          >
+          <Button type="submit" disabled={isLoading} className="w-full">
             {isLoading ? (
-              <span className="flex items-center justify-center">
-                <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+              <>
+                <Loader2 className="w-4 h-4 animate-spin" />
                 Updating password...
-              </span>
+              </>
             ) : (
               'Update Password'
             )}
-          </button>
+          </Button>
         </form>
       )}
     </AuthLayout>
   );
-};
+});
+
+PasswordUpdate.displayName = 'PasswordUpdate';

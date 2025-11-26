@@ -1,10 +1,11 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Song, BandMember, Annotation, SongChart } from '../types';
-import { INSTRUMENT_ICONS } from '../constants';
-import { getMusicAnalysis } from '../services/geminiService';
+import { Song, BandMember, Annotation, SongChart } from '@/types';
+import { INSTRUMENT_ICONS } from '@/constants';
+import { getMusicAnalysis } from '@/services/geminiService';
+import { getAvatarColor } from '@/lib/avatar';
 import { SmartTabEditor } from './SmartTabEditor';
-import { isSupabaseConfigured } from '../services/supabaseClient';
-import { supabaseStorageService } from '../services/supabaseStorageService';
+import { isSupabaseConfigured } from '@/services/supabaseClient';
+import { supabaseStorageService } from '@/services/supabaseStorageService';
 import { toast, ConfirmDialog } from './ui';
 import {
   Music2,
@@ -91,8 +92,11 @@ export const SongDetail: React.FC<SongDetailProps> = ({
 
   const activeChart = song.charts.find(c => c.id === activeChartId);
 
+  // Audio blob URL creation from base64 data
+  // This effect synchronizes with the browser's Blob API (external system).
+  // Creating object URLs from base64 data requires cleanup (URL.revokeObjectURL),
+  // making useEffect the correct pattern for this external resource management.
   useEffect(() => {
-    // Audio Handling
     if (song.backingTrackUrl && song.backingTrackUrl.startsWith('data:audio')) {
       try {
         const mime = song.backingTrackUrl.split(';')[0].split(':')[1];
@@ -105,6 +109,7 @@ export const SongDetail: React.FC<SongDetailProps> = ({
         const byteArray = new Uint8Array(byteNumbers);
         const blob = new Blob([byteArray], { type: mime });
         const url = URL.createObjectURL(blob);
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- Synchronizing with browser Blob API; cleanup handled in return
         setAudioBlobUrl(url);
         return () => URL.revokeObjectURL(url);
       } catch (e) {
@@ -781,7 +786,7 @@ export const SongDetail: React.FC<SongDetailProps> = ({
                       >
                         <div className="flex items-center gap-4 mb-4 pb-4 border-b border-zinc-900">
                           <div
-                            className={`w-12 h-12 rounded-full ${member.avatarColor || 'bg-zinc-700'} flex items-center justify-center font-bold text-white`}
+                            className={`w-12 h-12 rounded-full ${getAvatarColor(member.avatarColor)} flex items-center justify-center font-bold text-white`}
                           >
                             {member.name.charAt(0).toUpperCase()}
                           </div>
