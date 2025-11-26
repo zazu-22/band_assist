@@ -318,6 +318,9 @@ All migrated components verified for:
 
 ## Remaining Work
 
+4. **Other pages** (SetlistManager, BandDashboard, ScheduleManager, etc.)
+   - Apply consistent Card, Badge, Button usage
+
 ### Phase 6: Quality Review (Pending)
 
 - Code review with parallel agents
