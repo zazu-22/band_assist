@@ -1,3 +1,5 @@
+import type { AvatarColorClass } from '@/lib/avatar';
+
 export enum Instrument {
   LEAD_GUITAR = 'Lead Guitar',
   RHYTHM_GUITAR = 'Rhythm Guitar',
@@ -12,7 +14,7 @@ export interface BandMember {
   id: string;
   name: string;
   roles: string[]; // Default/Preferred roles (e.g. ["Lead Guitar", "Vocals"])
-  avatarColor?: string;
+  avatarColor?: AvatarColorClass; // Validated avatar background color
 }
 
 export interface Assignment {
