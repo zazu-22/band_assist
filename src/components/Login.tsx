@@ -1,9 +1,9 @@
 import React, { memo, useState, useCallback } from 'react';
 import { Loader2 } from 'lucide-react';
 import { Button, Input, Label } from '@/components/primitives';
+import { AuthLayout } from '@/components/AuthLayout';
 import { getSupabaseClient } from '@/services/supabaseClient';
 import { validateEmail, normalizeEmail } from '@/utils/validation';
-import { AuthLayout } from './AuthLayout';
 
 interface LoginProps {
   onLoginSuccess: () => void;

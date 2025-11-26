@@ -1,6 +1,7 @@
 import React, { memo, useState, useCallback } from 'react';
 import { ArrowLeft, Loader2 } from 'lucide-react';
 import { Button, Input, Label } from '@/components/primitives';
+import { AuthLayout } from '@/components/AuthLayout';
 import { getSupabaseClient } from '@/services/supabaseClient';
 import {
   validateEmail,
@@ -8,7 +9,6 @@ import {
   normalizeEmail,
   PASSWORD_HINT,
 } from '@/utils/validation';
-import { AuthLayout } from './AuthLayout';
 
 interface SignupProps {
   onSignupSuccess: () => void;

@@ -71,10 +71,16 @@ export const SetlistManager: React.FC<SetlistManagerProps> = memo(function Setli
 
   const askAiForSuggestions = useCallback(async () => {
     setLoadingSuggestion(true);
-    const prompt = `Suggest 3 ZZ Top songs that would fit well in a setlist that already has: ${songs.map(s => s.title).join(', ')}. Just list the titles.`;
-    const suggestion = await getMusicAnalysis(prompt);
-    toast.info(suggestion, { duration: 10000 });
-    setLoadingSuggestion(false);
+    try {
+      const prompt = `Suggest 3 ZZ Top songs that would fit well in a setlist that already has: ${songs.map(s => s.title).join(', ')}. Just list the titles.`;
+      const suggestion = await getMusicAnalysis(prompt);
+      toast.info(suggestion, { duration: 10000 });
+    } catch (err) {
+      console.error('AI suggestion error:', err);
+      toast.error('Failed to get AI suggestions. Please try again.');
+    } finally {
+      setLoadingSuggestion(false);
+    }
   }, [songs]);
 
   // --- Drag and Drop Handlers ---

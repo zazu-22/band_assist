@@ -103,6 +103,7 @@ export const BandDashboard: React.FC<BandDashboardProps> = memo(function BandDas
                 key={member.id}
                 className={`
                   relative overflow-hidden cursor-pointer transition-all duration-200 group
+                  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2
                   ${isSelected
                     ? 'ring-2 ring-primary shadow-lg'
                     : 'hover:bg-muted/50 hover:border-border/80'
@@ -118,9 +119,10 @@ export const BandDashboard: React.FC<BandDashboardProps> = memo(function BandDas
                   }
                 }}
                 aria-pressed={isSelected}
+                aria-label={`Select ${member.name} - ${roleCount} active role${roleCount !== 1 ? 's' : ''}`}
               >
                 <CardContent className="p-6 flex flex-col items-center text-center gap-4">
-                  <Avatar className={`w-20 h-20 text-3xl ${member.avatarColor || 'bg-muted'}`}>
+                  <Avatar className="w-20 h-20">
                     <AvatarFallback className={`text-3xl font-bold ${member.avatarColor || 'bg-muted'}`}>
                       {member.name.charAt(0).toUpperCase()}
                     </AvatarFallback>
@@ -145,7 +147,7 @@ export const BandDashboard: React.FC<BandDashboardProps> = memo(function BandDas
         <Card className="flex-1 flex flex-col overflow-hidden animate-slide-in-from-bottom">
           <CardHeader className="border-b border-border bg-muted/30 flex flex-row items-center justify-between space-y-0 p-6">
             <div className="flex items-center gap-4">
-              <Avatar className={`w-12 h-12 ${selectedMember.avatarColor || 'bg-muted'}`}>
+              <Avatar className="w-12 h-12">
                 <AvatarFallback className={`text-xl font-bold ${selectedMember.avatarColor || 'bg-muted'}`}>
                   {selectedMember.name.charAt(0)}
                 </AvatarFallback>
@@ -209,9 +211,9 @@ export const BandDashboard: React.FC<BandDashboardProps> = memo(function BandDas
 
                         {/* Roles */}
                         <div className="flex flex-wrap gap-2">
-                          {roles.map((r, idx) => (
+                          {roles.map(r => (
                             <Badge
-                              key={idx}
+                              key={`${song.id}-${r.role}`}
                               variant="secondary"
                               className="bg-primary/20 text-primary border border-primary/30"
                             >

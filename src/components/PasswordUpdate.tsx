@@ -1,9 +1,9 @@
 import React, { memo, useState, useEffect, useCallback } from 'react';
 import { Loader2 } from 'lucide-react';
 import { Button, Input, Label } from '@/components/primitives';
+import { AuthLayout } from '@/components/AuthLayout';
 import { getSupabaseClient } from '@/services/supabaseClient';
 import { validatePassword, PASSWORD_HINT } from '@/utils/validation';
-import { AuthLayout } from './AuthLayout';
 
 interface PasswordUpdateProps {
   onSuccess: () => void;
@@ -41,17 +41,17 @@ export const PasswordUpdate: React.FC<PasswordUpdateProps> = memo(function Passw
       if (!data.session) {
         setError('Invalid or expired password reset link. Please request a new one.');
         setIsValidSession(false);
+        return;
+      }
+
+      // Clear sensitive tokens from URL after successful session verification
+      // Using replaceState to avoid triggering a navigation event
+      if (window.history.replaceState) {
+        window.history.replaceState(null, '', window.location.pathname + window.location.search);
       }
     };
 
     checkSession();
-
-    return () => {
-      const hash = window.location.hash;
-      if (hash.includes('access_token') || hash.includes('type=recovery')) {
-        window.location.hash = '';
-      }
-    };
   }, []);
 
   const handleSubmit = useCallback(async (e: React.FormEvent) => {
