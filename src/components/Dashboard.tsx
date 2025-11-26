@@ -47,12 +47,12 @@ interface DashboardProps {
   onNavigateToSong: (songId: string) => void;
 }
 
-interface SongIssue {
+export interface SongIssue {
   label: string;
   severity: 'high' | 'medium' | 'low';
 }
 
-interface SongWithUrgency {
+export interface SongWithUrgency {
   song: Song;
   score: number;
   issues: SongIssue[];
@@ -82,8 +82,9 @@ const TIMELINE_ICON_MAP = {
 /**
  * Weight values for urgency scoring algorithm.
  * Higher values = more urgent, pushing songs higher in the Practice Queue.
+ * Exported for testing.
  */
-const URGENCY_WEIGHTS = {
+export const URGENCY_WEIGHTS = {
   NO_CHARTS: 30,
   NO_BACKING_TRACK: 5,
   UNASSIGNED: 20,
@@ -99,9 +100,10 @@ const URGENCY_WEIGHTS = {
 // =============================================================================
 
 /**
- * Calculate urgency score and issues for a song
+ * Calculate urgency score and issues for a song.
+ * Exported for testing.
  */
-function calculateSongUrgency(song: Song, today: Date): SongWithUrgency {
+export function calculateSongUrgency(song: Song, today: Date): SongWithUrgency {
   const issues: SongIssue[] = [];
   let score = 0;
 
@@ -414,7 +416,10 @@ export const Dashboard: React.FC<DashboardProps> = memo(function Dashboard({
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <div
-                            className="h-full bg-success transition-all duration-500 animate-progress-fill cursor-help"
+                            tabIndex={0}
+                            role="img"
+                            aria-label={`${readinessStats.ready} songs stage ready`}
+                            className="h-full bg-success transition-all duration-500 animate-progress-fill cursor-help focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
                             style={{
                               width: `${(readinessStats.ready / readinessStats.total) * 100}%`,
                             }}
@@ -429,7 +434,10 @@ export const Dashboard: React.FC<DashboardProps> = memo(function Dashboard({
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <div
-                            className="h-full bg-info transition-all duration-500 cursor-help"
+                            tabIndex={0}
+                            role="img"
+                            aria-label={`${readinessStats.inProgress} songs in progress`}
+                            className="h-full bg-info transition-all duration-500 cursor-help focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
                             style={{
                               width: `${(readinessStats.inProgress / readinessStats.total) * 100}%`,
                             }}
@@ -444,7 +452,10 @@ export const Dashboard: React.FC<DashboardProps> = memo(function Dashboard({
                       <Tooltip>
                         <TooltipTrigger asChild>
                           <div
-                            className="h-full bg-warning transition-all duration-500 cursor-help"
+                            tabIndex={0}
+                            role="img"
+                            aria-label={`${readinessStats.toLearn} songs to learn`}
+                            className="h-full bg-warning transition-all duration-500 cursor-help focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-1"
                             style={{
                               width: `${(readinessStats.toLearn / readinessStats.total) * 100}%`,
                             }}

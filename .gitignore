@@ -34,3 +34,4 @@ dist-ssr
 .claude/agents
 .claude/commands
 .claude/settings*.json
+.cursor/worktrees.json
