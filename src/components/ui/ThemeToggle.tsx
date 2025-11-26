@@ -28,7 +28,6 @@ export function ThemeToggle({ collapsed = false, className }: ThemeToggleProps) 
             collapsed ? 'justify-center' : 'justify-start gap-3',
             className
           )}
-          title="Toggle theme"
           aria-label="Toggle theme"
         >
           {resolvedTheme === 'dark' ? (

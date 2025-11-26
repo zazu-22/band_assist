@@ -1,5 +1,7 @@
-import React from 'react';
+import React, { memo } from 'react';
 import { LucideIcon } from 'lucide-react';
+import { Card, CardContent, Button } from '@/components/primitives';
+import { cn } from '@/lib/utils';
 
 interface EmptyStateProps {
   icon: LucideIcon;
@@ -12,31 +14,36 @@ interface EmptyStateProps {
   className?: string;
 }
 
-export const EmptyState: React.FC<EmptyStateProps> = ({
+export const EmptyState: React.FC<EmptyStateProps> = memo(function EmptyState({
   icon: Icon,
   title,
   description,
   action,
-  className = '',
-}) => {
+  className,
+}) {
   return (
-    <div
-      className={`flex flex-col items-center justify-center py-12 px-4 ${className}`}
+    <Card
+      className={cn('border-dashed', className)}
+      role="status"
       aria-live="polite"
     >
-      <div className="w-16 h-16 bg-zinc-800 rounded-full flex items-center justify-center mb-4">
-        <Icon className="w-8 h-8 text-zinc-500" />
-      </div>
-      <h3 className="text-lg font-semibold text-zinc-200 mb-2">{title}</h3>
-      <p className="text-zinc-400 text-center max-w-sm mb-6">{description}</p>
-      {action && (
-        <button
-          onClick={action.onClick}
-          className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg transition-colors font-medium"
+      <CardContent className="flex flex-col items-center justify-center py-12 px-4">
+        <div
+          className="flex h-16 w-16 items-center justify-center rounded-full bg-muted mb-4"
+          aria-hidden="true"
         >
-          {action.label}
-        </button>
-      )}
-    </div>
+          <Icon className="h-8 w-8 text-muted-foreground" />
+        </div>
+        <h3 className="text-lg font-semibold text-foreground mb-2">{title}</h3>
+        <p className="text-muted-foreground text-center max-w-sm mb-6">
+          {description}
+        </p>
+        {action && (
+          <Button onClick={action.onClick}>{action.label}</Button>
+        )}
+      </CardContent>
+    </Card>
   );
-};
+});
+
+EmptyState.displayName = 'EmptyState';
