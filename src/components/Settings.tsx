@@ -188,6 +188,8 @@ export const Settings: React.FC<SettingsProps> = memo(function Settings({
   const handleImport = useCallback(
     (e: React.ChangeEvent<HTMLInputElement>) => {
       const file = e.target.files?.[0];
+      // Reset input immediately after reading to prevent re-submission on cancel
+      if (fileInputRef.current) fileInputRef.current.value = '';
       if (!file || !setSongs || !setEvents) return;
 
       setConfirmDialog({
@@ -203,16 +205,15 @@ export const Settings: React.FC<SettingsProps> = memo(function Settings({
               setAvailableRoles(data.roles);
               setEvents(data.events);
               toast.success('Data imported successfully!');
+              closeDialog();
             })
             .catch(err => {
               console.error(err);
               toast.error('Failed to import data. File might be corrupt.');
+              closeDialog();
             });
-          closeDialog();
         },
       });
-      // Reset input
-      if (fileInputRef.current) fileInputRef.current.value = '';
     },
     [setSongs, setEvents, setMembers, setAvailableRoles, closeDialog]
   );
