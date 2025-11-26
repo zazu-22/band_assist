@@ -1,4 +1,4 @@
-import React, { memo, useMemo } from 'react';
+import React, { memo, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Activity, CalendarDays, CheckCircle2, Disc, Music } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/primitives';
@@ -55,6 +55,11 @@ export const Dashboard: React.FC<DashboardProps> = memo(function Dashboard({
   // Memoize the displayed songs list (first 5)
   const displayedSongs = useMemo(() => songs.slice(0, 5), [songs]);
 
+  // Memoize navigation handler for EmptyState
+  const handleNavigateToSetlist = useCallback(() => {
+    navigate(ROUTES.SETLIST);
+  }, [navigate]);
+
   return (
     <div className="p-4 sm:p-6 lg:p-10 space-y-8">
       <header className="mb-8">
@@ -106,7 +111,7 @@ export const Dashboard: React.FC<DashboardProps> = memo(function Dashboard({
                 description="Add your first song to start building your setlist and tracking progress."
                 action={{
                   label: 'Add Song',
-                  onClick: () => navigate(ROUTES.SETLIST),
+                  onClick: handleNavigateToSetlist,
                 }}
               />
             ) : (

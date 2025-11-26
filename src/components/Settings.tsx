@@ -113,15 +113,18 @@ export const Settings: React.FC<SettingsProps> = memo(function Settings({
   // --- Member Handlers ---
   const handleAddMember = useCallback(() => {
     if (!newMemberName.trim()) return;
-    const newMember: BandMember = {
-      id: crypto.randomUUID(),
-      name: newMemberName,
-      roles: [],
-      avatarColor: AVATAR_COLORS[members.length % AVATAR_COLORS.length],
-    };
-    setMembers(prev => [...prev, newMember]);
+    setMembers(prev => {
+      const newMember: BandMember = {
+        id: crypto.randomUUID(),
+        name: newMemberName,
+        roles: [],
+        // Compute color based on prev.length to avoid race condition
+        avatarColor: AVATAR_COLORS[prev.length % AVATAR_COLORS.length],
+      };
+      return [...prev, newMember];
+    });
     setNewMemberName('');
-  }, [newMemberName, members.length, setMembers]);
+  }, [newMemberName, setMembers]);
 
   const handleRemoveMember = useCallback(
     (id: string) => {
