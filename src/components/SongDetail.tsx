@@ -91,8 +91,11 @@ export const SongDetail: React.FC<SongDetailProps> = ({
 
   const activeChart = song.charts.find(c => c.id === activeChartId);
 
+  // Audio blob URL creation from base64 data
+  // This effect synchronizes with the browser's Blob API (external system).
+  // Creating object URLs from base64 data requires cleanup (URL.revokeObjectURL),
+  // making useEffect the correct pattern for this external resource management.
   useEffect(() => {
-    // Audio Handling
     if (song.backingTrackUrl && song.backingTrackUrl.startsWith('data:audio')) {
       try {
         const mime = song.backingTrackUrl.split(';')[0].split(':')[1];
@@ -105,6 +108,7 @@ export const SongDetail: React.FC<SongDetailProps> = ({
         const byteArray = new Uint8Array(byteNumbers);
         const blob = new Blob([byteArray], { type: mime });
         const url = URL.createObjectURL(blob);
+        // eslint-disable-next-line react-hooks/set-state-in-effect -- Synchronizing with browser Blob API; cleanup handled in return
         setAudioBlobUrl(url);
         return () => URL.revokeObjectURL(url);
       } catch (e) {

@@ -1,7 +1,9 @@
-import React, { useState, useEffect, useCallback } from 'react';
-import { UserPlus, Mail, Check, X, Trash2, Clock } from 'lucide-react';
-import { getSupabaseClient } from '../services/supabaseClient';
-import { validateEmail, normalizeEmail } from '../utils/validation';
+import React, { memo, useState, useEffect, useCallback } from 'react';
+import { UserPlus, Mail, Check, X, Trash2, Clock, Loader2 } from 'lucide-react';
+import { Button, Input, Label, Badge, Card, CardContent } from '@/components/primitives';
+import { EmptyState } from '@/components/ui';
+import { getSupabaseClient } from '@/services/supabaseClient';
+import { validateEmail, normalizeEmail } from '@/utils/validation';
 
 interface Invitation {
   id: string;
@@ -27,25 +29,49 @@ interface PostgresError {
 
 /** Type guard to check if an error is a PostgreSQL error */
 function isPostgresError(error: unknown): error is PostgresError {
-  // Check null first to avoid CodeQL type comparison warning
-  // (typeof null === 'object' is a JavaScript quirk)
   if (error === null || typeof error !== 'object') {
     return false;
   }
   return 'code' in error || 'message' in error;
 }
 
-/**
- * InvitationManager Component
- *
- * Allows band admins to invite new members via email.
- * Shows pending, accepted, and cancelled invitations.
- */
-export const InvitationManager: React.FC<InvitationManagerProps> = ({
+/** Format date for display */
+function formatDate(dateString: string): string {
+  const date = new Date(dateString);
+  return date.toLocaleDateString('en-US', {
+    month: 'short',
+    day: 'numeric',
+    year: 'numeric',
+  });
+}
+
+/** Get status icon component */
+function getStatusIcon(status: string) {
+  switch (status) {
+    case 'accepted':
+      return <Check className="w-4 h-4 text-success" />;
+    case 'cancelled':
+      return <X className="w-4 h-4 text-destructive" />;
+    default:
+      return <Clock className="w-4 h-4 text-warning" />;
+  }
+}
+
+/** Get status badge variant and styling */
+function getStatusBadgeStyle(status: string): string {
+  const styles = {
+    pending: 'bg-warning/20 text-warning border-warning/30',
+    accepted: 'bg-success/20 text-success border-success/30',
+    cancelled: 'bg-destructive/20 text-destructive border-destructive/30',
+  };
+  return styles[status as keyof typeof styles] || styles.pending;
+}
+
+export const InvitationManager: React.FC<InvitationManagerProps> = memo(function InvitationManager({
   bandId,
   currentUserId,
   isAdmin,
-}) => {
+}) {
   const [invitations, setInvitations] = useState<Invitation[]>([]);
   const [newEmail, setNewEmail] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -78,18 +104,16 @@ export const InvitationManager: React.FC<InvitationManagerProps> = ({
     }
   }, [bandId]);
 
-  // Load invitations on mount and when bandId changes
   useEffect(() => {
     loadInvitations();
   }, [loadInvitations]);
 
-  const handleInvite = async (e: React.FormEvent) => {
+  const handleInvite = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setHasValidationError(false);
     setSuccessMessage('');
 
-    // Validate email format
     const validation = validateEmail(newEmail);
     if (!validation.isValid) {
       setError(validation.error || 'Invalid email address');
@@ -111,11 +135,9 @@ export const InvitationManager: React.FC<InvitationManagerProps> = ({
       return;
     }
 
-    // Normalize email for storage
     const normalizedEmail = normalizeEmail(newEmail);
 
     try {
-      // Check rate limit (10 invitations per hour per band)
       const { data: rateLimitCheck, error: rateLimitError } = await supabase.rpc(
         'check_invitation_rate_limit',
         { p_band_id: bandId }
@@ -125,7 +147,7 @@ export const InvitationManager: React.FC<InvitationManagerProps> = ({
         console.error('Rate limit check error:', rateLimitError);
         setError('Unable to verify rate limit. Please try again.');
         setIsLoading(false);
-        return; // Fail closed - don't allow invitation if check fails
+        return;
       }
 
       if (rateLimitCheck === false) {
@@ -134,7 +156,6 @@ export const InvitationManager: React.FC<InvitationManagerProps> = ({
         return;
       }
 
-      // Check if email belongs to an existing band member
       const { data: isMember, error: memberCheckError } = await supabase.rpc(
         'is_email_band_member',
         { p_band_id: bandId, p_email: normalizedEmail }
@@ -153,7 +174,6 @@ export const InvitationManager: React.FC<InvitationManagerProps> = ({
         return;
       }
 
-      // Check if invitation already exists
       const { data: existing } = await supabase
         .from('invitations')
         .select('*')
@@ -168,7 +188,6 @@ export const InvitationManager: React.FC<InvitationManagerProps> = ({
         return;
       }
 
-      // Create invitation
       const { error: inviteError } = await supabase.from('invitations').insert({
         band_id: bandId,
         email: normalizedEmail,
@@ -177,11 +196,8 @@ export const InvitationManager: React.FC<InvitationManagerProps> = ({
       });
 
       if (inviteError) {
-        // Check if error is due to rate limit trigger
-        // The database trigger raises PostgreSQL exception code 'P0001' (RAISE EXCEPTION)
         if (isPostgresError(inviteError)) {
           const { code, message } = inviteError;
-          // Check both error code AND message text for robustness across client versions
           if (code === 'P0001' || message?.includes('Rate limit exceeded')) {
             setError('Rate limit exceeded. Maximum 10 invitations per hour per band.');
             setIsLoading(false);
@@ -200,9 +216,9 @@ export const InvitationManager: React.FC<InvitationManagerProps> = ({
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [newEmail, isAdmin, bandId, currentUserId, loadInvitations]);
 
-  const handleCancelInvitation = async (invitationId: string) => {
+  const handleCancelInvitation = useCallback(async (invitationId: string) => {
     if (!isAdmin) return;
 
     const supabase = getSupabaseClient();
@@ -224,64 +240,25 @@ export const InvitationManager: React.FC<InvitationManagerProps> = ({
       console.error('Error cancelling invitation:', err);
       setError('Failed to cancel invitation. Please try again.');
     }
-  };
-
-  const formatDate = (dateString: string) => {
-    const date = new Date(dateString);
-    return date.toLocaleDateString('en-US', {
-      month: 'short',
-      day: 'numeric',
-      year: 'numeric',
-    });
-  };
-
-  const getStatusIcon = (status: string) => {
-    switch (status) {
-      case 'accepted':
-        return <Check className="w-4 h-4 text-green-500" />;
-      case 'cancelled':
-        return <X className="w-4 h-4 text-red-500" />;
-      default:
-        return <Clock className="w-4 h-4 text-yellow-500" />;
-    }
-  };
-
-  const getStatusBadge = (status: string) => {
-    const styles = {
-      pending: 'bg-yellow-900/20 text-yellow-400 border-yellow-900/50',
-      accepted: 'bg-green-900/20 text-green-400 border-green-900/50',
-      cancelled: 'bg-red-900/20 text-red-400 border-red-900/50',
-    };
-
-    return (
-      <span
-        className={`inline-flex items-center gap-1 px-2 py-1 rounded-md text-xs font-medium border ${styles[status as keyof typeof styles]}`}
-      >
-        {getStatusIcon(status)}
-        {status.charAt(0).toUpperCase() + status.slice(1)}
-      </span>
-    );
-  };
+  }, [isAdmin, loadInvitations]);
 
   return (
     <div className="space-y-6">
       <div className="flex items-center gap-2">
-        <UserPlus className="w-5 h-5 text-blue-400" />
-        <h3 className="text-lg font-semibold text-zinc-100">Team Invitations</h3>
+        <UserPlus className="w-5 h-5 text-primary" />
+        <h3 className="text-lg font-semibold text-foreground">Team Invitations</h3>
       </div>
 
       {/* Invitation Form */}
       {isAdmin && (
         <form onSubmit={handleInvite} className="space-y-4">
-          <div>
-            <label htmlFor="email" className="block text-sm font-medium text-zinc-300 mb-2">
-              Invite by Email
-            </label>
+          <div className="space-y-2">
+            <Label htmlFor="invitation-email">Invite by Email</Label>
             <div className="flex gap-2">
               <div className="flex-1 relative">
-                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-zinc-500" />
-                <input
-                  id="email"
+                <Mail className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+                <Input
+                  id="invitation-email"
                   type="email"
                   value={newEmail}
                   onChange={e => setNewEmail(e.target.value)}
@@ -289,35 +266,38 @@ export const InvitationManager: React.FC<InvitationManagerProps> = ({
                   autoFocus
                   aria-invalid={hasValidationError}
                   aria-describedby={hasValidationError ? 'invitation-error' : undefined}
-                  className="w-full pl-10 pr-4 py-2 bg-zinc-800 border border-zinc-700 rounded-lg text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                  className="pl-10"
                   disabled={isLoading}
                 />
               </div>
-              <button
-                type="submit"
-                disabled={isLoading}
-                className="px-4 py-2 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 disabled:cursor-not-allowed text-white font-medium rounded-lg transition-colors"
-              >
-                {isLoading ? 'Sending...' : 'Send Invite'}
-              </button>
+              <Button type="submit" disabled={isLoading}>
+                {isLoading ? (
+                  <>
+                    <Loader2 className="w-4 h-4 animate-spin" />
+                    Sending...
+                  </>
+                ) : (
+                  'Send Invite'
+                )}
+              </Button>
             </div>
           </div>
 
           {error && (
-            <div className="bg-red-900/20 border border-red-800 rounded-lg p-3" role="alert">
-              <p id="invitation-error" className="text-sm text-red-400">
+            <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-3" role="alert">
+              <p id="invitation-error" className="text-sm text-destructive">
                 {error}
               </p>
             </div>
           )}
 
           {successMessage && (
-            <div className="bg-green-900/20 border border-green-800 rounded-lg p-3">
-              <p className="text-sm text-green-400">{successMessage}</p>
+            <div className="bg-success/10 border border-success/30 rounded-lg p-3">
+              <p className="text-sm text-success">{successMessage}</p>
             </div>
           )}
 
-          <p className="text-xs text-zinc-500">
+          <p className="text-xs text-muted-foreground">
             New members will automatically join the band when they sign up with the invited email
             address.
           </p>
@@ -325,54 +305,66 @@ export const InvitationManager: React.FC<InvitationManagerProps> = ({
       )}
 
       {!isAdmin && (
-        <div className="bg-zinc-800/50 border border-zinc-700 rounded-lg p-4">
-          <p className="text-sm text-zinc-400">
-            Only band admins can invite new members. Contact your band administrator to send
-            invitations.
-          </p>
-        </div>
+        <Card className="bg-muted/50">
+          <CardContent className="p-4">
+            <p className="text-sm text-muted-foreground">
+              Only band admins can invite new members. Contact your band administrator to send
+              invitations.
+            </p>
+          </CardContent>
+        </Card>
       )}
 
       {/* Invitations List */}
       {invitations.length > 0 && (
         <div className="space-y-3">
-          <h4 className="text-sm font-medium text-zinc-400">Invitation History</h4>
+          <h4 className="text-sm font-medium text-muted-foreground">Invitation History</h4>
           <div className="space-y-2">
             {invitations.map(invitation => (
-              <div
-                key={invitation.id}
-                className="flex items-center justify-between p-3 bg-zinc-800/50 border border-zinc-700 rounded-lg"
-              >
-                <div className="flex-1 min-w-0">
-                  <p className="text-sm font-medium text-zinc-100 truncate">{invitation.email}</p>
-                  <p className="text-xs text-zinc-500">
-                    Invited {formatDate(invitation.invited_at)}
-                  </p>
-                </div>
-                <div className="flex items-center gap-3">
-                  {getStatusBadge(invitation.status)}
-                  {isAdmin && invitation.status === 'pending' && (
-                    <button
-                      onClick={() => handleCancelInvitation(invitation.id)}
-                      className="p-1.5 text-zinc-500 hover:text-red-400 hover:bg-red-900/20 rounded transition-colors"
-                      title="Cancel invitation"
+              <Card key={invitation.id} className="bg-muted/30">
+                <CardContent className="p-3 flex items-center justify-between">
+                  <div className="flex-1 min-w-0">
+                    <p className="text-sm font-medium text-foreground truncate">{invitation.email}</p>
+                    <p className="text-xs text-muted-foreground">
+                      Invited {formatDate(invitation.invited_at)}
+                    </p>
+                  </div>
+                  <div className="flex items-center gap-3">
+                    <Badge
+                      variant="outline"
+                      className={getStatusBadgeStyle(invitation.status)}
                     >
-                      <Trash2 className="w-4 h-4" />
-                    </button>
-                  )}
-                </div>
-              </div>
+                      {getStatusIcon(invitation.status)}
+                      <span className="ml-1 capitalize">{invitation.status}</span>
+                    </Badge>
+                    {isAdmin && invitation.status === 'pending' && (
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onClick={() => handleCancelInvitation(invitation.id)}
+                        className="text-muted-foreground hover:text-destructive"
+                        aria-label="Cancel invitation"
+                      >
+                        <Trash2 className="w-4 h-4" />
+                      </Button>
+                    )}
+                  </div>
+                </CardContent>
+              </Card>
             ))}
           </div>
         </div>
       )}
 
       {invitations.length === 0 && (
-        <div className="text-center py-8 text-zinc-500">
-          <UserPlus className="w-12 h-12 mx-auto mb-3 opacity-30" />
-          <p className="text-sm">No invitations sent yet</p>
-        </div>
+        <EmptyState
+          icon={UserPlus}
+          title="No invitations sent yet"
+          description="Invite band members by email to collaborate on your setlist and schedule."
+        />
       )}
     </div>
   );
-};
+});
+
+InvitationManager.displayName = 'InvitationManager';

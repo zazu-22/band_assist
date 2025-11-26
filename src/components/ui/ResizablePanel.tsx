@@ -53,16 +53,17 @@ export const ResizablePanel: React.FC<ResizablePanelProps> = ({
   // Use refs to avoid stale closures in event handlers
   // These refs keep current values accessible in event listeners without re-registering
   const widthRef = useRef(width);
-  widthRef.current = width;
-
   const minWidthRef = useRef(minWidth);
-  minWidthRef.current = minWidth;
-
   const maxWidthRef = useRef(maxWidth);
-  maxWidthRef.current = maxWidth;
-
   const sideRef = useRef(side);
-  sideRef.current = side;
+
+  // Sync refs with current values in an effect to satisfy lint rules
+  useEffect(() => {
+    widthRef.current = width;
+    minWidthRef.current = minWidth;
+    maxWidthRef.current = maxWidth;
+    sideRef.current = side;
+  });
 
   // === Event Handlers (defined before useEffect for clarity) ===
 
