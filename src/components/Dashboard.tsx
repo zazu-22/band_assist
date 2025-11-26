@@ -2,9 +2,9 @@ import React, { memo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Activity, CalendarDays, CheckCircle2, Disc, Music } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/primitives';
-import { EmptyState, StatCard, StatusBadge } from './ui';
-import { ROUTES } from '../routes';
-import type { Song, BandEvent } from '../types';
+import { EmptyState, StatCard, StatusBadge } from '@/components/ui';
+import { ROUTES } from '@/routes';
+import type { Song, BandEvent } from '@/types';
 
 interface DashboardProps {
   songs: Song[];

@@ -28,11 +28,11 @@ import {
   AvatarFallback,
   Badge,
 } from '@/components/primitives';
-import { toast, ConfirmDialog } from './ui';
-import { StorageService } from '../services/storageService';
-import { InvitationManager } from './InvitationManager';
-import { isSupabaseConfigured } from '../services/supabaseClient';
-import type { BandMember, Song, BandEvent } from '../types';
+import { toast, ConfirmDialog } from '@/components/ui';
+import { StorageService } from '@/services/storageService';
+import { InvitationManager } from '@/components/InvitationManager';
+import { isSupabaseConfigured } from '@/services/supabaseClient';
+import type { BandMember, Song, BandEvent } from '@/types';
 
 type SettingsTab = 'ROSTER' | 'ROLES' | 'TEAM' | 'DATA';
 
@@ -58,12 +58,24 @@ interface ConfirmDialogState {
   onConfirm: () => void;
 }
 
+/** Avatar background colors cycled through for new members */
+const AVATAR_COLORS = [
+  'bg-red-500',
+  'bg-blue-500',
+  'bg-green-500',
+  'bg-yellow-500',
+  'bg-purple-500',
+] as const;
+
+/** No-op function for initial dialog state */
+const NOOP = () => {};
+
 const INITIAL_DIALOG_STATE: ConfirmDialogState = {
   isOpen: false,
   title: '',
   message: '',
   variant: 'danger',
-  onConfirm: () => {},
+  onConfirm: NOOP,
 };
 
 export const Settings: React.FC<SettingsProps> = memo(function Settings({
@@ -105,9 +117,7 @@ export const Settings: React.FC<SettingsProps> = memo(function Settings({
       id: crypto.randomUUID(),
       name: newMemberName,
       roles: [],
-      avatarColor: ['bg-red-500', 'bg-blue-500', 'bg-green-500', 'bg-yellow-500', 'bg-purple-500'][
-        members.length % 5
-      ],
+      avatarColor: AVATAR_COLORS[members.length % AVATAR_COLORS.length],
     };
     setMembers(prev => [...prev, newMember]);
     setNewMemberName('');
