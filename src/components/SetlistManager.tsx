@@ -76,9 +76,11 @@ export const SetlistManager: React.FC<SetlistManagerProps> = memo(function Setli
       const suggestion = await getMusicAnalysis(prompt);
       toast.info(suggestion, { duration: 10000 });
     } catch (err) {
+      // Sanitize song titles in production logs to avoid potential PII exposure
+      const sanitizedTitles = songs.map(s => s.title.substring(0, 20) + (s.title.length > 20 ? '...' : ''));
       console.error('[SetlistManager] AI suggestion error:', err, {
         songCount: songs.length,
-        songTitles: songs.map(s => s.title),
+        songTitles: import.meta.env.DEV ? songs.map(s => s.title) : sanitizedTitles,
       });
       toast.error('Failed to get AI suggestions. Please try again.');
     } finally {

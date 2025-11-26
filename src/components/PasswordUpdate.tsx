@@ -4,6 +4,7 @@ import { Button, Input, Label } from '@/components/primitives';
 import { AuthLayout } from '@/components/AuthLayout';
 import { getSupabaseClient } from '@/services/supabaseClient';
 import { validatePassword, PASSWORD_HINT } from '@/utils/validation';
+import { clearAuthTokensFromUrl, hasRecoveryToken } from '@/lib/auth';
 
 interface PasswordUpdateProps {
   onSuccess: () => void;
@@ -27,11 +28,8 @@ export const PasswordUpdate: React.FC<PasswordUpdateProps> = memo(function Passw
         return;
       }
 
-      const hashParams = new URLSearchParams(window.location.hash.substring(1));
-      const hasAccessToken = hashParams.has('access_token');
-      const tokenType = hashParams.get('type');
-
-      if (!hasAccessToken || tokenType !== 'recovery') {
+      // Use utility to check for recovery token in URL
+      if (!hasRecoveryToken()) {
         setError('Invalid or expired password reset link. Please request a new one.');
         setIsValidSession(false);
         return;
@@ -44,15 +42,8 @@ export const PasswordUpdate: React.FC<PasswordUpdateProps> = memo(function Passw
         return;
       }
 
-      // SECURITY: Clear sensitive auth tokens from URL immediately after successful session verification
-      // We clear here (not on unmount) to:
-      // 1. Prevent tokens from appearing in browser history
-      // 2. Avoid race conditions if component unmounts during auth flow
-      // 3. Remove sensitive data from URL before user can copy/share link
-      // Using replaceState instead of hash='' to avoid triggering navigation events
-      if (window.history.replaceState) {
-        window.history.replaceState(null, '', window.location.pathname + window.location.search);
-      }
+      // Clear sensitive tokens from URL after successful session verification
+      clearAuthTokensFromUrl();
     };
 
     checkSession();

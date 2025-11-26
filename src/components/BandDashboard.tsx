@@ -12,7 +12,8 @@ import {
   AvatarFallback,
 } from '@/components/primitives';
 import { EmptyState } from '@/components/ui';
-import { INSTRUMENT_ICONS, getAvatarColor } from '@/constants';
+import { INSTRUMENT_ICONS } from '@/constants';
+import { getAvatarColor } from '@/lib/avatar';
 import { ROUTES } from '@/routes';
 import type { BandMember, Song } from '@/types';
 
