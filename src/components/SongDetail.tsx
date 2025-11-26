@@ -5,7 +5,8 @@ import { getMusicAnalysis } from '../services/geminiService';
 import { SmartTabEditor } from './SmartTabEditor';
 import { isSupabaseConfigured } from '../services/supabaseClient';
 import { supabaseStorageService } from '../services/supabaseStorageService';
-import { toast, ConfirmDialog } from './ui';
+import { toast, ConfirmDialog, ResizablePanel } from './ui';
+import { useIsMobile } from '../hooks/useBreakpoint';
 import {
   Music2,
   Users,
@@ -25,6 +26,7 @@ import {
   Calendar,
   File,
   Guitar,
+  PanelRightClose,
 } from 'lucide-react';
 import { AlphaTabRenderer } from './AlphaTabRenderer';
 
@@ -43,6 +45,9 @@ export const SongDetail: React.FC<SongDetailProps> = ({
   onBack,
   onUpdateSong,
 }) => {
+  // Responsive hook for mobile detection
+  const isMobile = useIsMobile();
+
   const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'CHARTS' | 'ASSIGNMENTS' | 'AUDIO'>(
     'OVERVIEW'
   );
@@ -54,6 +59,24 @@ export const SongDetail: React.FC<SongDetailProps> = ({
   const [loadingAi, setLoadingAi] = useState(false);
   const [audioBlobUrl, setAudioBlobUrl] = useState<string | null>(null);
   const [isEditingMetadata, setIsEditingMetadata] = useState(false);
+
+  // AI Sidebar collapsed state with localStorage persistence
+  const [aiSidebarCollapsed, setAiSidebarCollapsed] = useState(() => {
+    try {
+      return localStorage.getItem('sdb_ai_sidebar_collapsed') === 'true';
+    } catch {
+      return false;
+    }
+  });
+
+  // Persist AI sidebar collapsed state to localStorage
+  useEffect(() => {
+    try {
+      localStorage.setItem('sdb_ai_sidebar_collapsed', String(aiSidebarCollapsed));
+    } catch {
+      // localStorage may be unavailable
+    }
+  }, [aiSidebarCollapsed]);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
   const audioInputRef = useRef<HTMLInputElement>(null);
@@ -939,69 +962,196 @@ export const SongDetail: React.FC<SongDetailProps> = ({
       </div>
 
       {/* Right Sidebar: AI Assistant */}
-      <div className="w-full lg:w-96 bg-zinc-900 border-l border-zinc-800 flex flex-col shrink-0 h-1/2 lg:h-full">
-        <div className="p-4 border-b border-zinc-800 bg-zinc-900 z-10">
-          <h3 className="font-bold text-white flex items-center gap-2">
-            <Sparkles size={16} className="text-amber-500" />
-            Studio Assistant
-          </h3>
-          <p className="text-xs text-zinc-500">Ask about tone, gear, or tabs</p>
-        </div>
-
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          <div className="flex gap-3">
-            <div className="w-8 h-8 rounded-full bg-amber-900/50 flex items-center justify-center text-xs shrink-0">
-              AI
+      {isMobile ? (
+        // Mobile: Fixed height, collapsible via toggle
+        !aiSidebarCollapsed && (
+          <div className="w-full bg-zinc-900 border-t border-zinc-800 flex flex-col shrink-0 h-1/2">
+            {/* Header with collapse toggle */}
+            <div className="p-4 border-b border-zinc-800 bg-zinc-900 z-10 flex items-center justify-between">
+              <div>
+                <h3 className="font-bold text-white flex items-center gap-2">
+                  <Sparkles size={16} className="text-amber-500" />
+                  Studio Assistant
+                </h3>
+                <p className="text-xs text-zinc-500">Ask about tone, gear, or tabs</p>
+              </div>
+              <button
+                type="button"
+                onClick={() => setAiSidebarCollapsed(true)}
+                className="p-2 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors"
+                title="Hide assistant"
+                aria-label="Hide assistant"
+              >
+                <X size={18} />
+              </button>
             </div>
-            <div className="bg-zinc-800/50 p-3 rounded-r-xl rounded-bl-xl text-sm text-zinc-300 border border-zinc-800">
-              Ready to rock? I can help you analyze tablature, suggest guitar tones for {song.title}
-              , or plan assignments.
+
+            <div className="flex-1 overflow-y-auto p-4 space-y-4">
+              <div className="flex gap-3">
+                <div className="w-8 h-8 rounded-full bg-amber-900/50 flex items-center justify-center text-xs shrink-0">
+                  AI
+                </div>
+                <div className="bg-zinc-800/50 p-3 rounded-r-xl rounded-bl-xl text-sm text-zinc-300 border border-zinc-800">
+                  Ready to rock? I can help you analyze tablature, suggest guitar tones for {song.title}
+                  , or plan assignments.
+                </div>
+              </div>
+
+              {aiResponse && (
+                <div className="flex gap-3 animate-in fade-in slide-in-from-bottom-2">
+                  <div className="w-8 h-8 rounded-full bg-amber-900/50 flex items-center justify-center text-xs shrink-0">
+                    AI
+                  </div>
+                  <div className="bg-zinc-800/50 p-3 rounded-r-xl rounded-bl-xl text-sm text-zinc-300 border border-zinc-800 prose prose-invert prose-sm max-w-none">
+                    {aiResponse.split('\n').map((line, i) => (
+                      <p
+                        key={i}
+                        className={`mb-1 ${line.startsWith('#') ? 'font-bold text-white mt-2' : ''} ${line.startsWith('-') ? 'pl-4' : ''}`}
+                      >
+                        {line.replace(/^#+\s/, '').replace(/^-\s/, '• ')}
+                      </p>
+                    ))}
+                  </div>
+                </div>
+              )}
+            </div>
+
+            <div className="p-4 border-t border-zinc-800 bg-zinc-900">
+              <div className="relative">
+                <input
+                  type="text"
+                  value={aiChat}
+                  onChange={e => setAiChat(e.target.value)}
+                  onKeyDown={e => e.key === 'Enter' && handleAskAI()}
+                  placeholder="Ask about this song..."
+                  className="w-full bg-zinc-950 border border-zinc-700 rounded-xl pl-4 pr-10 py-3 text-sm text-white focus:ring-1 focus:ring-amber-500 outline-none"
+                />
+                <button
+                  onClick={() => handleAskAI()}
+                  disabled={loadingAi}
+                  className="absolute right-2 top-2 p-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg transition-colors disabled:opacity-50"
+                >
+                  {loadingAi ? (
+                    <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                  ) : (
+                    <Mic size={16} />
+                  )}
+                </button>
+              </div>
             </div>
           </div>
+        )
+      ) : aiSidebarCollapsed ? (
+        // Desktop collapsed: Minimal width with expand button
+        <div className="w-12 bg-zinc-900 border-l border-zinc-800 flex flex-col items-center py-4 shrink-0 h-full">
+          <button
+            type="button"
+            onClick={() => setAiSidebarCollapsed(false)}
+            className="p-2 text-zinc-400 hover:text-amber-500 hover:bg-zinc-800 rounded-lg transition-colors"
+            title="Expand assistant"
+            aria-label="Expand assistant"
+          >
+            <Sparkles size={20} />
+          </button>
+        </div>
+      ) : (
+        // Desktop expanded: Resizable panel
+        <ResizablePanel
+          defaultWidth={384}
+          minWidth={280}
+          maxWidth={600}
+          storageKey="songdetail_ai_sidebar"
+          side="right"
+          className="bg-zinc-900 border-l border-zinc-800 flex flex-col h-full"
+        >
+          {/* Header with collapse toggle */}
+          <div className="p-4 border-b border-zinc-800 bg-zinc-900 z-10 flex items-center justify-between">
+            <div>
+              <h3 className="font-bold text-white flex items-center gap-2">
+                <Sparkles size={16} className="text-amber-500" />
+                Studio Assistant
+              </h3>
+              <p className="text-xs text-zinc-500">Ask about tone, gear, or tabs</p>
+            </div>
+            <button
+              type="button"
+              onClick={() => setAiSidebarCollapsed(true)}
+              className="p-2 text-zinc-400 hover:text-white hover:bg-zinc-800 rounded-lg transition-colors"
+              title="Collapse assistant"
+              aria-label="Collapse assistant"
+            >
+              <PanelRightClose size={18} />
+            </button>
+          </div>
 
-          {aiResponse && (
-            <div className="flex gap-3 animate-in fade-in slide-in-from-bottom-2">
+          <div className="flex-1 overflow-y-auto p-4 space-y-4">
+            <div className="flex gap-3">
               <div className="w-8 h-8 rounded-full bg-amber-900/50 flex items-center justify-center text-xs shrink-0">
                 AI
               </div>
-              <div className="bg-zinc-800/50 p-3 rounded-r-xl rounded-bl-xl text-sm text-zinc-300 border border-zinc-800 prose prose-invert prose-sm max-w-none">
-                {aiResponse.split('\n').map((line, i) => (
-                  <p
-                    key={i}
-                    className={`mb-1 ${line.startsWith('#') ? 'font-bold text-white mt-2' : ''} ${line.startsWith('-') ? 'pl-4' : ''}`}
-                  >
-                    {line.replace(/^#+\s/, '').replace(/^-\s/, '• ')}
-                  </p>
-                ))}
+              <div className="bg-zinc-800/50 p-3 rounded-r-xl rounded-bl-xl text-sm text-zinc-300 border border-zinc-800">
+                Ready to rock? I can help you analyze tablature, suggest guitar tones for {song.title}
+                , or plan assignments.
               </div>
             </div>
-          )}
-        </div>
 
-        <div className="p-4 border-t border-zinc-800 bg-zinc-900">
-          <div className="relative">
-            <input
-              type="text"
-              value={aiChat}
-              onChange={e => setAiChat(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && handleAskAI()}
-              placeholder="Ask about this song..."
-              className="w-full bg-zinc-950 border border-zinc-700 rounded-xl pl-4 pr-10 py-3 text-sm text-white focus:ring-1 focus:ring-amber-500 outline-none"
-            />
-            <button
-              onClick={() => handleAskAI()}
-              disabled={loadingAi}
-              className="absolute right-2 top-2 p-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg transition-colors disabled:opacity-50"
-            >
-              {loadingAi ? (
-                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              ) : (
-                <Mic size={16} />
-              )}
-            </button>
+            {aiResponse && (
+              <div className="flex gap-3 animate-in fade-in slide-in-from-bottom-2">
+                <div className="w-8 h-8 rounded-full bg-amber-900/50 flex items-center justify-center text-xs shrink-0">
+                  AI
+                </div>
+                <div className="bg-zinc-800/50 p-3 rounded-r-xl rounded-bl-xl text-sm text-zinc-300 border border-zinc-800 prose prose-invert prose-sm max-w-none">
+                  {aiResponse.split('\n').map((line, i) => (
+                    <p
+                      key={i}
+                      className={`mb-1 ${line.startsWith('#') ? 'font-bold text-white mt-2' : ''} ${line.startsWith('-') ? 'pl-4' : ''}`}
+                    >
+                      {line.replace(/^#+\s/, '').replace(/^-\s/, '• ')}
+                    </p>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
-        </div>
-      </div>
+
+          <div className="p-4 border-t border-zinc-800 bg-zinc-900">
+            <div className="relative">
+              <input
+                type="text"
+                value={aiChat}
+                onChange={e => setAiChat(e.target.value)}
+                onKeyDown={e => e.key === 'Enter' && handleAskAI()}
+                placeholder="Ask about this song..."
+                className="w-full bg-zinc-950 border border-zinc-700 rounded-xl pl-4 pr-10 py-3 text-sm text-white focus:ring-1 focus:ring-amber-500 outline-none"
+              />
+              <button
+                onClick={() => handleAskAI()}
+                disabled={loadingAi}
+                className="absolute right-2 top-2 p-1.5 bg-amber-600 hover:bg-amber-700 text-white rounded-lg transition-colors disabled:opacity-50"
+              >
+                {loadingAi ? (
+                  <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
+                ) : (
+                  <Mic size={16} />
+                )}
+              </button>
+            </div>
+          </div>
+        </ResizablePanel>
+      )}
+
+      {/* Mobile: Floating expand button when sidebar is collapsed */}
+      {isMobile && aiSidebarCollapsed && (
+        <button
+          type="button"
+          onClick={() => setAiSidebarCollapsed(false)}
+          className="fixed bottom-4 right-4 p-3 bg-amber-600 hover:bg-amber-700 text-white rounded-full shadow-lg transition-colors z-30"
+          title="Open assistant"
+          aria-label="Open assistant"
+        >
+          <Sparkles size={24} />
+        </button>
+      )}
 
       {/* Confirm Dialog */}
       <ConfirmDialog
