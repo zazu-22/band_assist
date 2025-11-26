@@ -6,7 +6,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 Band Assist (Sharp Dressed Band) is a React SPA for band management. It helps bands manage songs, charts, setlists, practice schedules, and member assignments. The app uses Supabase for data persistence and authentication.
 
-**Tech Stack:** React 19, TypeScript, Vite, Tailwind CSS 4, Supabase, AlphaTab (Guitar Pro rendering), Google Gemini AI
+**Tech Stack:** React 19, TypeScript, Vite, Tailwind CSS 4, shadcn/ui, Radix UI, Supabase, AlphaTab (Guitar Pro rendering), Google Gemini AI
 
 ## Development Commands
 
@@ -56,8 +56,25 @@ The Vite config maps `GEMINI_API_KEY` to `process.env.API_KEY` and `process.env.
 
 ```
 src/
-├── components/           # React components
-│   ├── ui/              # Reusable UI components (Toast, ConfirmDialog, etc.)
+├── components/
+│   ├── primitives/      # Raw shadcn/ui components (do not modify)
+│   │   ├── button.tsx, card.tsx, input.tsx, badge.tsx, ...
+│   │   └── index.ts     # Barrel export
+│   ├── ui/              # Composed UI components (domain-agnostic)
+│   │   ├── ConfirmDialog.tsx  # Confirmation modals (danger/warning/info)
+│   │   ├── EmptyState.tsx     # Empty state displays
+│   │   ├── StatCard.tsx       # Dashboard statistic cards
+│   │   ├── StatusBadge.tsx    # Song status badges
+│   │   ├── ThemeProvider.tsx  # Light/dark mode context
+│   │   ├── ThemeToggle.tsx    # Theme switcher
+│   │   ├── Toast.tsx          # Toast notifications
+│   │   └── index.ts           # Barrel export
+│   ├── layout/          # Layout components
+│   │   ├── AppShell.tsx       # Main layout wrapper
+│   │   ├── Sidebar.tsx        # Desktop sidebar
+│   │   ├── MobileNav.tsx      # Mobile navigation drawer
+│   │   ├── SidebarProvider.tsx # Sidebar state context
+│   │   └── index.ts           # Barrel export
 │   ├── Dashboard.tsx    # Main song overview
 │   ├── SongDetail.tsx   # Full song editor
 │   ├── SmartTabEditor.tsx # Text chart viewer/editor
@@ -70,30 +87,30 @@ src/
 │   ├── Settings.tsx     # Band configuration
 │   ├── Navigation.tsx   # Sidebar navigation
 │   ├── BandSelector.tsx # Multi-band switcher
-│   ├── Login.tsx        # Authentication
-│   ├── Signup.tsx       # Registration
-│   ├── PasswordReset.tsx # Password reset request
-│   ├── PasswordUpdate.tsx # Password reset completion
+│   ├── Login.tsx, Signup.tsx, PasswordReset.tsx, PasswordUpdate.tsx # Auth
 │   ├── AuthLayout.tsx   # Auth page template
 │   └── InvitationManager.tsx # Team invitations
+├── lib/
+│   ├── utils.ts         # cn() class merge utility
+│   └── avatar.ts        # Avatar color utilities
 ├── services/            # Business logic & data persistence
-│   ├── storageService.ts # Main storage facade
-│   ├── supabaseStorageService.ts # Supabase backend
-│   ├── localStorageService.ts # Browser localStorage
+│   ├── storageService.ts, supabaseStorageService.ts, localStorageService.ts
 │   ├── supabaseClient.ts # Supabase configuration
-│   ├── geminiService.ts # Google Gemini AI
+│   ├── geminiService.ts  # Google Gemini AI
 │   ├── migrationService.ts # Local to Supabase migration
 │   └── IStorageService.ts # Storage interface
 ├── types/
 │   └── database.types.ts # Supabase schema types
 ├── types.ts             # Core data types
 ├── hooks/
-│   └── useConfirmDialog.ts # Reusable confirm dialog hook
+│   ├── useConfirmDialog.ts  # Reusable confirm dialog hook
+│   ├── useMediaQuery.ts     # Responsive breakpoint hooks
+│   └── useLayoutShortcuts.ts # Keyboard shortcut hooks
 ├── utils/
 │   └── validation.ts    # Email & password validation
 ├── App.tsx              # Main app, routing, state management
 ├── constants.ts         # Initial data & defaults
-└── index.css            # Tailwind imports
+└── index.css            # Tailwind CSS + theme variables
 ```
 
 ### Core State Management Pattern
@@ -254,8 +271,109 @@ Band configuration with tabs:
 - `Toast.tsx` - Toast notifications (Sonner wrapper)
 - `ConfirmDialog.tsx` - Confirmation modals (danger/warning/info variants)
 - `EmptyState.tsx` - Empty state displays
+- `StatusBadge.tsx` - Song status indicator with semantic colors
+- `StatCard.tsx` - Dashboard stat cards with variants
+- `ThemeProvider.tsx` / `ThemeToggle.tsx` - Light/dark mode support
 - `LoadingSpinner.tsx` - Loading indicator
 - `ErrorBoundary.tsx` - Error capture & display
+
+## shadcn/ui Component Library
+
+The app uses shadcn/ui with a custom theme (amber/gold primary, light+dark modes). Components are organized in three layers:
+
+### Component Hierarchy
+
+1. **Primitives** (`components/primitives/`) - Raw shadcn/ui components from the registry. Do not modify directly.
+2. **UI Components** (`components/ui/`) - Domain-agnostic composed components built from primitives.
+3. **Feature Components** - Page-level components that use UI components.
+
+### Available Primitives
+
+Import from `@/components/primitives`:
+- Layout: `Card`, `CardHeader`, `CardTitle`, `CardDescription`, `CardContent`, `CardFooter`
+- Forms: `Button`, `Input`, `Label`, `Select`, `SelectTrigger`, `SelectContent`, `SelectItem`, `SelectValue`, `Switch`
+- Feedback: `Badge`, `Tooltip`, `TooltipTrigger`, `TooltipContent`, `TooltipProvider`
+- Overlays: `Dialog`, `DialogContent`, `DialogHeader`, `DialogTitle`, `DialogDescription`, `DialogFooter`
+- `AlertDialog`, `AlertDialogContent`, `AlertDialogHeader`, `AlertDialogFooter`, etc.
+- `Sheet`, `SheetContent`, `SheetHeader`, `SheetTitle`, `SheetDescription`
+- Navigation: `Tabs`, `TabsList`, `TabsTrigger`, `TabsContent`
+- `DropdownMenu`, `DropdownMenuContent`, `DropdownMenuItem`, `DropdownMenuTrigger`
+- Misc: `Avatar`, `AvatarFallback`, `Separator`, `ScrollArea`, `Collapsible`
+
+### Theme Variables
+
+Located in `src/index.css`. Key semantic colors:
+```css
+--primary        /* Amber/gold - main brand color */
+--secondary      /* Neutral secondary actions */
+--destructive    /* Red - danger/delete actions */
+--success        /* Green - positive status (custom) */
+--warning        /* Amber - caution status (custom) */
+--info           /* Blue - informational (custom) */
+--background     /* Page background */
+--card           /* Card backgrounds */
+--muted          /* Muted/disabled elements */
+--foreground     /* Primary text */
+--muted-foreground /* Secondary text */
+```
+
+Usage: `bg-primary`, `text-destructive`, `border-success/30`, `bg-warning/20`
+
+### Provider Hierarchy
+
+```tsx
+<ThemeProvider defaultTheme="dark">
+  <SidebarProvider>
+    <AppContext.Provider>
+      <Routes>...</Routes>
+    </AppContext.Provider>
+  </SidebarProvider>
+</ThemeProvider>
+```
+
+### Class Merging Utility
+
+Use `cn()` from `@/lib/utils` to conditionally merge Tailwind classes:
+```typescript
+import { cn } from '@/lib/utils';
+
+<div className={cn('base-class', isActive && 'active-class', className)} />
+```
+
+### Component Coding Standards
+
+**Import Ordering:**
+1. React (`import React, { ... } from 'react'`)
+2. Third-party libraries (`lucide-react`, etc.)
+3. Local components (`@/components/*`)
+4. Types (`@/types` or `type { ... }`)
+5. Utils (`@/lib/utils`)
+
+**Performance Patterns:**
+- Use `React.memo` for components that receive stable props
+- Add explicit `displayName` to all `memo()` wrapped components
+- Use `useCallback` for event handlers passed to child components
+- Use `useMemo` for expensive computations
+
+**Configuration Constants:**
+```typescript
+// Use SCREAMING_SNAKE_CASE with 'as const' for type safety
+const VARIANT_CONFIG = {
+  danger: { icon: Trash2, color: 'text-destructive' },
+  warning: { icon: AlertTriangle, color: 'text-warning' },
+} as const satisfies Record<VariantType, ConfigShape>;
+```
+
+**Dialog Callbacks:**
+- Parent components should wrap `onCancel`/`onConfirm` in `useCallback`
+- Prevents unnecessary re-renders when dialog state changes
+
+### Touch Target Compliance
+
+Primitives are configured for mobile-friendly touch targets:
+- Buttons: `h-11 sm:h-9` (44px mobile, 36px desktop)
+- Inputs: `h-11 sm:h-9`
+- Select triggers: `h-11 sm:h-9`
 
 ## Important Patterns
 
@@ -314,14 +432,36 @@ navigate('/', { replace: true }); // For redirects
 Testing is configured with Vitest and React Testing Library.
 
 ```bash
-npm test
+npm test           # Run all tests
+npm run typecheck  # TypeScript type checking
+npm run lint       # ESLint
 ```
 
-**Test targets:**
-- State update logic in App.tsx
-- StorageService save/load and migration
-- SmartTabEditor line analysis and transposition
-- Validation utilities
+**Test Files:**
+- `src/components/AlphaTabRenderer.test.tsx` - Player controls, event handling, state management
+- `src/components/ui/*.test.tsx` - UI component unit tests (StatusBadge, StatCard, EmptyState, ConfirmDialog)
+- `src/components/*.test.tsx` - Auth flow tests (Login, Signup, PasswordReset, PasswordUpdate)
+- `src/lib/avatar.test.ts` - Avatar color utilities
+- `src/utils/validation.test.ts` - Email and password validation
+
+**Test Patterns:**
+```typescript
+import { describe, it, expect, vi } from 'vitest';
+import { render, screen, fireEvent } from '@testing-library/react';
+
+// Mock external services
+vi.mock('@/services/supabaseClient', () => ({
+  getSupabaseClient: vi.fn(),
+}));
+
+// Test component rendering and interaction
+describe('ComponentName', () => {
+  it('should render correctly', () => {
+    render(<Component {...props} />);
+    expect(screen.getByRole('button')).toBeInTheDocument();
+  });
+});
+```
 
 ## Deployment
 
