@@ -334,9 +334,6 @@ All migrated components verified for:
 
 ## Remaining Work
 
-4. **Other pages** (SetlistManager, BandDashboard, ScheduleManager, etc.)
-   - Apply consistent Card, Badge, Button usage
-
 ### Phase 6: Quality Review (Pending)
 
 - Code review with parallel agents
@@ -348,11 +345,23 @@ All migrated components verified for:
 - Code splitting and lazy loading for heavy components (AlphaTab, SongDetail)
 - Extract magic values (hardcoded strings) to constants
 
+**From PR #50 review feedback:**
+- Verify custom animation classes exist in Tailwind configuration
+- Review drag-and-drop state management (ResizablePanel) for potential stale closures
+- Simplify Avatar component color duplication (duplicate classes in Avatar/AvatarFallback)
+- Add focus-visible styles for keyboard navigation feedback
+
 ### Phase 7: Summary (Pending)
 
 - Document what was built
 - Update CLAUDE.md with shadcn patterns
 - List all modified files
+
+**Test coverage improvements (from PR #50 review):**
+- Add unit tests for business logic and helper functions
+- Add unit tests for auth flows (Login, Signup, PasswordReset)
+- Current gap: only 1 test file for 22 modified files
+- Priority areas: state management, form validation, navigation logic
 
 ---
 
