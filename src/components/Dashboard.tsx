@@ -1,4 +1,4 @@
-import React, { memo } from 'react';
+import React, { memo, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Activity, CalendarDays, CheckCircle2, Disc, Music } from 'lucide-react';
 import { Card, CardHeader, CardTitle, CardContent } from '@/components/primitives';
@@ -36,15 +36,24 @@ export const Dashboard: React.FC<DashboardProps> = memo(function Dashboard({
   events = [],
 }) {
   const navigate = useNavigate();
-  const totalSongs = songs.length;
-  const readySongs = songs.filter(s => s.status === 'Performance Ready').length;
-  const learningSongs = songs.filter(s => s.status === 'To Learn').length;
 
-  // Find next gig
-  const today = new Date();
-  const nextGig = events
-    .filter(e => e.type === 'GIG' && new Date(e.date) >= today)
-    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0];
+  // Memoize computed stats to avoid recalculating on every render
+  const stats = useMemo(() => {
+    const readySongs = songs.filter(s => s.status === 'Performance Ready').length;
+    const learningSongs = songs.filter(s => s.status === 'To Learn').length;
+    return { total: songs.length, ready: readySongs, learning: learningSongs };
+  }, [songs]);
+
+  // Memoize next gig calculation
+  const nextGig = useMemo(() => {
+    const today = new Date();
+    return events
+      .filter(e => e.type === 'GIG' && new Date(e.date) >= today)
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0];
+  }, [events]);
+
+  // Memoize the displayed songs list (first 5)
+  const displayedSongs = useMemo(() => songs.slice(0, 5), [songs]);
 
   return (
     <div className="p-4 sm:p-6 lg:p-10 space-y-8">
@@ -57,19 +66,19 @@ export const Dashboard: React.FC<DashboardProps> = memo(function Dashboard({
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
         <StatCard
           title="Total Setlist"
-          value={totalSongs}
+          value={stats.total}
           subtitle="Songs"
           icon={Disc}
         />
         <StatCard
           title="Stage Ready"
-          value={readySongs}
+          value={stats.ready}
           icon={CheckCircle2}
           variant="success"
         />
         <StatCard
           title="To Learn"
-          value={learningSongs}
+          value={stats.learning}
           icon={Activity}
           variant="warning"
         />
@@ -102,7 +111,7 @@ export const Dashboard: React.FC<DashboardProps> = memo(function Dashboard({
               />
             ) : (
               <div className="space-y-3">
-                {songs.slice(0, 5).map(song => (
+                {displayedSongs.map(song => (
                   <button
                     key={song.id}
                     type="button"
