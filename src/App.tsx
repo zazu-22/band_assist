@@ -702,6 +702,7 @@ const App: React.FC = () => {
             element={
               <Dashboard
                 songs={songs}
+                members={members}
                 onNavigateToSong={id => navigate(getSongDetailRoute(id))}
                 events={events}
               />
