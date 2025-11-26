@@ -76,7 +76,10 @@ export const SetlistManager: React.FC<SetlistManagerProps> = memo(function Setli
       const suggestion = await getMusicAnalysis(prompt);
       toast.info(suggestion, { duration: 10000 });
     } catch (err) {
-      console.error('AI suggestion error:', err);
+      console.error('[SetlistManager] AI suggestion error:', err, {
+        songCount: songs.length,
+        songTitles: songs.map(s => s.title),
+      });
       toast.error('Failed to get AI suggestions. Please try again.');
     } finally {
       setLoadingSuggestion(false);

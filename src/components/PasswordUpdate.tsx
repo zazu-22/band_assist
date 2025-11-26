@@ -44,8 +44,12 @@ export const PasswordUpdate: React.FC<PasswordUpdateProps> = memo(function Passw
         return;
       }
 
-      // Clear sensitive tokens from URL after successful session verification
-      // Using replaceState to avoid triggering a navigation event
+      // SECURITY: Clear sensitive auth tokens from URL immediately after successful session verification
+      // We clear here (not on unmount) to:
+      // 1. Prevent tokens from appearing in browser history
+      // 2. Avoid race conditions if component unmounts during auth flow
+      // 3. Remove sensitive data from URL before user can copy/share link
+      // Using replaceState instead of hash='' to avoid triggering navigation events
       if (window.history.replaceState) {
         window.history.replaceState(null, '', window.location.pathname + window.location.search);
       }

@@ -150,6 +150,21 @@ export const INSTRUMENT_ICONS: Record<string, string> = {
   default: '🎵',
 };
 
+/**
+ * Default avatar background color when member has no assigned color.
+ * Uses semantic 'bg-muted' for theme compatibility.
+ */
+export const DEFAULT_AVATAR_COLOR = 'bg-muted';
+
+/**
+ * Get avatar color with fallback to default.
+ * @param avatarColor - The member's assigned avatar color (may be undefined)
+ * @returns The avatar color class to use
+ */
+export function getAvatarColor(avatarColor: string | undefined): string {
+  return avatarColor || DEFAULT_AVATAR_COLOR;
+}
+
 export const DEFAULT_MEMBERS: BandMember[] = [
   { id: '1763776021452', name: 'Jason', roles: [], avatarColor: 'bg-red-500' },
   { id: '1763776022630', name: 'Jeff', roles: [], avatarColor: 'bg-blue-500' },

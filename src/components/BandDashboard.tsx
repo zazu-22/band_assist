@@ -12,7 +12,7 @@ import {
   AvatarFallback,
 } from '@/components/primitives';
 import { EmptyState } from '@/components/ui';
-import { INSTRUMENT_ICONS } from '@/constants';
+import { INSTRUMENT_ICONS, getAvatarColor } from '@/constants';
 import { ROUTES } from '@/routes';
 import type { BandMember, Song } from '@/types';
 
@@ -123,7 +123,7 @@ export const BandDashboard: React.FC<BandDashboardProps> = memo(function BandDas
               >
                 <CardContent className="p-6 flex flex-col items-center text-center gap-4">
                   <Avatar className="w-20 h-20">
-                    <AvatarFallback className={`text-3xl font-bold ${member.avatarColor || 'bg-muted'}`}>
+                    <AvatarFallback className={`text-3xl font-bold ${getAvatarColor(member.avatarColor)}`}>
                       {member.name.charAt(0).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
@@ -148,7 +148,7 @@ export const BandDashboard: React.FC<BandDashboardProps> = memo(function BandDas
           <CardHeader className="border-b border-border bg-muted/30 flex flex-row items-center justify-between space-y-0 p-6">
             <div className="flex items-center gap-4">
               <Avatar className="w-12 h-12">
-                <AvatarFallback className={`text-xl font-bold ${selectedMember.avatarColor || 'bg-muted'}`}>
+                <AvatarFallback className={`text-xl font-bold ${getAvatarColor(selectedMember.avatarColor)}`}>
                   {selectedMember.name.charAt(0)}
                 </AvatarFallback>
               </Avatar>

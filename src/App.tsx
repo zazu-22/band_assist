@@ -669,7 +669,7 @@ const App: React.FC = () => {
         <Route
           path={`${ROUTES.SONG_DETAIL}/:songId`}
           element={
-            <Suspense fallback={<LoadingScreen message="Loading Song..." />}>
+            <Suspense fallback={<LoadingScreen message="Loading Song Details..." />}>
               <SongDetailRoute />
             </Suspense>
           }
