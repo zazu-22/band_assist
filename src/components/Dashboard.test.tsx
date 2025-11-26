@@ -1,7 +1,7 @@
 import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
-import { Dashboard } from './Dashboard';
+import { Dashboard, calculateSongUrgency, URGENCY_WEIGHTS } from './Dashboard';
 import type { Song, BandEvent, BandMember } from '@/types';
 
 // Wrap component with Router for useNavigate
@@ -350,6 +350,228 @@ describe('Dashboard', () => {
   describe('memo behavior', () => {
     it('has displayName set', () => {
       expect(Dashboard.displayName).toBe('Dashboard');
+    });
+  });
+});
+
+// =============================================================================
+// calculateSongUrgency unit tests
+// =============================================================================
+
+describe('calculateSongUrgency', () => {
+  const today = new Date('2025-01-15');
+
+  const createTestSong = (overrides: Partial<Song> = {}): Song => ({
+    id: '1',
+    title: 'Test Song',
+    artist: 'Test Artist',
+    duration: '3:30',
+    bpm: 120,
+    key: 'C',
+    isOriginal: false,
+    status: 'In Progress',
+    assignments: [{ memberId: '1', role: 'Guitar' }],
+    parts: [],
+    charts: [{ id: 'c1', name: 'Main', instrument: 'All', type: 'TEXT', content: 'chords here', annotations: [] }],
+    ...overrides,
+  });
+
+  describe('Performance Ready songs', () => {
+    it('returns score of 0 for Performance Ready songs', () => {
+      const song = createTestSong({ status: 'Performance Ready' });
+      const result = calculateSongUrgency(song, today);
+
+      expect(result.score).toBe(0);
+      expect(result.issues).toHaveLength(0);
+    });
+
+    it('ignores other issues for Performance Ready songs', () => {
+      const song = createTestSong({
+        status: 'Performance Ready',
+        charts: [],
+        assignments: [],
+        targetDate: '2025-01-10', // Overdue
+      });
+      const result = calculateSongUrgency(song, today);
+
+      expect(result.score).toBe(0);
+      expect(result.issues).toHaveLength(0);
+    });
+  });
+
+  describe('missing charts', () => {
+    it('adds NO_CHARTS weight when charts array is empty', () => {
+      const song = createTestSong({ charts: [] });
+      const result = calculateSongUrgency(song, today);
+
+      expect(result.score).toBeGreaterThanOrEqual(URGENCY_WEIGHTS.NO_CHARTS);
+      expect(result.issues).toContainEqual({ label: 'No charts', severity: 'high' });
+    });
+
+    it('does not add NO_CHARTS weight when charts exist', () => {
+      const song = createTestSong();
+      const result = calculateSongUrgency(song, today);
+
+      expect(result.issues).not.toContainEqual(expect.objectContaining({ label: 'No charts' }));
+    });
+  });
+
+  describe('missing backing track', () => {
+    it('adds NO_BACKING_TRACK weight when no backing track', () => {
+      const song = createTestSong({ backingTrackUrl: undefined, backingTrackStoragePath: undefined });
+      const result = calculateSongUrgency(song, today);
+
+      expect(result.score).toBeGreaterThanOrEqual(URGENCY_WEIGHTS.NO_BACKING_TRACK);
+      expect(result.issues).toContainEqual({ label: 'No backing track', severity: 'low' });
+    });
+
+    it('does not add weight when backingTrackUrl exists', () => {
+      const song = createTestSong({ backingTrackUrl: 'data:audio/mp3;base64,abc' });
+      const result = calculateSongUrgency(song, today);
+
+      expect(result.issues).not.toContainEqual(expect.objectContaining({ label: 'No backing track' }));
+    });
+
+    it('does not add weight when backingTrackStoragePath exists', () => {
+      const song = createTestSong({ backingTrackStoragePath: 'songs/123/track.mp3' });
+      const result = calculateSongUrgency(song, today);
+
+      expect(result.issues).not.toContainEqual(expect.objectContaining({ label: 'No backing track' }));
+    });
+  });
+
+  describe('unassigned songs', () => {
+    it('adds UNASSIGNED weight when no assignments', () => {
+      const song = createTestSong({ assignments: [] });
+      const result = calculateSongUrgency(song, today);
+
+      expect(result.score).toBeGreaterThanOrEqual(URGENCY_WEIGHTS.UNASSIGNED);
+      expect(result.issues).toContainEqual({ label: 'Unassigned', severity: 'medium' });
+    });
+
+    it('does not add weight when assignments exist', () => {
+      const song = createTestSong({ assignments: [{ memberId: '1', role: 'Guitar' }] });
+      const result = calculateSongUrgency(song, today);
+
+      expect(result.issues).not.toContainEqual(expect.objectContaining({ label: 'Unassigned' }));
+    });
+  });
+
+  describe('target date urgency', () => {
+    it('adds OVERDUE weight for past due dates', () => {
+      const song = createTestSong({ targetDate: '2025-01-10' }); // 5 days ago
+      const result = calculateSongUrgency(song, today);
+
+      expect(result.score).toBeGreaterThanOrEqual(URGENCY_WEIGHTS.OVERDUE);
+      expect(result.issues).toContainEqual({ label: 'Overdue', severity: 'high' });
+    });
+
+    it('adds DUE_WITHIN_3_DAYS weight for songs due in 1 day', () => {
+      const song = createTestSong({ targetDate: '2025-01-16' }); // 1 day from now
+      const result = calculateSongUrgency(song, today);
+
+      expect(result.score).toBeGreaterThanOrEqual(URGENCY_WEIGHTS.DUE_WITHIN_3_DAYS);
+      expect(result.issues).toContainEqual({ label: 'Due in 1d', severity: 'high' });
+    });
+
+    it('adds DUE_WITHIN_3_DAYS weight for songs due in 3 days (boundary)', () => {
+      const song = createTestSong({ targetDate: '2025-01-18' }); // 3 days from now
+      const result = calculateSongUrgency(song, today);
+
+      expect(result.score).toBeGreaterThanOrEqual(URGENCY_WEIGHTS.DUE_WITHIN_3_DAYS);
+      expect(result.issues).toContainEqual({ label: 'Due in 3d', severity: 'high' });
+    });
+
+    it('adds DUE_WITHIN_7_DAYS weight for songs due in 4 days', () => {
+      const song = createTestSong({ targetDate: '2025-01-19' }); // 4 days from now
+      const result = calculateSongUrgency(song, today);
+
+      expect(result.score).toBeGreaterThanOrEqual(URGENCY_WEIGHTS.DUE_WITHIN_7_DAYS);
+      expect(result.issues).toContainEqual({ label: 'Due in 4d', severity: 'medium' });
+    });
+
+    it('adds DUE_WITHIN_7_DAYS weight for songs due in 7 days (boundary)', () => {
+      const song = createTestSong({ targetDate: '2025-01-22' }); // 7 days from now
+      const result = calculateSongUrgency(song, today);
+
+      expect(result.score).toBeGreaterThanOrEqual(URGENCY_WEIGHTS.DUE_WITHIN_7_DAYS);
+      expect(result.issues).toContainEqual({ label: 'Due in 7d', severity: 'medium' });
+    });
+
+    it('does not add date urgency for songs due in 8+ days', () => {
+      const song = createTestSong({ targetDate: '2025-01-23' }); // 8 days from now
+      const result = calculateSongUrgency(song, today);
+
+      expect(result.issues).not.toContainEqual(expect.objectContaining({ label: expect.stringContaining('Due') }));
+      expect(result.issues).not.toContainEqual(expect.objectContaining({ label: 'Overdue' }));
+    });
+
+    it('does not add date urgency for songs without target date', () => {
+      const song = createTestSong({ targetDate: undefined });
+      const result = calculateSongUrgency(song, today);
+
+      expect(result.issues).not.toContainEqual(expect.objectContaining({ label: expect.stringContaining('Due') }));
+      expect(result.issues).not.toContainEqual(expect.objectContaining({ label: 'Overdue' }));
+    });
+  });
+
+  describe('status-based priority', () => {
+    it('adds STATUS_TO_LEARN weight for To Learn status', () => {
+      const song = createTestSong({ status: 'To Learn' });
+      const result = calculateSongUrgency(song, today);
+
+      expect(result.score).toBeGreaterThanOrEqual(URGENCY_WEIGHTS.STATUS_TO_LEARN);
+    });
+
+    it('adds STATUS_IN_PROGRESS weight for In Progress status', () => {
+      const song = createTestSong({ status: 'In Progress' });
+      const result = calculateSongUrgency(song, today);
+
+      expect(result.score).toBeGreaterThanOrEqual(URGENCY_WEIGHTS.STATUS_IN_PROGRESS);
+    });
+  });
+
+  describe('cumulative scoring', () => {
+    it('accumulates scores from multiple issues', () => {
+      const song = createTestSong({
+        status: 'To Learn',
+        charts: [],
+        assignments: [],
+        targetDate: '2025-01-10', // Overdue
+      });
+      const result = calculateSongUrgency(song, today);
+
+      const expectedMinScore =
+        URGENCY_WEIGHTS.NO_CHARTS +
+        URGENCY_WEIGHTS.NO_BACKING_TRACK +
+        URGENCY_WEIGHTS.UNASSIGNED +
+        URGENCY_WEIGHTS.OVERDUE +
+        URGENCY_WEIGHTS.STATUS_TO_LEARN;
+
+      expect(result.score).toBe(expectedMinScore);
+      expect(result.issues).toHaveLength(4); // No charts, No backing track, Unassigned, Overdue
+    });
+
+    it('songs with more issues score higher than songs with fewer issues', () => {
+      const highUrgencySong = createTestSong({
+        id: 'high',
+        status: 'To Learn',
+        charts: [],
+        assignments: [],
+        targetDate: '2025-01-10', // Overdue
+      });
+
+      const lowUrgencySong = createTestSong({
+        id: 'low',
+        status: 'In Progress',
+        charts: [{ id: 'c1', name: 'Main', instrument: 'All', type: 'TEXT', content: 'chords', annotations: [] }],
+        assignments: [{ memberId: '1', role: 'Guitar' }],
+      });
+
+      const highResult = calculateSongUrgency(highUrgencySong, today);
+      const lowResult = calculateSongUrgency(lowUrgencySong, today);
+
+      expect(highResult.score).toBeGreaterThan(lowResult.score);
     });
   });
 });
