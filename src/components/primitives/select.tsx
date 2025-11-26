@@ -118,7 +118,7 @@ const SelectItem = React.forwardRef<
     ref={ref}
     className={cn(
       // Mobile-first: min-height 44px for touch targets, smaller on desktop
-      'relative flex w-full cursor-default select-none items-center rounded-sm min-h-11 sm:min-h-0 py-2.5 sm:py-1.5 pl-2 pr-8 text-sm outline-none focus:bg-accent focus:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
+      'relative flex w-full cursor-default select-none items-center rounded-sm min-h-11 sm:min-h-0 py-2.5 sm:py-1.5 pl-2 pr-8 text-sm outline-none focus-visible:bg-accent focus-visible:text-accent-foreground data-[disabled]:pointer-events-none data-[disabled]:opacity-50',
       className
     )}
     {...props}

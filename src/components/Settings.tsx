@@ -32,6 +32,7 @@ import { toast, ConfirmDialog } from '@/components/ui';
 import { StorageService } from '@/services/storageService';
 import { InvitationManager } from '@/components/InvitationManager';
 import { isSupabaseConfigured } from '@/services/supabaseClient';
+import { getAvatarColor, getNextAvatarColor } from '@/lib/avatar';
 import type { BandMember, Song, BandEvent } from '@/types';
 
 type SettingsTab = 'ROSTER' | 'ROLES' | 'TEAM' | 'DATA';
@@ -57,15 +58,6 @@ interface ConfirmDialogState {
   variant: 'danger' | 'warning' | 'info';
   onConfirm: () => void;
 }
-
-/** Avatar background colors cycled through for new members */
-const AVATAR_COLORS = [
-  'bg-red-500',
-  'bg-blue-500',
-  'bg-green-500',
-  'bg-yellow-500',
-  'bg-purple-500',
-] as const;
 
 /** No-op function for initial dialog state */
 const NOOP = () => {};
@@ -119,7 +111,7 @@ export const Settings: React.FC<SettingsProps> = memo(function Settings({
         name: newMemberName,
         roles: [],
         // Compute color based on prev.length to avoid race condition
-        avatarColor: AVATAR_COLORS[prev.length % AVATAR_COLORS.length],
+        avatarColor: getNextAvatarColor(prev.length),
       };
       return [...prev, newMember];
     });
@@ -277,7 +269,7 @@ export const Settings: React.FC<SettingsProps> = memo(function Settings({
                     {editingId === member.id ? (
                       <div className="flex items-center gap-4 w-full">
                         <Avatar className="opacity-50">
-                          <AvatarFallback className={member.avatarColor}>
+                          <AvatarFallback className={getAvatarColor(member.avatarColor)}>
                             {editName.charAt(0).toUpperCase() || '?'}
                           </AvatarFallback>
                         </Avatar>
@@ -313,7 +305,7 @@ export const Settings: React.FC<SettingsProps> = memo(function Settings({
                       <>
                         <div className="flex items-center gap-4">
                           <Avatar>
-                            <AvatarFallback className={member.avatarColor}>
+                            <AvatarFallback className={getAvatarColor(member.avatarColor)}>
                               {member.name.charAt(0).toUpperCase()}
                             </AvatarFallback>
                           </Avatar>

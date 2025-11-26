@@ -2,6 +2,7 @@ import React, { useState, useRef, useEffect } from 'react';
 import { Song, BandMember, Annotation, SongChart } from '@/types';
 import { INSTRUMENT_ICONS } from '@/constants';
 import { getMusicAnalysis } from '@/services/geminiService';
+import { getAvatarColor } from '@/lib/avatar';
 import { SmartTabEditor } from './SmartTabEditor';
 import { isSupabaseConfigured } from '@/services/supabaseClient';
 import { supabaseStorageService } from '@/services/supabaseStorageService';
@@ -785,7 +786,7 @@ export const SongDetail: React.FC<SongDetailProps> = ({
                       >
                         <div className="flex items-center gap-4 mb-4 pb-4 border-b border-zinc-900">
                           <div
-                            className={`w-12 h-12 rounded-full ${member.avatarColor || 'bg-zinc-700'} flex items-center justify-center font-bold text-white`}
+                            className={`w-12 h-12 rounded-full ${getAvatarColor(member.avatarColor)} flex items-center justify-center font-bold text-white`}
                           >
                             {member.name.charAt(0).toUpperCase()}
                           </div>

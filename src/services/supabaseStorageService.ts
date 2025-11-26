@@ -1,6 +1,7 @@
 import { Song, BandMember, BandEvent, SongChart, Assignment, SongPart } from '../types';
 import { IStorageService, LoadResult } from './IStorageService';
 import { getSupabaseClient, isSupabaseConfigured } from './supabaseClient';
+import { validateAvatarColor } from '@/lib/avatar';
 import { RealtimeChannel } from '@supabase/supabase-js';
 import type { Json } from '../types/database.types';
 
@@ -229,7 +230,7 @@ export class SupabaseStorageService implements IStorageService {
             id: m.id,
             name: m.name,
             roles: m.roles,
-            avatarColor: m.avatar_color || undefined,
+            avatarColor: validateAvatarColor(m.avatar_color),
           }))
         : null;
 
@@ -647,7 +648,7 @@ export class SupabaseStorageService implements IStorageService {
                 id: dbMember.id,
                 name: dbMember.name,
                 roles: dbMember.roles,
-                avatarColor: dbMember.avatar_color,
+                avatarColor: validateAvatarColor(dbMember.avatar_color),
               };
               callbacks.onMembersChange(member);
             }
