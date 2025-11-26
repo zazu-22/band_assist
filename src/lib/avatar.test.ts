@@ -3,6 +3,7 @@ import {
   getAvatarColor,
   getNextAvatarColor,
   validateAvatarColor,
+  isValidAvatarColor,
   DEFAULT_AVATAR_COLOR,
   AVATAR_COLORS,
 } from './avatar';
@@ -92,10 +93,52 @@ describe('avatar utilities', () => {
       expect(getNextAvatarColor(index)).toBe(expectedColor);
     });
 
+    it('handles negative indices by treating them as 0', () => {
+      expect(getNextAvatarColor(-1)).toBe(AVATAR_COLORS[0]);
+      expect(getNextAvatarColor(-100)).toBe(AVATAR_COLORS[0]);
+      expect(getNextAvatarColor(-0.5)).toBe(AVATAR_COLORS[0]);
+    });
+
+    it('handles floating point indices by flooring', () => {
+      expect(getNextAvatarColor(1.9)).toBe(AVATAR_COLORS[1]);
+      expect(getNextAvatarColor(2.1)).toBe(AVATAR_COLORS[2]);
+    });
+
     it('always returns a valid AvatarColorClass', () => {
       for (let i = 0; i < 20; i++) {
         const color = getNextAvatarColor(i);
         expect(AVATAR_COLORS).toContain(color);
+      }
+    });
+  });
+
+  describe('isValidAvatarColor (type guard)', () => {
+    it('returns true for valid avatar colors', () => {
+      expect(isValidAvatarColor('bg-red-500')).toBe(true);
+      expect(isValidAvatarColor('bg-blue-500')).toBe(true);
+      expect(isValidAvatarColor('bg-muted')).toBe(true);
+    });
+
+    it('returns false for invalid strings', () => {
+      expect(isValidAvatarColor('bg-evil-class')).toBe(false);
+      expect(isValidAvatarColor('invalid')).toBe(false);
+      expect(isValidAvatarColor('')).toBe(false);
+    });
+
+    it('returns false for non-string values', () => {
+      expect(isValidAvatarColor(null)).toBe(false);
+      expect(isValidAvatarColor(undefined)).toBe(false);
+      expect(isValidAvatarColor(123)).toBe(false);
+      expect(isValidAvatarColor({})).toBe(false);
+      expect(isValidAvatarColor([])).toBe(false);
+    });
+
+    it('narrows type correctly in conditionals', () => {
+      const maybeColor: unknown = 'bg-red-500';
+      if (isValidAvatarColor(maybeColor)) {
+        // TypeScript should recognize maybeColor as AvatarColorClass here
+        const color: string = maybeColor;
+        expect(color).toBe('bg-red-500');
       }
     });
   });

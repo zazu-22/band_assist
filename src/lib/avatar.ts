@@ -38,6 +38,16 @@ const VALID_AVATAR_COLORS: ReadonlySet<AvatarColorClass> = new Set<AvatarColorCl
 ]);
 
 /**
+ * Type guard to check if a value is a valid AvatarColorClass.
+ * Use this for explicit type narrowing in conditionals.
+ * @param value - The value to check
+ * @returns True if value is a valid AvatarColorClass
+ */
+export function isValidAvatarColor(value: unknown): value is AvatarColorClass {
+  return typeof value === 'string' && VALID_AVATAR_COLORS.has(value as AvatarColorClass);
+}
+
+/**
  * Get avatar color with fallback to default.
  * Includes runtime validation to ensure only valid Tailwind classes are returned.
  * @param avatarColor - The member's assigned avatar color (may be undefined or legacy value)
@@ -49,10 +59,9 @@ export function getAvatarColor(avatarColor: AvatarColorClass | string | undefine
     return DEFAULT_AVATAR_COLOR;
   }
 
-  // Validate that the color is in our allowed list to prevent
-  // arbitrary class injection and ensure consistent styling
-  if (VALID_AVATAR_COLORS.has(avatarColor as AvatarColorClass)) {
-    return avatarColor as AvatarColorClass;
+  // Use type guard for validation
+  if (isValidAvatarColor(avatarColor)) {
+    return avatarColor;
   }
 
   // Fall back to default for any unrecognized color
@@ -71,8 +80,13 @@ export function validateAvatarColor(dbValue: string | null | undefined): AvatarC
     return undefined;
   }
 
-  if (VALID_AVATAR_COLORS.has(dbValue as AvatarColorClass)) {
-    return dbValue as AvatarColorClass;
+  if (isValidAvatarColor(dbValue)) {
+    return dbValue;
+  }
+
+  // Log warning in development for legacy/invalid values to aid migration
+  if (process.env.NODE_ENV === 'development') {
+    console.warn(`[avatar] Invalid avatar color "${dbValue}" detected. Using default.`);
   }
 
   // Invalid legacy value - return undefined to allow UI to use default
@@ -82,9 +96,11 @@ export function validateAvatarColor(dbValue: string | null | undefined): AvatarC
 /**
  * Get the next avatar color for a new member based on existing member count.
  * Cycles through available colors to provide variety.
- * @param memberIndex - Index of the member (0-based)
+ * @param memberIndex - Index of the member (0-based, negative values treated as 0)
  * @returns An avatar color class
  */
 export function getNextAvatarColor(memberIndex: number): AvatarColorClass {
-  return AVATAR_COLORS[memberIndex % AVATAR_COLORS.length];
+  // Handle negative indices by treating them as 0
+  const safeIndex = Math.max(0, Math.floor(memberIndex));
+  return AVATAR_COLORS[safeIndex % AVATAR_COLORS.length];
 }
