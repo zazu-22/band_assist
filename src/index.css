@@ -287,8 +287,8 @@
   .stagger-4 { animation-delay: 200ms; }
   .stagger-5 { animation-delay: 250ms; }
 
-  /* Animation fill mode utility */
-  .fill-forwards {
+  /* Animation fill mode utility - maintains final state after animation */
+  .animation-forwards {
     animation-fill-mode: forwards;
   }
 

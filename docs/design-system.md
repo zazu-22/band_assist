@@ -96,8 +96,11 @@ Use staggered reveals for groups of elements appearing together:
 .stagger-4 { animation-delay: 200ms; }
 .stagger-5 { animation-delay: 250ms; }
 
+/* Animation fill mode - maintains final state after animation completes */
+.animation-forwards { animation-fill-mode: forwards; }
+
 /* Apply with slide-in animation */
-.animate-slide-in-from-bottom.fill-forwards.opacity-0.stagger-1
+.animate-slide-in-from-bottom.animation-forwards.opacity-0.stagger-1
 ```
 
 ### Progress Animations
@@ -213,10 +216,16 @@ Subtle, informative tooltips:
 ```
 
 Tooltip styling (in `primitives/tooltip.tsx`):
+
 - Background: `bg-popover/95 backdrop-blur-sm`
 - Border: `border border-border/50`
 - Shadow: `shadow-md`
 - Animation: `fade-in-50 duration-200`
+
+> **Note**: The tooltip primitive has been modified from shadcn/ui defaults to apply
+> this styling globally. This is an approved design system decision to ensure visual
+> consistency across all tooltips in the application. Per project guidelines, this
+> modification is documented here as an exception to the "do not modify primitives" rule.
 
 ## Layout Principles
 
@@ -263,6 +272,7 @@ className="text-muted-foreground/60 hover:text-primary transition-colors"
 ### Focus States
 
 Rely on the theme's ring utilities for focus indication:
+
 ```tsx
 className="focus-visible:ring-2 focus-visible:ring-ring"
 ```

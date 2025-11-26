@@ -33,6 +33,11 @@ import type { Song, BandEvent, BandMember } from '@/types';
 
 interface DashboardProps {
   songs: Song[];
+  /**
+   * Band members list.
+   * TODO: Will be used for member avatars in assignment warnings and
+   * "who's playing what" display in a future iteration.
+   */
   members: BandMember[];
   events?: BandEvent[];
   /**
@@ -74,6 +79,21 @@ const TIMELINE_ICON_MAP = {
   OTHER: { icon: Calendar, className: 'text-muted-foreground' },
 } as const;
 
+/**
+ * Weight values for urgency scoring algorithm.
+ * Higher values = more urgent, pushing songs higher in the Practice Queue.
+ */
+const URGENCY_WEIGHTS = {
+  NO_CHARTS: 30,
+  NO_BACKING_TRACK: 5,
+  UNASSIGNED: 20,
+  OVERDUE: 50,
+  DUE_WITHIN_3_DAYS: 40,
+  DUE_WITHIN_7_DAYS: 25,
+  STATUS_TO_LEARN: 15,
+  STATUS_IN_PROGRESS: 5,
+} as const;
+
 // =============================================================================
 // UTILITIES
 // =============================================================================
@@ -93,19 +113,19 @@ function calculateSongUrgency(song: Song, today: Date): SongWithUrgency {
   // Missing charts is a blocker
   if (song.charts.length === 0) {
     issues.push({ label: 'No charts', severity: 'high' });
-    score += 30;
+    score += URGENCY_WEIGHTS.NO_CHARTS;
   }
 
   // Missing backing track
   if (!song.backingTrackUrl && !song.backingTrackStoragePath) {
     issues.push({ label: 'No backing track', severity: 'low' });
-    score += 5;
+    score += URGENCY_WEIGHTS.NO_BACKING_TRACK;
   }
 
   // Unassigned songs need attention
   if (song.assignments.length === 0) {
     issues.push({ label: 'Unassigned', severity: 'medium' });
-    score += 20;
+    score += URGENCY_WEIGHTS.UNASSIGNED;
   }
 
   // Target date urgency
@@ -117,21 +137,21 @@ function calculateSongUrgency(song: Song, today: Date): SongWithUrgency {
 
     if (daysUntil < 0) {
       issues.push({ label: 'Overdue', severity: 'high' });
-      score += 50;
+      score += URGENCY_WEIGHTS.OVERDUE;
     } else if (daysUntil <= 3) {
       issues.push({ label: `Due in ${daysUntil}d`, severity: 'high' });
-      score += 40;
+      score += URGENCY_WEIGHTS.DUE_WITHIN_3_DAYS;
     } else if (daysUntil <= 7) {
       issues.push({ label: `Due in ${daysUntil}d`, severity: 'medium' });
-      score += 25;
+      score += URGENCY_WEIGHTS.DUE_WITHIN_7_DAYS;
     }
   }
 
   // Status-based priority
   if (song.status === 'To Learn') {
-    score += 15;
+    score += URGENCY_WEIGHTS.STATUS_TO_LEARN;
   } else if (song.status === 'In Progress') {
-    score += 5;
+    score += URGENCY_WEIGHTS.STATUS_IN_PROGRESS;
   }
 
   return { song, score, issues };
@@ -168,23 +188,26 @@ export const Dashboard: React.FC<DashboardProps> = memo(function Dashboard({
   // MEMOIZED COMPUTATIONS
   // ---------------------------------------------------------------------------
 
-  // Next upcoming gig
-  const nextGig = useMemo(() => {
+  // Shared normalized date (midnight today) to prevent inconsistencies across memos
+  const normalizedToday = useMemo(() => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
+    return today;
+  }, []);
+
+  // Next upcoming gig
+  const nextGig = useMemo(() => {
     return events
-      .filter(e => e.type === 'GIG' && new Date(e.date) >= today)
+      .filter(e => e.type === 'GIG' && new Date(e.date) >= normalizedToday)
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0];
-  }, [events]);
+  }, [events, normalizedToday]);
 
   // Days until next gig
   const daysUntilNextGig = useMemo(() => {
     if (!nextGig) return null;
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
     const gigDate = new Date(nextGig.date);
-    return Math.ceil((gigDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-  }, [nextGig]);
+    return Math.ceil((gigDate.getTime() - normalizedToday.getTime()) / (1000 * 60 * 60 * 24));
+  }, [nextGig, normalizedToday]);
 
   // Readiness statistics
   const readinessStats = useMemo(() => {
@@ -198,26 +221,22 @@ export const Dashboard: React.FC<DashboardProps> = memo(function Dashboard({
 
   // Songs that need attention (sorted by urgency)
   const songsNeedingAttention = useMemo(() => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
     return songs
-      .map(song => calculateSongUrgency(song, today))
+      .map(song => calculateSongUrgency(song, normalizedToday))
       .filter(item => item.score > 0)
       .sort((a, b) => b.score - a.score)
       .slice(0, 5);
-  }, [songs]);
+  }, [songs, normalizedToday]);
 
   // Upcoming timeline (events + song deadlines, next 2 weeks)
   const upcomingTimeline = useMemo<TimelineItem[]>(() => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    const twoWeeksOut = new Date(today.getTime() + 14 * 24 * 60 * 60 * 1000);
+    const twoWeeksOut = new Date(normalizedToday.getTime() + 14 * 24 * 60 * 60 * 1000);
 
     // Map events
     const eventItems: TimelineItem[] = events
       .filter(e => {
         const d = new Date(e.date);
-        return d >= today && d <= twoWeeksOut;
+        return d >= normalizedToday && d <= twoWeeksOut;
       })
       .map(e => ({
         id: e.id,
@@ -233,7 +252,7 @@ export const Dashboard: React.FC<DashboardProps> = memo(function Dashboard({
       .filter(s => s.targetDate && s.status !== 'Performance Ready')
       .filter(s => {
         const d = new Date(s.targetDate!);
-        return d >= today && d <= twoWeeksOut;
+        return d >= normalizedToday && d <= twoWeeksOut;
       })
       .map(s => ({
         id: `deadline-${s.id}`,
@@ -246,8 +265,8 @@ export const Dashboard: React.FC<DashboardProps> = memo(function Dashboard({
 
     return [...eventItems, ...deadlineItems]
       .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
-      .slice(0, 4);
-  }, [events, songs]);
+      .slice(0, 3);
+  }, [events, songs, normalizedToday]);
 
   // Coverage issues count
   const unassignedCount = useMemo(
@@ -355,7 +374,7 @@ export const Dashboard: React.FC<DashboardProps> = memo(function Dashboard({
       </header>
 
       {/* Stats Row - Band Readiness + Coming Up side by side */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 animate-slide-in-from-bottom fill-forwards opacity-0 stagger-1">
+      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 animate-slide-in-from-bottom animation-forwards opacity-0 stagger-1">
         {/* Band Readiness - Comprehensive Status Card */}
         <Card className="lg:col-span-2">
           <CardContent className="p-5">
@@ -580,7 +599,7 @@ export const Dashboard: React.FC<DashboardProps> = memo(function Dashboard({
       </div>
 
       {/* Practice Queue - Full Width */}
-      <Card className="overflow-hidden animate-slide-in-from-bottom fill-forwards opacity-0 stagger-2">
+      <Card className="overflow-hidden animate-slide-in-from-bottom animation-forwards opacity-0 stagger-2">
         <CardHeader className="py-2.5 px-4">
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-serif text-foreground">Practice Queue</h3>
