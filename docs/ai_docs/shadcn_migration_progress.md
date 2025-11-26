@@ -506,19 +506,17 @@ npm run dev        # Start dev server on port 3000
 
 ## Known Issues
 
-1. **Pre-existing lint errors** in `PerformanceMode.tsx`, `PracticeRoom.tsx`, `SongDetail.tsx`, `AppShell.tsx`, and `ResizablePanel.tsx` (refs in render, setState in useEffect) - unrelated to this migration
+1. **Pre-existing lint errors** in `PerformanceMode.tsx`, `PracticeRoom.tsx`, `SongDetail.tsx`, and `ResizablePanel.tsx` (refs in render, setState in useEffect) - unrelated to this migration
 
 2. **Old Navigation.tsx still exists** - Now uses `useSidebar()` but will eventually be replaced by `layout/Sidebar.tsx`
 
-3. **Unit tests** - ✅ Tests added in Phase 7 for:
-   - `ConfirmDialog`: keyboard navigation, ESC key handling, callback invocation
-   - `StatusBadge`: variant mapping for all three status types
-   - `StatCard`: icon rendering, variant styling, subtitle display
-   - `EmptyState`: action button rendering, accessibility attributes
-   - `Dashboard`: stat card rendering, song list rendering, navigation
-   - Auth flows: Login, Signup, PasswordReset
-   - Validation utilities: email, password
-   - Remaining: `Settings` component tests (optional)
+3. **Unit tests** - ✅ Comprehensive test coverage added:
+   - UI Components: ConfirmDialog, StatusBadge, StatCard, EmptyState, ThemeProvider, ThemeToggle
+   - Layout Components: Sidebar, AppShell
+   - Feature Components: Dashboard, Login, Signup, PasswordReset
+   - Hooks: useMediaQuery, useIsMobile, useIsDesktop
+   - Utilities: email/password validation, avatar colors
+   - Remaining (optional): Settings component tests
 
 4. **StatCard value constraint** - The `value` prop only accepts `string | number`. If formatted content is needed (e.g., `<span>5 <small>/ 10</small></span>`), consider:
    - Creating a `FormattedStatCard` variant with `value: React.ReactNode`
@@ -526,6 +524,45 @@ npm run dev        # Start dev server on port 3000
    - Phase 5.4 verified all dashboard stats work with the current constraint
 
 5. **Toast uses --popover variable** - Toast.tsx uses `--popover` instead of `--card` for background styling. This is semantically correct since toasts are floating UI elements (like popovers), not embedded content (like cards). Currently `--popover` and `--card` have identical values in the theme, but using `--popover` allows future customization if toast styling needs to diverge from card styling.
+
+---
+
+### PR #55 Reviewer Feedback ✅
+
+**Performance Improvements:**
+1. **Sidebar.tsx** - Wrapped `isActive` function in `useCallback` with `location.pathname` dependency
+2. **Sidebar.tsx** - Wrapped component with `React.memo` and added `displayName`
+3. **Sidebar.tsx** - Pre-computed `performanceActive` and `settingsActive` to avoid repeated function calls in render
+
+**Accessibility Improvements:**
+1. **AppShell.tsx** - Added skip-to-main-content link for keyboard users
+   - Hidden by default (`sr-only`)
+   - Becomes visible on focus (`focus:not-sr-only`)
+   - Links to `#main-content` target with `tabIndex={-1}` on main element
+
+**Code Quality Improvements:**
+1. **ConditionalTooltip.tsx** - New component extracted to reduce tooltip wrapping duplication
+   - Conditionally wraps children based on `showTooltip` prop
+   - Used in Sidebar for collapsed state tooltips
+   - Memoized with `React.memo` and has `displayName`
+2. **Sidebar.tsx** - Replaced 5 instances of manual tooltip wrapping with `ConditionalTooltip`
+
+**Documentation Updates:**
+1. **CLAUDE.md** - Added "Primitives Modification Policy" section clarifying:
+   - What modifications to avoid (business logic, styling defaults)
+   - What modifications are acceptable (displayName, type exports, touch targets, focus styles)
+
+**New Tests Added:**
+1. `src/hooks/useMediaQuery.test.ts` - Tests for all three hooks (useMediaQuery, useIsMobile, useIsDesktop)
+2. `src/components/layout/Sidebar.test.tsx` - Navigation, logout, band selector, accessibility, collapse
+3. `src/components/layout/AppShell.test.tsx` - Skip link, main content, responsive layout, props passing
+4. `src/components/ui/ThemeProvider.test.tsx` - Theme switching, localStorage, DOM classes, system detection
+5. `src/components/ui/ThemeToggle.test.tsx` - Rendering, dropdown menu, theme switching
+
+**Test Results:**
+- 48 new tests passing across 4 new test files
+- TypeScript compilation: PASS
+- ESLint: PASS (new files only; pre-existing Login.test.tsx warning unrelated)
 
 ---
 
@@ -540,6 +577,7 @@ The shadcn/ui migration is now complete. All phases have been finished:
 - ✅ Phase 5.5: Feature Components + Polish (auth, setlist, schedule, band)
 - ✅ Phase 6: Quality Review (bug fixes, performance, accessibility)
 - ✅ Phase 7: Summary & Documentation (CLAUDE.md, unit tests)
+- ✅ PR #55 Reviewer Feedback (performance, accessibility, code quality, tests)
 
 **Future Work (Optional):**
 - Add unit tests for Settings component

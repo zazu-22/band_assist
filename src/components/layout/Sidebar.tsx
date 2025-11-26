@@ -1,3 +1,4 @@
+import React, { memo, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 import {
   LayoutDashboard,
@@ -17,12 +18,8 @@ import { cn } from '@/lib/utils';
 import { Button } from '@/components/primitives/button';
 import { Separator } from '@/components/primitives/separator';
 import { ScrollArea } from '@/components/primitives/scroll-area';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@/components/primitives/tooltip';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
+import { ConditionalTooltip } from '@/components/ui/ConditionalTooltip';
 import { BandSelector } from '@/components/BandSelector';
 import { useSidebar } from './SidebarProvider';
 import { ROUTES, NAV_ITEMS, matchRoute } from '@/routes';
@@ -45,7 +42,7 @@ interface SidebarProps {
   onSelectBand?: (bandId: string) => void;
 }
 
-export function Sidebar({
+export const Sidebar = memo(function Sidebar({
   onLogout,
   showLogout = false,
   currentBandName,
@@ -56,9 +53,15 @@ export function Sidebar({
   const location = useLocation();
   const { collapsed, setCollapsed } = useSidebar();
 
-  const isActive = (path: string): boolean => {
-    return matchRoute(location.pathname, path);
-  };
+  const isActive = useCallback(
+    (path: string): boolean => {
+      return matchRoute(location.pathname, path);
+    },
+    [location.pathname]
+  );
+
+  const performanceActive = isActive(ROUTES.PERFORMANCE);
+  const settingsActive = isActive(ROUTES.SETTINGS);
 
   return (
     <div
@@ -105,97 +108,75 @@ export function Sidebar({
             const Icon = iconMap[item.id] ?? LayoutDashboard;
             const active = isActive(item.path);
 
-            const button = (
-              <Button
+            return (
+              <ConditionalTooltip
                 key={item.id}
-                variant="ghost"
-                onClick={() => navigate(item.path)}
-                className={cn(
-                  'w-full gap-3 transition-colors duration-200 motion-reduce:transition-none',
-                  collapsed ? 'justify-center px-2' : 'justify-start',
-                  active
-                    ? 'bg-sidebar-accent text-sidebar-accent-foreground'
-                    : 'text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'
-                )}
-                title={collapsed ? item.label : undefined}
-                aria-label={item.label}
-                aria-current={active ? 'page' : undefined}
+                showTooltip={collapsed}
+                content={item.label}
+                side="right"
               >
-                <Icon
+                <Button
+                  variant="ghost"
+                  onClick={() => navigate(item.path)}
                   className={cn(
-                    'w-5 h-5 shrink-0',
-                    active && 'text-sidebar-primary'
+                    'w-full gap-3 transition-colors duration-200 motion-reduce:transition-none',
+                    collapsed ? 'justify-center px-2' : 'justify-start',
+                    active
+                      ? 'bg-sidebar-accent text-sidebar-accent-foreground'
+                      : 'text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground'
                   )}
-                />
-                {!collapsed && (
-                  <span className="hidden lg:block font-medium">
-                    {item.label}
-                  </span>
-                )}
-              </Button>
+                  title={collapsed ? item.label : undefined}
+                  aria-label={item.label}
+                  aria-current={active ? 'page' : undefined}
+                >
+                  <Icon
+                    className={cn(
+                      'w-5 h-5 shrink-0',
+                      active && 'text-sidebar-primary'
+                    )}
+                  />
+                  {!collapsed && (
+                    <span className="hidden lg:block font-medium">
+                      {item.label}
+                    </span>
+                  )}
+                </Button>
+              </ConditionalTooltip>
             );
-
-            // Wrap in tooltip when collapsed
-            if (collapsed) {
-              return (
-                <Tooltip key={item.id} delayDuration={0}>
-                  <TooltipTrigger asChild>{button}</TooltipTrigger>
-                  <TooltipContent side="right">{item.label}</TooltipContent>
-                </Tooltip>
-              );
-            }
-
-            return button;
           })}
 
           {/* Performance Mode - Special styling */}
           <div className={cn('pt-4 pb-2', collapsed ? 'px-0' : 'px-0')}>
             <Separator className="mb-4 bg-sidebar-border" />
-            {collapsed ? (
-              <Tooltip delayDuration={0}>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    onClick={() => navigate(ROUTES.PERFORMANCE)}
-                    className={cn(
-                      'w-full justify-center px-2',
-                      isActive(ROUTES.PERFORMANCE)
-                        ? 'bg-destructive/20 text-destructive'
-                        : 'text-sidebar-foreground/70 hover:bg-destructive/10 hover:text-destructive'
-                    )}
-                    title="Performance Mode"
-                    aria-label="Performance Mode"
-                    aria-current={
-                      isActive(ROUTES.PERFORMANCE) ? 'page' : undefined
-                    }
-                  >
-                    <Radio className="w-5 h-5 shrink-0" />
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent side="right">Performance Mode</TooltipContent>
-              </Tooltip>
-            ) : (
+            <ConditionalTooltip
+              showTooltip={collapsed}
+              content="Performance Mode"
+              side="right"
+            >
               <Button
                 variant="ghost"
                 onClick={() => navigate(ROUTES.PERFORMANCE)}
                 className={cn(
-                  'w-full justify-start gap-3',
-                  isActive(ROUTES.PERFORMANCE)
-                    ? 'bg-destructive/20 text-destructive border border-destructive/50'
+                  'w-full',
+                  collapsed ? 'justify-center px-2' : 'justify-start gap-3',
+                  performanceActive
+                    ? collapsed
+                      ? 'bg-destructive/20 text-destructive'
+                      : 'bg-destructive/20 text-destructive border border-destructive/50'
                     : 'text-sidebar-foreground/70 hover:bg-destructive/10 hover:text-destructive'
                 )}
                 title="Performance Mode"
                 aria-label="Performance Mode"
-                aria-current={
-                  isActive(ROUTES.PERFORMANCE) ? 'page' : undefined
-                }
+                aria-current={performanceActive ? 'page' : undefined}
               >
                 <Radio className="w-5 h-5 shrink-0" />
-                <span className="hidden lg:block font-bold tracking-wide">
-                  Performance Mode
-                </span>
+                {!collapsed && (
+                  <span className="hidden lg:block font-bold tracking-wide">
+                    Performance Mode
+                  </span>
+                )}
               </Button>
-            )}
+            </ConditionalTooltip>
           </div>
         </nav>
       </ScrollArea>
@@ -227,75 +208,59 @@ export function Sidebar({
         <ThemeToggle collapsed={collapsed} />
 
         {/* Settings */}
-        {collapsed ? (
-          <Tooltip delayDuration={0}>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                onClick={() => navigate(ROUTES.SETTINGS)}
-                className={cn(
-                  'w-full justify-center text-muted-foreground hover:text-foreground',
-                  isActive(ROUTES.SETTINGS) && 'bg-accent text-accent-foreground'
-                )}
-                title="Settings"
-                aria-label="Settings"
-                aria-current={isActive(ROUTES.SETTINGS) ? 'page' : undefined}
-              >
-                <Settings className="w-5 h-5 shrink-0" />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent side="right">Settings</TooltipContent>
-          </Tooltip>
-        ) : (
+        <ConditionalTooltip
+          showTooltip={collapsed}
+          content="Settings"
+          side="right"
+        >
           <Button
             variant="ghost"
             onClick={() => navigate(ROUTES.SETTINGS)}
             className={cn(
-              'w-full justify-start gap-3 text-muted-foreground hover:text-foreground',
-              isActive(ROUTES.SETTINGS) && 'bg-accent text-accent-foreground'
+              'w-full text-muted-foreground hover:text-foreground',
+              collapsed ? 'justify-center' : 'justify-start gap-3',
+              settingsActive && 'bg-accent text-accent-foreground'
             )}
             title="Settings"
             aria-label="Settings"
-            aria-current={isActive(ROUTES.SETTINGS) ? 'page' : undefined}
+            aria-current={settingsActive ? 'page' : undefined}
           >
             <Settings className="w-5 h-5 shrink-0" />
-            <span className="hidden lg:block text-sm font-medium">Config</span>
+            {!collapsed && (
+              <span className="hidden lg:block text-sm font-medium">Config</span>
+            )}
           </Button>
-        )}
+        </ConditionalTooltip>
 
         {/* Logout Button (only shown when authenticated with Supabase) */}
         {showLogout && onLogout && (
-          collapsed ? (
-            <Tooltip delayDuration={0}>
-              <TooltipTrigger asChild>
-                <Button
-                  variant="ghost"
-                  onClick={onLogout}
-                  className="w-full justify-center text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
-                  title="Log out"
-                  aria-label="Log out"
-                >
-                  <LogOut className="w-5 h-5 shrink-0" />
-                </Button>
-              </TooltipTrigger>
-              <TooltipContent side="right">Log out</TooltipContent>
-            </Tooltip>
-          ) : (
+          <ConditionalTooltip
+            showTooltip={collapsed}
+            content="Log out"
+            side="right"
+          >
             <Button
               variant="ghost"
               onClick={onLogout}
-              className="w-full justify-start gap-3 text-muted-foreground hover:bg-destructive/10 hover:text-destructive"
+              className={cn(
+                'w-full text-muted-foreground hover:bg-destructive/10 hover:text-destructive',
+                collapsed ? 'justify-center' : 'justify-start gap-3'
+              )}
               title="Log out"
               aria-label="Log out"
             >
               <LogOut className="w-5 h-5 shrink-0" />
-              <span className="hidden lg:block text-sm font-medium">
-                Logout
-              </span>
+              {!collapsed && (
+                <span className="hidden lg:block text-sm font-medium">
+                  Logout
+                </span>
+              )}
             </Button>
-          )
+          </ConditionalTooltip>
         )}
       </div>
     </div>
   );
-}
+});
+
+Sidebar.displayName = 'Sidebar';

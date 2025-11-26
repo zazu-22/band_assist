@@ -10,6 +10,7 @@ export { ResizablePanel } from './ResizablePanel';
 // New shadcn-based components
 export { StatusBadge } from './StatusBadge';
 export { StatCard } from './StatCard';
+export { ConditionalTooltip } from './ConditionalTooltip';
 
 // Theme components
 export { ThemeProvider, useTheme } from './ThemeProvider';

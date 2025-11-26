@@ -274,6 +274,7 @@ Band configuration with tabs:
 - `StatusBadge.tsx` - Song status indicator with semantic colors
 - `StatCard.tsx` - Dashboard stat cards with variants
 - `ThemeProvider.tsx` / `ThemeToggle.tsx` - Light/dark mode support
+- `ConditionalTooltip.tsx` - Conditionally wraps children in tooltip (for collapsed sidebar states)
 - `LoadingSpinner.tsx` - Loading indicator
 - `ErrorBoundary.tsx` - Error capture & display
 
@@ -283,9 +284,18 @@ The app uses shadcn/ui with a custom theme (amber/gold primary, light+dark modes
 
 ### Component Hierarchy
 
-1. **Primitives** (`components/primitives/`) - Raw shadcn/ui components from the registry. Do not modify directly.
+1. **Primitives** (`components/primitives/`) - Raw shadcn/ui components from the registry.
 2. **UI Components** (`components/ui/`) - Domain-agnostic composed components built from primitives.
 3. **Feature Components** - Page-level components that use UI components.
+
+**Primitives Modification Policy:**
+- **Do not modify** business logic, styling defaults, or component structure in primitives
+- **Acceptable modifications:**
+  - Adding `displayName` for React DevTools debugging
+  - Adding type exports if needed for downstream components
+  - Fixing touch target sizes for mobile accessibility (e.g., `h-11 sm:h-9`)
+  - Updating focus styles for keyboard navigation (e.g., `focus-visible:` instead of `focus:`)
+- When in doubt, compose a new component in `ui/` that wraps the primitive instead of modifying it
 
 ### Available Primitives
 
@@ -439,8 +449,10 @@ npm run lint       # ESLint
 
 **Test Files:**
 - `src/components/AlphaTabRenderer.test.tsx` - Player controls, event handling, state management
-- `src/components/ui/*.test.tsx` - UI component unit tests (StatusBadge, StatCard, EmptyState, ConfirmDialog)
-- `src/components/*.test.tsx` - Auth flow tests (Login, Signup, PasswordReset, PasswordUpdate)
+- `src/components/ui/*.test.tsx` - UI component unit tests (StatusBadge, StatCard, EmptyState, ConfirmDialog, ThemeProvider, ThemeToggle)
+- `src/components/layout/*.test.tsx` - Layout tests (Sidebar, AppShell)
+- `src/components/*.test.tsx` - Auth flow tests (Login, Signup, PasswordReset, PasswordUpdate, Dashboard)
+- `src/hooks/useMediaQuery.test.ts` - Responsive breakpoint hooks
 - `src/lib/avatar.test.ts` - Avatar color utilities
 - `src/utils/validation.test.ts` - Email and password validation
 

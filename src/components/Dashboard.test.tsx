@@ -146,18 +146,21 @@ describe('Dashboard', () => {
     });
 
     it('formats gig date correctly', () => {
-      // Create a date 7 days from now
-      const futureDate = new Date(Date.now() + 7 * 24 * 60 * 60 * 1000);
-      const expectedMonth = futureDate.toLocaleDateString(undefined, { month: 'short' });
-      const expectedDay = futureDate.getDate().toString();
+      // Use a fixed future date string
+      const futureDateStr = '2025-12-15';
+      // Parse the same way Dashboard does: new Date(dateString) then toLocaleDateString
+      // This ensures we're testing with the same timezone behavior
+      const parsedDate = new Date(futureDateStr);
+      const expectedMonth = parsedDate.toLocaleDateString(undefined, { month: 'short' });
+      const expectedDay = parsedDate.getDate().toString();
 
       const futureGig = createMockGig({
         title: 'Test Gig',
-        date: futureDate.toISOString().split('T')[0],
+        date: futureDateStr,
       });
       renderWithRouter(<Dashboard {...defaultProps} events={[futureGig]} />);
 
-      // The date should be formatted
+      // The date should be formatted matching the same parsing behavior as Dashboard
       expect(screen.getByText(new RegExp(`${expectedMonth}.*${expectedDay}`))).toBeInTheDocument();
     });
 
