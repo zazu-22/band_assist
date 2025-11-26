@@ -1,12 +1,7 @@
+import React, { memo } from 'react';
 import { Moon, Sun, Monitor } from 'lucide-react';
-import { Button } from '@/components/primitives/button';
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from '@/components/primitives/dropdown-menu';
-import { useTheme } from './ThemeProvider';
+import { Button, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/primitives';
+import { useTheme } from '@/components/ui/ThemeProvider';
 import { cn } from '@/lib/utils';
 
 interface ThemeToggleProps {
@@ -14,7 +9,10 @@ interface ThemeToggleProps {
   className?: string;
 }
 
-export function ThemeToggle({ collapsed = false, className }: ThemeToggleProps) {
+export const ThemeToggle: React.FC<ThemeToggleProps> = memo(function ThemeToggle({
+  collapsed = false,
+  className,
+}: ThemeToggleProps) {
   const { theme, setTheme, resolvedTheme } = useTheme();
 
   return (
@@ -58,4 +56,6 @@ export function ThemeToggle({ collapsed = false, className }: ThemeToggleProps) 
       </DropdownMenuContent>
     </DropdownMenu>
   );
-}
+});
+
+ThemeToggle.displayName = 'ThemeToggle';

@@ -1,9 +1,10 @@
 import React, { memo, useState, useEffect, useCallback } from 'react';
 import { Loader2 } from 'lucide-react';
 import { Button, Input, Label } from '@/components/primitives';
+import { AuthLayout } from '@/components/AuthLayout';
 import { getSupabaseClient } from '@/services/supabaseClient';
 import { validatePassword, PASSWORD_HINT } from '@/utils/validation';
-import { AuthLayout } from './AuthLayout';
+import { clearAuthTokensFromUrl, hasRecoveryToken } from '@/lib/auth';
 
 interface PasswordUpdateProps {
   onSuccess: () => void;
@@ -27,11 +28,8 @@ export const PasswordUpdate: React.FC<PasswordUpdateProps> = memo(function Passw
         return;
       }
 
-      const hashParams = new URLSearchParams(window.location.hash.substring(1));
-      const hasAccessToken = hashParams.has('access_token');
-      const tokenType = hashParams.get('type');
-
-      if (!hasAccessToken || tokenType !== 'recovery') {
+      // Use utility to check for recovery token in URL
+      if (!hasRecoveryToken()) {
         setError('Invalid or expired password reset link. Please request a new one.');
         setIsValidSession(false);
         return;
@@ -41,17 +39,14 @@ export const PasswordUpdate: React.FC<PasswordUpdateProps> = memo(function Passw
       if (!data.session) {
         setError('Invalid or expired password reset link. Please request a new one.');
         setIsValidSession(false);
+        return;
       }
+
+      // Clear sensitive tokens from URL after successful session verification
+      clearAuthTokensFromUrl();
     };
 
     checkSession();
-
-    return () => {
-      const hash = window.location.hash;
-      if (hash.includes('access_token') || hash.includes('type=recovery')) {
-        window.location.hash = '';
-      }
-    };
   }, []);
 
   const handleSubmit = useCallback(async (e: React.FormEvent) => {

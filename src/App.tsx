@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useRef, useMemo, useCallback, lazy, Suspense } from 'react';
 import {
   Routes,
   Route,
@@ -9,18 +9,28 @@ import {
 } from 'react-router-dom';
 import { toast, LoadingScreen } from './components/ui';
 import { Session } from '@supabase/supabase-js';
+
+// Eagerly loaded - small, frequently used components
 import { Dashboard } from './components/Dashboard';
 import { SetlistManager } from './components/SetlistManager';
-import { SongDetail } from './components/SongDetail';
 import { Settings } from './components/Settings';
 import { BandDashboard } from './components/BandDashboard';
-import { PerformanceMode } from './components/PerformanceMode';
 import { ScheduleManager } from './components/ScheduleManager';
-import { PracticeRoom } from './components/PracticeRoom';
 import { Login } from './components/Login';
 import { Signup } from './components/Signup';
 import { PasswordReset } from './components/PasswordReset';
 import { PasswordUpdate } from './components/PasswordUpdate';
+
+// Lazy loaded - heavy components that use AlphaTab or have complex features
+const SongDetail = lazy(() =>
+  import('./components/SongDetail').then(module => ({ default: module.SongDetail }))
+);
+const PerformanceMode = lazy(() =>
+  import('./components/PerformanceMode').then(module => ({ default: module.PerformanceMode }))
+);
+const PracticeRoom = lazy(() =>
+  import('./components/PracticeRoom').then(module => ({ default: module.PracticeRoom }))
+);
 import { Song, BandMember, BandEvent } from './types';
 import {
   INITIAL_SONGS,
@@ -645,17 +655,35 @@ const App: React.FC = () => {
       <SidebarProvider>
         <AppContext.Provider value={contextValue}>
           <Routes>
-            {/* Performance Mode - Full screen, no sidebar */}
+            {/* Performance Mode - Full screen, no sidebar (lazy loaded) */}
             <Route
               path={ROUTES.PERFORMANCE}
-              element={<PerformanceMode songs={songs} onExit={() => navigate(ROUTES.DASHBOARD)} />}
+              element={
+                <Suspense fallback={<LoadingScreen message="Loading Performance Mode..." />}>
+                  <PerformanceMode songs={songs} onExit={() => navigate(ROUTES.DASHBOARD)} />
+                </Suspense>
+              }
             />
 
-        {/* Song Detail - Full screen, no sidebar */}
-        <Route path={`${ROUTES.SONG_DETAIL}/:songId`} element={<SongDetailRoute />} />
+        {/* Song Detail - Full screen, no sidebar (lazy loaded) */}
+        <Route
+          path={`${ROUTES.SONG_DETAIL}/:songId`}
+          element={
+            <Suspense fallback={<LoadingScreen message="Loading Song Details..." />}>
+              <SongDetailRoute />
+            </Suspense>
+          }
+        />
 
-        {/* Practice Room with specific song */}
-        <Route path={`${ROUTES.SONG_DETAIL}/:songId/practice`} element={<PracticeRoomRoute />} />
+        {/* Practice Room with specific song (lazy loaded) */}
+        <Route
+          path={`${ROUTES.SONG_DETAIL}/:songId/practice`}
+          element={
+            <Suspense fallback={<LoadingScreen message="Loading Practice Room..." />}>
+              <PracticeRoomRoute />
+            </Suspense>
+          }
+        />
 
         {/* Layout route for sidebar pages */}
         <Route
@@ -692,10 +720,12 @@ const App: React.FC = () => {
           <Route
             path={ROUTES.PRACTICE}
             element={
-              <PracticeRoom
-                songs={songs}
-                onNavigateToSong={id => navigate(getSongDetailRoute(id))}
-              />
+              <Suspense fallback={<LoadingScreen message="Loading Practice Room..." />}>
+                <PracticeRoom
+                  songs={songs}
+                  onNavigateToSong={id => navigate(getSongDetailRoute(id))}
+                />
+              </Suspense>
             }
           />
           <Route
