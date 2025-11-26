@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Song } from '../types';
+import { Song } from '@/types';
 import {
   Play,
   Pause,
@@ -19,7 +19,7 @@ import {
 import { SmartTabEditor } from './SmartTabEditor';
 import { AlphaTabRenderer } from './AlphaTabRenderer';
 import { EmptyState, ResizablePanel } from './ui';
-import { useIsMobile } from '../hooks/useBreakpoint';
+import { useIsMobile } from '@/hooks/useBreakpoint';
 
 interface PracticeRoomProps {
   songs: Song[];

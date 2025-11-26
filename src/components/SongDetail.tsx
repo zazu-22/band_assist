@@ -1,10 +1,10 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { Song, BandMember, Annotation, SongChart } from '../types';
-import { INSTRUMENT_ICONS } from '../constants';
-import { getMusicAnalysis } from '../services/geminiService';
+import { Song, BandMember, Annotation, SongChart } from '@/types';
+import { INSTRUMENT_ICONS } from '@/constants';
+import { getMusicAnalysis } from '@/services/geminiService';
 import { SmartTabEditor } from './SmartTabEditor';
-import { isSupabaseConfigured } from '../services/supabaseClient';
-import { supabaseStorageService } from '../services/supabaseStorageService';
+import { isSupabaseConfigured } from '@/services/supabaseClient';
+import { supabaseStorageService } from '@/services/supabaseStorageService';
 import { toast, ConfirmDialog } from './ui';
 import {
   Music2,

@@ -2,6 +2,7 @@ import { Outlet } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useIsDesktop } from '@/hooks/useMediaQuery';
 import { TooltipProvider } from '@/components/primitives/tooltip';
+import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
 import { Sidebar } from './Sidebar';
 import { MobileNav } from './MobileNav';
 
@@ -55,7 +56,9 @@ export function AppShell({
             !isDesktop && 'pt-16'
           )}
         >
-          <Outlet />
+          <ErrorBoundary>
+            <Outlet />
+          </ErrorBoundary>
         </main>
       </div>
     </TooltipProvider>

@@ -12,6 +12,7 @@ import {
 import { useSidebar } from './SidebarProvider';
 import { Sidebar } from './Sidebar';
 import { VisuallyHidden } from '@/components/ui/VisuallyHidden';
+import { ThemeToggle } from '@/components/ui/ThemeToggle';
 
 interface MobileNavProps {
   onLogout?: () => void;
@@ -37,37 +38,53 @@ export function MobileNav({
   }, [location.pathname, setMobileOpen]);
 
   return (
-    <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
-      <SheetTrigger asChild>
-        <Button
-          variant="ghost"
-          size="icon"
-          className={cn(
-            'fixed top-4 left-4 z-40 lg:hidden',
-            'bg-card/80 backdrop-blur-sm border border-border shadow-md',
-            'hover:bg-accent'
-          )}
-          aria-label="Open navigation menu"
-        >
-          <Menu className="h-5 w-5" />
-        </Button>
-      </SheetTrigger>
-      <SheetContent
-        side="left"
-        className="p-0 w-64 bg-sidebar"
-        hideCloseButton
+    <>
+      {/* Fixed header bar with menu and theme toggle */}
+      <div
+        className={cn(
+          'fixed top-0 left-0 right-0 z-40 lg:hidden',
+          'h-14 px-4 flex items-center justify-between',
+          'bg-card/80 backdrop-blur-sm border-b border-border'
+        )}
       >
-        <VisuallyHidden>
-          <SheetTitle>Navigation Menu</SheetTitle>
-        </VisuallyHidden>
-        <Sidebar
-          onLogout={onLogout}
-          showLogout={showLogout}
-          currentBandName={currentBandName}
-          userBands={userBands}
-          onSelectBand={onSelectBand}
-        />
-      </SheetContent>
-    </Sheet>
+        <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
+          <SheetTrigger asChild>
+            <Button
+              variant="ghost"
+              size="icon"
+              aria-label="Open navigation menu"
+            >
+              <Menu className="h-5 w-5" />
+            </Button>
+          </SheetTrigger>
+          <SheetContent
+            side="left"
+            className="p-0 w-64 bg-sidebar"
+            hideCloseButton
+          >
+            <VisuallyHidden>
+              <SheetTitle>Navigation Menu</SheetTitle>
+            </VisuallyHidden>
+            <Sidebar
+              onLogout={onLogout}
+              showLogout={showLogout}
+              currentBandName={currentBandName}
+              userBands={userBands}
+              onSelectBand={onSelectBand}
+            />
+          </SheetContent>
+        </Sheet>
+
+        {/* Band name in center */}
+        {currentBandName && (
+          <span className="text-sm font-medium text-foreground truncate max-w-[50%]">
+            {currentBandName}
+          </span>
+        )}
+
+        {/* Theme toggle on right */}
+        <ThemeToggle />
+      </div>
+    </>
   );
 }

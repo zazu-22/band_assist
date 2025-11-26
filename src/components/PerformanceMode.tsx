@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Song } from '../types';
+import { Song } from '@/types';
 import {
   X,
   ChevronLeft,
