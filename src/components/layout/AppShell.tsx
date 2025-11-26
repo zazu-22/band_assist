@@ -4,7 +4,6 @@ import { useIsDesktop } from '@/hooks/useMediaQuery';
 import { TooltipProvider } from '@/components/primitives/tooltip';
 import { Sidebar } from './Sidebar';
 import { MobileNav } from './MobileNav';
-import { useSidebar } from './SidebarProvider';
 
 interface AppShellProps {
   onLogout?: () => void;
@@ -22,7 +21,6 @@ export function AppShell({
   onSelectBand,
 }: AppShellProps) {
   const isDesktop = useIsDesktop();
-  const { collapsed } = useSidebar();
 
   return (
     <TooltipProvider>

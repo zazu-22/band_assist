@@ -1,5 +1,4 @@
-import React, { useState, useRef } from 'react';
-import { BandMember, Song, BandEvent } from '../types';
+import React, { useState, useRef, useCallback, memo } from 'react';
 import {
   Trash2,
   Edit2,
@@ -13,10 +12,29 @@ import {
   AlertTriangle,
   UserPlus,
 } from 'lucide-react';
-import { StorageService } from '../services/storageService';
-import { InvitationManager } from './InvitationManager';
-import { isSupabaseConfigured } from '../services/supabaseClient';
-import { toast, ConfirmDialog } from './ui';
+import {
+  Button,
+  Card,
+  CardHeader,
+  CardTitle,
+  CardDescription,
+  CardContent,
+  Input,
+  Tabs,
+  TabsList,
+  TabsTrigger,
+  TabsContent,
+  Avatar,
+  AvatarFallback,
+  Badge,
+} from '@/components/primitives';
+import { toast, ConfirmDialog } from '@/components/ui';
+import { StorageService } from '@/services/storageService';
+import { InvitationManager } from '@/components/InvitationManager';
+import { isSupabaseConfigured } from '@/services/supabaseClient';
+import type { BandMember, Song, BandEvent } from '@/types';
+
+type SettingsTab = 'ROSTER' | 'ROLES' | 'TEAM' | 'DATA';
 
 interface SettingsProps {
   members: BandMember[];
@@ -32,7 +50,35 @@ interface SettingsProps {
   isAdmin?: boolean;
 }
 
-export const Settings: React.FC<SettingsProps> = ({
+interface ConfirmDialogState {
+  isOpen: boolean;
+  title: string;
+  message: string;
+  variant: 'danger' | 'warning' | 'info';
+  onConfirm: () => void;
+}
+
+/** Avatar background colors cycled through for new members */
+const AVATAR_COLORS = [
+  'bg-red-500',
+  'bg-blue-500',
+  'bg-green-500',
+  'bg-yellow-500',
+  'bg-purple-500',
+] as const;
+
+/** No-op function for initial dialog state */
+const NOOP = () => {};
+
+const INITIAL_DIALOG_STATE: ConfirmDialogState = {
+  isOpen: false,
+  title: '',
+  message: '',
+  variant: 'danger',
+  onConfirm: NOOP,
+};
+
+export const Settings: React.FC<SettingsProps> = memo(function Settings({
   members,
   setMembers,
   availableRoles,
@@ -44,8 +90,8 @@ export const Settings: React.FC<SettingsProps> = ({
   currentBandId,
   currentUserId,
   isAdmin = false,
-}) => {
-  const [activeTab, setActiveTab] = useState<'ROSTER' | 'ROLES' | 'TEAM' | 'DATA'>('ROSTER');
+}) {
+  const [activeTab, setActiveTab] = useState<SettingsTab>('ROSTER');
   const showInvitations = isSupabaseConfigured() && currentBandId && currentUserId;
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -58,374 +104,402 @@ export const Settings: React.FC<SettingsProps> = ({
   const [newRoleName, setNewRoleName] = useState('');
 
   // --- Confirm Dialog State ---
-  const [confirmDialog, setConfirmDialog] = useState<{
-    isOpen: boolean;
-    title: string;
-    message: string;
-    variant: 'danger' | 'warning' | 'info';
-    onConfirm: () => void;
-  }>({
-    isOpen: false,
-    title: '',
-    message: '',
-    variant: 'danger',
-    onConfirm: () => {},
-  });
+  const [confirmDialog, setConfirmDialog] = useState<ConfirmDialogState>(INITIAL_DIALOG_STATE);
 
-  const closeDialog = () => setConfirmDialog(prev => ({ ...prev, isOpen: false }));
+  const closeDialog = useCallback(() => {
+    setConfirmDialog(prev => ({ ...prev, isOpen: false }));
+  }, []);
 
   // --- Member Handlers ---
-  const handleAddMember = () => {
+  const handleAddMember = useCallback(() => {
     if (!newMemberName.trim()) return;
-    const newMember: BandMember = {
-      id: crypto.randomUUID(),
-      name: newMemberName,
-      roles: [], // No roles assigned by default on creation
-      avatarColor: ['bg-red-500', 'bg-blue-500', 'bg-green-500', 'bg-yellow-500', 'bg-purple-500'][
-        members.length % 5
-      ],
-    };
-    setMembers([...members, newMember]);
-    setNewMemberName('');
-  };
-
-  const handleRemoveMember = (id: string) => {
-    setConfirmDialog({
-      isOpen: true,
-      title: 'Remove Member',
-      message:
-        'Are you sure? Assignments for this member in songs will remain but might look orphaned.',
-      variant: 'danger',
-      onConfirm: () => {
-        setMembers(members.filter(m => m.id !== id));
-        closeDialog();
-      },
+    setMembers(prev => {
+      const newMember: BandMember = {
+        id: crypto.randomUUID(),
+        name: newMemberName,
+        roles: [],
+        // Compute color based on prev.length to avoid race condition
+        avatarColor: AVATAR_COLORS[prev.length % AVATAR_COLORS.length],
+      };
+      return [...prev, newMember];
     });
-  };
+    setNewMemberName('');
+  }, [newMemberName, setMembers]);
 
-  const startEditing = (member: BandMember) => {
+  const handleRemoveMember = useCallback(
+    (id: string) => {
+      setConfirmDialog({
+        isOpen: true,
+        title: 'Remove Member',
+        message:
+          'Are you sure? Assignments for this member in songs will remain but might look orphaned.',
+        variant: 'danger',
+        onConfirm: () => {
+          setMembers(prev => prev.filter(m => m.id !== id));
+          closeDialog();
+        },
+      });
+    },
+    [setMembers, closeDialog]
+  );
+
+  const startEditing = useCallback((member: BandMember) => {
     setEditingId(member.id);
     setEditName(member.name);
-  };
+  }, []);
 
-  const saveEdit = () => {
+  const saveEdit = useCallback(() => {
     if (!editName.trim()) return;
-    setMembers(members.map(m => (m.id === editingId ? { ...m, name: editName } : m)));
+    setMembers(prev => prev.map(m => (m.id === editingId ? { ...m, name: editName } : m)));
     setEditingId(null);
     setEditName('');
-  };
+  }, [editName, editingId, setMembers]);
+
+  const cancelEdit = useCallback(() => {
+    setEditingId(null);
+    setEditName('');
+  }, []);
 
   // --- Role Handlers ---
-  const handleAddRole = () => {
+  const handleAddRole = useCallback(() => {
     if (!newRoleName.trim() || availableRoles.includes(newRoleName)) return;
-    setAvailableRoles([...availableRoles, newRoleName]);
+    setAvailableRoles(prev => [...prev, newRoleName]);
     setNewRoleName('');
-  };
+  }, [newRoleName, availableRoles, setAvailableRoles]);
 
-  const handleRemoveRole = (role: string) => {
-    setConfirmDialog({
-      isOpen: true,
-      title: 'Delete Role',
-      message: `Delete role "${role}"? It will still exist on old song assignments but won't be selectable for new ones.`,
-      variant: 'warning',
-      onConfirm: () => {
-        setAvailableRoles(availableRoles.filter(r => r !== role));
-        closeDialog();
-      },
-    });
-  };
+  const handleRemoveRole = useCallback(
+    (role: string) => {
+      setConfirmDialog({
+        isOpen: true,
+        title: 'Delete Role',
+        message: `Delete role "${role}"? It will still exist on old song assignments but won't be selectable for new ones.`,
+        variant: 'warning',
+        onConfirm: () => {
+          setAvailableRoles(prev => prev.filter(r => r !== role));
+          closeDialog();
+        },
+      });
+    },
+    [setAvailableRoles, closeDialog]
+  );
 
   // --- Data Handlers ---
-  const handleExport = () => {
+  const handleExport = useCallback(() => {
     StorageService.exportData(songs, members, availableRoles, events);
-  };
+  }, [songs, members, availableRoles, events]);
 
-  const handleImport = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const file = e.target.files?.[0];
-    if (!file || !setSongs || !setEvents) return;
+  const handleImport = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const file = e.target.files?.[0];
+      if (!file || !setSongs || !setEvents) return;
 
-    setConfirmDialog({
-      isOpen: true,
-      title: 'Import Data',
-      message: 'Importing will OVERWRITE your current data. Are you sure?',
-      variant: 'danger',
-      onConfirm: () => {
-        StorageService.importData(file)
-          .then(data => {
-            setSongs(data.songs);
-            setMembers(data.members);
-            setAvailableRoles(data.roles);
-            setEvents(data.events);
-            toast.success('Data imported successfully!');
-          })
-          .catch(err => {
-            console.error(err);
-            toast.error('Failed to import data. File might be corrupt.');
-          });
-        closeDialog();
-      },
-    });
-    // Reset input
-    if (fileInputRef.current) fileInputRef.current.value = '';
-  };
+      setConfirmDialog({
+        isOpen: true,
+        title: 'Import Data',
+        message: 'Importing will OVERWRITE your current data. Are you sure?',
+        variant: 'danger',
+        onConfirm: () => {
+          StorageService.importData(file)
+            .then(data => {
+              setSongs(data.songs);
+              setMembers(data.members);
+              setAvailableRoles(data.roles);
+              setEvents(data.events);
+              toast.success('Data imported successfully!');
+            })
+            .catch(err => {
+              console.error(err);
+              toast.error('Failed to import data. File might be corrupt.');
+            })
+            .finally(() => {
+              // Reset input after processing to allow re-selecting the same file
+              if (fileInputRef.current) fileInputRef.current.value = '';
+              closeDialog();
+            });
+        },
+      });
+    },
+    [setSongs, setEvents, setMembers, setAvailableRoles, closeDialog]
+  );
+
+  const handleTabChange = useCallback((value: string) => {
+    setActiveTab(value as SettingsTab);
+  }, []);
 
   return (
-    <div className="p-6 lg:p-10 max-w-4xl mx-auto">
-      <header className="mb-8 border-b border-zinc-800 pb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
-        <div>
-          <h2 className="text-3xl font-bold text-white">Configuration</h2>
-          <p className="text-zinc-400 mt-1">Band roster, roles, and data backup</p>
-        </div>
+    <div className="p-4 sm:p-6 lg:p-10 max-w-4xl mx-auto">
+      <Tabs value={activeTab} onValueChange={handleTabChange}>
+        <header className="mb-8 border-b border-border pb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
+          <div>
+            <h2 className="text-3xl font-bold text-foreground">Configuration</h2>
+            <p className="text-muted-foreground mt-1">Band roster, roles, and data backup</p>
+          </div>
 
-        <div className="flex bg-zinc-900 p-1 rounded-xl border border-zinc-800">
-          <button
-            onClick={() => setActiveTab('ROSTER')}
-            className={`px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-colors ${activeTab === 'ROSTER' ? 'bg-zinc-800 text-white shadow' : 'text-zinc-500 hover:text-zinc-300'}`}
-          >
-            <Users size={16} /> Roster
-          </button>
-          <button
-            onClick={() => setActiveTab('ROLES')}
-            className={`px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-colors ${activeTab === 'ROLES' ? 'bg-zinc-800 text-white shadow' : 'text-zinc-500 hover:text-zinc-300'}`}
-          >
-            <Music2 size={16} /> Roles
-          </button>
-          {showInvitations && (
-            <button
-              onClick={() => setActiveTab('TEAM')}
-              className={`px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-colors ${activeTab === 'TEAM' ? 'bg-zinc-800 text-white shadow' : 'text-zinc-500 hover:text-zinc-300'}`}
-            >
-              <UserPlus size={16} /> Team
-            </button>
-          )}
-          <button
-            onClick={() => setActiveTab('DATA')}
-            className={`px-4 py-2 rounded-lg text-sm font-bold flex items-center gap-2 transition-colors ${activeTab === 'DATA' ? 'bg-zinc-800 text-white shadow' : 'text-zinc-500 hover:text-zinc-300'}`}
-          >
-            <Database size={16} /> Data
-          </button>
-        </div>
-      </header>
+          <TabsList>
+            <TabsTrigger value="ROSTER" className="gap-2">
+              <Users className="h-4 w-4" />
+              <span className="hidden sm:inline">Roster</span>
+            </TabsTrigger>
+            <TabsTrigger value="ROLES" className="gap-2">
+              <Music2 className="h-4 w-4" />
+              <span className="hidden sm:inline">Roles</span>
+            </TabsTrigger>
+            {showInvitations && (
+              <TabsTrigger value="TEAM" className="gap-2">
+                <UserPlus className="h-4 w-4" />
+                <span className="hidden sm:inline">Team</span>
+              </TabsTrigger>
+            )}
+            <TabsTrigger value="DATA" className="gap-2">
+              <Database className="h-4 w-4" />
+              <span className="hidden sm:inline">Data</span>
+            </TabsTrigger>
+          </TabsList>
+        </header>
 
-      {activeTab === 'ROSTER' && (
-        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4">
-          <section className="bg-zinc-900 rounded-2xl border border-zinc-800 p-6">
-            <h3 className="text-xl font-bold text-white mb-4">Members</h3>
-            <p className="text-sm text-zinc-400 mb-6">
-              Add everyone in the band. You will assign specific roles (Guitar, Bass, etc.) to them
-              inside each song.
-            </p>
-
-            <div className="grid gap-4 mb-6">
-              {members.map(member => (
-                <div
-                  key={member.id}
-                  className="bg-zinc-950 p-4 rounded-xl border border-zinc-800 flex items-center justify-between"
-                >
-                  {editingId === member.id ? (
-                    <div className="flex items-center gap-4 w-full">
-                      <div
-                        className={`w-10 h-10 rounded-full ${member.avatarColor} flex items-center justify-center font-bold text-white opacity-50`}
-                      >
-                        {editName.charAt(0).toUpperCase() || '?'}
-                      </div>
-                      <input
-                        value={editName}
-                        onChange={e => setEditName(e.target.value)}
-                        className="flex-1 bg-zinc-900 border border-zinc-700 rounded px-3 py-2 text-white outline-none focus:border-amber-500"
-                        autoFocus
-                      />
-                      <button
-                        onClick={saveEdit}
-                        className="p-2 bg-green-900/30 text-green-500 rounded hover:bg-green-900/50"
-                      >
-                        <Check size={18} />
-                      </button>
-                      <button
-                        onClick={() => setEditingId(null)}
-                        className="p-2 bg-zinc-800 text-zinc-400 rounded hover:text-white"
-                      >
-                        <X size={18} />
-                      </button>
-                    </div>
-                  ) : (
-                    <>
-                      <div className="flex items-center gap-4">
-                        <div
-                          className={`w-10 h-10 rounded-full ${member.avatarColor} flex items-center justify-center font-bold text-white shadow-inner`}
-                        >
-                          {member.name.charAt(0).toUpperCase()}
-                        </div>
-                        <div>
-                          <p className="font-bold text-white">{member.name}</p>
-                          <p className="text-xs text-zinc-500">ID: {member.id}</p>
-                        </div>
-                      </div>
-                      <div className="flex items-center gap-2">
-                        <button
-                          onClick={() => startEditing(member)}
-                          className="p-2 text-zinc-600 hover:text-white"
-                          aria-label="Edit member"
-                        >
-                          <Edit2 size={18} />
-                        </button>
-                        <button
-                          onClick={() => handleRemoveMember(member.id)}
-                          className="p-2 text-zinc-600 hover:text-red-500"
-                          aria-label="Remove member"
-                        >
-                          <Trash2 size={18} />
-                        </button>
-                      </div>
-                    </>
-                  )}
-                </div>
-              ))}
-            </div>
-
-            <div className="flex gap-3">
-              <input
-                value={newMemberName}
-                onChange={e => setNewMemberName(e.target.value)}
-                placeholder="New Member Name"
-                className="flex-1 bg-zinc-950 border border-zinc-700 rounded-lg px-4 py-2 text-white outline-none focus:border-amber-500"
-                onKeyDown={e => e.key === 'Enter' && handleAddMember()}
-              />
-              <button
-                onClick={handleAddMember}
-                className="bg-amber-600 hover:bg-amber-700 text-white px-6 py-2 rounded-lg font-bold transition-colors"
-              >
-                Add Person
-              </button>
-            </div>
-          </section>
-        </div>
-      )}
-
-      {activeTab === 'ROLES' && (
-        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4">
-          <section className="bg-zinc-900 rounded-2xl border border-zinc-800 p-6">
-            <h3 className="text-xl font-bold text-white mb-4">Available Roles & Instruments</h3>
-            <p className="text-sm text-zinc-400 mb-6">
-              Define the list of instruments or roles that can be assigned in songs (e.g.,
-              &quot;Lead Guitar&quot;, &quot;Cowbell&quot;, &quot;Manager&quot;).
-            </p>
-
-            <div className="flex flex-wrap gap-3 mb-8">
-              {availableRoles.map(role => (
-                <div
-                  key={role}
-                  className="group bg-zinc-950 border border-zinc-800 rounded-lg px-3 py-2 flex items-center gap-2"
-                >
-                  <span className="text-zinc-300 font-medium">{role}</span>
-                  <button
-                    onClick={() => handleRemoveRole(role)}
-                    className="text-zinc-600 hover:text-red-500 opacity-0 group-hover:opacity-100 transition-opacity"
+        {/* Roster Tab */}
+        <TabsContent value="ROSTER" className="space-y-6 animate-fade-in">
+          <Card>
+            <CardHeader>
+              <CardTitle>Members</CardTitle>
+              <CardDescription>
+                Add everyone in the band. You will assign specific roles (Guitar, Bass, etc.) to
+                them inside each song.
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="grid gap-3">
+                {members.map(member => (
+                  <div
+                    key={member.id}
+                    className="bg-muted/50 p-4 rounded-lg border border-border flex items-center justify-between"
                   >
-                    <X size={14} />
-                  </button>
-                </div>
-              ))}
-            </div>
-
-            <div className="flex gap-3 max-w-md">
-              <input
-                value={newRoleName}
-                onChange={e => setNewRoleName(e.target.value)}
-                placeholder="New Role (e.g. Saxophone)"
-                className="flex-1 bg-zinc-950 border border-zinc-700 rounded-lg px-4 py-2 text-white outline-none focus:border-amber-500"
-                onKeyDown={e => e.key === 'Enter' && handleAddRole()}
-              />
-              <button
-                onClick={handleAddRole}
-                className="bg-zinc-800 hover:bg-zinc-700 text-white px-4 py-2 rounded-lg font-bold transition-colors border border-zinc-700"
-              >
-                Add Role
-              </button>
-            </div>
-          </section>
-        </div>
-      )}
-
-      {activeTab === 'TEAM' && showInvitations && currentBandId && currentUserId && (
-        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4">
-          <section className="bg-zinc-900 rounded-2xl border border-zinc-800 p-6">
-            <InvitationManager
-              bandId={currentBandId}
-              currentUserId={currentUserId}
-              isAdmin={isAdmin}
-            />
-          </section>
-        </div>
-      )}
-
-      {activeTab === 'DATA' && (
-        <div className="space-y-6 animate-in fade-in slide-in-from-bottom-4">
-          <section className="bg-zinc-900 rounded-2xl border border-zinc-800 p-6">
-            <h3 className="text-xl font-bold text-white mb-4">Backup & Restore</h3>
-            <p className="text-sm text-zinc-400 mb-6">
-              Export your band&apos;s data to a JSON file. You can email this file to your brothers
-              so they can load it on their devices. This is the safest way to ensure everyone has
-              the same setlist and assignments.
-            </p>
-
-            <div className="grid md:grid-cols-2 gap-6">
-              <div className="bg-zinc-950 p-6 rounded-xl border border-zinc-800 flex flex-col items-center text-center gap-4">
-                <div className="w-16 h-16 bg-zinc-900 rounded-full flex items-center justify-center">
-                  <Download size={32} className="text-blue-500" />
-                </div>
-                <div>
-                  <h4 className="font-bold text-white">Export Project</h4>
-                  <p className="text-xs text-zinc-500 mt-1">
-                    Save current songs, members, assignments, and schedule.
-                  </p>
-                </div>
-                <button
-                  onClick={handleExport}
-                  className="w-full py-2 bg-blue-600 hover:bg-blue-700 text-white rounded-lg font-bold transition-colors"
-                >
-                  Download Backup
-                </button>
+                    {editingId === member.id ? (
+                      <div className="flex items-center gap-4 w-full">
+                        <Avatar className="opacity-50">
+                          <AvatarFallback className={member.avatarColor}>
+                            {editName.charAt(0).toUpperCase() || '?'}
+                          </AvatarFallback>
+                        </Avatar>
+                        <Input
+                          value={editName}
+                          onChange={e => setEditName(e.target.value)}
+                          className="flex-1"
+                          autoFocus
+                          onKeyDown={e => {
+                            if (e.key === 'Enter') saveEdit();
+                            if (e.key === 'Escape') cancelEdit();
+                          }}
+                        />
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={saveEdit}
+                          className="text-success hover:text-success hover:bg-success/10"
+                          aria-label="Save edit"
+                        >
+                          <Check className="h-4 w-4" />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          onClick={cancelEdit}
+                          aria-label="Cancel edit"
+                        >
+                          <X className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    ) : (
+                      <>
+                        <div className="flex items-center gap-4">
+                          <Avatar>
+                            <AvatarFallback className={member.avatarColor}>
+                              {member.name.charAt(0).toUpperCase()}
+                            </AvatarFallback>
+                          </Avatar>
+                          <div>
+                            <p className="font-semibold text-foreground">{member.name}</p>
+                            <p className="text-xs text-muted-foreground">ID: {member.id}</p>
+                          </div>
+                        </div>
+                        <div className="flex items-center gap-1">
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => startEditing(member)}
+                            aria-label="Edit member"
+                          >
+                            <Edit2 className="h-4 w-4" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="icon"
+                            onClick={() => handleRemoveMember(member.id)}
+                            className="text-muted-foreground hover:text-destructive"
+                            aria-label="Remove member"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
+                      </>
+                    )}
+                  </div>
+                ))}
               </div>
 
-              <div className="bg-zinc-950 p-6 rounded-xl border border-zinc-800 flex flex-col items-center text-center gap-4">
-                <div className="w-16 h-16 bg-zinc-900 rounded-full flex items-center justify-center">
-                  <Upload size={32} className="text-amber-500" />
-                </div>
-                <div>
-                  <h4 className="font-bold text-white">Import Project</h4>
-                  <p className="text-xs text-zinc-500 mt-1">
-                    Restore from a backup file.{' '}
-                    <span className="text-red-400 font-bold">Overwrites current data.</span>
-                  </p>
-                </div>
-                <label className="w-full py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-bold transition-colors cursor-pointer block">
-                  Select File
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept=".json"
-                    className="hidden"
-                    onChange={handleImport}
-                  />
-                </label>
+              <div className="flex gap-3">
+                <Input
+                  value={newMemberName}
+                  onChange={e => setNewMemberName(e.target.value)}
+                  placeholder="New Member Name"
+                  className="flex-1"
+                  onKeyDown={e => e.key === 'Enter' && handleAddMember()}
+                />
+                <Button onClick={handleAddMember}>Add Person</Button>
               </div>
-            </div>
-          </section>
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-          <section className="bg-red-900/10 rounded-2xl border border-red-900/30 p-6 flex items-start gap-4">
-            <AlertTriangle size={24} className="text-red-500 shrink-0 mt-1" />
-            <div>
-              <h4 className="font-bold text-red-400">Local Storage Warning</h4>
-              <p className="text-sm text-red-300/70 mt-1">
-                Browser storage is limited (usually around 5MB). If you upload too many large PDFs
-                or Audio files, the app may stop saving automatically. We recommend using the
-                &quot;Export Project&quot; feature frequently to keep your data safe.
-              </p>
-            </div>
-          </section>
-        </div>
-      )}
+        {/* Roles Tab */}
+        <TabsContent value="ROLES" className="space-y-6 animate-fade-in">
+          <Card>
+            <CardHeader>
+              <CardTitle>Available Roles &amp; Instruments</CardTitle>
+              <CardDescription>
+                Define the list of instruments or roles that can be assigned in songs (e.g.,
+                &quot;Lead Guitar&quot;, &quot;Cowbell&quot;, &quot;Manager&quot;).
+              </CardDescription>
+            </CardHeader>
+            <CardContent className="space-y-6">
+              <div className="flex flex-wrap gap-2">
+                {availableRoles.map(role => (
+                  <Badge key={role} variant="secondary" className="group pl-3 pr-2 py-1.5 gap-2">
+                    {role}
+                    <button
+                      type="button"
+                      onClick={() => handleRemoveRole(role)}
+                      className="text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                      aria-label={`Remove ${role} role`}
+                    >
+                      <X className="h-3 w-3" />
+                    </button>
+                  </Badge>
+                ))}
+              </div>
+
+              <div className="flex gap-3 max-w-md">
+                <Input
+                  value={newRoleName}
+                  onChange={e => setNewRoleName(e.target.value)}
+                  placeholder="New Role (e.g. Saxophone)"
+                  className="flex-1"
+                  onKeyDown={e => e.key === 'Enter' && handleAddRole()}
+                />
+                <Button variant="secondary" onClick={handleAddRole}>
+                  Add Role
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        {/* Team Tab - Only rendered when Supabase is configured */}
+        {showInvitations && currentBandId && currentUserId && (
+          <TabsContent value="TEAM" className="space-y-6 animate-fade-in">
+            <Card>
+              <CardContent className="p-6">
+                <InvitationManager
+                  bandId={currentBandId}
+                  currentUserId={currentUserId}
+                  isAdmin={isAdmin}
+                />
+              </CardContent>
+            </Card>
+          </TabsContent>
+        )}
+
+        {/* Data Tab */}
+        <TabsContent value="DATA" className="space-y-6 animate-fade-in">
+          <Card>
+            <CardHeader>
+              <CardTitle>Backup &amp; Restore</CardTitle>
+              <CardDescription>
+                Export your band&apos;s data to a JSON file. You can email this file to your
+                brothers so they can load it on their devices. This is the safest way to ensure
+                everyone has the same setlist and assignments.
+              </CardDescription>
+            </CardHeader>
+            <CardContent>
+              <div className="grid md:grid-cols-2 gap-6">
+                {/* Export Card */}
+                <Card className="bg-muted/50">
+                  <CardContent className="p-6 flex flex-col items-center text-center gap-4">
+                    <div className="w-16 h-16 bg-info/20 rounded-full flex items-center justify-center">
+                      <Download className="h-8 w-8 text-info" />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-foreground">Export Project</h4>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Save current songs, members, assignments, and schedule.
+                      </p>
+                    </div>
+                    <Button
+                      onClick={handleExport}
+                      className="w-full bg-info text-info-foreground hover:bg-info/90"
+                    >
+                      Download Backup
+                    </Button>
+                  </CardContent>
+                </Card>
+
+                {/* Import Card */}
+                <Card className="bg-muted/50">
+                  <CardContent className="p-6 flex flex-col items-center text-center gap-4">
+                    <div className="w-16 h-16 bg-warning/20 rounded-full flex items-center justify-center">
+                      <Upload className="h-8 w-8 text-warning" />
+                    </div>
+                    <div>
+                      <h4 className="font-bold text-foreground">Import Project</h4>
+                      <p className="text-xs text-muted-foreground mt-1">
+                        Restore from a backup file.{' '}
+                        <span className="text-destructive font-bold">Overwrites current data.</span>
+                      </p>
+                    </div>
+                    <Button asChild className="w-full">
+                      <label className="cursor-pointer">
+                        Select File
+                        <input
+                          ref={fileInputRef}
+                          type="file"
+                          accept=".json"
+                          className="hidden"
+                          onChange={handleImport}
+                        />
+                      </label>
+                    </Button>
+                  </CardContent>
+                </Card>
+              </div>
+            </CardContent>
+          </Card>
+
+          {/* Warning Section */}
+          <Card className="border-destructive/30 bg-destructive/5">
+            <CardContent className="p-6 flex items-start gap-4">
+              <AlertTriangle className="h-6 w-6 text-destructive shrink-0 mt-0.5" />
+              <div>
+                <h4 className="font-bold text-destructive">Local Storage Warning</h4>
+                <p className="text-sm text-muted-foreground mt-1">
+                  Browser storage is limited (usually around 5MB). If you upload too many large PDFs
+                  or Audio files, the app may stop saving automatically. We recommend using the
+                  &quot;Export Project&quot; feature frequently to keep your data safe.
+                </p>
+              </div>
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
 
       {/* Confirm Dialog */}
       <ConfirmDialog
@@ -440,4 +514,6 @@ export const Settings: React.FC<SettingsProps> = ({
       />
     </div>
   );
-};
+});
+
+Settings.displayName = 'Settings';

@@ -1,7 +1,7 @@
 # shadcn/ui Migration Progress - Handoff Document
 
-**Date:** 2025-11-25
-**Status:** Phase 5.3 Complete - UI Components Migrated
+**Date:** 2025-11-26
+**Status:** Phase 5.4 Complete - Dashboard & Settings Migrated
 **Approach:** Clean Architecture (full redesign for long-term maintainability)
 
 ---
@@ -126,31 +126,63 @@ This document tracks progress on migrating Band Assist to shadcn/ui with a compl
 - Dev server: PASS (starts on port 3000)
 - Keyboard navigation (ConfirmDialog): ESC closes, focus trapped, overlay click cancels
 
+### Phase 5.4: Feature Components - Dashboard & Settings ✅
+
+**Files Modified:**
+
+1. **`src/components/Dashboard.tsx`** - Complete migration to shadcn/ui
+   - Replaced 4 inline stat cards with `StatCard` component
+     - Total Setlist: default variant with Disc icon, value as number, "Songs" subtitle
+     - Stage Ready: success variant with CheckCircle2 icon
+     - To Learn: warning variant with Activity icon
+     - Next Gig: info variant with CalendarDays icon, dynamic title/subtitle
+   - Replaced inline song status badges with `StatusBadge` component
+   - Wrapped Setlist Progress section with `Card`, `CardHeader`, `CardTitle`, `CardContent`
+   - Wrapped Billy's Wisdom section with `Card` + `CardContent`
+   - Changed song list items from `<div>` to `<button>` for proper accessibility
+   - Reduced mobile padding (`p-4 sm:p-6 lg:p-10`)
+   - Updated all colors to semantic theme variables (text-foreground, bg-muted, etc.)
+   - Added `React.memo` wrapper for performance
+   - Extracted helper functions (`formatGigDate`, `buildGigSubtitle`) outside component
+   - Added `displayName` for React DevTools
+
+2. **`src/components/Settings.tsx`** - Complete migration to shadcn/ui
+   - Replaced manual tab implementation with Radix `Tabs`, `TabsList`, `TabsTrigger`, `TabsContent`
+     - Tabs wrapper now contains header and content for proper ARIA associations
+     - Keyboard navigation works automatically (arrow keys, Home/End)
+     - TabsContent used for each tab panel with fade-in animation
+   - Replaced all `<input>` elements with `Input` primitive
+   - Replaced all buttons with `Button` primitive
+     - Primary actions: default variant (amber)
+     - Secondary actions: secondary variant
+     - Icon buttons: ghost variant with size="icon"
+     - Delete buttons: hover:text-destructive styling
+   - Replaced member avatars with `Avatar` + `AvatarFallback` primitives
+   - Replaced role tags with `Badge` variant="secondary" with group hover effect
+   - Used `Card`, `CardHeader`, `CardTitle`, `CardDescription`, `CardContent` for all sections
+   - Export/Import cards use nested Cards with bg-muted/50 for visual hierarchy
+   - Warning section uses Card with border-destructive/30 and bg-destructive/5
+   - Added `React.memo` wrapper for performance
+   - Wrapped all handlers in `useCallback` for stable references
+   - Extracted `INITIAL_DIALOG_STATE` as const at module level
+   - Added `displayName` for React DevTools
+
+**Key Improvements:**
+- All colors now use semantic theme variables (works in light/dark mode)
+- Proper accessibility with Radix primitives (focus trap, keyboard nav, ARIA)
+- Consistent component usage across Dashboard and Settings
+- Mobile-responsive padding (p-4 on mobile, p-6 on tablet, p-10 on desktop)
+- Performance optimized with memo and useCallback
+
+**Testing Results:**
+- TypeScript compilation: PASS
+- Production build: PASS (~588 kB bundle, slightly smaller than before)
+- Dev server: PASS
+- No new lint errors in migrated files
+
 ---
 
 ## Remaining Work
-
-### Phase 5.4: Feature Components - Dashboard (Pending)
-
-**Pre-migration Checklist:**
-- [ ] Verify StatCard `value: string | number` constraint works for all dashboard stats
-  - If JSX/formatted content needed, consider creating variant or extending type
-- [ ] Wrap callback props (e.g., `onCancel`, `onConfirm`) in `useCallback` in parent components
-  - Prevents unnecessary re-renders from ConfirmDialog's `handleOpenChange` dependency
-
-1. **Dashboard.tsx**
-   - Replace stat cards (lines 34-85) with StatCard component
-   - Replace song status badges with StatusBadge
-   - Use Card for Billy's Wisdom section
-   - Reduce mobile padding (p-4 sm:p-6 lg:p-10)
-
-2. **Settings.tsx**
-   - Replace manual tabs with Tabs primitive
-   - Replace inputs with Input + Label
-   - Replace buttons with Button variants
-
-3. **Other pages** (SetlistManager, BandDashboard, ScheduleManager, etc.)
-   - Apply consistent Card, Badge, Button usage
 
 ### Phase 5.5: Polish (Pending)
 
@@ -167,6 +199,9 @@ This document tracks progress on migrating Band Assist to shadcn/ui with a compl
    - ARIA labels
    - Keyboard navigation
    - Color contrast verification
+
+4. **Other pages** (SetlistManager, BandDashboard, ScheduleManager, etc.)
+   - Apply consistent Card, Badge, Button usage
 
 ### Phase 6: Quality Review (Pending)
 
@@ -241,6 +276,7 @@ used in Badge, StatCard, and ConfirmDialog components.
 - Add explicit `displayName` to all `memo()` wrapped components
 - Use `SCREAMING_SNAKE_CASE` for module-level config objects with `as const`
 - Document complex behavior with block comments (see ConfirmDialog as example)
+- Use `useCallback` for event handlers passed to child components
 
 **Callback Stability:**
 - Parent components should wrap callbacks passed to dialogs in `useCallback`
@@ -260,7 +296,7 @@ npm run dev        # Start dev server on port 3000
 
 ## Known Issues
 
-1. **Pre-existing lint errors** in `PerformanceMode.tsx`, `PracticeRoom.tsx`, and `ResizablePanel.tsx` (refs in render, setState in useEffect) - unrelated to this migration
+1. **Pre-existing lint errors** in `PerformanceMode.tsx`, `PracticeRoom.tsx`, `SongDetail.tsx`, `AppShell.tsx`, and `ResizablePanel.tsx` (refs in render, setState in useEffect) - unrelated to this migration
 
 2. **Old Navigation.tsx still exists** - Now uses `useSidebar()` but will eventually be replaced by `layout/Sidebar.tsx`
 
@@ -269,11 +305,13 @@ npm run dev        # Start dev server on port 3000
    - `StatusBadge`: variant mapping for all three status types
    - `StatCard`: icon rendering, variant styling, subtitle display
    - `EmptyState`: action button rendering, accessibility attributes
+   - `Dashboard`: stat card rendering, song list rendering, navigation
+   - `Settings`: tab switching, member CRUD, role CRUD, import/export
 
 4. **StatCard value constraint** - The `value` prop only accepts `string | number`. If formatted content is needed (e.g., `<span>5 <small>/ 10</small></span>`), consider:
    - Creating a `FormattedStatCard` variant with `value: React.ReactNode`
    - Using a render prop pattern: `renderValue?: () => React.ReactNode`
-   - For Phase 5.4, verify all dashboard stats work with the current constraint first
+   - Phase 5.4 verified all dashboard stats work with the current constraint
 
 5. **Toast uses --popover variable** - Toast.tsx uses `--popover` instead of `--card` for background styling. This is semantically correct since toasts are floating UI elements (like popovers), not embedded content (like cards). Currently `--popover` and `--card` have identical values in the theme, but using `--popover` allows future customization if toast styling needs to diverge from card styling.
 
@@ -281,7 +319,10 @@ npm run dev        # Start dev server on port 3000
 
 ## Next Session Recommendations
 
-1. Start with Phase 5.4 - Migrate Dashboard.tsx to use StatCard and StatusBadge
-2. Then migrate Settings.tsx to use Tabs, Input, Label, and Button primitives
-3. Apply consistent component usage to remaining pages
-4. Test the app thoroughly after each component migration
+1. Phase 5.5 - Polish and audit
+   - Mobile responsiveness testing
+   - Accessibility audit
+   - Animation verification
+2. Migrate remaining pages (SetlistManager, BandDashboard, ScheduleManager) to use shadcn primitives
+3. Phase 6 - Quality review
+4. Phase 7 - Documentation updates
