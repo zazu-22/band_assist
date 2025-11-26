@@ -32,7 +32,7 @@ export const AVATAR_COLORS: AvatarColorClass[] = [
 ];
 
 /** Set of valid avatar colors for runtime validation */
-const VALID_AVATAR_COLORS = new Set<string>([
+const VALID_AVATAR_COLORS: Set<string> = new Set<string>([
   ...AVATAR_COLORS,
   DEFAULT_AVATAR_COLOR,
 ]);

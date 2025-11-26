@@ -32,7 +32,7 @@ import { toast, ConfirmDialog } from '@/components/ui';
 import { StorageService } from '@/services/storageService';
 import { InvitationManager } from '@/components/InvitationManager';
 import { isSupabaseConfigured } from '@/services/supabaseClient';
-import { AVATAR_COLORS, getAvatarColor } from '@/lib/avatar';
+import { getAvatarColor, getNextAvatarColor } from '@/lib/avatar';
 import type { BandMember, Song, BandEvent } from '@/types';
 
 type SettingsTab = 'ROSTER' | 'ROLES' | 'TEAM' | 'DATA';
@@ -111,7 +111,7 @@ export const Settings: React.FC<SettingsProps> = memo(function Settings({
         name: newMemberName,
         roles: [],
         // Compute color based on prev.length to avoid race condition
-        avatarColor: AVATAR_COLORS[prev.length % AVATAR_COLORS.length],
+        avatarColor: getNextAvatarColor(prev.length),
       };
       return [...prev, newMember];
     });
