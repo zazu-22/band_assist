@@ -1,6 +1,8 @@
-import React, { useState } from 'react';
-import { getSupabaseClient } from '../services/supabaseClient';
-import { validateEmail, normalizeEmail } from '../utils/validation';
+import React, { memo, useState, useCallback } from 'react';
+import { Loader2 } from 'lucide-react';
+import { Button, Input, Label } from '@/components/primitives';
+import { getSupabaseClient } from '@/services/supabaseClient';
+import { validateEmail, normalizeEmail } from '@/utils/validation';
 import { AuthLayout } from './AuthLayout';
 
 interface LoginProps {
@@ -8,18 +10,17 @@ interface LoginProps {
   onNavigate: (view: string) => void;
 }
 
-export const Login: React.FC<LoginProps> = ({ onLoginSuccess, onNavigate }) => {
+export const Login: React.FC<LoginProps> = memo(function Login({ onLoginSuccess, onNavigate }) {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = useCallback(async (e: React.FormEvent) => {
     e.preventDefault();
     setError('');
     setIsLoading(true);
 
-    // Email validation
     const emailValidation = validateEmail(email);
     if (!emailValidation.isValid) {
       setError(emailValidation.error || 'Invalid email address');
@@ -56,42 +57,44 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess, onNavigate }) => {
     } finally {
       setIsLoading(false);
     }
-  };
+  }, [email, password, onLoginSuccess]);
+
+  const handleNavigateToSignup = useCallback(() => {
+    onNavigate('SIGNUP');
+  }, [onNavigate]);
+
+  const handleNavigateToPasswordReset = useCallback(() => {
+    onNavigate('PASSWORD_RESET');
+  }, [onNavigate]);
 
   return (
     <AuthLayout title="Band Assist" subtitle="Sign in to access your band's workspace">
       <form onSubmit={handleSubmit} className="space-y-6">
         {/* Email Input */}
-        <div>
-          <label htmlFor="email" className="block text-sm font-medium text-zinc-300 mb-2">
-            Email
-          </label>
-          <input
+        <div className="space-y-2">
+          <Label htmlFor="email">Email</Label>
+          <Input
             id="email"
             type="email"
             value={email}
             onChange={e => setEmail(e.target.value)}
             required
             autoComplete="email"
-            className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-md text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             placeholder="band@yourband.com"
             disabled={isLoading}
           />
         </div>
 
         {/* Password Input */}
-        <div>
-          <label htmlFor="password" className="block text-sm font-medium text-zinc-300 mb-2">
-            Password
-          </label>
-          <input
+        <div className="space-y-2">
+          <Label htmlFor="password">Password</Label>
+          <Input
             id="password"
             type="password"
             value={password}
             onChange={e => setPassword(e.target.value)}
             required
             autoComplete="current-password"
-            className="w-full px-4 py-2 bg-zinc-800 border border-zinc-700 rounded-md text-zinc-100 placeholder-zinc-500 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
             placeholder="••••••••"
             disabled={isLoading}
           />
@@ -99,47 +102,39 @@ export const Login: React.FC<LoginProps> = ({ onLoginSuccess, onNavigate }) => {
 
         {/* Error Message */}
         {error && (
-          <div className="bg-red-900/20 border border-red-800 rounded-md p-3">
-            <p className="text-sm text-red-400">{error}</p>
+          <div className="bg-destructive/10 border border-destructive/30 rounded-md p-3" role="alert">
+            <p className="text-sm text-destructive">{error}</p>
           </div>
         )}
 
         {/* Submit Button */}
-        <button
-          type="submit"
-          disabled={isLoading}
-          className="w-full py-3 px-4 bg-blue-600 hover:bg-blue-700 disabled:bg-blue-800 disabled:cursor-not-allowed text-white font-medium rounded-md transition-colors focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-zinc-900"
-        >
+        <Button type="submit" disabled={isLoading} className="w-full">
           {isLoading ? (
-            <span className="flex items-center justify-center">
-              <div className="w-5 h-5 border-2 border-white border-t-transparent rounded-full animate-spin mr-2"></div>
+            <>
+              <Loader2 className="w-4 h-4 animate-spin" />
               Signing in...
-            </span>
+            </>
           ) : (
             'Sign In'
           )}
-        </button>
+        </Button>
       </form>
 
       {/* Help Text */}
       <div className="mt-6 text-center space-y-3">
         <div>
-          <button
-            onClick={() => onNavigate('SIGNUP')}
-            className="text-sm text-blue-400 hover:text-blue-300 transition-colors"
-          >
+          <Button variant="link" onClick={handleNavigateToSignup} className="text-sm">
             Don&apos;t have an account? Sign up
-          </button>
+          </Button>
         </div>
         <div>
-          <button
-            onClick={() => onNavigate('PASSWORD_RESET')}
-            className="text-sm text-zinc-400 hover:text-zinc-300 transition-colors"
-          >
+          <Button variant="link" onClick={handleNavigateToPasswordReset} className="text-sm text-muted-foreground">
             Forgot password?
-          </button>
+          </Button>
         </div>
       </div>
     </AuthLayout>
   );
-};
+});
+
+Login.displayName = 'Login';

@@ -1,6 +1,6 @@
 import React from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
-import { ROUTES, NAV_ITEMS, matchRoute } from '../routes';
+import { ROUTES, NAV_ITEMS, matchRoute } from '@/routes';
 import {
   LayoutDashboard,
   Music,

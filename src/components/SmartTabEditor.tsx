@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Edit3, Eye, MessageSquare, X, ArrowUp, ArrowDown } from 'lucide-react';
-import { Annotation } from '../types';
+import { Annotation } from '@/types';
 
 interface SmartTabEditorProps {
   content: string;

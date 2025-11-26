@@ -1,8 +1,9 @@
-import React, { useState } from 'react';
-import { Song } from '../types';
-import { GripVertical, Plus, Clock, Trash2, Music } from 'lucide-react';
-import { getMusicAnalysis } from '../services/geminiService';
-import { toast, EmptyState } from './ui';
+import React, { memo, useState, useCallback, useMemo } from 'react';
+import { GripVertical, Plus, Clock, Trash2, Music, Sparkles } from 'lucide-react';
+import { Button, Card, CardContent, Input } from '@/components/primitives';
+import { toast, EmptyState, StatusBadge } from '@/components/ui';
+import { getMusicAnalysis } from '@/services/geminiService';
+import type { Song } from '@/types';
 
 interface SetlistManagerProps {
   songs: Song[];
@@ -10,11 +11,31 @@ interface SetlistManagerProps {
   onSelectSong: (songId: string) => void;
 }
 
-export const SetlistManager: React.FC<SetlistManagerProps> = ({
+/**
+ * Calculate total duration in seconds from array of songs
+ */
+function calculateTotalDuration(songs: Song[]): number {
+  return songs.reduce((acc, song) => {
+    if (!song.duration.includes(':')) return acc;
+    const [min, sec] = song.duration.split(':').map(Number);
+    return acc + min * 60 + (sec || 0);
+  }, 0);
+}
+
+/**
+ * Format seconds to human-readable duration string
+ */
+function formatTotalTime(totalSec: number): string {
+  const h = Math.floor(totalSec / 3600);
+  const m = Math.floor((totalSec % 3600) / 60);
+  return h > 0 ? `${h}h ${m}m` : `${m}m`;
+}
+
+export const SetlistManager: React.FC<SetlistManagerProps> = memo(function SetlistManager({
   songs,
   setSongs,
   onSelectSong,
-}) => {
+}) {
   const [isAdding, setIsAdding] = useState(false);
   const [newSongTitle, setNewSongTitle] = useState('');
   const [loadingSuggestion, setLoadingSuggestion] = useState(false);
@@ -23,26 +44,17 @@ export const SetlistManager: React.FC<SetlistManagerProps> = ({
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
 
-  const totalDurationSeconds = songs.reduce((acc, song) => {
-    if (!song.duration.includes(':')) return acc;
-    const [min, sec] = song.duration.split(':').map(Number);
-    return acc + min * 60 + (sec || 0);
-  }, 0);
+  // Memoize total duration calculation
+  const totalDurationSeconds = useMemo(() => calculateTotalDuration(songs), [songs]);
 
-  const formatTotalTime = (totalSec: number) => {
-    const h = Math.floor(totalSec / 3600);
-    const m = Math.floor((totalSec % 3600) / 60);
-    return h > 0 ? `${h}h ${m}m` : `${m}m`;
-  };
-
-  const handleAddSong = async () => {
+  const handleAddSong = useCallback(() => {
     if (!newSongTitle.trim()) return;
 
     const newSong: Song = {
       id: crypto.randomUUID(),
       title: newSongTitle,
       artist: 'ZZ Top',
-      duration: '3:30', // Default placeholder
+      duration: '3:30',
       bpm: 120,
       key: 'E',
       isOriginal: false,
@@ -52,29 +64,29 @@ export const SetlistManager: React.FC<SetlistManagerProps> = ({
       charts: [],
     };
 
-    setSongs([...songs, newSong]);
+    setSongs(prev => [...prev, newSong]);
     setNewSongTitle('');
     setIsAdding(false);
-  };
+  }, [newSongTitle, setSongs]);
 
-  const askAiForSuggestions = async () => {
+  const askAiForSuggestions = useCallback(async () => {
     setLoadingSuggestion(true);
     const prompt = `Suggest 3 ZZ Top songs that would fit well in a setlist that already has: ${songs.map(s => s.title).join(', ')}. Just list the titles.`;
     const suggestion = await getMusicAnalysis(prompt);
-    toast.info(suggestion, { duration: 10000 }); // Show suggestion for 10 seconds
+    toast.info(suggestion, { duration: 10000 });
     setLoadingSuggestion(false);
-  };
+  }, [songs]);
 
   // --- Drag and Drop Handlers ---
 
-  const handleDragStart = (e: React.DragEvent<HTMLLIElement>, index: number) => {
+  const handleDragStart = useCallback((e: React.DragEvent<HTMLLIElement>, index: number) => {
     e.dataTransfer.effectAllowed = 'move';
     setTimeout(() => {
       setDraggedIndex(index);
     }, 0);
-  };
+  }, []);
 
-  const handleDragOver = (e: React.DragEvent<HTMLElement>, index: number) => {
+  const handleDragOver = useCallback((e: React.DragEvent<HTMLElement>, index: number) => {
     e.preventDefault();
     e.dataTransfer.dropEffect = 'move';
 
@@ -82,9 +94,14 @@ export const SetlistManager: React.FC<SetlistManagerProps> = ({
     if (dragOverIndex !== index) {
       setDragOverIndex(index);
     }
-  };
+  }, [draggedIndex, dragOverIndex]);
 
-  const handleDrop = (e: React.DragEvent<HTMLElement>) => {
+  const handleDragEnd = useCallback(() => {
+    setDraggedIndex(null);
+    setDragOverIndex(null);
+  }, []);
+
+  const handleDrop = useCallback((e: React.DragEvent<HTMLElement>) => {
     e.preventDefault();
 
     if (draggedIndex === null || dragOverIndex === null) {
@@ -105,32 +122,40 @@ export const SetlistManager: React.FC<SetlistManagerProps> = ({
 
     setSongs(songsWithOrder);
     handleDragEnd();
-  };
+  }, [draggedIndex, dragOverIndex, songs, setSongs, handleDragEnd]);
 
-  const handleDragEnd = () => {
-    setDraggedIndex(null);
-    setDragOverIndex(null);
-  };
+  const handleDeleteSong = useCallback((songId: string) => {
+    setSongs(prev => prev.filter(s => s.id !== songId));
+  }, [setSongs]);
+
+  const handleStartAdding = useCallback(() => {
+    setIsAdding(true);
+  }, []);
+
+  const handleCancelAdding = useCallback(() => {
+    setIsAdding(false);
+    setNewSongTitle('');
+  }, []);
 
   // Component for the drop placeholder
   const DropIndicator = ({ index }: { index: number }) => (
     <div
       onDragOver={e => handleDragOver(e, index)}
       onDrop={handleDrop}
-      className="h-20 mb-3 rounded-xl border-2 border-dashed border-amber-500/50 bg-amber-500/5 flex items-center justify-center animate-in fade-in zoom-in duration-200"
+      className="h-20 mb-3 rounded-xl border-2 border-dashed border-primary/50 bg-primary/5 flex items-center justify-center animate-fade-in"
     >
-      <span className="text-amber-500/50 text-sm font-bold uppercase tracking-widest pointer-events-none">
+      <span className="text-primary/50 text-sm font-bold uppercase tracking-widest pointer-events-none">
         Drop Here
       </span>
     </div>
   );
 
   return (
-    <div className="p-6 lg:p-10 max-w-5xl mx-auto">
+    <div className="p-4 sm:p-6 lg:p-10 max-w-5xl mx-auto">
       <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
         <div>
-          <h2 className="text-3xl font-bold text-white">Setlist Builder</h2>
-          <div className="flex items-center gap-2 mt-2 text-zinc-400">
+          <h2 className="text-3xl font-bold text-foreground">Setlist Builder</h2>
+          <div className="flex items-center gap-2 mt-2 text-muted-foreground">
             <Clock size={16} />
             <span>Est. Run Time: {formatTotalTime(totalDurationSeconds)}</span>
             <span className="mx-2">•</span>
@@ -138,49 +163,47 @@ export const SetlistManager: React.FC<SetlistManagerProps> = ({
           </div>
         </div>
         <div className="flex gap-3">
-          <button
+          <Button
+            variant="secondary"
             onClick={askAiForSuggestions}
             disabled={loadingSuggestion}
-            className="px-4 py-2 bg-zinc-800 hover:bg-zinc-700 text-zinc-200 rounded-lg text-sm font-medium transition-colors border border-zinc-700"
           >
-            {loadingSuggestion ? 'Thinking...' : '✨ AI Suggestions'}
-          </button>
-          <button
-            onClick={() => setIsAdding(true)}
-            className="flex items-center gap-2 px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-medium transition-colors shadow-lg shadow-amber-900/20"
-          >
+            <Sparkles size={16} />
+            {loadingSuggestion ? 'Thinking...' : 'AI Suggestions'}
+          </Button>
+          <Button onClick={handleStartAdding}>
             <Plus size={18} />
             Add Song
-          </button>
+          </Button>
         </div>
       </div>
 
       {isAdding && (
-        <div className="mb-6 bg-zinc-900 p-4 rounded-xl border border-zinc-700 animate-in fade-in slide-in-from-top-4">
-          <label className="block text-sm font-medium text-zinc-400 mb-1">Song Title</label>
-          <div className="flex gap-3">
-            <input
-              type="text"
-              value={newSongTitle}
-              onChange={e => setNewSongTitle(e.target.value)}
-              placeholder="e.g., Legs"
-              className="flex-1 bg-zinc-950 border border-zinc-800 rounded-lg px-4 py-2 text-white focus:ring-2 focus:ring-amber-500 focus:border-transparent outline-none"
-              onKeyDown={e => e.key === 'Enter' && handleAddSong()}
-            />
-            <button
-              onClick={handleAddSong}
-              className="px-4 py-2 bg-zinc-100 text-zinc-900 font-bold rounded-lg"
-            >
-              Add
-            </button>
-            <button
-              onClick={() => setIsAdding(false)}
-              className="px-4 py-2 text-zinc-400 hover:text-white"
-            >
-              Cancel
-            </button>
-          </div>
-        </div>
+        <Card className="mb-6 animate-slide-in-from-top">
+          <CardContent className="pt-6">
+            <label htmlFor="new-song-title" className="block text-sm font-medium text-muted-foreground mb-2">
+              Song Title
+            </label>
+            <div className="flex gap-3">
+              <Input
+                id="new-song-title"
+                type="text"
+                value={newSongTitle}
+                onChange={e => setNewSongTitle(e.target.value)}
+                placeholder="e.g., Legs"
+                className="flex-1"
+                onKeyDown={e => e.key === 'Enter' && handleAddSong()}
+                autoFocus
+              />
+              <Button onClick={handleAddSong}>
+                Add
+              </Button>
+              <Button variant="ghost" onClick={handleCancelAdding}>
+                Cancel
+              </Button>
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       <div className="space-y-0">
@@ -191,7 +214,7 @@ export const SetlistManager: React.FC<SetlistManagerProps> = ({
             description="Add your first song to start building your setlist and organizing your performance."
             action={{
               label: 'Add Song',
-              onClick: () => setIsAdding(true),
+              onClick: handleStartAdding,
             }}
           />
         ) : (
@@ -215,50 +238,49 @@ export const SetlistManager: React.FC<SetlistManagerProps> = ({
                     onDrop={handleDrop}
                     onDragEnd={handleDragEnd}
                     className={`
-                            group flex items-center gap-4 p-4 bg-zinc-900 rounded-xl border border-zinc-800 
-                            hover:border-zinc-600 transition-all duration-200 w-full
-                            ${isDragged ? 'opacity-0 h-0 p-0 border-0 my-0 overflow-hidden' : 'opacity-100 shadow-lg'}
-                        `}
+                      group flex items-center gap-4 p-4 bg-card rounded-xl border border-border
+                      hover:border-border/80 transition-all duration-200 w-full
+                      ${isDragged ? 'opacity-0 h-0 p-0 border-0 my-0 overflow-hidden' : 'opacity-100 shadow-sm'}
+                    `}
                   >
-                    <div className="cursor-grab active:cursor-grabbing text-zinc-600 hover:text-zinc-400 p-2 touch-none">
+                    <div
+                      className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground p-2 touch-none"
+                      aria-label="Drag to reorder"
+                    >
                       <GripVertical size={20} />
                     </div>
-                    <div className="w-8 text-center font-mono text-zinc-500 text-sm select-none">
+                    <div className="w-8 text-center font-mono text-muted-foreground text-sm select-none">
                       {index + 1}
                     </div>
-                    <div className="flex-1 cursor-pointer" onClick={() => onSelectSong(song.id)}>
-                      <h4 className="font-bold text-zinc-100 group-hover:text-amber-500 transition-colors">
+                    <button
+                      type="button"
+                      className="flex-1 text-left cursor-pointer"
+                      onClick={() => onSelectSong(song.id)}
+                    >
+                      <h4 className="font-bold text-foreground group-hover:text-primary transition-colors">
                         {song.title}
                       </h4>
-                      <p className="text-xs text-zinc-500">
+                      <p className="text-xs text-muted-foreground">
                         {song.key} • {song.bpm} BPM
                       </p>
-                    </div>
-                    <div className="hidden md:block text-sm font-mono text-zinc-400 px-4 select-none">
+                    </button>
+                    <div className="hidden md:block text-sm font-mono text-muted-foreground px-4 select-none">
                       {song.duration}
                     </div>
                     <div className="flex items-center gap-2">
-                      <span
-                        className={`text-[10px] uppercase px-2 py-0.5 rounded border select-none ${
-                          song.status === 'Performance Ready'
-                            ? 'border-green-800 text-green-500'
-                            : song.status === 'In Progress'
-                              ? 'border-blue-800 text-blue-500'
-                              : 'border-zinc-700 text-zinc-500'
-                        }`}
-                      >
-                        {song.status === 'Performance Ready' ? 'Ready' : 'WIP'}
-                      </span>
-                      <button
+                      <StatusBadge status={song.status} />
+                      <Button
+                        variant="ghost"
+                        size="icon"
                         onClick={e => {
                           e.stopPropagation();
-                          const newSongs = songs.filter(s => s.id !== song.id);
-                          setSongs(newSongs);
+                          handleDeleteSong(song.id);
                         }}
-                        className="p-2 text-zinc-600 hover:text-red-500 transition-colors"
+                        className="text-muted-foreground hover:text-destructive"
+                        aria-label={`Delete ${song.title}`}
                       >
                         <Trash2 size={18} />
-                      </button>
+                      </Button>
                     </div>
                   </li>
 
@@ -272,4 +294,6 @@ export const SetlistManager: React.FC<SetlistManagerProps> = ({
       </div>
     </div>
   );
-};
+});
+
+SetlistManager.displayName = 'SetlistManager';
