@@ -270,6 +270,13 @@ npm run dev        # Start dev server on port 3000
    - `StatCard`: icon rendering, variant styling, subtitle display
    - `EmptyState`: action button rendering, accessibility attributes
 
+4. **StatCard value constraint** - The `value` prop only accepts `string | number`. If formatted content is needed (e.g., `<span>5 <small>/ 10</small></span>`), consider:
+   - Creating a `FormattedStatCard` variant with `value: React.ReactNode`
+   - Using a render prop pattern: `renderValue?: () => React.ReactNode`
+   - For Phase 5.4, verify all dashboard stats work with the current constraint first
+
+5. **Toast uses --popover variable** - Toast.tsx uses `--popover` instead of `--card` for background styling. This is semantically correct since toasts are floating UI elements (like popovers), not embedded content (like cards). Currently `--popover` and `--card` have identical values in the theme, but using `--popover` allows future customization if toast styling needs to diverge from card styling.
+
 ---
 
 ## Next Session Recommendations

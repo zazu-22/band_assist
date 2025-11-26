@@ -25,8 +25,9 @@
   /* Custom semantic colors for status indicators */
   --success: oklch(0.55 0.15 145);
   --success-foreground: oklch(1 0 0);
-  --warning: oklch(0.75 0.15 75);
-  --warning-foreground: oklch(0.2 0 0);
+  /* Darkened from 0.75 to 0.65 for WCAG AA contrast compliance */
+  --warning: oklch(0.65 0.15 75);
+  --warning-foreground: oklch(0.15 0 0);
   --info: oklch(0.6 0.15 250);
   --info-foreground: oklch(1 0 0);
   --border: oklch(0.9276 0.0058 264.5313);

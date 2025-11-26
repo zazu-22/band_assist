@@ -20,7 +20,16 @@ interface ConfirmDialogProps {
   message: string;
   confirmLabel?: string;
   cancelLabel?: string;
+  /**
+   * Called when user confirms the action.
+   * Should be wrapped in useCallback in parent component for stable reference.
+   */
   onConfirm: () => void;
+  /**
+   * Called when dialog is dismissed (Cancel button, ESC key, or overlay click).
+   * IMPORTANT: Must be wrapped in useCallback in parent component to prevent
+   * unnecessary re-renders, as this is a dependency of internal handleOpenChange.
+   */
   onCancel: () => void;
   variant?: DialogVariant;
 }
