@@ -132,6 +132,12 @@ This document tracks progress on migrating Band Assist to shadcn/ui with a compl
 
 ### Phase 5.4: Feature Components - Dashboard (Pending)
 
+**Pre-migration Checklist:**
+- [ ] Verify StatCard `value: string | number` constraint works for all dashboard stats
+  - If JSX/formatted content needed, consider creating variant or extending type
+- [ ] Wrap callback props (e.g., `onCancel`, `onConfirm`) in `useCallback` in parent components
+  - Prevents unnecessary re-renders from ConfirmDialog's `handleOpenChange` dependency
+
 1. **Dashboard.tsx**
    - Replace stat cards (lines 34-85) with StatCard component
    - Replace song status badges with StatusBadge
@@ -220,6 +226,25 @@ used in Badge, StatCard, and ConfirmDialog components.
   </SidebarProvider>
 </ThemeProvider>
 ```
+
+### Coding Standards
+
+**Import Ordering:**
+1. React (`import React, { ... } from 'react'`)
+2. Third-party libraries (`lucide-react`, etc.)
+3. Local components (`@/components/*`)
+4. Types (`@/types` or `type { ... }`)
+5. Utils (`@/lib/utils`)
+
+**Component Patterns:**
+- Use `React.memo` for components that receive stable props
+- Add explicit `displayName` to all `memo()` wrapped components
+- Use `SCREAMING_SNAKE_CASE` for module-level config objects with `as const`
+- Document complex behavior with block comments (see ConfirmDialog as example)
+
+**Callback Stability:**
+- Parent components should wrap callbacks passed to dialogs in `useCallback`
+- This prevents unnecessary re-renders when dialog state changes
 
 ---
 
