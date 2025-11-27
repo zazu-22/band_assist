@@ -1,6 +1,5 @@
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach, type Mock } from 'vitest';
 import { render, screen, waitFor, fireEvent, act } from '@testing-library/react';
-import { AlphaTabRenderer } from './AlphaTabRenderer';
 
 interface MockTrack {
   name: string;
@@ -10,65 +9,127 @@ interface MockTrack {
   };
 }
 
-// Mock AlphaTab API
-const mockApiInstance = {
-  destroy: vi.fn(),
-  load: vi.fn(),
-  play: vi.fn(),
-  pause: vi.fn(),
-  playPause: vi.fn(),
-  stop: vi.fn(),
-  renderTracks: vi.fn(),
-  changeTrackMute: vi.fn(),
-  changeTrackSolo: vi.fn(),
-  playbackSpeed: 1.0,
-  timePosition: 0,
-  isLooping: false,
-  playbackRange: null,
+interface MockApiInstance {
+  destroy: Mock;
+  load: Mock;
+  play: Mock;
+  pause: Mock;
+  playPause: Mock;
+  stop: Mock;
+  renderTracks: Mock;
+  changeTrackMute: Mock;
+  changeTrackSolo: Mock;
+  changeTrackVolume: Mock;
+  playbackSpeed: number;
+  timePosition: number;
+  isLooping: boolean;
+  playbackRange: { startTick: number; endTick: number } | null;
+  masterVolume: number;
+  metronomeVolume: number;
+  countInVolume: number;
   score: {
-    tracks: [] as MockTrack[],
-    tempo: 120,
-  },
-  scoreLoaded: { on: vi.fn(), off: vi.fn() },
-  error: { on: vi.fn(), off: vi.fn() },
-  playerStateChanged: { on: vi.fn(), off: vi.fn() },
-  playerReady: { on: vi.fn(), off: vi.fn() },
-  renderStarted: { on: vi.fn(), off: vi.fn() },
-  renderFinished: { on: vi.fn(), off: vi.fn() },
-  playerPositionChanged: { on: vi.fn(), off: vi.fn() },
-  playerFinished: { on: vi.fn(), off: vi.fn() },
-  beatMouseDown: { on: vi.fn(), off: vi.fn() },
-  midiEventsPlayed: { on: vi.fn(), off: vi.fn() },
-  midiEventsPlayedFilter: [],
-};
+    tracks: MockTrack[];
+    tempo: number;
+  };
+  scoreLoaded: { on: Mock; off: Mock };
+  error: { on: Mock; off: Mock };
+  playerStateChanged: { on: Mock; off: Mock };
+  playerReady: { on: Mock; off: Mock };
+  renderStarted: { on: Mock; off: Mock };
+  renderFinished: { on: Mock; off: Mock };
+  playerPositionChanged: { on: Mock; off: Mock };
+  playerFinished: { on: Mock; off: Mock };
+  beatMouseDown: { on: Mock; off: Mock };
+  midiEventsPlayed: { on: Mock; off: Mock };
+  midiEventsPlayedFilter: number[];
+}
 
-const MockAlphaTabApi = vi.fn().mockImplementation(function () {
-  return mockApiInstance;
+// Create mock instance - will be populated in beforeEach
+let mockApiInstance: MockApiInstance;
+let MockAlphaTabApi: Mock;
+
+// ESM mock for @coderline/alphatab - factory must be self-contained
+vi.mock('@coderline/alphatab', () => {
+  // Create mock inside factory since it's hoisted
+  const createMockApi = () => ({
+    destroy: vi.fn(),
+    load: vi.fn(),
+    play: vi.fn(),
+    pause: vi.fn(),
+    playPause: vi.fn(),
+    stop: vi.fn(),
+    renderTracks: vi.fn(),
+    changeTrackMute: vi.fn(),
+    changeTrackSolo: vi.fn(),
+    changeTrackVolume: vi.fn(),
+    playbackSpeed: 1.0,
+    timePosition: 0,
+    isLooping: false,
+    playbackRange: null,
+    masterVolume: 1.0,
+    metronomeVolume: 0,
+    countInVolume: 0,
+    score: {
+      tracks: [],
+      tempo: 120,
+    },
+    scoreLoaded: { on: vi.fn(), off: vi.fn() },
+    error: { on: vi.fn(), off: vi.fn() },
+    playerStateChanged: { on: vi.fn(), off: vi.fn() },
+    playerReady: { on: vi.fn(), off: vi.fn() },
+    renderStarted: { on: vi.fn(), off: vi.fn() },
+    renderFinished: { on: vi.fn(), off: vi.fn() },
+    playerPositionChanged: { on: vi.fn(), off: vi.fn() },
+    playerFinished: { on: vi.fn(), off: vi.fn() },
+    beatMouseDown: { on: vi.fn(), off: vi.fn() },
+    midiEventsPlayed: { on: vi.fn(), off: vi.fn() },
+    midiEventsPlayedFilter: [],
+  });
+
+  // Store reference for tests to access - this same object is shared with component
+  const mockInstance = createMockApi();
+
+  // Use vi.fn() with a regular function that returns the shared mockInstance
+  // This ensures tests and component share the same object reference
+  const MockAlphaTabApiConstructor = vi.fn(function (this: Record<string, unknown>) {
+    // Return the shared mockInstance so property changes are visible to both test and component
+    return mockInstance;
+  });
+
+  return {
+    AlphaTabApi: MockAlphaTabApiConstructor,
+    midi: {
+      MidiEventType: {
+        AlphaTabMetronome: 1,
+      },
+    },
+    // Expose for tests
+    __mockInstance: mockInstance,
+    __resetMock: () => {
+      Object.assign(mockInstance, createMockApi());
+      MockAlphaTabApiConstructor.mockClear();
+    },
+  };
 });
+
+// Import component and mock module AFTER vi.mock
+import { AlphaTabRenderer } from './AlphaTabRenderer';
+import * as alphaTabModule from '@coderline/alphatab';
 
 describe('AlphaTabRenderer', () => {
   const mockFileData = 'data:application/octet-stream;base64,VEVTVERBVEE=';
 
   beforeEach(() => {
     vi.clearAllMocks();
-    MockAlphaTabApi.mockClear();
-    mockApiInstance.isLooping = false;
-    mockApiInstance.playbackRange = null;
 
-    // Setup window.alphaTab mock - cast to constructor type expected by AlphaTab
-    type AlphaTabConstructor = new (
-      element: HTMLElement,
-      settings: unknown
-    ) => typeof mockApiInstance;
-
-    window.alphaTab = {
-      AlphaTabApi: MockAlphaTabApi as unknown as AlphaTabConstructor,
-      midi: {
-        MidiEventType: {
-          AlphaTabMetronome: 1,
-        },
-      },
+    // Get mock instance from module
+    const module = alphaTabModule as typeof alphaTabModule & {
+      __mockInstance: MockApiInstance;
+      __resetMock: () => void;
     };
+    module.__resetMock();
+    mockApiInstance = module.__mockInstance;
+    MockAlphaTabApi = alphaTabModule.AlphaTabApi as unknown as Mock;
   });
 
   afterEach(() => {
@@ -728,6 +789,260 @@ describe('AlphaTabRenderer', () => {
       const muteButton = screen.getAllByText('M')[0];
       fireEvent.click(muteButton);
       expect(mockApiInstance.changeTrackMute).toHaveBeenCalled();
+    });
+  });
+
+  describe('Volume Controls via onReady Handle', () => {
+    const mockTracks = [
+      { name: 'Guitar', playbackInfo: { isMute: false, isSolo: false } },
+      { name: 'Bass', playbackInfo: { isMute: false, isSolo: false } },
+    ];
+
+    let capturedHandle: {
+      setTrackVolume: (index: number, volume: number) => void;
+      setMasterVolume: (volume: number) => void;
+      setMetronomeVolume: (volume: number) => void;
+      setCountInVolume: (volume: number) => void;
+      getMasterVolume: () => number;
+      getMetronomeVolume: () => number;
+      getCountInVolume: () => number;
+      getTracks: () => Array<{
+        index: number;
+        name: string;
+        isMute: boolean;
+        isSolo: boolean;
+        volume: number;
+      }>;
+    } | null = null;
+
+    beforeEach(async () => {
+      capturedHandle = null;
+      const onReady = vi.fn(handle => {
+        capturedHandle = handle;
+      });
+
+      render(<AlphaTabRenderer fileData={mockFileData} onReady={onReady} />);
+
+      await waitFor(() => {
+        expect(mockApiInstance.scoreLoaded.on).toHaveBeenCalled();
+      });
+
+      // Trigger score loaded with tracks
+      const scoreLoadedHandler = mockApiInstance.scoreLoaded.on.mock.calls[0][0];
+      act(() => {
+        scoreLoadedHandler({ tracks: mockTracks, tempo: 120 });
+      });
+      mockApiInstance.score.tracks = mockTracks;
+
+      // Trigger playerReady to get the handle
+      const playerReadyHandler = mockApiInstance.playerReady.on.mock.calls[0][0];
+      act(() => {
+        playerReadyHandler();
+      });
+
+      // Wait for handle to be captured (playerReady triggers onReady after 500ms delay)
+      await waitFor(
+        () => {
+          expect(capturedHandle).not.toBeNull();
+        },
+        { timeout: 1000 }
+      );
+    });
+
+    describe('track volume', () => {
+      it('setTrackVolume calls changeTrackVolume on API', async () => {
+        expect(capturedHandle).not.toBeNull();
+
+        act(() => {
+          capturedHandle!.setTrackVolume(0, 0.5);
+        });
+
+        expect(mockApiInstance.changeTrackVolume).toHaveBeenCalledWith(
+          expect.arrayContaining([expect.objectContaining({ name: 'Guitar' })]),
+          0.5
+        );
+      });
+
+      it('setTrackVolume clamps volume above 1 to 1', async () => {
+        expect(capturedHandle).not.toBeNull();
+
+        act(() => {
+          capturedHandle!.setTrackVolume(0, 1.5);
+        });
+
+        expect(mockApiInstance.changeTrackVolume).toHaveBeenCalledWith(expect.any(Array), 1.0);
+      });
+
+      it('setTrackVolume clamps volume below 0 to 0', async () => {
+        expect(capturedHandle).not.toBeNull();
+
+        act(() => {
+          capturedHandle!.setTrackVolume(0, -0.5);
+        });
+
+        expect(mockApiInstance.changeTrackVolume).toHaveBeenCalledWith(expect.any(Array), 0);
+      });
+
+      it('setTrackVolume handles invalid track index gracefully', async () => {
+        expect(capturedHandle).not.toBeNull();
+
+        // Set volume for non-existent track - should not throw
+        act(() => {
+          capturedHandle!.setTrackVolume(999, 0.5);
+        });
+
+        // Should not call API for invalid index
+        expect(mockApiInstance.changeTrackVolume).not.toHaveBeenCalled();
+      });
+    });
+
+    describe('master volume', () => {
+      it('setMasterVolume sets masterVolume property', async () => {
+        expect(capturedHandle).not.toBeNull();
+
+        act(() => {
+          capturedHandle!.setMasterVolume(0.75);
+        });
+
+        expect(mockApiInstance.masterVolume).toBe(0.75);
+      });
+
+      it('setMasterVolume clamps to valid range', async () => {
+        expect(capturedHandle).not.toBeNull();
+
+        act(() => {
+          capturedHandle!.setMasterVolume(2.0);
+        });
+
+        expect(mockApiInstance.masterVolume).toBe(1.0);
+      });
+
+      it('getMasterVolume returns current value', async () => {
+        expect(capturedHandle).not.toBeNull();
+
+        act(() => {
+          capturedHandle!.setMasterVolume(0.6);
+        });
+
+        expect(capturedHandle!.getMasterVolume()).toBe(0.6);
+      });
+    });
+
+    describe('metronome volume', () => {
+      it('setMetronomeVolume sets metronomeVolume property', async () => {
+        expect(capturedHandle).not.toBeNull();
+
+        act(() => {
+          capturedHandle!.setMetronomeVolume(0.3);
+        });
+
+        expect(mockApiInstance.metronomeVolume).toBe(0.3);
+      });
+
+      it('setMetronomeVolume with 0 disables metronome', async () => {
+        expect(capturedHandle).not.toBeNull();
+
+        // First enable
+        act(() => {
+          capturedHandle!.setMetronomeVolume(0.5);
+        });
+        // Then disable
+        act(() => {
+          capturedHandle!.setMetronomeVolume(0);
+        });
+
+        expect(mockApiInstance.metronomeVolume).toBe(0);
+      });
+
+      it('setMetronomeVolume clamps to valid range', async () => {
+        expect(capturedHandle).not.toBeNull();
+
+        act(() => {
+          capturedHandle!.setMetronomeVolume(1.5);
+        });
+
+        expect(mockApiInstance.metronomeVolume).toBe(1.0);
+      });
+
+      it('getMetronomeVolume returns current value', async () => {
+        expect(capturedHandle).not.toBeNull();
+
+        act(() => {
+          capturedHandle!.setMetronomeVolume(0.4);
+        });
+
+        expect(capturedHandle!.getMetronomeVolume()).toBe(0.4);
+      });
+    });
+
+    describe('count-in volume', () => {
+      it('setCountInVolume sets countInVolume property', async () => {
+        expect(capturedHandle).not.toBeNull();
+
+        act(() => {
+          capturedHandle!.setCountInVolume(0.5);
+        });
+
+        expect(mockApiInstance.countInVolume).toBe(0.5);
+      });
+
+      it('setCountInVolume with 0 disables count-in', async () => {
+        expect(capturedHandle).not.toBeNull();
+
+        act(() => {
+          capturedHandle!.setCountInVolume(0);
+        });
+
+        expect(mockApiInstance.countInVolume).toBe(0);
+      });
+
+      it('setCountInVolume clamps to valid range', async () => {
+        expect(capturedHandle).not.toBeNull();
+
+        act(() => {
+          capturedHandle!.setCountInVolume(1.5);
+        });
+
+        expect(mockApiInstance.countInVolume).toBe(1.0);
+      });
+
+      it('getCountInVolume returns current value', async () => {
+        expect(capturedHandle).not.toBeNull();
+
+        act(() => {
+          capturedHandle!.setCountInVolume(0.7);
+        });
+
+        expect(capturedHandle!.getCountInVolume()).toBe(0.7);
+      });
+    });
+
+    describe('getTracks', () => {
+      it('returns track info with volume', async () => {
+        expect(capturedHandle).not.toBeNull();
+
+        const tracks = capturedHandle!.getTracks();
+
+        expect(tracks).toHaveLength(2);
+        expect(tracks[0]).toEqual({
+          index: 0,
+          name: 'Guitar',
+          isMute: false,
+          isSolo: false,
+          volume: 1.0, // Default volume
+        });
+      });
+
+      it('reflects volume changes in getTracks', async () => {
+        expect(capturedHandle).not.toBeNull();
+
+        act(() => {
+          capturedHandle!.setTrackVolume(0, 0.5);
+        });
+
+        const tracks = capturedHandle!.getTracks();
+        expect(tracks[0].volume).toBe(0.5);
+      });
     });
   });
 });
