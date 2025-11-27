@@ -40,8 +40,15 @@ export const ProgressBar = memo(function ProgressBar({
     let seekDelta = 0;
     if (e.key === 'ArrowLeft') seekDelta = -0.05; // Seek back 5%
     else if (e.key === 'ArrowRight') seekDelta = 0.05; // Seek forward 5%
-    else if (e.key === 'Home') { onSeek(0); return; } // Jump to start
-    else if (e.key === 'End') { onSeek(1); return; } // Jump to end
+    else if (e.key === 'Home') {
+      e.preventDefault();
+      onSeek(0);
+      return;
+    } else if (e.key === 'End') {
+      e.preventDefault();
+      onSeek(1);
+      return;
+    }
 
     if (seekDelta !== 0) {
       e.preventDefault();
@@ -60,7 +67,7 @@ export const ProgressBar = memo(function ProgressBar({
       </span>
 
       <div
-        className="flex-1 h-2 bg-muted rounded-full cursor-pointer group relative"
+        className="flex-1 h-2 bg-muted rounded-full cursor-pointer group relative focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2 focus-visible:ring-offset-background"
         onClick={handleClick}
         onKeyDown={handleKeyDown}
         role="slider"

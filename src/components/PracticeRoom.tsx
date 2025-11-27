@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, memo, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef, memo, useMemo, useCallback } from 'react';
 import { Song } from '@/types';
 import {
   Play,
@@ -27,6 +27,7 @@ import {
 } from '@/components/primitives';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/useBreakpoint';
+import { useDerivedState, usePrevious } from '@/hooks/useDerivedState';
 import {
   PracticeControlBar,
   type AlphaTabState,
@@ -135,11 +136,20 @@ export const PracticeRoom: React.FC<PracticeRoomProps> = memo(function PracticeR
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
-  const [metronomeBpm, setMetronomeBpm] = useState(120);
   const [metronomeActive, setMetronomeActive] = useState(false);
-  const [activeChartId, setActiveChartId] = useState<string | null>(null);
   const [showSongList, setShowSongList] = useState(!isMobile);
   const [audioSrc, setAudioSrc] = useState<string | undefined>(undefined);
+
+  // Derived state that resets when song changes
+  const currentSong = songs.find(s => s.id === selectedSongId);
+  const [metronomeBpm, setMetronomeBpm] = useDerivedState(
+    currentSong?.bpm ?? 120,
+    selectedSongId
+  );
+  const [activeChartId, setActiveChartId] = useDerivedState<string | null>(
+    currentSong?.charts[0]?.id ?? null,
+    selectedSongId
+  );
 
   // AlphaTab control state
   const alphaTabRef = useRef<AlphaTabHandle | null>(null);
@@ -158,10 +168,9 @@ export const PracticeRoom: React.FC<PracticeRoomProps> = memo(function PracticeR
   // MEMOIZED VALUES
   // ---------------------------------------------------------------------------
 
-  const selectedSong = useMemo(
-    () => songs.find(s => s.id === selectedSongId),
-    [songs, selectedSongId]
-  );
+  // Note: currentSong is computed above for derived state initialization
+  // We use it directly here for consistency
+  const selectedSong = currentSong;
 
   const activeChart = useMemo(
     () => selectedSong?.charts.find(c => c.id === activeChartId),
@@ -200,33 +209,21 @@ export const PracticeRoom: React.FC<PracticeRoomProps> = memo(function PracticeR
   // EFFECTS
   // ---------------------------------------------------------------------------
 
-  // Initialize state when song changes
-  useEffect(() => {
-    if (selectedSong) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- Resetting derived state when song prop changes
-      setMetronomeBpm(selectedSong.bpm);
-      if (selectedSong.charts.length > 0) {
-        // eslint-disable-next-line react-hooks/set-state-in-effect -- Resetting derived state when song prop changes
-        setActiveChartId(selectedSong.charts[0].id);
-      } else {
-        // eslint-disable-next-line react-hooks/set-state-in-effect -- Resetting derived state when song prop changes
-        setActiveChartId(null);
-      }
-    }
-  }, [selectedSongId, selectedSong]);
+  // Track previous GP state for cleanup on transition
+  const prevIsGuitarPro = usePrevious(isGuitarPro);
 
-  // Clear AlphaTab state when chart changes away from GP
-  useEffect(() => {
-    if (!isGuitarPro) {
+  // Clear AlphaTab state when transitioning away from GP chart
+  // Using useLayoutEffect to reset state before paint, avoiding visual flicker
+  useLayoutEffect(() => {
+    // Only reset when transitioning from GP to non-GP (not on initial render)
+    if (prevIsGuitarPro === true && !isGuitarPro) {
       alphaTabRef.current = null;
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- Resetting derived state when chart type changes
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Intentional: cleanup on chart type transition
       setGpState(null);
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- Resetting derived state when chart type changes
       setGpTracks([]);
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- Resetting derived state when chart type changes
       setGpPosition({ current: 0, total: 0 });
     }
-  }, [isGuitarPro]);
+  }, [isGuitarPro, prevIsGuitarPro]);
 
   // Audio Element Management
   useEffect(() => {
@@ -411,7 +408,7 @@ export const PracticeRoom: React.FC<PracticeRoomProps> = memo(function PracticeR
 
   const handleChartSelect = useCallback((id: string) => {
     setActiveChartId(id);
-  }, []);
+  }, [setActiveChartId]);
 
   const toggleSongList = useCallback(() => {
     setShowSongList(prev => !prev);
@@ -423,7 +420,7 @@ export const PracticeRoom: React.FC<PracticeRoomProps> = memo(function PracticeR
 
   const handleMetronomeBpmChange = useCallback((bpm: number) => {
     setMetronomeBpm(bpm);
-  }, []);
+  }, [setMetronomeBpm]);
 
   const handlePlaybackRateChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
     setPlaybackRate(parseFloat(e.target.value));
