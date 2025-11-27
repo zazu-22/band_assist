@@ -253,10 +253,41 @@ Intelligent text chart viewer/editor:
 Guitar Pro file renderer wrapping AlphaTab library:
 - Interactive sheet music/tablature
 - Playback controls with metronome
-- Track muting/soloing
+- Track muting/soloing/volume
 - Position tracking with throttled updates
 
-**Note:** AlphaTab is loaded from CDN (`@coderline/alphatab@latest`) in `index.html`. The `@coderline/alphatab` npm package is also installed for type definitions.
+**AlphaTab Integration:**
+
+AlphaTab is bundled via the Vite plugin (`@coderline/alphatab/vite`):
+
+```typescript
+// ESM Import Pattern
+import { AlphaTabApi, midi } from '@coderline/alphatab';
+```
+
+**Asset Management:**
+- Fonts: Automatically copied to `/font` during build
+- SoundFont: Automatically copied to `/soundfont` during build
+- Workers: Configured automatically by plugin
+
+**Volume Controls (via `onReady` callback handle, all use 0-1 range):**
+- `setTrackVolume(index, volume)` - Per-track volume (0-1, default 1)
+- `setMasterVolume(volume)` - Overall volume (0-1, default 1)
+- `setMetronomeVolume(volume)` - Metronome level (0-1, default 0; >0 enables metronome)
+- `setCountInVolume(volume)` - Count-in level (0-1, default 0; >0 enables count-in)
+
+**Usage Example:**
+```typescript
+<AlphaTabRenderer
+  fileData={gpFileBase64}
+  onReady={(handle) => {
+    handle.setMasterVolume(0.8);
+    handle.setMetronomeVolume(0.5);
+  }}
+/>
+```
+
+**Note:** The npm package `@coderline/alphatab@^1.6.3` provides both TypeScript types and runtime code. No CDN dependency is required.
 
 ### Settings (components/Settings.tsx)
 
@@ -500,7 +531,7 @@ The app is static and can be deployed to any static host (Vercel, Netlify, GitHu
 
 ## Common Pitfalls
 
-1. **AlphaTab Global:** `AlphaTabRenderer` expects `window.alphaTab` from CDN. Ensure the script loads before React renders.
+1. **AlphaTab Assets:** AlphaTab requires fonts and soundfont files. The Vite plugin automatically copies these to `/font` and `/soundfont` during build. If playback fails, verify these directories exist in the build output.
 
 2. **Supabase Required:** The app requires Supabase configuration. Without `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`, the app will fail to start.
 

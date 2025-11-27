@@ -13,6 +13,7 @@ import {
   Scroll,
   Gauge,
 } from 'lucide-react';
+import { AlphaTabApi as AlphaTabApiClass, midi } from '@coderline/alphatab';
 
 // Constants
 const POSITION_UPDATE_THROTTLE_MS = 100; // Throttle position updates to ~10 FPS for performance
@@ -20,7 +21,7 @@ const METRONOME_HIGHLIGHT_DURATION_FACTOR = 0.3; // Duration factor for metronom
 const PLAYBACK_RETRY_DELAY_MS = 100; // Delay before retrying failed play/pause operations
 type PlaybackAction = 'play' | 'pause';
 
-// AlphaTab type definitions
+// AlphaTab type definitions - library types are internal, we define interfaces matching API shape
 interface AlphaTabScore {
   tracks: AlphaTabTrack[];
   tempo: number;
@@ -43,16 +44,21 @@ interface AlphaTabPositionChangedEvent {
   endTime: number;
 }
 
+// Beat type from library - beatMouseDown passes Beat directly, not wrapped
+interface AlphaTabBeat {
+  absolutePlaybackStart: number;
+  playbackDuration: number;
+}
+
+// Event wrapper for beatMouseDown - library provides Beat but with additional DOM event context
 interface AlphaTabBeatMouseEvent {
-  beat: {
-    absolutePlaybackStart: number;
-    playbackDuration: number;
-  };
+  beat: AlphaTabBeat;
   originalEvent: {
     shiftKey: boolean;
   };
 }
 
+// MidiEvent with metronome properties (AlphaTabMetronomeEvent extends MidiEvent)
 interface AlphaTabMidiEvent {
   isMetronome: boolean;
   metronomeNumerator: number;
@@ -68,6 +74,7 @@ interface AlphaTabErrorEvent {
   inner?: string;
 }
 
+// Settings type matching library's SettingsJson structure
 interface AlphaTabSettings {
   core?: {
     fontDirectory?: string;
@@ -85,6 +92,7 @@ interface AlphaTabSettings {
   };
 }
 
+// API instance type - mirrors AlphaTabApi class shape
 interface AlphaTabApi {
   destroy(): void;
   load(data: Uint8Array): void;
@@ -95,11 +103,15 @@ interface AlphaTabApi {
   renderTracks(tracks: AlphaTabTrack[]): void;
   changeTrackMute(tracks: AlphaTabTrack[], mute: boolean): void;
   changeTrackSolo(tracks: AlphaTabTrack[], solo: boolean): void;
+  changeTrackVolume(tracks: AlphaTabTrack[], volume: number): void;
   playbackSpeed: number;
   timePosition: number;
   isLooping: boolean;
   playbackRange: { startTick: number; endTick: number } | null;
-  score: AlphaTabScore;
+  masterVolume: number;
+  metronomeVolume: number;
+  countInVolume: number;
+  score: AlphaTabScore | null;
   scoreLoaded: {
     on(callback: (score: AlphaTabScore) => void): void;
     off(callback: (score: AlphaTabScore) => void): void;
@@ -121,8 +133,8 @@ interface AlphaTabApi {
   };
   playerFinished: { on(callback: () => void): void; off(callback: () => void): void };
   beatMouseDown: {
-    on(callback: (e: AlphaTabBeatMouseEvent) => void): void;
-    off(callback: (e: AlphaTabBeatMouseEvent) => void): void;
+    on(callback: (beat: AlphaTabBeat) => void): void;
+    off(callback: (beat: AlphaTabBeat) => void): void;
   };
   midiEventsPlayed: {
     on(callback: (e: AlphaTabMidiEventsPlayedEvent) => void): void;
@@ -131,24 +143,54 @@ interface AlphaTabApi {
   midiEventsPlayedFilter: number[];
 }
 
-// Extend window interface to include alphaTab from CDN
-declare global {
-  interface Window {
-    alphaTab: {
-      AlphaTabApi: new (element: HTMLElement, settings: AlphaTabSettings) => AlphaTabApi;
-      midi: {
-        MidiEventType: {
-          AlphaTabMetronome: number;
-        };
-      };
-    };
-  }
+/**
+ * Extended track info with volume for external consumption.
+ */
+export interface TrackInfo {
+  index: number;
+  name: string;
+  isMute: boolean;
+  isSolo: boolean;
+  volume: number; // 0-1, default 1.0
+}
+
+/**
+ * Handle interface for controlling AlphaTab from parent components.
+ * All volume values use 0-1 range (0% to 100%).
+ */
+export interface AlphaTabHandle {
+  // Playback controls
+  play(): void;
+  pause(): void;
+  stop(): void;
+  seekTo(percentage: number): void;
+  setPlaybackSpeed(speed: number): void;
+  setLoop(enabled: boolean): void;
+  setLoopRange(range: { startTick: number; endTick: number } | null): void;
+
+  // Track controls
+  renderTrack(index: number): void;
+  toggleTrackMute(index: number): void;
+  toggleTrackSolo(index: number): void;
+
+  // Volume controls (0-1 range)
+  setTrackVolume(index: number, volume: number): void;
+  setMasterVolume(volume: number): void;
+  setMetronomeVolume(volume: number): void;
+  setCountInVolume(volume: number): void;
+
+  // State getters
+  getTracks(): TrackInfo[];
+  getMasterVolume(): number;
+  getMetronomeVolume(): number;
+  getCountInVolume(): number;
 }
 
 interface AlphaTabRendererProps {
   fileData: string; // Base64 Data URI
   isPlaying?: boolean;
   onPlaybackChange?: (isPlaying: boolean) => void;
+  onReady?: (handle: AlphaTabHandle) => void;
   readOnly?: boolean;
 }
 
@@ -156,6 +198,7 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
   fileData,
   isPlaying: externalIsPlaying,
   onPlaybackChange,
+  onReady,
   readOnly = false,
 }) => {
   const rootRef = useRef<HTMLDivElement>(null);
@@ -195,6 +238,12 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
   const [currentBPM, setCurrentBPM] = useState<number | null>(null);
   const [isEditingBPM, setIsEditingBPM] = useState(false);
   const [bpmInputValue, setBpmInputValue] = useState<string>('');
+
+  // Volume controls state (0-1 range)
+  const [masterVolume, setMasterVolumeState] = useState(1.0);
+  const [metronomeVolume, setMetronomeVolumeState] = useState(0);
+  const [countInVolume, setCountInVolumeState] = useState(0);
+  const [trackVolumes, setTrackVolumes] = useState<number[]>([]);
 
   // Auto-scroll state
   const [autoScrollEnabled, setAutoScrollEnabled] = useState(false);
@@ -275,30 +324,9 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
   useEffect(() => {
     let isMounted = true;
     let timeoutId: NodeJS.Timeout;
-    let checkAttempts = 0;
-    const MAX_CHECK_ATTEMPTS = 50; // 10 seconds
 
     // Capture ref value at effect start for cleanup
     const metronomeTimeouts = metronomeTimeoutsRef.current;
-
-    // Wait for AlphaTab CDN script to load
-    const checkLibrary = () => {
-      checkAttempts++;
-      if (!window.alphaTab) {
-        if (checkAttempts >= MAX_CHECK_ATTEMPTS) {
-          if (isMounted) {
-            setError(
-              'AlphaTab library failed to load from CDN. Please check your internet connection.'
-            );
-            setLoading(false);
-          }
-          return;
-        }
-        setTimeout(checkLibrary, 200);
-        return;
-      }
-      initAlphaTab();
-    };
 
     const initAlphaTab = () => {
       if (!containerRef.current || !isMounted) return;
@@ -337,8 +365,7 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
           },
           player: {
             enablePlayer: !readOnly, // Disable player in readonly mode
-            soundFont:
-              'https://cdn.jsdelivr.net/npm/@coderline/alphatab@latest/dist/soundfont/sonivox.sf2',
+            soundFont: '/soundfont/sonivox.sf2', // Local soundfont via Vite plugin
             scrollElement: rootRef.current,
           },
           display: {
@@ -347,8 +374,12 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
           },
         };
 
-        // 3. Initialize API
-        const api = new window.alphaTab.AlphaTabApi(containerRef.current, settings);
+        // 3. Initialize API (ESM import)
+        // Cast to local types for compatibility with library's internal types
+        const api = new AlphaTabApiClass(
+          containerRef.current,
+          settings as never // Settings structure matches library expectations
+        ) as unknown as AlphaTabApi;
         apiRef.current = api;
 
         // 4. Attach Events - Store handlers for cleanup
@@ -358,6 +389,9 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
           setTracks(score.tracks);
           // AlphaTab renders first track by default
           setCurrentTrackIndex(0);
+
+          // Initialize track volumes to default 1.0 for all tracks
+          setTrackVolumes(new Array(score.tracks.length).fill(1.0));
 
           // Extract original tempo
           const tempo = score.tempo || 120; // Default to 120 if not specified
@@ -479,8 +513,8 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
           }
         };
 
-        // Phase 2: Visual metronome
-        api.midiEventsPlayedFilter = [window.alphaTab.midi.MidiEventType.AlphaTabMetronome];
+        // Phase 2: Visual metronome (ESM import)
+        api.midiEventsPlayedFilter = [midi.MidiEventType.AlphaTabMetronome];
 
         const handleMidiEventsPlayed = (e: AlphaTabMidiEventsPlayedEvent) => {
           if (!isMounted) return;
@@ -505,6 +539,8 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
         };
 
         // Register all event handlers
+        // Note: beatMouseDown runtime provides wrapper with originalEvent, but types show Beat directly
+        // Cast to align types with actual runtime behavior
         api.scoreLoaded.on(handleScoreLoaded);
         api.error.on(handleError);
         api.playerStateChanged.on(handlePlayerStateChanged);
@@ -513,7 +549,7 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
         api.renderFinished.on(handleRenderFinished);
         api.playerPositionChanged.on(handlePositionChanged);
         api.playerFinished.on(handlePlayerFinished);
-        api.beatMouseDown.on(handleBeatMouseDown);
+        api.beatMouseDown.on(handleBeatMouseDown as unknown as (beat: AlphaTabBeat) => void);
         api.midiEventsPlayed.on(handleMidiEventsPlayed);
 
         // Store cleanup function in ref for cleanup phase
@@ -527,7 +563,7 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
             api.renderFinished.off(handleRenderFinished);
             api.playerPositionChanged.off(handlePositionChanged);
             api.playerFinished.off(handlePlayerFinished);
-            api.beatMouseDown.off(handleBeatMouseDown);
+            api.beatMouseDown.off(handleBeatMouseDown as unknown as (beat: AlphaTabBeat) => void);
             api.midiEventsPlayed.off(handleMidiEventsPlayed);
           }
         };
@@ -553,7 +589,8 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
       }
     };
 
-    checkLibrary();
+    // Direct initialization - no CDN check needed with ESM imports
+    initAlphaTab();
 
     return () => {
       isMounted = false;
@@ -760,7 +797,7 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
     }
   };
 
-  const changeSpeed = (val: number) => {
+  const changeSpeed = useCallback((val: number) => {
     if (apiRef.current) {
       apiRef.current.playbackSpeed = val;
       setCurrentSpeed(val);
@@ -770,7 +807,7 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
         setCurrentBPM(Math.round(originalTempo * val));
       }
     }
-  };
+  }, [originalTempo]);
 
   const handleBPMChange = (newBPM: number) => {
     if (!originalTempo || !apiRef.current) return;
@@ -807,24 +844,24 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
 
   // Helper to update tracks state from API
   const updateTracksFromAPI = () => {
-    if (apiRef.current) {
+    if (apiRef.current?.score) {
       // Create new array reference to force React re-render, but keep full track objects
       const updatedTracks = [...apiRef.current.score.tracks];
       setTracks(updatedTracks);
     }
   };
 
-  const renderTrack = (trackIndex: number) => {
-    if (apiRef.current) {
+  const renderTrack = useCallback((trackIndex: number) => {
+    if (apiRef.current?.score) {
       // Get the full track object from the API, not from React state
       const track = apiRef.current.score.tracks[trackIndex];
       apiRef.current.renderTracks([track]);
       setCurrentTrackIndex(trackIndex);
     }
-  };
+  }, []);
 
-  const toggleTrackMute = (trackIndex: number) => {
-    if (!apiRef.current) return;
+  const toggleTrackMute = useCallback((trackIndex: number) => {
+    if (!apiRef.current?.score) return;
 
     // Get track from API
     const track = apiRef.current.score.tracks[trackIndex];
@@ -837,10 +874,10 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
 
     // Force immediate UI update
     updateTracksFromAPI();
-  };
+  }, []);
 
-  const toggleTrackSolo = (trackIndex: number) => {
-    if (!apiRef.current) return;
+  const toggleTrackSolo = useCallback((trackIndex: number) => {
+    if (!apiRef.current?.score) return;
 
     const track = apiRef.current.score.tracks[trackIndex];
     const allTracks = apiRef.current.score.tracks;
@@ -875,10 +912,10 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
 
     // Force immediate UI update
     updateTracksFromAPI();
-  };
+  }, [soloStateBeforeSolo]);
 
   // New transport control handlers
-  const stopPlayback = () => {
+  const stopPlayback = useCallback(() => {
     pendingPlaybackActionRef.current = null;
     if (playbackRetryTimeoutRef.current) {
       clearTimeout(playbackRetryTimeoutRef.current);
@@ -898,9 +935,9 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
       setInternalIsPlaying(false);
       if (onPlaybackChange) onPlaybackChange(false);
     }
-  };
+  }, [internalIsPlaying, onPlaybackChange]);
 
-  const seekTo = (percentage: number) => {
+  const seekTo = useCallback((percentage: number) => {
     if (!apiRef.current || totalTime <= 0) return;
 
     try {
@@ -913,7 +950,7 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
     } catch (error) {
       console.error('[AlphaTab] Error seeking to position:', error);
     }
-  };
+  }, [totalTime]);
 
   const toggleLoop = () => {
     if (apiRef.current) {
@@ -930,6 +967,154 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
       setSelectionStart(null);
     }
   };
+
+  // Volume control methods (0-1 range)
+
+  /**
+   * Set volume for a specific track.
+   * @param index - Track index
+   * @param volume - Volume level (0-1, clamped)
+   */
+  const setTrackVolume = useCallback((index: number, volume: number) => {
+    if (!apiRef.current?.score) return;
+
+    const clampedVolume = Math.max(0, Math.min(1, volume));
+    const track = apiRef.current.score.tracks[index];
+
+    if (!track) {
+      console.warn(`[AlphaTab] Track index ${index} not found`);
+      return;
+    }
+
+    apiRef.current.changeTrackVolume([track], clampedVolume);
+    setTrackVolumes(prev => {
+      const newVolumes = [...prev];
+      newVolumes[index] = clampedVolume;
+      return newVolumes;
+    });
+  }, []);
+
+  /**
+   * Set master volume for all audio output.
+   * @param volume - Volume level (0-1, clamped)
+   */
+  const setMasterVolume = useCallback((volume: number) => {
+    if (!apiRef.current) return;
+
+    const clampedVolume = Math.max(0, Math.min(1, volume));
+    apiRef.current.masterVolume = clampedVolume;
+    setMasterVolumeState(clampedVolume);
+  }, []);
+
+  /**
+   * Set metronome volume. Setting > 0 enables metronome.
+   * @param volume - Volume level (0-1, clamped; 0 = disabled)
+   */
+  const setMetronomeVolume = useCallback((volume: number) => {
+    if (!apiRef.current) return;
+
+    const clampedVolume = Math.max(0, Math.min(1, volume));
+    // Setting metronomeVolume > 0 enables the metronome
+    apiRef.current.metronomeVolume = clampedVolume;
+    setMetronomeVolumeState(clampedVolume);
+  }, []);
+
+  /**
+   * Set count-in volume. Setting > 0 enables count-in.
+   * @param volume - Volume level (0-1, clamped; 0 = disabled)
+   */
+  const setCountInVolume = useCallback((volume: number) => {
+    if (!apiRef.current) return;
+
+    const clampedVolume = Math.max(0, Math.min(1, volume));
+    // Setting countInVolume > 0 enables count-in
+    apiRef.current.countInVolume = clampedVolume;
+    setCountInVolumeState(clampedVolume);
+  }, []);
+
+  /**
+   * Get track info with volume for all tracks.
+   */
+  const getTracks = useCallback((): TrackInfo[] => {
+    return tracks.map((track, index) => ({
+      index,
+      name: track.name,
+      isMute: track.playbackInfo.isMute,
+      isSolo: track.playbackInfo.isSolo,
+      volume: trackVolumes[index] ?? 1.0,
+    }));
+  }, [tracks, trackVolumes]);
+
+  /**
+   * Create the AlphaTabHandle for external control.
+   */
+  const handle: AlphaTabHandle = useMemo(
+    () => ({
+      play: () => {
+        if (apiRef.current && playerReady) {
+          pendingPlaybackActionRef.current = 'play';
+          runPlaybackAction('play');
+        }
+      },
+      pause: () => {
+        if (apiRef.current) {
+          pendingPlaybackActionRef.current = 'pause';
+          runPlaybackAction('pause');
+        }
+      },
+      stop: stopPlayback,
+      seekTo,
+      setPlaybackSpeed: changeSpeed,
+      setLoop: (enabled: boolean) => {
+        if (apiRef.current) {
+          apiRef.current.isLooping = enabled;
+          setIsLooping(enabled);
+        }
+      },
+      setLoopRange: (range: { startTick: number; endTick: number } | null) => {
+        if (apiRef.current) {
+          apiRef.current.playbackRange = range;
+          setLoopRange(range ? { start: range.startTick, end: range.endTick } : null);
+        }
+      },
+      renderTrack,
+      toggleTrackMute,
+      toggleTrackSolo,
+      setTrackVolume,
+      setMasterVolume,
+      setMetronomeVolume,
+      setCountInVolume,
+      getTracks,
+      getMasterVolume: () => masterVolume,
+      getMetronomeVolume: () => metronomeVolume,
+      getCountInVolume: () => countInVolume,
+    }),
+    [
+      playerReady,
+      runPlaybackAction,
+      stopPlayback,
+      seekTo,
+      changeSpeed,
+      renderTrack,
+      toggleTrackMute,
+      toggleTrackSolo,
+      setTrackVolume,
+      setMasterVolume,
+      setMetronomeVolume,
+      setCountInVolume,
+      getTracks,
+      masterVolume,
+      metronomeVolume,
+      countInVolume,
+    ]
+  );
+
+  // Call onReady when player is ready
+  useEffect(() => {
+    if (playerReady && onReady) {
+      onReady(handle);
+    }
+  }, [playerReady, onReady, handle]);
 
   // Helper for time formatting - memoized to prevent re-creation
   const formatTime = useCallback((milliseconds: number): string => {

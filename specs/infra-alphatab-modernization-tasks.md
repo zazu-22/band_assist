@@ -2,22 +2,23 @@
 
 Generated: 2025-11-27
 Source: specs/infra-alphatab-modernization.md
+**Status: ✅ COMPLETE** (2025-11-27)
 
 ## Overview
 
 This task breakdown covers modernizing the AlphaTab integration from CDN-based script loading to a proper Vite-bundled ESM module, plus exposing additional player controls (track volume, master volume, metronome volume, count-in).
 
-**Current State:**
+**Previous State:**
 - AlphaTab loaded via CDN with `@latest` tag
 - npm package installed for TypeScript types only
 - Runtime code loaded from external CDN
 - No volume controls beyond mute/solo
 
-**Target State:**
-- AlphaTab bundled via Vite plugin
-- Pinned version from package.json
-- Local fonts and soundfont
-- Full volume controls API
+**Current State (Implemented):**
+- ✅ AlphaTab bundled via Vite plugin (`@coderline/alphatab/vite`)
+- ✅ Version ^1.6.3 from package.json (semver range retained for patch updates)
+- ✅ Local fonts (`/font/`) and soundfont (`/soundfont/`)
+- ✅ Full volume controls API via `onReady` callback handle
 
 ---
 
@@ -78,12 +79,12 @@ export default defineConfig(({ mode }) => {
 ```
 
 **Acceptance Criteria**:
-- [ ] Vite plugin imported and configured
-- [ ] `npm run build` succeeds
-- [ ] `dist/font/` contains Bravura fonts after build
-- [ ] `dist/soundfont/` contains sonivox.sf2 after build
-- [ ] Dev server starts without errors
-- [ ] No TypeScript errors in vite.config.ts
+- [x] Vite plugin imported and configured
+- [x] `npm run build` succeeds
+- [x] `dist/font/` contains Bravura fonts after build
+- [x] `dist/soundfont/` contains sonivox.sf2 after build
+- [x] Dev server starts without errors
+- [x] No TypeScript errors in vite.config.ts
 
 ---
 
@@ -123,11 +124,11 @@ ls -la dist/soundfont/
 4. Verify build success in terminal output
 
 **Acceptance Criteria**:
-- [ ] Build completes without errors
-- [ ] `dist/font/` directory exists and contains font files
-- [ ] `dist/soundfont/` directory exists and contains sonivox.sf2
-- [ ] Build time increase is acceptable (< 10s additional)
-- [ ] No duplicate font files in public/ and dist/font/
+- [x] Build completes without errors
+- [x] `dist/font/` directory exists and contains font files
+- [x] `dist/soundfont/` directory exists and contains sonivox.sf2
+- [x] Build time increase is acceptable (< 10s additional)
+- [x] No duplicate font files in public/ and dist/font/
 
 ---
 
@@ -281,13 +282,13 @@ api.midiEventsPlayedFilter = [midi.MidiEventType.AlphaTabMetronome];
 7. Call `initAlphaTab()` directly instead of `checkLibrary()`
 
 **Acceptance Criteria**:
-- [ ] ESM imports compile without TypeScript errors
-- [ ] No `window.alphaTab` references remain in code
-- [ ] AlphaTabRenderer loads without errors
-- [ ] Guitar Pro files render correctly
-- [ ] Playback works with local soundfont
-- [ ] Workers function correctly (check DevTools Network tab)
-- [ ] All existing tests pass (after test mock updates)
+- [x] ESM imports compile without TypeScript errors
+- [x] No `window.alphaTab` references remain in code
+- [x] AlphaTabRenderer loads without errors
+- [x] Guitar Pro files render correctly
+- [x] Playback works with local soundfont
+- [x] Workers function correctly (check DevTools Network tab)
+- [x] All existing tests pass (after test mock updates)
 
 ---
 
@@ -327,10 +328,10 @@ grep -r "cdn.jsdelivr.net/npm/@coderline/alphatab" .
 2. Ensure soundFont CDN URL in AlphaTabRenderer.tsx is also updated (covered in Task 2.1)
 
 **Acceptance Criteria**:
-- [ ] CDN script tag removed from index.html
-- [ ] No CDN references in source code (except documentation)
-- [ ] Application starts successfully without CDN
-- [ ] No network requests to jsdelivr for AlphaTab
+- [x] CDN script tag removed from index.html
+- [x] No CDN references in source code (except documentation)
+- [x] Application starts successfully without CDN
+- [x] No network requests to jsdelivr for AlphaTab
 
 ---
 
@@ -483,11 +484,11 @@ describe('AlphaTabRenderer', () => {
 5. Use `vi.mocked()` to get typed reference to mocked constructor
 
 **Acceptance Criteria**:
-- [ ] All existing tests pass with ESM mocks
-- [ ] No `window.alphaTab` references in test file
-- [ ] Mock includes volume properties for Phase 3
-- [ ] vi.mock is hoisted before component import
-- [ ] TypeScript compiles test file without errors
+- [x] All existing tests pass with ESM mocks
+- [x] No `window.alphaTab` references in test file
+- [x] Mock includes volume properties for Phase 3
+- [x] vi.mock is hoisted before component import
+- [x] TypeScript compiles test file without errors
 
 ---
 
@@ -538,13 +539,13 @@ npm run preview
 - Should only see local asset requests
 
 **Acceptance Criteria**:
-- [ ] `npm test` passes all tests
-- [ ] `npm run typecheck` passes
-- [ ] Guitar Pro files render in dev mode
-- [ ] Playback works in dev mode
-- [ ] Production build succeeds
-- [ ] Production preview works
-- [ ] No CDN network requests for AlphaTab
+- [x] `npm test` passes all tests
+- [x] `npm run typecheck` passes
+- [x] Guitar Pro files render in dev mode
+- [x] Playback works in dev mode
+- [x] Production build succeeds
+- [x] Production preview works
+- [x] No CDN network requests for AlphaTab
 
 ---
 
@@ -630,10 +631,10 @@ export interface TrackInfo {
 ```
 
 **Acceptance Criteria**:
-- [ ] Types file created with all interfaces
-- [ ] All volume ranges documented as 0-1
-- [ ] TypeScript compiles without errors
-- [ ] Interfaces are exported and importable
+- [x] Types file created with all interfaces (in AlphaTabRenderer.tsx: `TrackInfo`, `AlphaTabHandle`)
+- [x] All volume ranges documented as 0-1
+- [x] TypeScript compiles without errors
+- [x] Interfaces are exported and importable
 
 ---
 
@@ -781,12 +782,12 @@ AlphaTabRenderer.displayName = 'AlphaTabRenderer';
 ```
 
 **Acceptance Criteria**:
-- [ ] All four volume methods implemented
-- [ ] Volume values clamped to 0-1 range
-- [ ] Invalid track index handled gracefully
-- [ ] State updates correctly after volume changes
-- [ ] TypeScript compiles without errors
-- [ ] Methods are accessible (via ref or props callback)
+- [x] All four volume methods implemented (`setTrackVolume`, `setMasterVolume`, `setMetronomeVolume`, `setCountInVolume`)
+- [x] Volume values clamped to 0-1 range
+- [x] Invalid track index handled gracefully (logs warning, no-op)
+- [x] State updates correctly after volume changes
+- [x] TypeScript compiles without errors
+- [x] Methods accessible via `onReady` callback handle pattern
 
 ---
 
@@ -951,12 +952,12 @@ describe('AlphaTabRenderer Volume Controls', () => {
 ```
 
 **Acceptance Criteria**:
-- [ ] Tests for setTrackVolume (happy path, clamping, invalid index)
-- [ ] Tests for setMasterVolume (happy path, clamping)
-- [ ] Tests for setMetronomeVolume (enable, disable, clamping)
-- [ ] Tests for setCountInVolume (enable, disable, clamping)
-- [ ] Edge case tests (no API, invalid input)
-- [ ] All tests pass
+- [x] Tests for setTrackVolume (happy path, clamping, invalid index) - 4 tests
+- [x] Tests for setMasterVolume (happy path, clamping, getter) - 3 tests
+- [x] Tests for setMetronomeVolume (enable, disable, clamping, getter) - 4 tests
+- [x] Tests for setCountInVolume (enable, disable, clamping, getter) - 4 tests
+- [x] Tests for getTracks (returns info with volume, reflects changes) - 2 tests
+- [x] All 339 tests pass (17 new volume control tests)
 
 ---
 
@@ -999,10 +1000,12 @@ rm -rf public/font/
 4. Test dev server and build still work
 
 **Acceptance Criteria**:
-- [ ] No duplicate font files between public/ and dist/
-- [ ] Dev server still loads fonts correctly
-- [ ] Production build still works
-- [ ] Font loading verified in browser DevTools
+- [x] No duplicate font files between public/ and dist/ (N/A - fonts were never in public/)
+- [x] Dev server still loads fonts correctly
+- [x] Production build still works
+- [x] Font loading verified via build output inspection
+
+**Note**: This task was not required - the Vite plugin copies fonts to `public/font/` during dev and `dist/font/` during build. No manual font files existed to remove.
 
 ---
 
@@ -1054,10 +1057,10 @@ Remove this section from Common Pitfalls:
 ```
 
 **Acceptance Criteria**:
-- [ ] CLAUDE.md updated with new integration details
-- [ ] CDN references removed from documentation
-- [ ] Volume controls documented
-- [ ] ESM import pattern documented
+- [x] CLAUDE.md updated with new integration details
+- [x] CDN references removed from documentation (Common Pitfalls section updated)
+- [x] Volume controls documented (with usage example)
+- [x] ESM import pattern documented
 
 ---
 
@@ -1086,9 +1089,11 @@ Remove this section from Common Pitfalls:
 **Note**: The spec recommends staying on ~1.6.3. The `^` allows minor version updates which is generally safe. Only pin if strict version control is needed.
 
 **Acceptance Criteria**:
-- [ ] Review package.json version constraint
-- [ ] Decision made on pinning (yes/no)
-- [ ] If pinned, run npm install to verify
+- [x] Review package.json version constraint - reviewed
+- [x] Decision made on pinning: **No** - kept `^1.6.3` to allow patch updates for bug fixes
+- [x] N/A - version not strictly pinned per decision
+
+**Decision Rationale**: The `^` semver range allows minor and patch updates, which is appropriate for this dependency. Strict pinning would require manual updates for security patches.
 
 ---
 
@@ -1130,16 +1135,36 @@ Phase 4: Cleanup (can run after respective dependencies)
 - **If build time increases significantly**: Review Vite plugin options
 - **If tests fail**: Check ESM mock hoisting order
 
-### Total Tasks: 11
+### Total Tasks: 11 (All Complete ✅)
 
-| Phase | Tasks | Estimated Complexity |
-|-------|-------|---------------------|
-| Phase 1 | 2 | Small |
-| Phase 2 | 4 | Medium |
-| Phase 3 | 3 | Medium-Large |
-| Phase 4 | 3 | Small |
+| Phase | Tasks | Status |
+|-------|-------|--------|
+| Phase 1 | 2 | ✅ Complete |
+| Phase 2 | 4 | ✅ Complete |
+| Phase 3 | 3 | ✅ Complete |
+| Phase 4 | 3 | ✅ Complete |
+
+### Implementation Notes
+
+**Key Implementation Decisions:**
+1. Volume controls exposed via `onReady(handle)` callback pattern instead of `forwardRef`/`useImperativeHandle`
+2. Types (`TrackInfo`, `AlphaTabHandle`) defined inline in AlphaTabRenderer.tsx rather than separate types file
+3. Track volumes initialized to 1.0 when score loads (not lazily)
+4. Package version kept at `^1.6.3` for semver flexibility
+
+**Files Modified:**
+- `vite.config.ts` - Added AlphaTab Vite plugin
+- `index.html` - Removed CDN script tag
+- `src/components/AlphaTabRenderer.tsx` - ESM imports, volume controls, `onReady` callback
+- `src/components/AlphaTabRenderer.test.tsx` - ESM mocks, 17 new volume control tests
+- `CLAUDE.md` - Updated documentation
+
+**Test Coverage:**
+- 339 total tests (17 new volume control tests)
+- All tests passing
 
 ---
 
-*Document version: 1.0*
+*Document version: 1.1*
 *Generated: 2025-11-27*
+*Completed: 2025-11-27*
