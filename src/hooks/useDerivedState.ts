@@ -7,7 +7,7 @@ import { useState, useRef, useLayoutEffect, useEffect } from 'react';
  * When the identity key changes, the state resets to the new initial value.
  * This is the "controlled component with reset" pattern.
  *
- * @param initialValue - The initial value from props
+ * @param initialValue - The initial value from props (captured via ref to avoid stale closures)
  * @param identityKey - A key that identifies when to reset (e.g., selectedSongId)
  * @returns [state, setState] - Standard state tuple
  *
@@ -17,6 +17,9 @@ import { useState, useRef, useLayoutEffect, useEffect } from 'react';
  *   selectedSong?.bpm ?? 120,
  *   selectedSongId
  * );
+ *
+ * @warning Do NOT include initialValue in any parent useCallback/useMemo deps -
+ * the hook handles capturing the latest value internally via ref.
  */
 export function useDerivedState<T>(
   initialValue: T,
@@ -25,6 +28,10 @@ export function useDerivedState<T>(
   const [state, setState] = useState<T>(initialValue);
   const prevKeyRef = useRef<string | number | null | undefined>(identityKey);
   const isFirstRenderRef = useRef(true);
+  // Track initialValue in a ref to always have the latest value without adding to deps
+  const initialValueRef = useRef<T>(initialValue);
+  // eslint-disable-next-line react-hooks/refs -- Safe: ref is only read in effect, not during render output
+  initialValueRef.current = initialValue;
 
   // Use useLayoutEffect to sync before paint, avoiding visual flicker
   useLayoutEffect(() => {
@@ -38,9 +45,11 @@ export function useDerivedState<T>(
     if (identityKey !== prevKeyRef.current) {
       prevKeyRef.current = identityKey;
       // eslint-disable-next-line react-hooks/set-state-in-effect -- Intentional: "controlled component with reset" pattern
-      setState(initialValue);
+      setState(initialValueRef.current);
     }
-  }, [identityKey, initialValue]);
+    // Note: initialValue intentionally excluded - we capture it via ref to prevent
+    // unintended resets when initialValue recalculates but identityKey stays the same
+  }, [identityKey]);
 
   return [state, setState];
 }
@@ -52,6 +61,9 @@ export function useDerivedState<T>(
  * @param initialValueFn - Function that returns the initial value
  * @param identityKey - A key that identifies when to reset
  * @returns [state, setState] - Standard state tuple
+ *
+ * @warning Do NOT include initialValueFn in any parent useCallback/useMemo deps -
+ * the hook handles capturing the latest function internally via ref.
  */
 export function useDerivedStateLazy<T>(
   initialValueFn: () => T,
@@ -60,6 +72,10 @@ export function useDerivedStateLazy<T>(
   const [state, setState] = useState<T>(initialValueFn);
   const prevKeyRef = useRef<string | number | null | undefined>(identityKey);
   const isFirstRenderRef = useRef(true);
+  // Track initialValueFn in a ref to always have the latest function without adding to deps
+  const initialValueFnRef = useRef<() => T>(initialValueFn);
+  // eslint-disable-next-line react-hooks/refs -- Safe: ref is only read in effect, not during render output
+  initialValueFnRef.current = initialValueFn;
 
   useLayoutEffect(() => {
     if (isFirstRenderRef.current) {
@@ -70,9 +86,11 @@ export function useDerivedStateLazy<T>(
     if (identityKey !== prevKeyRef.current) {
       prevKeyRef.current = identityKey;
       // eslint-disable-next-line react-hooks/set-state-in-effect -- Intentional: "controlled component with reset" pattern
-      setState(initialValueFn());
+      setState(initialValueFnRef.current());
     }
-  }, [identityKey, initialValueFn]);
+    // Note: initialValueFn intentionally excluded - we capture it via ref to prevent
+    // unintended resets when the function reference changes but identityKey stays the same
+  }, [identityKey]);
 
   return [state, setState];
 }
