@@ -141,7 +141,10 @@ export const PracticeRoom: React.FC<PracticeRoomProps> = memo(function PracticeR
   const [audioSrc, setAudioSrc] = useState<string | undefined>(undefined);
 
   // Derived state that resets when song changes
-  const currentSong = songs.find(s => s.id === selectedSongId);
+  const currentSong = useMemo(
+    () => songs.find(s => s.id === selectedSongId),
+    [songs, selectedSongId]
+  );
   const [metronomeBpm, setMetronomeBpm] = useDerivedState(
     currentSong?.bpm ?? 120,
     selectedSongId
@@ -402,10 +405,6 @@ export const PracticeRoom: React.FC<PracticeRoomProps> = memo(function PracticeR
     }
   }, [isMobile]);
 
-  const handleChartSelect = useCallback((id: string) => {
-    setActiveChartId(id);
-  }, [setActiveChartId]);
-
   const toggleSongList = useCallback(() => {
     setShowSongList(prev => !prev);
   }, []);
@@ -413,10 +412,6 @@ export const PracticeRoom: React.FC<PracticeRoomProps> = memo(function PracticeR
   const toggleMetronome = useCallback(() => {
     setMetronomeActive(prev => !prev);
   }, []);
-
-  const handleMetronomeBpmChange = useCallback((bpm: number) => {
-    setMetronomeBpm(bpm);
-  }, [setMetronomeBpm]);
 
   const handlePlaybackRateChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
     setPlaybackRate(parseFloat(e.target.value));
@@ -455,7 +450,7 @@ export const PracticeRoom: React.FC<PracticeRoomProps> = memo(function PracticeR
         onToggleSongList={toggleSongList}
         charts={currentSong?.charts ?? []}
         activeChartId={activeChartId}
-        onSelectChart={handleChartSelect}
+        onSelectChart={setActiveChartId}
         isGuitarPro={isGuitarPro}
         playbackState={playbackState}
         onPlay={handlePlay}
@@ -471,7 +466,7 @@ export const PracticeRoom: React.FC<PracticeRoomProps> = memo(function PracticeR
         onToggleTrackMute={handleToggleTrackMute}
         onToggleTrackSolo={handleToggleTrackSolo}
         metronomeState={{ bpm: metronomeBpm, isActive: metronomeActive }}
-        onMetronomeBpmChange={handleMetronomeBpmChange}
+        onMetronomeBpmChange={setMetronomeBpm}
         onMetronomeToggle={toggleMetronome}
       />
 
