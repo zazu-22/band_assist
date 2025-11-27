@@ -135,8 +135,8 @@ export const PracticeControlBar = memo(function PracticeControlBar({
           </div>
         </div>
 
-        {/* Center: Playback + Charts - flex-1, centered */}
-        <div className="flex-1 flex items-center justify-center gap-4">
+        {/* Center: Playback + Charts - flex-1, centered, with responsive overflow handling */}
+        <div className="flex-1 flex items-center justify-center gap-2 sm:gap-4 min-w-0 overflow-x-auto scrollbar-hide">
           {isGuitarPro && playbackState && onPlay && onPause && onStop && onToggleLoop && (
             <PlaybackControls
               isPlaying={playbackState.isPlaying}
@@ -157,8 +157,8 @@ export const PracticeControlBar = memo(function PracticeControlBar({
           />
         </div>
 
-        {/* Right: Track/BPM/Metronome */}
-        <div className="flex items-center gap-3 shrink-0">
+        {/* Right: Track/BPM/Metronome - with responsive overflow handling */}
+        <div className="flex items-center gap-2 sm:gap-3 shrink-0 overflow-x-auto scrollbar-hide max-w-[50%] sm:max-w-none">
           {isGuitarPro && playbackState && tracks && currentTrackIndex !== undefined ? (
             <>
               {onSelectTrack && onToggleTrackMute && onToggleTrackSolo && (
