@@ -21,12 +21,15 @@ export interface ChartTabsProps {
   charts: SongChart[];
   activeChartId: string | null;
   onSelectChart: (id: string) => void;
+  /** ID of the panel controlled by these tabs (for ARIA compliance) */
+  panelId?: string;
 }
 
 export const ChartTabs = memo(function ChartTabs({
   charts,
   activeChartId,
   onSelectChart,
+  panelId,
 }: ChartTabsProps) {
   if (charts.length === 0) {
     return null;
@@ -53,6 +56,7 @@ export const ChartTabs = memo(function ChartTabs({
                   onClick={() => onSelectChart(chart.id)}
                   role="tab"
                   aria-selected={isActive}
+                  aria-controls={panelId}
                   data-testid={`chart-tab-${chart.type}`}
                   className={cn(
                     'h-11 sm:h-8 px-3 gap-1.5 text-xs font-medium',

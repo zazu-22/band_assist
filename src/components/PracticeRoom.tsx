@@ -161,6 +161,13 @@ export const PracticeRoom: React.FC<PracticeRoomProps> = memo(function PracticeR
   const [gpPosition, setGpPosition] = useState({ current: 0, total: 0 });
 
   // ---------------------------------------------------------------------------
+  // CONSTANTS
+  // ---------------------------------------------------------------------------
+
+  // ARIA panel ID for tab/tabpanel relationship
+  const CHART_PANEL_ID = 'practice-room-chart-panel';
+
+  // ---------------------------------------------------------------------------
   // REFS
   // ---------------------------------------------------------------------------
 
@@ -222,6 +229,11 @@ export const PracticeRoom: React.FC<PracticeRoomProps> = memo(function PracticeR
       setGpTracks([]);
       setGpPosition({ current: 0, total: 0 });
     }
+
+    // Cleanup on unmount to prevent stale state if component remounts
+    return () => {
+      alphaTabRef.current = null;
+    };
   }, [isGuitarPro, prevIsGuitarPro]);
 
   // Audio Element Management
@@ -451,6 +463,7 @@ export const PracticeRoom: React.FC<PracticeRoomProps> = memo(function PracticeR
         charts={currentSong?.charts ?? []}
         activeChartId={activeChartId}
         onSelectChart={setActiveChartId}
+        chartPanelId={CHART_PANEL_ID}
         isGuitarPro={isGuitarPro}
         playbackState={playbackState}
         onPlay={handlePlay}
@@ -559,6 +572,9 @@ export const PracticeRoom: React.FC<PracticeRoomProps> = memo(function PracticeR
         <div className="flex-1 flex flex-col relative min-w-0">
           {/* Content Viewer */}
           <div
+            id={CHART_PANEL_ID}
+            role="tabpanel"
+            aria-label="Chart display"
             className={cn(
               'flex-1 overflow-hidden bg-background',
               isGuitarPro ? 'p-0' : 'p-4 sm:p-6 overflow-y-auto'

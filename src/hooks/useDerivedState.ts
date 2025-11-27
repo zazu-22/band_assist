@@ -48,8 +48,11 @@ export function useDerivedState<T>(
       // eslint-disable-next-line react-hooks/set-state-in-effect -- Intentional: "controlled component with reset" pattern
       setState(initialValueRef.current);
     }
-    // Note: initialValue intentionally excluded - we capture it via ref to prevent
-    // unintended resets when initialValue recalculates but identityKey stays the same
+    // Dependency array intentionally excludes initialValue:
+    // - We capture it via ref (initialValueRef) to always have the latest value
+    // - Including it would cause resets whenever initialValue recalculates
+    //   (e.g., `currentSong?.bpm ?? 120` creates new value each render)
+    // - We only want to reset when identityKey changes, not when props re-compute
   }, [identityKey]);
 
   return [state, setState];
@@ -91,8 +94,11 @@ export function useDerivedStateLazy<T>(
       // eslint-disable-next-line react-hooks/set-state-in-effect -- Intentional: "controlled component with reset" pattern
       setState(initialValueFnRef.current());
     }
-    // Note: initialValueFn intentionally excluded - we capture it via ref to prevent
-    // unintended resets when the function reference changes but identityKey stays the same
+    // Dependency array intentionally excludes initialValueFn:
+    // - We capture it via ref (initialValueFnRef) to always have the latest function
+    // - Including it would cause resets whenever the function reference changes
+    //   (inline arrow functions create new references each render)
+    // - We only want to reset when identityKey changes, not when parent re-renders
   }, [identityKey]);
 
   return [state, setState];
@@ -102,14 +108,30 @@ export function useDerivedStateLazy<T>(
  * Tracks the previous value of a variable across renders.
  * Returns undefined on the first render.
  *
- * @param value - The value to track
+ * @param value - The value to track (any type - primitives, objects, functions)
  * @returns The previous value (undefined on first render)
  *
+ * @remarks
+ * - For primitives: compares by value
+ * - For objects/arrays: compares by reference (same object = no change detected)
+ * - For functions: compares by reference (recreated functions are detected as changes)
+ * - The undefined return on first render is intentional and type-safe
+ *
  * @example
+ * // Detecting state transitions
  * const prevIsGuitarPro = usePrevious(isGuitarPro);
  * if (prevIsGuitarPro === true && !isGuitarPro) {
  *   // Transitioned from GP to non-GP
  * }
+ *
+ * @example
+ * // Comparing with previous props
+ * const prevSongId = usePrevious(songId);
+ * useEffect(() => {
+ *   if (prevSongId !== undefined && prevSongId !== songId) {
+ *     // Song changed (not first render)
+ *   }
+ * }, [songId, prevSongId]);
  */
 export function usePrevious<T>(value: T): T | undefined {
   const ref = useRef<T | undefined>(undefined);
