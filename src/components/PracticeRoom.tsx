@@ -8,17 +8,12 @@ import {
   Volume2,
   Music,
   Gauge,
-  FileText,
-  File,
-  Music2,
-  Clock,
-  Guitar,
-  PanelLeftClose,
-  PanelLeftOpen,
   ListMusic,
+  Music2,
 } from 'lucide-react';
 import { SmartTabEditor } from './SmartTabEditor';
 import { AlphaTabRenderer } from './AlphaTabRenderer';
+import type { AlphaTabHandle } from './AlphaTabRenderer';
 import { EmptyState, ResizablePanel, StatusBadge } from './ui';
 import {
   Button,
@@ -32,6 +27,11 @@ import {
 } from '@/components/primitives';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/useBreakpoint';
+import {
+  PracticeControlBar,
+  type AlphaTabState,
+  type TrackInfo,
+} from './practice';
 
 // =============================================================================
 // TYPES
@@ -45,13 +45,6 @@ interface PracticeRoomProps {
 // =============================================================================
 // CONSTANTS
 // =============================================================================
-
-const CHART_ICON_MAP = {
-  GP: Guitar,
-  PDF: FileText,
-  IMAGE: File,
-  TEXT: Music2,
-} as const;
 
 const PLAYBACK_RATES = [
   { value: 0.5, label: '0.5x' },
@@ -121,50 +114,6 @@ const SongListItem = memo(function SongListItem({
 
 SongListItem.displayName = 'SongListItem';
 
-interface ChartTabProps {
-  chart: Song['charts'][0];
-  isActive: boolean;
-  onSelect: (id: string) => void;
-}
-
-const ChartTab = memo(function ChartTab({ chart, isActive, onSelect }: ChartTabProps) {
-  const Icon = CHART_ICON_MAP[chart.type];
-  return (
-    <TooltipProvider delayDuration={100}>
-      <Tooltip>
-        <TooltipTrigger asChild>
-          <button
-            type="button"
-            onClick={() => onSelect(chart.id)}
-            className={cn(
-              'px-3 py-1.5 rounded-lg text-sm font-medium',
-              'flex items-center gap-2 border transition-colors motion-reduce:transition-none',
-              isActive
-                ? 'bg-primary/20 border-primary/50 text-primary'
-                : 'bg-muted border-border text-muted-foreground hover:text-foreground hover:bg-muted/80'
-            )}
-          >
-            <Icon size={14} />
-            <span className="truncate max-w-[120px]">{chart.name}</span>
-            {chart.instrument && (
-              <span className="text-[10px] bg-background/50 px-1.5 py-0.5 rounded-full opacity-70 ml-1">
-                {chart.instrument}
-              </span>
-            )}
-          </button>
-        </TooltipTrigger>
-        <TooltipContent>
-          <p>
-            {chart.name} ({chart.type})
-          </p>
-        </TooltipContent>
-      </Tooltip>
-    </TooltipProvider>
-  );
-});
-
-ChartTab.displayName = 'ChartTab';
-
 // =============================================================================
 // MAIN COMPONENT
 // =============================================================================
@@ -191,6 +140,12 @@ export const PracticeRoom: React.FC<PracticeRoomProps> = memo(function PracticeR
   const [activeChartId, setActiveChartId] = useState<string | null>(null);
   const [showSongList, setShowSongList] = useState(!isMobile);
   const [audioSrc, setAudioSrc] = useState<string | undefined>(undefined);
+
+  // AlphaTab control state
+  const alphaTabRef = useRef<AlphaTabHandle | null>(null);
+  const [gpState, setGpState] = useState<AlphaTabState | null>(null);
+  const [gpTracks, setGpTracks] = useState<TrackInfo[]>([]);
+  const [gpPosition, setGpPosition] = useState({ current: 0, total: 0 });
 
   // ---------------------------------------------------------------------------
   // REFS
@@ -224,6 +179,23 @@ export const PracticeRoom: React.FC<PracticeRoomProps> = memo(function PracticeR
     return { total, ready, inProgress, toLearn };
   }, [songs]);
 
+  // Build playback state object for PracticeControlBar
+  const gpPositionCurrent = gpPosition.current;
+  const gpPositionTotal = gpPosition.total;
+  const playbackState = useMemo(() => {
+    if (!gpState) return undefined;
+    return {
+      isPlaying: gpState.isPlaying,
+      isLooping: gpState.isLooping,
+      currentTime: gpPositionCurrent,
+      totalTime: gpPositionTotal,
+      currentBPM: gpState.currentBPM,
+      originalTempo: gpState.originalTempo,
+      currentSpeed: gpState.currentSpeed,
+      metronomeBeat: gpState.metronomeBeat,
+    };
+  }, [gpState, gpPositionCurrent, gpPositionTotal]);
+
   // ---------------------------------------------------------------------------
   // EFFECTS
   // ---------------------------------------------------------------------------
@@ -242,6 +214,19 @@ export const PracticeRoom: React.FC<PracticeRoomProps> = memo(function PracticeR
       }
     }
   }, [selectedSongId, selectedSong]);
+
+  // Clear AlphaTab state when chart changes away from GP
+  useEffect(() => {
+    if (!isGuitarPro) {
+      alphaTabRef.current = null;
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Resetting derived state when chart type changes
+      setGpState(null);
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Resetting derived state when chart type changes
+      setGpTracks([]);
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Resetting derived state when chart type changes
+      setGpPosition({ current: 0, total: 0 });
+    }
+  }, [isGuitarPro]);
 
   // Audio Element Management
   useEffect(() => {
@@ -306,7 +291,76 @@ export const PracticeRoom: React.FC<PracticeRoomProps> = memo(function PracticeR
   }, [selectedSong]);
 
   // ---------------------------------------------------------------------------
-  // CALLBACKS
+  // ALPHATAB CALLBACKS
+  // ---------------------------------------------------------------------------
+
+  const handleAlphaTabReady = useCallback((handle: AlphaTabHandle) => {
+    alphaTabRef.current = handle;
+  }, []);
+
+  const handleAlphaTabStateChange = useCallback((state: AlphaTabState) => {
+    setGpState(state);
+  }, []);
+
+  const handleAlphaTabPositionChange = useCallback((current: number, total: number) => {
+    setGpPosition({ current, total });
+  }, []);
+
+  const handleAlphaTabTracksLoaded = useCallback((tracks: TrackInfo[]) => {
+    setGpTracks(tracks);
+  }, []);
+
+  // ---------------------------------------------------------------------------
+  // CONTROL BAR PLAYBACK CALLBACKS
+  // ---------------------------------------------------------------------------
+
+  const handlePlay = useCallback(() => {
+    alphaTabRef.current?.play();
+  }, []);
+
+  const handlePause = useCallback(() => {
+    alphaTabRef.current?.pause();
+  }, []);
+
+  const handleStop = useCallback(() => {
+    alphaTabRef.current?.stop();
+  }, []);
+
+  const handleGpSeek = useCallback((percentage: number) => {
+    alphaTabRef.current?.seekTo(percentage);
+  }, []);
+
+  const handleToggleLoop = useCallback(() => {
+    if (alphaTabRef.current && gpState) {
+      alphaTabRef.current.setLoop(!gpState.isLooping);
+    }
+  }, [gpState]);
+
+  const handleSetBPM = useCallback((bpm: number) => {
+    if (alphaTabRef.current && gpState) {
+      const speed = bpm / gpState.originalTempo;
+      alphaTabRef.current.setPlaybackSpeed(speed);
+    }
+  }, [gpState]);
+
+  const handleResetTempo = useCallback(() => {
+    alphaTabRef.current?.setPlaybackSpeed(1.0);
+  }, []);
+
+  const handleSelectTrack = useCallback((index: number) => {
+    alphaTabRef.current?.renderTrack(index);
+  }, []);
+
+  const handleToggleTrackMute = useCallback((index: number) => {
+    alphaTabRef.current?.toggleTrackMute(index);
+  }, []);
+
+  const handleToggleTrackSolo = useCallback((index: number) => {
+    alphaTabRef.current?.toggleTrackSolo(index);
+  }, []);
+
+  // ---------------------------------------------------------------------------
+  // OTHER CALLBACKS
   // ---------------------------------------------------------------------------
 
   const togglePlay = useCallback(() => {
@@ -367,8 +421,8 @@ export const PracticeRoom: React.FC<PracticeRoomProps> = memo(function PracticeR
     setMetronomeActive(prev => !prev);
   }, []);
 
-  const handleMetronomeBpmChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    setMetronomeBpm(parseInt(e.target.value));
+  const handleMetronomeBpmChange = useCallback((bpm: number) => {
+    setMetronomeBpm(bpm);
   }, []);
 
   const handlePlaybackRateChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -401,94 +455,32 @@ export const PracticeRoom: React.FC<PracticeRoomProps> = memo(function PracticeR
 
   return (
     <div className="h-full flex flex-col bg-background text-foreground">
-      {/* Header Toolbar */}
-      <header className="border-b border-border bg-card px-4 py-3 shrink-0">
-        <div className="flex items-center justify-between gap-4">
-          {/* Left: Toggle + Song Title */}
-          <div className="flex items-center gap-3 min-w-0">
-            <TooltipProvider delayDuration={100}>
-              <Tooltip>
-                <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={toggleSongList}
-                    className={cn(
-                      'h-9 w-9 p-0',
-                      showSongList && 'bg-muted'
-                    )}
-                    aria-label={showSongList ? 'Hide song list' : 'Show song list'}
-                  >
-                    {showSongList ? <PanelLeftClose size={18} /> : <PanelLeftOpen size={18} />}
-                  </Button>
-                </TooltipTrigger>
-                <TooltipContent>
-                  <p>{showSongList ? 'Hide song list' : 'Show song list'}</p>
-                </TooltipContent>
-              </Tooltip>
-            </TooltipProvider>
-
-            <div className="min-w-0">
-              <h2 className="text-lg font-bold font-serif text-foreground truncate">
-                {selectedSong?.title || 'Select a Song'}
-              </h2>
-              {selectedSong && (
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
-                  <span className="font-mono tabular-nums">{selectedSong.bpm} BPM</span>
-                  {selectedSong.key && (
-                    <>
-                      <span className="text-border">•</span>
-                      <span>Key of {selectedSong.key}</span>
-                    </>
-                  )}
-                </div>
-              )}
-            </div>
-          </div>
-
-          {/* Right: Metronome Control */}
-          {!isGuitarPro && (
-            <div className="flex items-center gap-2 shrink-0">
-              <div className="flex items-center gap-2 bg-muted rounded-lg p-1 border border-border">
-                <TooltipProvider delayDuration={100}>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <button
-                        type="button"
-                        onClick={toggleMetronome}
-                        className={cn(
-                          'p-2 rounded-md transition-colors',
-                          metronomeActive
-                            ? 'bg-primary text-primary-foreground shadow-lg'
-                            : 'text-muted-foreground hover:bg-background hover:text-foreground'
-                        )}
-                        aria-label={metronomeActive ? 'Stop metronome' : 'Start metronome'}
-                      >
-                        <Clock size={18} />
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>{metronomeActive ? 'Stop metronome' : 'Start metronome'}</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-                <input
-                  type="range"
-                  min="40"
-                  max="220"
-                  value={metronomeBpm}
-                  onChange={handleMetronomeBpmChange}
-                  className="w-20 h-1 bg-border rounded-lg appearance-none cursor-pointer accent-primary"
-                  aria-label="Metronome BPM"
-                />
-                <span className="text-xs font-mono w-8 text-center tabular-nums text-foreground">
-                  {metronomeBpm}
-                </span>
-              </div>
-            </div>
-          )}
-        </div>
-      </header>
+      {/* Unified Control Bar */}
+      <PracticeControlBar
+        song={selectedSong ?? null}
+        showSongList={showSongList}
+        onToggleSongList={toggleSongList}
+        charts={selectedSong?.charts ?? []}
+        activeChartId={activeChartId}
+        onSelectChart={handleChartSelect}
+        isGuitarPro={isGuitarPro}
+        playbackState={playbackState}
+        onPlay={handlePlay}
+        onPause={handlePause}
+        onStop={handleStop}
+        onSeek={handleGpSeek}
+        onToggleLoop={handleToggleLoop}
+        onSetBPM={handleSetBPM}
+        onResetTempo={handleResetTempo}
+        tracks={gpTracks}
+        currentTrackIndex={gpState?.currentTrackIndex}
+        onSelectTrack={handleSelectTrack}
+        onToggleTrackMute={handleToggleTrackMute}
+        onToggleTrackSolo={handleToggleTrackSolo}
+        metronomeState={{ bpm: metronomeBpm, isActive: metronomeActive }}
+        onMetronomeBpmChange={handleMetronomeBpmChange}
+        onMetronomeToggle={toggleMetronome}
+      />
 
       {/* Main Content Area */}
       <div className="flex-1 flex overflow-hidden">
@@ -577,20 +569,6 @@ export const PracticeRoom: React.FC<PracticeRoomProps> = memo(function PracticeR
 
         {/* Main Stage */}
         <div className="flex-1 flex flex-col relative min-w-0">
-          {/* Chart Selector */}
-          {selectedSong && selectedSong.charts.length > 0 && (
-            <div className="bg-muted/30 border-b border-border p-2 flex gap-2 overflow-x-auto shrink-0 animate-fade-in">
-              {selectedSong.charts.map(chart => (
-                <ChartTab
-                  key={chart.id}
-                  chart={chart}
-                  isActive={activeChartId === chart.id}
-                  onSelect={handleChartSelect}
-                />
-              ))}
-            </div>
-          )}
-
           {/* Content Viewer */}
           <div
             className={cn(
@@ -627,6 +605,12 @@ export const PracticeRoom: React.FC<PracticeRoomProps> = memo(function PracticeR
                   <AlphaTabRenderer
                     fileData={activeChart.storageBase64 || activeChart.url!}
                     readOnly={false}
+                    showControls={false}
+                    showProgressBar={false}
+                    onReady={handleAlphaTabReady}
+                    onStateChange={handleAlphaTabStateChange}
+                    onPositionChange={handleAlphaTabPositionChange}
+                    onTracksLoaded={handleAlphaTabTracksLoaded}
                   />
                 ) : (
                   <Card className="overflow-hidden">
@@ -649,7 +633,7 @@ export const PracticeRoom: React.FC<PracticeRoomProps> = memo(function PracticeR
             )}
           </div>
 
-          {/* Bottom Player Deck (Hidden if GP active - GP has its own player) */}
+          {/* Bottom Player Deck (Hidden if GP active - GP has its own player in control bar) */}
           {!isGuitarPro && (
             <Card className="rounded-none border-x-0 border-b-0 shrink-0 z-20 animate-slide-in-from-bottom animation-forwards">
               <CardContent className="flex items-center gap-4 sm:gap-6 px-4 sm:px-6 py-4">

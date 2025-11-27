@@ -192,6 +192,18 @@ interface AlphaTabRendererProps {
   onPlaybackChange?: (isPlaying: boolean) => void;
   onReady?: (handle: AlphaTabHandle) => void;
   readOnly?: boolean;
+  /** Show built-in toolbar controls (default: true for backwards compat) */
+  showControls?: boolean;
+  /** Show built-in progress bar (default: true for backwards compat) */
+  showProgressBar?: boolean;
+  /** Callback when playback state changes (more detailed than onPlaybackChange) */
+  onStateChange?: (state: import('@/components/practice/types').AlphaTabState) => void;
+  /** Callback for position updates (throttled to ~10 FPS) */
+  onPositionChange?: (current: number, total: number) => void;
+  /** Callback when tracks are loaded from score */
+  onTracksLoaded?: (tracks: TrackInfo[]) => void;
+  /** Callback when an error occurs */
+  onError?: (error: string) => void;
 }
 
 export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
@@ -200,6 +212,12 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
   onPlaybackChange,
   onReady,
   readOnly = false,
+  showControls = true,
+  showProgressBar = true,
+  onStateChange,
+  onPositionChange,
+  onTracksLoaded,
+  onError,
 }) => {
   const rootRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -398,6 +416,19 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
           setOriginalTempo(tempo);
           setCurrentBPM(Math.round(tempo * currentSpeed));
 
+          // Emit tracks to parent via callback
+          if (onTracksLoaded) {
+            onTracksLoaded(
+              score.tracks.map((t, i) => ({
+                index: i,
+                name: t.name,
+                isMute: t.playbackInfo.isMute,
+                isSolo: t.playbackInfo.isSolo,
+                volume: 1.0, // Default volume
+              }))
+            );
+          }
+
           setLoading(false);
         };
 
@@ -419,6 +450,11 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
 
           setError(errorMsg);
           setLoading(false);
+
+          // Emit error to parent via callback
+          if (onError) {
+            onError(errorMsg);
+          }
         };
 
         const handlePlayerStateChanged = (args: AlphaTabPlayerStateChangedEvent) => {
@@ -467,6 +503,11 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
 
           setCurrentTime(e.currentTime);
           setTotalTime(e.endTime);
+
+          // Emit position to parent via callback
+          if (onPositionChange) {
+            onPositionChange(e.currentTime, e.endTime);
+          }
         };
 
         const handlePlayerFinished = () => {
@@ -1116,6 +1157,36 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
     }
   }, [playerReady, onReady, handle]);
 
+  // Emit state changes to parent via onStateChange callback
+  useEffect(() => {
+    if (onStateChange) {
+      onStateChange({
+        isPlaying: internalIsPlaying,
+        isLooping,
+        currentSpeed,
+        currentBPM: currentBPM ?? originalTempo ?? 120,
+        originalTempo: originalTempo ?? 120,
+        currentTrackIndex: currentTrackIndex ?? 0,
+        metronomeBeat,
+        masterVolume,
+        metronomeVolume,
+        countInVolume,
+      });
+    }
+  }, [
+    internalIsPlaying,
+    isLooping,
+    currentSpeed,
+    currentBPM,
+    originalTempo,
+    currentTrackIndex,
+    metronomeBeat,
+    masterVolume,
+    metronomeVolume,
+    countInVolume,
+    onStateChange,
+  ]);
+
   // Helper for time formatting - memoized to prevent re-creation
   const formatTime = useCallback((milliseconds: number): string => {
     const totalSeconds = Math.floor(milliseconds / 1000);
@@ -1134,7 +1205,8 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
 
   return (
     <div className="flex flex-col max-h-full bg-white text-black rounded-xl relative border border-zinc-200 overflow-hidden">
-      {/* Toolbar */}
+      {/* Toolbar - conditionally rendered */}
+      {showControls && (
       <div className="bg-zinc-100 border-b border-zinc-300 p-2 flex items-center justify-between shrink-0">
         {/* Left: Transport controls */}
         <div className="flex items-center gap-2 flex-1">
@@ -1334,9 +1406,10 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
           <span className="text-xs font-bold text-zinc-400 px-2">AlphaTab</span>
         </div>
       </div>
+      )}
 
-      {/* Progress Bar */}
-      {!readOnly && totalTime > 0 && (
+      {/* Progress Bar - conditionally rendered */}
+      {showProgressBar && !readOnly && totalTime > 0 && (
         <div className="bg-zinc-100 border-b border-zinc-300 px-4 py-2 flex items-center gap-3 shrink-0">
           <span className="text-xs font-mono text-zinc-600 w-12 text-right">
             {formattedCurrentTime}
