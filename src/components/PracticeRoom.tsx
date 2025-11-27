@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, memo, useMemo, useCallback } from 'react';
+import React, { useState, useEffect, useLayoutEffect, useRef, memo, useMemo, useCallback } from 'react';
 import { Song } from '@/types';
 import {
   Play,
@@ -27,6 +27,7 @@ import {
 } from '@/components/primitives';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/useBreakpoint';
+import { useDerivedState, usePrevious } from '@/hooks/useDerivedState';
 import {
   PracticeControlBar,
   type AlphaTabState,
@@ -135,17 +136,36 @@ export const PracticeRoom: React.FC<PracticeRoomProps> = memo(function PracticeR
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
-  const [metronomeBpm, setMetronomeBpm] = useState(120);
   const [metronomeActive, setMetronomeActive] = useState(false);
-  const [activeChartId, setActiveChartId] = useState<string | null>(null);
   const [showSongList, setShowSongList] = useState(!isMobile);
   const [audioSrc, setAudioSrc] = useState<string | undefined>(undefined);
+
+  // Derived state that resets when song changes
+  const currentSong = useMemo(
+    () => songs.find(s => s.id === selectedSongId),
+    [songs, selectedSongId]
+  );
+  const [metronomeBpm, setMetronomeBpm] = useDerivedState(
+    currentSong?.bpm ?? 120,
+    selectedSongId
+  );
+  const [activeChartId, setActiveChartId] = useDerivedState<string | null>(
+    currentSong?.charts[0]?.id ?? null,
+    selectedSongId
+  );
 
   // AlphaTab control state
   const alphaTabRef = useRef<AlphaTabHandle | null>(null);
   const [gpState, setGpState] = useState<AlphaTabState | null>(null);
   const [gpTracks, setGpTracks] = useState<TrackInfo[]>([]);
   const [gpPosition, setGpPosition] = useState({ current: 0, total: 0 });
+
+  // ---------------------------------------------------------------------------
+  // CONSTANTS
+  // ---------------------------------------------------------------------------
+
+  // ARIA panel ID for tab/tabpanel relationship
+  const CHART_PANEL_ID = 'practice-room-chart-panel';
 
   // ---------------------------------------------------------------------------
   // REFS
@@ -158,14 +178,9 @@ export const PracticeRoom: React.FC<PracticeRoomProps> = memo(function PracticeR
   // MEMOIZED VALUES
   // ---------------------------------------------------------------------------
 
-  const selectedSong = useMemo(
-    () => songs.find(s => s.id === selectedSongId),
-    [songs, selectedSongId]
-  );
-
   const activeChart = useMemo(
-    () => selectedSong?.charts.find(c => c.id === activeChartId),
-    [selectedSong, activeChartId]
+    () => currentSong?.charts.find(c => c.id === activeChartId),
+    [currentSong, activeChartId]
   );
 
   const isGuitarPro = activeChart?.type === 'GP';
@@ -200,33 +215,26 @@ export const PracticeRoom: React.FC<PracticeRoomProps> = memo(function PracticeR
   // EFFECTS
   // ---------------------------------------------------------------------------
 
-  // Initialize state when song changes
-  useEffect(() => {
-    if (selectedSong) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- Resetting derived state when song prop changes
-      setMetronomeBpm(selectedSong.bpm);
-      if (selectedSong.charts.length > 0) {
-        // eslint-disable-next-line react-hooks/set-state-in-effect -- Resetting derived state when song prop changes
-        setActiveChartId(selectedSong.charts[0].id);
-      } else {
-        // eslint-disable-next-line react-hooks/set-state-in-effect -- Resetting derived state when song prop changes
-        setActiveChartId(null);
-      }
-    }
-  }, [selectedSongId, selectedSong]);
+  // Track previous GP state for cleanup on transition
+  const prevIsGuitarPro = usePrevious(isGuitarPro);
 
-  // Clear AlphaTab state when chart changes away from GP
-  useEffect(() => {
-    if (!isGuitarPro) {
+  // Clear AlphaTab state when transitioning away from GP chart
+  // Using useLayoutEffect to reset state before paint, avoiding visual flicker
+  useLayoutEffect(() => {
+    // Only reset when transitioning from GP to non-GP (not on initial render)
+    if (prevIsGuitarPro === true && !isGuitarPro) {
       alphaTabRef.current = null;
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- Resetting derived state when chart type changes
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Intentional: cleanup on chart type transition
       setGpState(null);
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- Resetting derived state when chart type changes
       setGpTracks([]);
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- Resetting derived state when chart type changes
       setGpPosition({ current: 0, total: 0 });
     }
-  }, [isGuitarPro]);
+
+    // Cleanup on unmount to prevent stale state if component remounts
+    return () => {
+      alphaTabRef.current = null;
+    };
+  }, [isGuitarPro, prevIsGuitarPro]);
 
   // Audio Element Management
   useEffect(() => {
@@ -266,10 +274,10 @@ export const PracticeRoom: React.FC<PracticeRoomProps> = memo(function PracticeR
 
   // Handle backing track URL loading from Data URI or Blob
   useEffect(() => {
-    if (selectedSong?.backingTrackUrl && selectedSong.backingTrackUrl.startsWith('data:audio')) {
+    if (currentSong?.backingTrackUrl && currentSong.backingTrackUrl.startsWith('data:audio')) {
       try {
-        const mime = selectedSong.backingTrackUrl.split(';')[0].split(':')[1];
-        const base64 = selectedSong.backingTrackUrl.split(',')[1];
+        const mime = currentSong.backingTrackUrl.split(';')[0].split(':')[1];
+        const base64 = currentSong.backingTrackUrl.split(',')[1];
         const byteCharacters = atob(base64);
         const byteNumbers = new Array(byteCharacters.length);
         for (let i = 0; i < byteCharacters.length; i++) {
@@ -288,7 +296,7 @@ export const PracticeRoom: React.FC<PracticeRoomProps> = memo(function PracticeR
       // eslint-disable-next-line react-hooks/set-state-in-effect -- Clearing external resource reference
       setAudioSrc(undefined);
     }
-  }, [selectedSong]);
+  }, [currentSong]);
 
   // ---------------------------------------------------------------------------
   // ALPHATAB CALLBACKS
@@ -409,20 +417,12 @@ export const PracticeRoom: React.FC<PracticeRoomProps> = memo(function PracticeR
     }
   }, [isMobile]);
 
-  const handleChartSelect = useCallback((id: string) => {
-    setActiveChartId(id);
-  }, []);
-
   const toggleSongList = useCallback(() => {
     setShowSongList(prev => !prev);
   }, []);
 
   const toggleMetronome = useCallback(() => {
     setMetronomeActive(prev => !prev);
-  }, []);
-
-  const handleMetronomeBpmChange = useCallback((bpm: number) => {
-    setMetronomeBpm(bpm);
   }, []);
 
   const handlePlaybackRateChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
@@ -457,12 +457,13 @@ export const PracticeRoom: React.FC<PracticeRoomProps> = memo(function PracticeR
     <div className="h-full flex flex-col bg-background text-foreground">
       {/* Unified Control Bar */}
       <PracticeControlBar
-        song={selectedSong ?? null}
+        song={currentSong ?? null}
         showSongList={showSongList}
         onToggleSongList={toggleSongList}
-        charts={selectedSong?.charts ?? []}
+        charts={currentSong?.charts ?? []}
         activeChartId={activeChartId}
-        onSelectChart={handleChartSelect}
+        onSelectChart={setActiveChartId}
+        chartPanelId={CHART_PANEL_ID}
         isGuitarPro={isGuitarPro}
         playbackState={playbackState}
         onPlay={handlePlay}
@@ -478,7 +479,7 @@ export const PracticeRoom: React.FC<PracticeRoomProps> = memo(function PracticeR
         onToggleTrackMute={handleToggleTrackMute}
         onToggleTrackSolo={handleToggleTrackSolo}
         metronomeState={{ bpm: metronomeBpm, isActive: metronomeActive }}
-        onMetronomeBpmChange={handleMetronomeBpmChange}
+        onMetronomeBpmChange={setMetronomeBpm}
         onMetronomeToggle={toggleMetronome}
       />
 
@@ -571,6 +572,9 @@ export const PracticeRoom: React.FC<PracticeRoomProps> = memo(function PracticeR
         <div className="flex-1 flex flex-col relative min-w-0">
           {/* Content Viewer */}
           <div
+            id={CHART_PANEL_ID}
+            role="tabpanel"
+            aria-label="Chart display"
             className={cn(
               'flex-1 overflow-hidden bg-background',
               isGuitarPro ? 'p-0' : 'p-4 sm:p-6 overflow-y-auto'

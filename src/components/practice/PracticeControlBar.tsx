@@ -29,6 +29,8 @@ export interface PracticeControlBarProps {
   charts: SongChart[];
   activeChartId: string | null;
   onSelectChart: (id: string) => void;
+  /** ID of the chart display panel (for ARIA tab/tabpanel relationship) */
+  chartPanelId?: string;
 
   // Playback state (for GP charts)
   isGuitarPro: boolean;
@@ -63,6 +65,7 @@ export const PracticeControlBar = memo(function PracticeControlBar({
   charts,
   activeChartId,
   onSelectChart,
+  chartPanelId,
   isGuitarPro,
   playbackState,
   onPlay,
@@ -150,6 +153,7 @@ export const PracticeControlBar = memo(function PracticeControlBar({
             charts={charts}
             activeChartId={activeChartId}
             onSelectChart={onSelectChart}
+            panelId={chartPanelId}
           />
         </div>
 

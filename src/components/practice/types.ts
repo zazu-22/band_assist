@@ -27,11 +27,30 @@ export interface AlphaTabState {
   currentTrackIndex: number;
   /** Current metronome beat (0 = no beat, 1-4 = current beat) */
   metronomeBeat: number;
-  /** Master volume level (0-1) */
+  /**
+   * Master volume level (0-1).
+   *
+   * Note: This field is emitted by AlphaTabRenderer and accessible via the
+   * imperative handle (getMasterVolume/setMasterVolume). It is included in
+   * state for completeness and future UI controls (e.g., volume slider).
+   * Not currently consumed by PracticeRoom but available for external use.
+   */
   masterVolume: number;
-  /** Metronome volume level (0-1, 0 = disabled) */
+  /**
+   * Metronome volume level (0-1, 0 = disabled).
+   *
+   * Note: This field is emitted by AlphaTabRenderer and accessible via the
+   * imperative handle (getMetronomeVolume/setMetronomeVolume). Included for
+   * future metronome volume controls. Not currently consumed by PracticeRoom.
+   */
   metronomeVolume: number;
-  /** Count-in volume level (0-1, 0 = disabled) */
+  /**
+   * Count-in volume level (0-1, 0 = disabled).
+   *
+   * Note: This field is emitted by AlphaTabRenderer and accessible via the
+   * imperative handle (getCountInVolume/setCountInVolume). Included for
+   * future count-in controls. Not currently consumed by PracticeRoom.
+   */
   countInVolume: number;
 }
 
