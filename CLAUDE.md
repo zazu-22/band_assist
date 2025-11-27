@@ -278,6 +278,18 @@ Band configuration with tabs:
 - `LoadingSpinner.tsx` - Loading indicator
 - `ErrorBoundary.tsx` - Error capture & display
 
+## Design System
+
+The app follows a cohesive "Backstage Command Center" design philosophy established in the dashboard redesign. See **[docs/design-system.md](docs/design-system.md)** for comprehensive guidelines on:
+
+- Typography (Brawler serif for headlines, Barlow sans-serif for UI, JetBrains Mono for numbers)
+- Status colors (green=ready, blue=in progress, amber=to learn)
+- Animation patterns (staggered reveals, progress fills, pulse glow)
+- Component patterns (card headers, stat displays, list items, tooltips)
+- Layout principles and spacing conventions
+
+When building new features or modifying existing pages, reference the design system to maintain visual consistency across the application.
+
 ## shadcn/ui Component Library
 
 The app uses shadcn/ui with a custom theme (amber/gold primary, light+dark modes). Components are organized in three layers:
