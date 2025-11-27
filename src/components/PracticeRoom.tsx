@@ -10,11 +10,12 @@ import {
   Gauge,
   ListMusic,
   Music2,
+  Guitar,
 } from 'lucide-react';
 import { SmartTabEditor } from './SmartTabEditor';
 import { AlphaTabRenderer } from './AlphaTabRenderer';
 import type { AlphaTabHandle } from './AlphaTabRenderer';
-import { EmptyState, ResizablePanel, StatusBadge } from './ui';
+import { EmptyState, ResizablePanel, StatusBadge, ErrorBoundary } from './ui';
 import {
   Button,
   Card,
@@ -606,16 +607,37 @@ export const PracticeRoom: React.FC<PracticeRoomProps> = memo(function PracticeR
                     />
                   </Card>
                 ) : activeChart.type === 'GP' ? (
-                  <AlphaTabRenderer
-                    fileData={activeChart.storageBase64 || activeChart.url!}
-                    readOnly={false}
-                    showControls={false}
-                    showProgressBar={false}
-                    onReady={handleAlphaTabReady}
-                    onStateChange={handleAlphaTabStateChange}
-                    onPositionChange={handleAlphaTabPositionChange}
-                    onTracksLoaded={handleAlphaTabTracksLoaded}
-                  />
+                  <ErrorBoundary
+                    fallback={
+                      <div className="flex flex-col items-center justify-center h-full bg-muted text-muted-foreground p-8">
+                        <Guitar size={48} className="opacity-40 mb-4" />
+                        <h3 className="text-lg font-semibold text-foreground mb-2">
+                          Guitar Pro Render Error
+                        </h3>
+                        <p className="text-sm text-center max-w-md mb-4">
+                          An unexpected error occurred while rendering this file. Try refreshing the
+                          page or re-uploading the file in a different format.
+                        </p>
+                        <Button
+                          onClick={() => window.location.reload()}
+                          className="bg-primary hover:bg-primary/90 text-primary-foreground"
+                        >
+                          Refresh Page
+                        </Button>
+                      </div>
+                    }
+                  >
+                    <AlphaTabRenderer
+                      fileData={activeChart.storageBase64 || activeChart.url!}
+                      readOnly={false}
+                      showControls={false}
+                      showProgressBar={false}
+                      onReady={handleAlphaTabReady}
+                      onStateChange={handleAlphaTabStateChange}
+                      onPositionChange={handleAlphaTabPositionChange}
+                      onTracksLoaded={handleAlphaTabTracksLoaded}
+                    />
+                  </ErrorBoundary>
                 ) : (
                   <Card className="overflow-hidden">
                     <img src={activeChart.url} alt="Chart" className="w-full h-auto" />

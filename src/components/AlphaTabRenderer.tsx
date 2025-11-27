@@ -839,7 +839,9 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
   };
 
   const changeSpeed = useCallback((val: number) => {
-    if (apiRef.current) {
+    if (!apiRef.current) return;
+
+    try {
       apiRef.current.playbackSpeed = val;
       setCurrentSpeed(val);
 
@@ -847,19 +849,25 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
       if (originalTempo) {
         setCurrentBPM(Math.round(originalTempo * val));
       }
+    } catch (error) {
+      console.warn('[AlphaTab] Error changing speed:', error);
     }
   }, [originalTempo]);
 
   const handleBPMChange = (newBPM: number) => {
     if (!originalTempo || !apiRef.current) return;
 
-    const newSpeed = newBPM / originalTempo;
-    // Clamp to supported range (0.25 to 2.0)
-    const clampedSpeed = Math.max(0.25, Math.min(2.0, newSpeed));
+    try {
+      const newSpeed = newBPM / originalTempo;
+      // Clamp to supported range (0.25 to 2.0)
+      const clampedSpeed = Math.max(0.25, Math.min(2.0, newSpeed));
 
-    apiRef.current.playbackSpeed = clampedSpeed;
-    setCurrentSpeed(clampedSpeed);
-    setCurrentBPM(Math.round(originalTempo * clampedSpeed));
+      apiRef.current.playbackSpeed = clampedSpeed;
+      setCurrentSpeed(clampedSpeed);
+      setCurrentBPM(Math.round(originalTempo * clampedSpeed));
+    } catch (error) {
+      console.warn('[AlphaTab] Error changing BPM:', error);
+    }
   };
 
   const startEditingBPM = () => {
@@ -994,18 +1002,26 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
   }, [totalTime]);
 
   const toggleLoop = () => {
-    if (apiRef.current) {
+    if (!apiRef.current) return;
+
+    try {
       const newLooping = !isLooping;
       apiRef.current.isLooping = newLooping;
       setIsLooping(newLooping);
+    } catch (error) {
+      console.warn('[AlphaTab] Error toggling loop:', error);
     }
   };
 
   const clearLoopRange = () => {
-    if (apiRef.current) {
+    if (!apiRef.current) return;
+
+    try {
       apiRef.current.playbackRange = null;
       setLoopRange(null);
       setSelectionStart(null);
+    } catch (error) {
+      console.warn('[AlphaTab] Error clearing loop range:', error);
     }
   };
 
@@ -1215,7 +1231,7 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
               <button
                 onClick={togglePlay}
                 disabled={!playerReady}
-                className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
+                className={`h-11 w-11 sm:h-10 sm:w-10 rounded-full flex items-center justify-center transition-colors ${
                   !playerReady
                     ? 'bg-zinc-200 text-zinc-400 cursor-not-allowed'
                     : internalIsPlaying
@@ -1231,7 +1247,7 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
               <button
                 onClick={stopPlayback}
                 disabled={!internalIsPlaying && currentTime === 0}
-                className="w-10 h-10 rounded-full flex items-center justify-center bg-zinc-200 hover:bg-zinc-300 text-zinc-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                className="h-11 w-11 sm:h-10 sm:w-10 rounded-full flex items-center justify-center bg-zinc-200 hover:bg-zinc-300 text-zinc-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                 title="Stop and return to start"
               >
                 <Square size={18} />
@@ -1241,7 +1257,7 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
               <div className="flex items-center gap-1">
                 <button
                   onClick={toggleLoop}
-                  className={`p-2 rounded transition-colors ${
+                  className={`h-11 w-11 sm:h-9 sm:w-9 rounded flex items-center justify-center transition-colors ${
                     isLooping
                       ? 'bg-amber-500 text-white'
                       : 'bg-zinc-200 hover:bg-zinc-300 text-zinc-700'
@@ -1254,7 +1270,7 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
                 {loopRange && (
                   <button
                     onClick={clearLoopRange}
-                    className="p-2 rounded bg-zinc-200 hover:bg-red-200 text-zinc-700 hover:text-red-600 transition-colors"
+                    className="h-11 w-11 sm:h-9 sm:w-9 rounded flex items-center justify-center bg-zinc-200 hover:bg-red-200 text-zinc-700 hover:text-red-600 transition-colors"
                     title="Clear loop range"
                   >
                     <X size={16} />
@@ -1380,7 +1396,6 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
                   />
                   <div className="flex justify-between text-[10px] text-zinc-500">
                     <span>{Math.round(originalTempo * 0.25)}</span>
-                    <span className="font-semibold text-zinc-700">{currentBPM}</span>
                     <span>{Math.round(originalTempo * 2.0)}</span>
                   </div>
                 </div>

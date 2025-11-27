@@ -16,6 +16,7 @@ import {
 } from 'lucide-react';
 import { SmartTabEditor } from './SmartTabEditor';
 import { AlphaTabRenderer } from './AlphaTabRenderer';
+import { ErrorBoundary } from './ui';
 
 interface PerformanceModeProps {
   songs: Song[];
@@ -382,10 +383,31 @@ export const PerformanceMode: React.FC<PerformanceModeProps> = ({ songs, onExit 
                     title="PDF Chart Viewer"
                   />
                 ) : activeChart.type === 'GP' ? (
-                  <AlphaTabRenderer
-                    fileData={activeChart.storageBase64 || activeChart.url!}
-                    readOnly={true}
-                  />
+                  <ErrorBoundary
+                    fallback={
+                      <div className="flex flex-col items-center justify-center h-full bg-zinc-900 text-zinc-400 p-8">
+                        <Guitar size={48} className="opacity-40 mb-4" />
+                        <h3 className="text-lg font-semibold text-zinc-300 mb-2">
+                          Guitar Pro Render Error
+                        </h3>
+                        <p className="text-sm text-center max-w-md mb-4">
+                          An unexpected error occurred while rendering this file. Try refreshing the
+                          page or re-uploading the file in a different format.
+                        </p>
+                        <button
+                          onClick={() => window.location.reload()}
+                          className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-medium transition-colors"
+                        >
+                          Refresh Page
+                        </button>
+                      </div>
+                    }
+                  >
+                    <AlphaTabRenderer
+                      fileData={activeChart.storageBase64 || activeChart.url!}
+                      readOnly={true}
+                    />
+                  </ErrorBoundary>
                 ) : (
                   <img src={activeChart.url} alt="Chart" className="w-full h-auto" />
                 )
