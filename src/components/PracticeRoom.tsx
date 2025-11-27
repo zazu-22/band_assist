@@ -223,30 +223,25 @@ export const PracticeRoom: React.FC<PracticeRoomProps> = memo(function PracticeR
   // Track previous GP state for cleanup on transition
   const prevIsGuitarPro = usePrevious(isGuitarPro);
 
-  // Synchronous ref cleanup in useLayoutEffect (refs are safe to mutate synchronously)
+  // Consolidated cleanup in useLayoutEffect to prevent race condition between ref and state
+  // Both ref and state are reset synchronously to maintain consistency
   useLayoutEffect(() => {
-    // Clear ref synchronously when transitioning away from GP to prevent stale handle access
-    if (prevIsGuitarPro === true && !isGuitarPro) {
-      alphaTabRef.current = null;
-    }
-
-    // Cleanup on unmount to prevent stale state if component remounts
-    return () => {
-      alphaTabRef.current = null;
-    };
-  }, [isGuitarPro, prevIsGuitarPro]);
-
-  // Reset AlphaTab state asynchronously in regular useEffect to avoid synchronous re-renders
-  useEffect(() => {
     // Only reset when transitioning from GP to non-GP (not on initial render)
     if (prevIsGuitarPro === true && !isGuitarPro) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- Intentional: cleanup state on chart type transition
+      // Clear ref and state together to prevent mismatches
+      alphaTabRef.current = null;
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Intentional: cleanup state on chart type transition (consolidated with ref cleanup to prevent race condition)
       setGpState(null);
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setGpTracks([]);
       // eslint-disable-next-line react-hooks/set-state-in-effect
       setGpPosition({ current: 0, total: 0 });
     }
+
+    // Cleanup on unmount to prevent stale state if component remounts
+    return () => {
+      alphaTabRef.current = null;
+    };
   }, [isGuitarPro, prevIsGuitarPro]);
 
   // Audio Element Management

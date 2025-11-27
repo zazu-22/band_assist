@@ -209,7 +209,17 @@ interface AlphaTabRendererProps {
   onTracksLoaded?: (tracks: TrackInfo[]) => void;
   /** Callback when an error occurs */
   onError?: (error: string) => void;
-  /** Additional MIDI event types to listen for (merged with default metronome filter) */
+  /**
+   * Additional MIDI event types to listen for (merged with default metronome filter).
+   * Use this to track custom MIDI events beyond the built-in metronome visualization.
+   * @example
+   * // Track note-on events for a custom visualizer
+   * <AlphaTabRenderer
+   *   fileData={gpFile}
+   *   additionalMidiFilters={[midi.MidiEventType.NoteOn]}
+   *   onMidiEvents={(events) => handleNoteVisualization(events)}
+   * />
+   */
   additionalMidiFilters?: number[];
 }
 
@@ -583,11 +593,13 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
           }
         };
 
-        // Phase 2: Visual metronome (ESM import)
-        // Preserve existing filters and add metronome + any additional filters (using ref for latest value)
-        const existingFilters = api.midiEventsPlayedFilter || [];
+        // Phase 2: Visual metronome - Configure MIDI event filtering
+        // AlphaTabMetronome is required for visual beat indicator; additionalMidiFilters allows
+        // parent components to track other MIDI events (e.g., note events for visualization).
+        // Note: On a fresh API instance, midiEventsPlayedFilter is typically empty, but we
+        // defensively preserve any existing values for forward compatibility with library updates.
         api.midiEventsPlayedFilter = [
-          ...existingFilters,
+          ...(api.midiEventsPlayedFilter || []),
           midi.MidiEventType.AlphaTabMetronome,
           ...additionalMidiFiltersRef.current,
         ];
