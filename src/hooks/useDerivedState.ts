@@ -35,9 +35,10 @@ export function useDerivedState<T>(
 
   // Use useLayoutEffect to sync before paint, avoiding visual flicker
   useLayoutEffect(() => {
-    // Skip the first render (initial state is already correct)
+    // On first render, just capture the initial key (state already initialized correctly)
     if (isFirstRenderRef.current) {
       isFirstRenderRef.current = false;
+      prevKeyRef.current = identityKey;
       return;
     }
 
@@ -78,8 +79,10 @@ export function useDerivedStateLazy<T>(
   initialValueFnRef.current = initialValueFn;
 
   useLayoutEffect(() => {
+    // On first render, just capture the initial key (state already initialized correctly)
     if (isFirstRenderRef.current) {
       isFirstRenderRef.current = false;
+      prevKeyRef.current = identityKey;
       return;
     }
 

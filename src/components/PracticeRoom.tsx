@@ -168,13 +168,9 @@ export const PracticeRoom: React.FC<PracticeRoomProps> = memo(function PracticeR
   // MEMOIZED VALUES
   // ---------------------------------------------------------------------------
 
-  // Note: currentSong is computed above for derived state initialization
-  // We use it directly here for consistency
-  const selectedSong = currentSong;
-
   const activeChart = useMemo(
-    () => selectedSong?.charts.find(c => c.id === activeChartId),
-    [selectedSong, activeChartId]
+    () => currentSong?.charts.find(c => c.id === activeChartId),
+    [currentSong, activeChartId]
   );
 
   const isGuitarPro = activeChart?.type === 'GP';
@@ -263,10 +259,10 @@ export const PracticeRoom: React.FC<PracticeRoomProps> = memo(function PracticeR
 
   // Handle backing track URL loading from Data URI or Blob
   useEffect(() => {
-    if (selectedSong?.backingTrackUrl && selectedSong.backingTrackUrl.startsWith('data:audio')) {
+    if (currentSong?.backingTrackUrl && currentSong.backingTrackUrl.startsWith('data:audio')) {
       try {
-        const mime = selectedSong.backingTrackUrl.split(';')[0].split(':')[1];
-        const base64 = selectedSong.backingTrackUrl.split(',')[1];
+        const mime = currentSong.backingTrackUrl.split(';')[0].split(':')[1];
+        const base64 = currentSong.backingTrackUrl.split(',')[1];
         const byteCharacters = atob(base64);
         const byteNumbers = new Array(byteCharacters.length);
         for (let i = 0; i < byteCharacters.length; i++) {
@@ -285,7 +281,7 @@ export const PracticeRoom: React.FC<PracticeRoomProps> = memo(function PracticeR
       // eslint-disable-next-line react-hooks/set-state-in-effect -- Clearing external resource reference
       setAudioSrc(undefined);
     }
-  }, [selectedSong]);
+  }, [currentSong]);
 
   // ---------------------------------------------------------------------------
   // ALPHATAB CALLBACKS
@@ -454,10 +450,10 @@ export const PracticeRoom: React.FC<PracticeRoomProps> = memo(function PracticeR
     <div className="h-full flex flex-col bg-background text-foreground">
       {/* Unified Control Bar */}
       <PracticeControlBar
-        song={selectedSong ?? null}
+        song={currentSong ?? null}
         showSongList={showSongList}
         onToggleSongList={toggleSongList}
-        charts={selectedSong?.charts ?? []}
+        charts={currentSong?.charts ?? []}
         activeChartId={activeChartId}
         onSelectChart={handleChartSelect}
         isGuitarPro={isGuitarPro}

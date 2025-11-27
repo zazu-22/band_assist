@@ -52,10 +52,12 @@ export const ProgressBar = memo(function ProgressBar({
 
     if (seekDelta !== 0) {
       e.preventDefault();
-      const newPercentage = Math.max(0, Math.min(1, percentage / 100 + seekDelta));
+      // Calculate directly from currentTime/totalTime to avoid precision loss
+      const currentPercentage = totalTime > 0 ? currentTime / totalTime : 0;
+      const newPercentage = Math.max(0, Math.min(1, currentPercentage + seekDelta));
       onSeek(newPercentage);
     }
-  }, [percentage, onSeek]);
+  }, [currentTime, totalTime, onSeek]);
 
   return (
     <div
