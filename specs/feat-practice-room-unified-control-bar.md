@@ -4,12 +4,13 @@
 
 | Field | Value |
 |-------|-------|
-| **Status** | Draft |
+| **Status** | Ready for Implementation |
 | **Authors** | AI Assistant |
 | **Date** | 2025-11-27 |
+| **Updated** | 2025-11-27 |
 | **Related Issues** | N/A |
 | **Source Document** | `docs/ai_docs/practice-room-refactor-plan.md` |
-| **Depends On** | `infra-alphatab-modernization.md` (Phases 1-2 recommended first) |
+| **Depends On** | `infra-alphatab-modernization.md` ✅ **COMPLETE** |
 
 ---
 
@@ -102,15 +103,19 @@ The current architecture treats AlphaTabRenderer as a standalone component with 
 | UI Components | `@/components/ui` | StatusBadge, EmptyState, ResizablePanel |
 | Design System | `docs/design-system.md` | Typography, colors, animations |
 | Types | `@/types.ts` | Song, SongChart interfaces |
+| AlphaTab Types | `@/components/AlphaTabRenderer` | `AlphaTabHandle`, `TrackInfo` exports |
 
-### AlphaTab CDN Integration
+### AlphaTab ESM Integration
 
-AlphaTab is loaded from CDN in `index.html`:
-```html
-<script src="https://cdn.jsdelivr.net/npm/@coderline/alphatab@latest/dist/alphaTab.min.js"></script>
+**Status: ✅ Implemented** (see `infra-alphatab-modernization.md`)
+
+AlphaTab is bundled via Vite plugin (`@coderline/alphatab/vite`):
+```typescript
+// ESM import pattern
+import { AlphaTabApi, midi } from '@coderline/alphatab';
 ```
 
-The `@coderline/alphatab` npm package provides type definitions only.
+Assets (fonts, soundfont) are automatically copied during build. No CDN dependency required.
 
 ---
 
@@ -153,50 +158,68 @@ The `@coderline/alphatab` npm package provides type definitions only.
 └─────────────────────────────────────────────────────────┘
 ```
 
-### 6.2 New Type Definitions
+### 6.2 Type Definitions
 
-#### AlphaTab Handle Interface
+**Status: ✅ Partially Implemented** - Core types exist in `AlphaTabRenderer.tsx`
+
+#### AlphaTab Handle Interface (IMPLEMENTED)
 
 ```typescript
-// src/components/practice/types.ts
+// Exported from src/components/AlphaTabRenderer.tsx
 
 /**
- * Imperative handle for controlling AlphaTab playback from parent components.
- * Exposed via React.forwardRef and useImperativeHandle.
+ * Handle interface for controlling AlphaTab from parent components.
+ * Provided via onReady callback (NOT forwardRef/useImperativeHandle).
+ * All volume values use 0-1 range (0% to 100%).
  */
 export interface AlphaTabHandle {
-  /** Start playback from current position */
+  // Playback controls
   play(): void;
-  /** Pause playback at current position */
   pause(): void;
-  /** Stop playback and return to start */
   stop(): void;
-  /** Seek to a percentage (0-1) of the total duration */
   seekTo(percentage: number): void;
-  /** Set playback speed multiplier (0.25 to 2.0) */
   setPlaybackSpeed(speed: number): void;
-  /** Enable or disable looping */
   setLoop(enabled: boolean): void;
-  /** Set loop range in ticks, or null to clear */
   setLoopRange(range: { startTick: number; endTick: number } | null): void;
-  /** Render a specific track by index */
-  renderTrack(index: number): void;
-  /** Toggle mute state for a track */
-  toggleTrackMute(index: number): void;
-  /** Toggle solo state for a track */
-  toggleTrackSolo(index: number): void;
-  // Volume controls (from infra-alphatab-modernization.md Phase 3)
-  /** Set volume for a specific track (0-2, default 1.0) */
-  setTrackVolume(index: number, volume: number): void;
-  /** Set master volume (0-1, default 1.0) */
-  setMasterVolume(volume: number): void;
-  /** Set metronome volume (0-1, default 0) */
-  setMetronomeVolume(volume: number): void;
-}
 
-/**
- * Current state of AlphaTab playback, emitted via onStateChange callback.
- */
+  // Track controls
+  renderTrack(index: number): void;
+  toggleTrackMute(index: number): void;
+  toggleTrackSolo(index: number): void;
+
+  // Volume controls (0-1 range) - IMPLEMENTED
+  setTrackVolume(index: number, volume: number): void;
+  setMasterVolume(volume: number): void;
+  setMetronomeVolume(volume: number): void;
+  setCountInVolume(volume: number): void;
+
+  // State getters - IMPLEMENTED
+  getTracks(): TrackInfo[];
+  getMasterVolume(): number;
+  getMetronomeVolume(): number;
+  getCountInVolume(): number;
+}
+```
+
+#### TrackInfo Interface (IMPLEMENTED)
+
+```typescript
+// Exported from src/components/AlphaTabRenderer.tsx
+
+export interface TrackInfo {
+  index: number;
+  name: string;
+  isMute: boolean;
+  isSolo: boolean;
+  volume: number; // 0-1, default 1.0
+}
+```
+
+#### AlphaTabState Interface (TO BE IMPLEMENTED)
+
+```typescript
+// To be added for onStateChange callback
+
 export interface AlphaTabState {
   isPlaying: boolean;
   isLooping: boolean;
@@ -205,20 +228,9 @@ export interface AlphaTabState {
   originalTempo: number;
   currentTrackIndex: number;
   metronomeBeat: number; // 0 = no beat, 1-4 = current beat
-  // Volume state (from infra-alphatab-modernization.md Phase 3)
   masterVolume: number;
   metronomeVolume: number;
-}
-
-/**
- * Track information from loaded score.
- */
-export interface TrackInfo {
-  index: number;
-  name: string;
-  isMute: boolean;
-  isSolo: boolean;
-  volume: number; // 0-2, default 1.0 (from infra-alphatab-modernization.md Phase 3)
+  countInVolume: number;
 }
 ```
 
@@ -227,29 +239,31 @@ export interface TrackInfo {
 ```typescript
 /**
  * Props for AlphaTabRenderer component.
- * After refactor, showControls defaults to false.
+ * Status: Partially implemented - onReady exists, others needed for Phase 1.
  */
 export interface AlphaTabRendererProps {
   /** Base64 Data URI of Guitar Pro file */
   fileData: string;
   /** If true, disables player functionality (for read-only display) */
   readOnly?: boolean;
-  /** Show built-in toolbar controls (default: false after refactor) */
-  showControls?: boolean;
-  /** Show built-in progress bar (default: false after refactor) */
-  showProgressBar?: boolean;
-  /** Callback when player is ready with imperative handle */
+  /** Callback when player is ready with imperative handle - ✅ IMPLEMENTED */
   onReady?: (handle: AlphaTabHandle) => void;
-  /** Callback when playback state changes */
-  onStateChange?: (state: AlphaTabState) => void;
-  /** Callback for position updates (throttled to ~10 FPS) */
-  onPositionChange?: (current: number, total: number) => void;
-  /** Callback when tracks are loaded from score */
-  onTracksLoaded?: (tracks: TrackInfo[]) => void;
-  /** Callback when an error occurs */
-  onError?: (error: string) => void;
 
-  // Legacy props for backwards compatibility
+  // Props still needed for unified control bar:
+  /** Show built-in toolbar controls (default: true, change to false) */
+  showControls?: boolean;  // TO BE IMPLEMENTED
+  /** Show built-in progress bar (default: true, change to false) */
+  showProgressBar?: boolean;  // TO BE IMPLEMENTED
+  /** Callback when playback state changes */
+  onStateChange?: (state: AlphaTabState) => void;  // TO BE IMPLEMENTED
+  /** Callback for position updates (throttled to ~10 FPS) */
+  onPositionChange?: (current: number, total: number) => void;  // TO BE IMPLEMENTED
+  /** Callback when tracks are loaded from score */
+  onTracksLoaded?: (tracks: TrackInfo[]) => void;  // TO BE IMPLEMENTED
+  /** Callback when an error occurs */
+  onError?: (error: string) => void;  // TO BE IMPLEMENTED
+
+  // Legacy props for backwards compatibility - ✅ EXIST
   isPlaying?: boolean;
   onPlaybackChange?: (isPlaying: boolean) => void;
 }
@@ -326,15 +340,18 @@ interface PracticeControlBarProps {
   onSelectTrack?: (index: number) => void;
   onToggleTrackMute?: (index: number) => void;
   onToggleTrackSolo?: (index: number) => void;
-  onSetTrackVolume?: (index: number, volume: number) => void; // From infra spec Phase 3
+  onSetTrackVolume?: (index: number, volume: number) => void; // 0-1 range
 
-  // Volume controls (for GP charts) - from infra-alphatab-modernization.md Phase 3
+  // Volume controls (for GP charts) - ✅ API IMPLEMENTED
+  // All volumes use 0-1 range (0% to 100%)
   volumeState?: {
-    masterVolume: number;
-    metronomeVolume: number;
+    masterVolume: number;      // 0-1
+    metronomeVolume: number;   // 0-1 (>0 enables metronome)
+    countInVolume: number;     // 0-1 (>0 enables count-in)
   };
   onSetMasterVolume?: (volume: number) => void;
   onSetMetronomeVolume?: (volume: number) => void;
+  onSetCountInVolume?: (volume: number) => void;
 
   // Non-GP controls
   metronomeState?: {
@@ -1352,15 +1369,15 @@ No new dependencies. New components will add ~5-10KB gzipped.
 2. **Progress Bar Position**: Should progress bar be integrated into the main control row or remain as a separate row?
    - *Recommendation*: Separate row for click accuracy, but could revisit
 
-3. **AlphaTab Version**: Current version is 1.6.3. Should we pin to this version or allow updates?
-   - *Recommendation*: Pin to ~1.6.3 to avoid breaking changes
+3. ~~**AlphaTab Version**: Current version is 1.6.3. Should we pin to this version or allow updates?~~
+   - ✅ **RESOLVED**: Kept `^1.6.3` semver range for patch updates (see `infra-alphatab-modernization-tasks.md`)
 
 4. **Keyboard Shortcuts**: Should we add global shortcuts (Space = play/pause) or keep them scoped to focused elements?
    - *Recommendation*: Scoped to control bar focus to avoid conflicts with text editing
 
-5. **Volume Controls in Mixer**: Should the TrackSelector include per-track volume sliders, or just mute/solo?
-   - *Recommendation*: Include volume sliders - addresses real user complaints about track imbalance
-   - *Dependency*: Requires `infra-alphatab-modernization.md` Phase 3
+5. ~~**Volume Controls in Mixer**: Should the TrackSelector include per-track volume sliders, or just mute/solo?~~
+   - ✅ **RESOLVED**: Volume API implemented - `setTrackVolume`, `setMasterVolume`, `setMetronomeVolume`, `setCountInVolume`
+   - All use 0-1 range, available via `AlphaTabHandle` from `onReady` callback
 
 ---
 
@@ -1400,6 +1417,8 @@ No new dependencies. New components will add ~5-10KB gzipped.
 
 ---
 
-*Document version: 1.1*
+*Document version: 1.2*
 *Last updated: 2025-11-27*
-*Changes: Added dependency on infra-alphatab-modernization.md, added volume control interfaces*
+*Changes:*
+- *v1.1: Added dependency on infra-alphatab-modernization.md, added volume control interfaces*
+- *v1.2: Updated to reflect completed infra-alphatab-modernization - ESM imports, volume API (0-1 range), onReady callback pattern*

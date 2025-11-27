@@ -2,6 +2,7 @@
 
 Generated: 2025-11-27
 Source: `specs/feat-practice-room-unified-control-bar.md`
+**Updated**: 2025-11-27 (reflects completed `infra-alphatab-modernization.md`)
 
 ## Overview
 
@@ -14,6 +15,12 @@ This task breakdown decomposes the Practice Room Unified Control Bar specificati
 - Enable responsive layouts from 320px to desktop
 - Maintain backwards compatibility
 
+**Prerequisites Completed:**
+- ✅ AlphaTab ESM imports (via Vite plugin)
+- ✅ Volume control API (`setTrackVolume`, `setMasterVolume`, `setMetronomeVolume`, `setCountInVolume`)
+- ✅ `onReady` callback with `AlphaTabHandle`
+- ✅ `TrackInfo` interface with volume
+
 ---
 
 ## Phase 1: AlphaTab API Extraction
@@ -22,58 +29,50 @@ This task breakdown decomposes the Practice Room Unified Control Bar specificati
 
 ### Task 1.1: Create Practice Types Module
 
+**Status: ✅ PARTIALLY COMPLETE** - Core types exist in `AlphaTabRenderer.tsx`
+
 **Description**: Create type definitions for the AlphaTab imperative handle and state interfaces
 **Size**: Small
 **Priority**: High
 **Dependencies**: None
 **Can run parallel with**: None (foundation task)
 
-**Technical Requirements**:
-- Create new file: `src/components/practice/types.ts`
-- Define `AlphaTabHandle` interface with all 13 methods
-- Define `AlphaTabState` interface for playback state
-- Define `TrackInfo` interface for track metadata
+**What's Already Done:**
+- `AlphaTabHandle` interface - ✅ exported from `AlphaTabRenderer.tsx`
+- `TrackInfo` interface - ✅ exported from `AlphaTabRenderer.tsx`
+- Volume methods (0-1 range) - ✅ all 4 implemented
 
-**Implementation**:
+**What's Still Needed:**
+- `AlphaTabState` interface for `onStateChange` callback
+- Optionally create `src/components/practice/types.ts` and re-export from `AlphaTabRenderer`
+
+**Technical Requirements**:
+- Create new file: `src/components/practice/types.ts` (optional - can re-export)
+- ~~Define `AlphaTabHandle` interface with all 13 methods~~ ✅ DONE
+- Define `AlphaTabState` interface for playback state
+- ~~Define `TrackInfo` interface for track metadata~~ ✅ DONE
+
+**Implementation (updated):**
 
 ```typescript
 // src/components/practice/types.ts
+// Re-export existing types from AlphaTabRenderer and add AlphaTabState
 
-/**
- * Imperative handle for controlling AlphaTab playback from parent components.
- * Exposed via React.forwardRef and useImperativeHandle.
- */
-export interface AlphaTabHandle {
-  /** Start playback from current position */
-  play(): void;
-  /** Pause playback at current position */
-  pause(): void;
-  /** Stop playback and return to start */
-  stop(): void;
-  /** Seek to a percentage (0-1) of the total duration */
-  seekTo(percentage: number): void;
-  /** Set playback speed multiplier (0.25 to 2.0) */
-  setPlaybackSpeed(speed: number): void;
-  /** Enable or disable looping */
-  setLoop(enabled: boolean): void;
-  /** Set loop range in ticks, or null to clear */
-  setLoopRange(range: { startTick: number; endTick: number } | null): void;
-  /** Render a specific track by index */
-  renderTrack(index: number): void;
-  /** Toggle mute state for a track */
-  toggleTrackMute(index: number): void;
-  /** Toggle solo state for a track */
-  toggleTrackSolo(index: number): void;
-  /** Set volume for a specific track (0-2, default 1.0) */
-  setTrackVolume(index: number, volume: number): void;
-  /** Set master volume (0-1, default 1.0) */
-  setMasterVolume(volume: number): void;
-  /** Set metronome volume (0-1, default 0) */
-  setMetronomeVolume(volume: number): void;
-}
+// ✅ ALREADY IMPLEMENTED - re-export from AlphaTabRenderer
+export type { AlphaTabHandle, TrackInfo } from '@/components/AlphaTabRenderer';
+
+// NOTE: AlphaTabHandle already has these methods (all volumes 0-1 range):
+// - play, pause, stop, seekTo, setPlaybackSpeed, setLoop, setLoopRange
+// - renderTrack, toggleTrackMute, toggleTrackSolo
+// - setTrackVolume(index, volume), setMasterVolume(volume)
+// - setMetronomeVolume(volume), setCountInVolume(volume)
+// - getTracks(), getMasterVolume(), getMetronomeVolume(), getCountInVolume()
+
+// NOTE: TrackInfo already has: index, name, isMute, isSolo, volume (0-1)
 
 /**
  * Current state of AlphaTab playback, emitted via onStateChange callback.
+ * TO BE IMPLEMENTED in this task.
  */
 export interface AlphaTabState {
   isPlaying: boolean;
@@ -83,19 +82,10 @@ export interface AlphaTabState {
   originalTempo: number;
   currentTrackIndex: number;
   metronomeBeat: number; // 0 = no beat, 1-4 = current beat
+  // Volume state - all 0-1 range
   masterVolume: number;
   metronomeVolume: number;
-}
-
-/**
- * Track information from loaded score.
- */
-export interface TrackInfo {
-  index: number;
-  name: string;
-  isMute: boolean;
-  isSolo: boolean;
-  volume: number; // 0-2, default 1.0
+  countInVolume: number;
 }
 
 /**
@@ -310,18 +300,27 @@ describe('showProgressBar prop', () => {
 
 ### Task 1.3: Implement onReady Callback with AlphaTabHandle
 
+**Status: ✅ COMPLETE** - Implemented in `infra-alphatab-modernization.md`
+
 **Description**: Add onReady callback that provides an imperative handle when player initializes
 **Size**: Large
 **Priority**: High
 **Dependencies**: Task 1.1, Task 1.2
 **Can run parallel with**: None
 
-**Technical Requirements**:
-- Import `AlphaTabHandle` type from `practice/types.ts`
-- Add `onReady` prop to component
-- Create handle object with all control methods
-- Call `onReady(handle)` when `playerReady` state becomes true
-- Handle must call existing internal methods (togglePlay, stopPlayback, etc.)
+**What's Already Done:**
+- ✅ `onReady` prop exists on AlphaTabRenderer
+- ✅ Handle object created with all control methods
+- ✅ `onReady(handle)` called when `playerReady` becomes true
+- ✅ All volume controls implemented (0-1 range)
+- ✅ 17 tests covering volume controls
+
+**Technical Requirements** (all complete):
+- ~~Import `AlphaTabHandle` type from `practice/types.ts`~~ ✅ Types in AlphaTabRenderer.tsx
+- ~~Add `onReady` prop to component~~ ✅ DONE
+- ~~Create handle object with all control methods~~ ✅ DONE
+- ~~Call `onReady(handle)` when `playerReady` state becomes true~~ ✅ DONE
+- ~~Handle must call existing internal methods~~ ✅ DONE
 
 **Implementation**:
 
@@ -2584,19 +2583,33 @@ describe('accessibility', () => {
 
 ### Total Tasks: 24
 
-| Phase | Tasks | Description |
-|-------|-------|-------------|
-| Phase 1 | 5 | AlphaTab API Extraction |
-| Phase 2 | 7 | Unified Control Bar Components |
-| Phase 3 | 3 | PracticeRoom Integration |
-| Phase 4 | 3 | Design System Alignment |
-| Phase 5 | 3 | Responsive Behavior |
-| Phase 6 | 4 | Testing & Polish |
+| Phase | Tasks | Status | Description |
+|-------|-------|--------|-------------|
+| Phase 1 | 5 | ⏳ Partial | AlphaTab API Extraction (Task 1.3 complete) |
+| Phase 2 | 7 | Pending | Unified Control Bar Components |
+| Phase 3 | 3 | Pending | PracticeRoom Integration |
+| Phase 4 | 3 | Pending | Design System Alignment |
+| Phase 5 | 3 | Pending | Responsive Behavior |
+| Phase 6 | 4 | Pending | Testing & Polish |
 
-### Critical Path
+### Pre-Work Completed (from infra-alphatab-modernization)
+
+- ✅ **Task 1.3**: `onReady` callback with `AlphaTabHandle` - COMPLETE
+- ✅ Volume controls API (0-1 range) - COMPLETE
+- ✅ `TrackInfo` interface with volume - COMPLETE
+- ✅ 17 tests for volume controls - COMPLETE
+
+### Remaining Phase 1 Work
+
+- Task 1.1: Create `AlphaTabState` interface (types partially done)
+- Task 1.2: Add `showControls` and `showProgressBar` props
+- Task 1.4: Add `onStateChange`, `onPositionChange`, `onTracksLoaded`, `onError` callbacks
+- Task 1.5: Create barrel export
+
+### Critical Path (Updated)
 
 ```
-Phase 1 (1.1 → 1.2 → 1.3 → 1.4)
+Phase 1 (1.1 partial → 1.2 → 1.4 → 1.5)  [1.3 DONE]
     ↓
 Phase 2 (2.1-2.6 parallel → 2.7)
     ↓
@@ -2615,13 +2628,14 @@ Phase 6 (6.1-6.3 parallel → 6.4)
 - **Phase 4**: Tasks 4.1-4.3 can run in parallel
 - **Phase 6**: Tasks 6.1-6.3 can run in parallel
 
-### Risk Areas
+### Risk Areas (Updated)
 
-1. **AlphaTab API Volume Controls**: The volume control methods in AlphaTabHandle may need API verification
+1. ~~**AlphaTab API Volume Controls**: The volume control methods in AlphaTabHandle may need API verification~~ ✅ RESOLVED - All volume methods verified and tested
 2. **Mobile Layout**: May need to defer MobileControlsMenu if inline layout works
 3. **Test Mocking**: AlphaTab mocking complexity may require adjustments
 
 ---
 
 *Document generated: 2025-11-27*
+*Updated: 2025-11-27 (reflects completed infra-alphatab-modernization)*
 *Source: specs/feat-practice-room-unified-control-bar.md*
