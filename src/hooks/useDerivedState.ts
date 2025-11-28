@@ -32,9 +32,10 @@ export function useDerivedState<T>(
   const initialValueRef = useRef<T>(initialValue);
 
   // Update ref in useLayoutEffect to avoid mutation during render (React purity requirement)
+  // Dependency array ensures this only runs when initialValue actually changes
   useLayoutEffect(() => {
     initialValueRef.current = initialValue;
-  });
+  }, [initialValue]);
 
   // Use useLayoutEffect to sync before paint, avoiding visual flicker
   useLayoutEffect(() => {
@@ -83,9 +84,10 @@ export function useDerivedStateLazy<T>(
   const initialValueFnRef = useRef<() => T>(initialValueFn);
 
   // Update ref in useLayoutEffect to avoid mutation during render (React purity requirement)
+  // Dependency array ensures this only runs when initialValueFn reference changes
   useLayoutEffect(() => {
     initialValueFnRef.current = initialValueFn;
-  });
+  }, [initialValueFn]);
 
   useLayoutEffect(() => {
     // On first render, just capture the initial key (state already initialized correctly)
