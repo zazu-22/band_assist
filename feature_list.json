@@ -1353,7 +1353,7 @@
       "Step 4: Verify AI sidebar moves to bottom or is hidden",
       "Step 5: Verify all content is accessible"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "style",
@@ -1364,7 +1364,7 @@
       "Step 3: Verify sidebar visibility/positioning",
       "Step 4: Verify no horizontal overflow"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "style",
