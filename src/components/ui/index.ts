@@ -11,6 +11,8 @@ export { ResizablePanel } from './ResizablePanel';
 export { StatusBadge } from './StatusBadge';
 export { StatCard } from './StatCard';
 export { ConditionalTooltip } from './ConditionalTooltip';
+export { MetadataItem } from './MetadataItem';
+export { UploadZone } from './UploadZone';
 
 // Theme components
 export { ThemeProvider, useTheme } from './ThemeProvider';
