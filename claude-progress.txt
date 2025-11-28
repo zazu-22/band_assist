@@ -1,6 +1,6 @@
 # Claude Code Progress Summary
 
-## Current Status: 121/151 tests passing (80.1%)
+## Current Status: 123/151 tests passing (81.5%)
 
 ---
 
@@ -33,10 +33,12 @@ Created new MetadataItem and UploadZone reusable components, verified save metad
 - Refreshed page and verified BPM persisted
 - Test #117 now passes
 
-### Tests Verified as Passing (3 new tests)
+### Tests Verified as Passing (5 new tests)
 1. **#117 Save button persists metadata changes** - Changed BPM, saved, refreshed, verified persistence
-2. **#140 New MetadataItem component created in ui/ folder** - Component created with correct props and displayName
-3. **#141 New UploadZone component created in ui/ folder** - Component created with drag-and-drop and isDragging state
+2. **#119 Responsive layout works on mobile** - Verified header stacks, tabs scroll, sidebar at bottom
+3. **#120 Responsive layout works on tablet** - Verified 2-column grid, sidebar positioning, no overflow
+4. **#140 New MetadataItem component created in ui/ folder** - Component created with correct props and displayName
+5. **#141 New UploadZone component created in ui/ folder** - Component created with drag-and-drop and isDragging state
 
 ### Browser Automation Testing
 - Logged in with test credentials
@@ -167,7 +169,7 @@ Completed the SongDetail.tsx design system migration - removing ALL legacy zinc-
 
 ---
 
-## Remaining Work (30 tests)
+## Remaining Work (28 tests)
 
 ### High Priority - File Upload Tests:
 - PDF file upload (#80)
