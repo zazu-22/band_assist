@@ -1,6 +1,6 @@
 # Claude Code Progress Summary
 
-## Current Status: 116/151 tests passing (76.8%)
+## Current Status: 118/151 tests passing (78.1%)
 
 ---
 
@@ -116,7 +116,7 @@ Completed the SongDetail.tsx design system migration - removing ALL legacy zinc-
 
 ---
 
-## Remaining Work (35 tests)
+## Remaining Work (33 tests)
 
 ### High Priority - File Upload Tests:
 - PDF file upload (#80)

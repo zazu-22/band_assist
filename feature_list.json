@@ -1447,7 +1447,7 @@
       "Step 3: Inspect spacing between content sections",
       "Step 4: Verify space-y-6 (24px) is consistently applied"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "style",
@@ -1471,7 +1471,7 @@
       "Step 3: Verify gap-4 (16px) or gap-6 (24px) is used",
       "Step 4: Check consistency across different tabs"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "style",
