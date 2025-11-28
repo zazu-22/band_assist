@@ -34,6 +34,7 @@ dist-ssr
 
 # Local development files
 .claude/agents
+.claude/_agents
 .claude/commands
 .claude/settings*.json*
 .claude-agent.yaml
