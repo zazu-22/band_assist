@@ -850,7 +850,7 @@
       "Step 4: Verify toast error message appears",
       "Step 5: Verify no chart is created"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "style",
@@ -1083,7 +1083,7 @@
       "Step 3: Verify toast error message appears",
       "Step 4: Verify no audio track is saved"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "style",
@@ -1094,7 +1094,7 @@
       "Step 3: Verify Card component structure",
       "Step 4: Verify bg-card border-border styling"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
