@@ -156,38 +156,127 @@ export interface TrackInfo {
 
 /**
  * Handle interface for controlling AlphaTab from parent components.
+ *
  * All volume values use 0-1 range (0% to 100%).
  *
- * Design note: This interface uses index-based track methods (e.g., setTrackVolume(index, volume))
+ * **Design note:** This interface uses index-based track methods (e.g., setTrackVolume(index, volume))
  * rather than the underlying array-based AlphaTab API (e.g., changeTrackVolume([track], volume)).
  * This provides a simpler, more intuitive API for consumers while the component handles
  * the conversion to AlphaTab's internal track object arrays.
+ *
+ * **Volume State Flow (One-Way Binding):**
+ * Volume state flows from React → AlphaTab only. The component maintains internal React state
+ * for volume values and pushes changes to AlphaTab's API. AlphaTab does not notify React of
+ * internal volume changes. If you need to verify the current volume state, use the getter
+ * methods (getMasterVolume, etc.) which return the React state values.
  */
 export interface AlphaTabHandle {
   // Playback controls
+
+  /** Start or resume playback from the current position. */
   play(): void;
+
+  /** Pause playback at the current position. */
   pause(): void;
+
+  /** Stop playback and reset position to the beginning. */
   stop(): void;
+
+  /**
+   * Seek to a position in the track.
+   * @param percentage - Position as a percentage (0-1, where 0 = start, 1 = end)
+   */
   seekTo(percentage: number): void;
+
+  /**
+   * Set the playback speed multiplier.
+   * @param speed - Speed multiplier (e.g., 0.5 = half speed, 1.0 = normal, 2.0 = double)
+   */
   setPlaybackSpeed(speed: number): void;
+
+  /**
+   * Enable or disable loop mode.
+   * @param enabled - Whether to loop playback
+   */
   setLoop(enabled: boolean): void;
+
+  /**
+   * Set a custom loop range for section practice.
+   * @param range - The loop range in ticks, or null to clear the range
+   */
   setLoopRange(range: { startTick: number; endTick: number } | null): void;
 
   // Track controls
+
+  /**
+   * Switch to rendering a specific track.
+   * @param index - Zero-based track index
+   */
   renderTrack(index: number): void;
+
+  /**
+   * Toggle mute state for a track.
+   * @param index - Zero-based track index
+   */
   toggleTrackMute(index: number): void;
+
+  /**
+   * Toggle solo state for a track.
+   * @param index - Zero-based track index
+   */
   toggleTrackSolo(index: number): void;
 
   // Volume controls (0-1 range)
+
+  /**
+   * Set volume for a specific track.
+   * @param index - Zero-based track index
+   * @param volume - Volume level (0-1, clamped to valid range)
+   */
   setTrackVolume(index: number, volume: number): void;
+
+  /**
+   * Set master volume for all audio output.
+   * @param volume - Volume level (0-1, clamped to valid range)
+   */
   setMasterVolume(volume: number): void;
+
+  /**
+   * Set metronome volume. Values > 0 enable the metronome.
+   * @param volume - Volume level (0-1, where 0 = off)
+   */
   setMetronomeVolume(volume: number): void;
+
+  /**
+   * Set count-in volume. Values > 0 enable count-in before playback.
+   * @param volume - Volume level (0-1, where 0 = off)
+   */
   setCountInVolume(volume: number): void;
 
   // State getters
+
+  /**
+   * Get information about all tracks in the current score.
+   * @returns Array of track info objects with name, mute/solo state, and volume
+   */
   getTracks(): TrackInfo[];
+
+  /**
+   * Get the current master volume level.
+   * @returns Volume level (0-1)
+   */
   getMasterVolume(): number;
+
+  /**
+   * Get the current metronome volume level.
+   * @returns Volume level (0-1, where 0 = metronome disabled)
+   */
   getMetronomeVolume(): number;
+
+  /**
+   * Get the current count-in volume level.
+   * @returns Volume level (0-1, where 0 = count-in disabled)
+   */
   getCountInVolume(): number;
 }
 
