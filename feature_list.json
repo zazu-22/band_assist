@@ -8,7 +8,7 @@
       "Step 3: Verify title has class 'font-serif'",
       "Step 4: Verify title has class 'text-4xl font-bold'"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -20,7 +20,7 @@
       "Step 4: Verify badge shows 'days' text",
       "Step 5: Verify gig title is displayed alongside countdown"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "style",
@@ -31,7 +31,7 @@
       "Step 3: Verify countdown badge has gradient background (from-primary to-chart-2)",
       "Step 4: Verify badge has animate-pulse-glow class"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -42,7 +42,7 @@
       "Step 3: Verify total duration is displayed with font-mono class",
       "Step 4: Verify song count is displayed with correct singular/plural form"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -54,7 +54,7 @@
       "Step 4: Change one song to Performance Ready",
       "Step 5: Verify SetlistStats updates to 67% readiness (2/3)"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "style",
@@ -65,7 +65,7 @@
       "Step 3: Verify percentage has font-mono class",
       "Step 4: Verify percentage has tabular-nums class"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -77,7 +77,7 @@
       "Step 4: Verify progress bar has blue segment for In Progress songs",
       "Step 5: Verify progress bar has amber segment for To Learn songs"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "style",
@@ -86,7 +86,7 @@
       "Step 1: Navigate to /setlist",
       "Step 2: Verify progress bar segments have animate-progress-fill class"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -98,7 +98,7 @@
       "Step 4: Verify tooltip shows 'Stage Ready' count",
       "Step 5: Repeat for In Progress and To Learn segments"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "style",
@@ -109,7 +109,7 @@
       "Step 3: Verify heading has font-serif class",
       "Step 4: Verify heading has text-lg class"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -120,7 +120,7 @@
       "Step 3: Click on the song title",
       "Step 4: Verify navigation to song detail page occurs"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -131,7 +131,7 @@
       "Step 3: Verify first song shows track number '1'",
       "Step 4: Verify track number has font-mono and tabular-nums classes"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -142,7 +142,7 @@
       "Step 3: Verify song item displays 'E'",
       "Step 4: Verify song item displays '120 BPM'"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -153,7 +153,7 @@
       "Step 3: Verify duration '4:15' is displayed",
       "Step 4: Verify duration has font-mono tabular-nums classes"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -163,7 +163,7 @@
       "Step 2: Navigate to /setlist on mobile viewport (< 768px)",
       "Step 3: Verify duration is hidden (hidden md:block class)"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "style",
@@ -173,7 +173,7 @@
       "Step 2: Verify song items have border-l-[3px] class",
       "Step 3: Verify song items have border-l-primary/60 class"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -184,7 +184,7 @@
       "Step 3: Hover over a song item",
       "Step 4: Verify delete button becomes visible (group-hover:opacity-100)"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -196,7 +196,7 @@
       "Step 4: Verify only 2 songs remain",
       "Step 5: Verify the correct song was removed"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -208,7 +208,7 @@
       "Step 4: Verify In Progress songs have blue StatusBadge",
       "Step 5: Verify To Learn songs have amber StatusBadge"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "style",
@@ -220,7 +220,7 @@
       "Step 4: Verify second item has animation-delay of 50ms",
       "Step 5: Verify items have animate-slide-in-from-bottom class"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -230,7 +230,7 @@
       "Step 2: Click 'Add Song' button in action bar",
       "Step 3: Verify AddSongForm appears with slide-in animation"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -241,7 +241,7 @@
       "Step 3: Verify button shows 'Thinking...' text",
       "Step 4: Verify Sparkles icon has animation"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "style",
@@ -251,7 +251,7 @@
       "Step 2: Locate 'Songs' section title in action bar",
       "Step 3: Verify title has font-serif text-lg classes"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -263,7 +263,7 @@
       "Step 4: Click Add button",
       "Step 5: Verify new song appears in setlist with title 'Sharp Dressed Man'"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -274,7 +274,7 @@
       "Step 3: Press Enter key",
       "Step 4: Verify form submits and song is added"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -285,7 +285,7 @@
       "Step 3: Click Cancel button",
       "Step 4: Verify form is hidden"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "style",
@@ -295,7 +295,7 @@
       "Step 2: Verify form is wrapped in Card component",
       "Step 3: Verify form has animate-slide-in-from-top animation"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -307,7 +307,7 @@
       "Step 4: Verify order is now B, C, A",
       "Step 5: Verify sortOrder is persisted"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "style",
@@ -319,7 +319,7 @@
       "Step 4: Verify drop indicator has 'Drop Here' text",
       "Step 5: Verify drop indicator has dashed border styling"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -329,7 +329,7 @@
       "Step 2: Start dragging a song item",
       "Step 3: Verify dragged item has opacity-0 and h-0 classes"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -340,7 +340,7 @@
       "Step 3: Verify 'No songs in setlist' title is shown",
       "Step 4: Verify 'Add Song' action button is present"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -350,7 +350,7 @@
       "Step 2: Click 'Add Song' action in empty state",
       "Step 3: Verify AddSongForm appears"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "style",
@@ -360,7 +360,7 @@
       "Step 2: Verify ambient glow div exists with radial-gradient",
       "Step 3: Verify glow has pointer-events-none and aria-hidden"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "style",
@@ -369,7 +369,7 @@
       "Step 1: Navigate to /setlist",
       "Step 2: Verify container has p-4 sm:p-6 lg:p-10 classes"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -378,7 +378,7 @@
       "Step 1: Verify SetlistManager component accepts events prop",
       "Step 2: Verify App.tsx passes events={events} to SetlistManager"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -389,7 +389,7 @@
       "Step 3: Verify countdown shows only the future GIG",
       "Step 4: Verify PRACTICE event is not shown as countdown"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -400,7 +400,7 @@
       "Step 3: Verify countdown shows '7 days'",
       "Step 4: Verify singular 'day' is used when 1 day away"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "style",
@@ -411,7 +411,7 @@
       "Step 3: Hover over a song item",
       "Step 4: Verify background color changes"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "style",
@@ -422,7 +422,7 @@
       "Step 3: Hover over song item",
       "Step 4: Verify title color changes"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -433,7 +433,7 @@
       "Step 3: Verify drag handle has active:cursor-grabbing class",
       "Step 4: Verify drag handle has touch-none class"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -443,7 +443,7 @@
       "Step 2: Navigate to /setlist",
       "Step 3: Verify delete button has aria-label='Delete Legs'"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "style",
@@ -454,7 +454,7 @@
       "Step 3: Verify legend shows blue dot for In Progress",
       "Step 4: Verify legend shows amber dot for To Learn"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -464,7 +464,7 @@
       "Step 2: Verify SetlistStats is wrapped in Card component",
       "Step 3: Verify content is wrapped in CardContent component"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "style",
@@ -475,7 +475,7 @@
       "Step 3: Verify stats card has animation-forwards class",
       "Step 4: Verify stats card has stagger-1 delay"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "style",
@@ -485,7 +485,7 @@
       "Step 2: Verify action bar has animate-slide-in-from-bottom class",
       "Step 3: Verify action bar has stagger-2 delay"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -495,7 +495,7 @@
       "Step 2: Verify component is wrapped with memo()",
       "Step 3: Verify displayName is set for React DevTools"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -508,7 +508,7 @@
       "Step 5: Verify SetlistActionBar is exported",
       "Step 6: Verify AddSongForm is exported"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "style",
@@ -519,7 +519,7 @@
       "Step 3: Verify animations are disabled or minimal",
       "Step 4: Verify motion-reduce:transition-none classes are applied"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -532,7 +532,7 @@
       "Step 5: Verify test for onDelete callback passes",
       "Step 6: Verify test for animation delay passes"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -547,6 +547,6 @@
       "Step 7: Verify total duration calculates correctly",
       "Step 8: Verify song count displays correctly"
     ],
-    "passes": false
+    "passes": true
   }
 ]
