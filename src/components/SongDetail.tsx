@@ -337,7 +337,7 @@ export const SongDetail: React.FC<SongDetailProps> = ({
       {/* Main Content Area */}
       <div className="flex-1 flex flex-col h-full overflow-hidden">
         {/* Header */}
-        <header className="bg-card border-b border-border p-6 shrink-0">
+        <header className="bg-card border-b border-border p-4 sm:p-6 shrink-0">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-4">
               <Button
@@ -416,7 +416,7 @@ export const SongDetail: React.FC<SongDetailProps> = ({
         </header>
 
         {/* Scrollable Content */}
-        <div className="flex-1 overflow-y-auto p-6 lg:p-10">
+        <div className="flex-1 overflow-y-auto p-4 sm:p-6 lg:p-8">
           {/* OVERVIEW TAB */}
           {activeTab === 'OVERVIEW' && (
             <div className="grid lg:grid-cols-2 gap-6 animate-slide-in-from-bottom animation-forwards opacity-0 stagger-1">
@@ -748,21 +748,27 @@ export const SongDetail: React.FC<SongDetailProps> = ({
                         onClick={() =>
                           downloadFile(activeChart.url!, `${activeChart.name.replace(/\s+/g, '_')}`)
                         }
-                        className="bg-card/80 backdrop-blur-sm"
+                        className="bg-card/80 backdrop-blur-sm hover:bg-muted"
                         title="Download Original"
                       >
                         <Download size={16} />
                       </Button>
                       {activeChart.type === 'PDF' && (
-                        <a
-                          href={activeChart.url}
-                          target="_blank"
-                          rel="noreferrer"
-                          className="p-2 bg-card/80 text-info rounded-lg hover:bg-info/20 border border-border backdrop-blur-sm shadow-sm"
+                        <Button
+                          variant="ghost"
+                          size="icon"
+                          asChild
+                          className="bg-card/80 backdrop-blur-sm hover:bg-muted"
                           title="Open in New Tab"
                         >
-                          <ExternalLink size={16} />
-                        </a>
+                          <a
+                            href={activeChart.url}
+                            target="_blank"
+                            rel="noreferrer"
+                          >
+                            <ExternalLink size={16} />
+                          </a>
+                        </Button>
                       )}
                     </div>
 

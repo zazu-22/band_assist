@@ -1460,7 +1460,7 @@
       "Step 5: Increase to desktop width",
       "Step 6: Verify padding is p-8 (32px)"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "style",
@@ -1565,7 +1565,7 @@
       "Step 3: Verify Button variant='ghost' styling",
       "Step 4: Verify hover state shows bg-muted"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -1624,7 +1624,7 @@
       "Step 4: Verify page loads correctly",
       "Step 5: Verify all data is present"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -1646,7 +1646,7 @@
       "Step 4: Verify Part Assignment section exists",
       "Step 5: Verify Audio Upload section exists"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "style",
