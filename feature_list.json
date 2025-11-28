@@ -1612,7 +1612,7 @@
       "Step 4: Click back button",
       "Step 5: Verify return to /setlist page"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -1634,7 +1634,7 @@
       "Step 2: Verify redirect to home page (/)",
       "Step 3: Verify toast message about song not found"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "style",
@@ -1700,7 +1700,7 @@
       "Step 2: Verify all modified files pass formatting check",
       "Step 3: If failures, run npm run format to fix"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -1710,7 +1710,7 @@
       "Step 2: Verify all existing tests pass",
       "Step 3: Verify coverage is maintained"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -1720,7 +1720,7 @@
       "Step 2: Verify all existing tests pass",
       "Step 3: Verify coverage is maintained"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -1731,6 +1731,6 @@
       "Step 3: Verify no TypeScript errors",
       "Step 4: Verify output files are generated"
     ],
-    "passes": false
+    "passes": true
   }
 ]
