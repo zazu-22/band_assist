@@ -13,6 +13,7 @@ import {
   Scroll,
   Gauge,
 } from 'lucide-react';
+import { AlphaTabApi as AlphaTabApiClass, midi } from '@coderline/alphatab';
 
 // Constants
 const POSITION_UPDATE_THROTTLE_MS = 100; // Throttle position updates to ~10 FPS for performance
@@ -20,7 +21,7 @@ const METRONOME_HIGHLIGHT_DURATION_FACTOR = 0.3; // Duration factor for metronom
 const PLAYBACK_RETRY_DELAY_MS = 100; // Delay before retrying failed play/pause operations
 type PlaybackAction = 'play' | 'pause';
 
-// AlphaTab type definitions
+// AlphaTab type definitions - library types are internal, we define interfaces matching API shape
 interface AlphaTabScore {
   tracks: AlphaTabTrack[];
   tempo: number;
@@ -43,16 +44,21 @@ interface AlphaTabPositionChangedEvent {
   endTime: number;
 }
 
+// Beat type from library - beatMouseDown passes Beat directly, not wrapped
+interface AlphaTabBeat {
+  absolutePlaybackStart: number;
+  playbackDuration: number;
+}
+
+// Event wrapper for beatMouseDown - library provides Beat but with additional DOM event context
 interface AlphaTabBeatMouseEvent {
-  beat: {
-    absolutePlaybackStart: number;
-    playbackDuration: number;
-  };
+  beat: AlphaTabBeat;
   originalEvent: {
     shiftKey: boolean;
   };
 }
 
+// MidiEvent with metronome properties (AlphaTabMetronomeEvent extends MidiEvent)
 interface AlphaTabMidiEvent {
   isMetronome: boolean;
   metronomeNumerator: number;
@@ -68,6 +74,7 @@ interface AlphaTabErrorEvent {
   inner?: string;
 }
 
+// Settings type matching library's SettingsJson structure
 interface AlphaTabSettings {
   core?: {
     fontDirectory?: string;
@@ -85,6 +92,7 @@ interface AlphaTabSettings {
   };
 }
 
+// API instance type - mirrors AlphaTabApi class shape
 interface AlphaTabApi {
   destroy(): void;
   load(data: Uint8Array): void;
@@ -95,11 +103,15 @@ interface AlphaTabApi {
   renderTracks(tracks: AlphaTabTrack[]): void;
   changeTrackMute(tracks: AlphaTabTrack[], mute: boolean): void;
   changeTrackSolo(tracks: AlphaTabTrack[], solo: boolean): void;
+  changeTrackVolume(tracks: AlphaTabTrack[], volume: number): void;
   playbackSpeed: number;
   timePosition: number;
   isLooping: boolean;
   playbackRange: { startTick: number; endTick: number } | null;
-  score: AlphaTabScore;
+  masterVolume: number;
+  metronomeVolume: number;
+  countInVolume: number;
+  score: AlphaTabScore | null;
   scoreLoaded: {
     on(callback: (score: AlphaTabScore) => void): void;
     off(callback: (score: AlphaTabScore) => void): void;
@@ -121,8 +133,8 @@ interface AlphaTabApi {
   };
   playerFinished: { on(callback: () => void): void; off(callback: () => void): void };
   beatMouseDown: {
-    on(callback: (e: AlphaTabBeatMouseEvent) => void): void;
-    off(callback: (e: AlphaTabBeatMouseEvent) => void): void;
+    on(callback: (beat: AlphaTabBeat) => void): void;
+    off(callback: (beat: AlphaTabBeat) => void): void;
   };
   midiEventsPlayed: {
     on(callback: (e: AlphaTabMidiEventsPlayedEvent) => void): void;
@@ -131,32 +143,99 @@ interface AlphaTabApi {
   midiEventsPlayedFilter: number[];
 }
 
-// Extend window interface to include alphaTab from CDN
-declare global {
-  interface Window {
-    alphaTab: {
-      AlphaTabApi: new (element: HTMLElement, settings: AlphaTabSettings) => AlphaTabApi;
-      midi: {
-        MidiEventType: {
-          AlphaTabMetronome: number;
-        };
-      };
-    };
-  }
+/**
+ * Extended track info with volume for external consumption.
+ */
+export interface TrackInfo {
+  index: number;
+  name: string;
+  isMute: boolean;
+  isSolo: boolean;
+  volume: number; // 0-1, default 1.0
+}
+
+/**
+ * Handle interface for controlling AlphaTab from parent components.
+ * All volume values use 0-1 range (0% to 100%).
+ *
+ * Design note: This interface uses index-based track methods (e.g., setTrackVolume(index, volume))
+ * rather than the underlying array-based AlphaTab API (e.g., changeTrackVolume([track], volume)).
+ * This provides a simpler, more intuitive API for consumers while the component handles
+ * the conversion to AlphaTab's internal track object arrays.
+ */
+export interface AlphaTabHandle {
+  // Playback controls
+  play(): void;
+  pause(): void;
+  stop(): void;
+  seekTo(percentage: number): void;
+  setPlaybackSpeed(speed: number): void;
+  setLoop(enabled: boolean): void;
+  setLoopRange(range: { startTick: number; endTick: number } | null): void;
+
+  // Track controls
+  renderTrack(index: number): void;
+  toggleTrackMute(index: number): void;
+  toggleTrackSolo(index: number): void;
+
+  // Volume controls (0-1 range)
+  setTrackVolume(index: number, volume: number): void;
+  setMasterVolume(volume: number): void;
+  setMetronomeVolume(volume: number): void;
+  setCountInVolume(volume: number): void;
+
+  // State getters
+  getTracks(): TrackInfo[];
+  getMasterVolume(): number;
+  getMetronomeVolume(): number;
+  getCountInVolume(): number;
 }
 
 interface AlphaTabRendererProps {
   fileData: string; // Base64 Data URI
   isPlaying?: boolean;
   onPlaybackChange?: (isPlaying: boolean) => void;
+  onReady?: (handle: AlphaTabHandle) => void;
   readOnly?: boolean;
+  /** Show built-in toolbar controls (default: true for backwards compat) */
+  showControls?: boolean;
+  /** Show built-in progress bar (default: true for backwards compat) */
+  showProgressBar?: boolean;
+  /** Callback when playback state changes (more detailed than onPlaybackChange) */
+  onStateChange?: (state: import('@/components/practice/types').AlphaTabState) => void;
+  /** Callback for position updates (throttled to ~10 FPS) */
+  onPositionChange?: (current: number, total: number) => void;
+  /** Callback when tracks are loaded from score */
+  onTracksLoaded?: (tracks: TrackInfo[]) => void;
+  /** Callback when an error occurs */
+  onError?: (error: string) => void;
+  /**
+   * Additional MIDI event types to include in the midiEventsPlayedFilter.
+   * The metronome filter (AlphaTabMetronome) is always included by default.
+   *
+   * Note: This prop configures which MIDI events AlphaTab processes internally.
+   * Currently, only metronome events are handled for the visual beat indicator.
+   * This prop exists for forward compatibility if custom MIDI event handling
+   * is added in future versions.
+   *
+   * @see https://alphatab.net/docs/reference/api/midiEventsPlayedFilter
+   */
+  additionalMidiFilters?: number[];
 }
 
 export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
   fileData,
   isPlaying: externalIsPlaying,
   onPlaybackChange,
+  onReady,
   readOnly = false,
+  showControls = true,
+  showProgressBar = true,
+  onStateChange,
+  onPositionChange,
+  onTracksLoaded,
+  onError,
+  additionalMidiFilters = [],
 }) => {
   const rootRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -165,6 +244,25 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
   const cleanupEventListenersRef = useRef<(() => void) | null>(null);
   const mixerButtonRef = useRef<HTMLButtonElement | null>(null);
   const mixerPanelRef = useRef<HTMLDivElement | null>(null);
+
+  // Refs for callbacks to prevent stale closures in event handlers
+  // These refs are updated on each render and read inside the useEffect event handlers
+  const onTracksLoadedRef = useRef(onTracksLoaded);
+  const onPositionChangeRef = useRef(onPositionChange);
+  const onStateChangeRef = useRef(onStateChange);
+  const onErrorRef = useRef(onError);
+  const onPlaybackChangeRef = useRef(onPlaybackChange);
+
+  // Ref for additional MIDI filters to avoid stale closure
+  const additionalMidiFiltersRef = useRef(additionalMidiFilters);
+
+  // Keep refs in sync with latest callback props
+  onTracksLoadedRef.current = onTracksLoaded;
+  onPositionChangeRef.current = onPositionChange;
+  onStateChangeRef.current = onStateChange;
+  onErrorRef.current = onError;
+  onPlaybackChangeRef.current = onPlaybackChange;
+  additionalMidiFiltersRef.current = additionalMidiFilters;
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -195,6 +293,12 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
   const [currentBPM, setCurrentBPM] = useState<number | null>(null);
   const [isEditingBPM, setIsEditingBPM] = useState(false);
   const [bpmInputValue, setBpmInputValue] = useState<string>('');
+
+  // Volume controls state (0-1 range)
+  const [masterVolume, setMasterVolumeState] = useState(1.0);
+  const [metronomeVolume, setMetronomeVolumeState] = useState(0);
+  const [countInVolume, setCountInVolumeState] = useState(0);
+  const [trackVolumes, setTrackVolumes] = useState<number[]>([]);
 
   // Auto-scroll state
   const [autoScrollEnabled, setAutoScrollEnabled] = useState(false);
@@ -275,30 +379,9 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
   useEffect(() => {
     let isMounted = true;
     let timeoutId: NodeJS.Timeout;
-    let checkAttempts = 0;
-    const MAX_CHECK_ATTEMPTS = 50; // 10 seconds
 
     // Capture ref value at effect start for cleanup
     const metronomeTimeouts = metronomeTimeoutsRef.current;
-
-    // Wait for AlphaTab CDN script to load
-    const checkLibrary = () => {
-      checkAttempts++;
-      if (!window.alphaTab) {
-        if (checkAttempts >= MAX_CHECK_ATTEMPTS) {
-          if (isMounted) {
-            setError(
-              'AlphaTab library failed to load from CDN. Please check your internet connection.'
-            );
-            setLoading(false);
-          }
-          return;
-        }
-        setTimeout(checkLibrary, 200);
-        return;
-      }
-      initAlphaTab();
-    };
 
     const initAlphaTab = () => {
       if (!containerRef.current || !isMounted) return;
@@ -337,8 +420,7 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
           },
           player: {
             enablePlayer: !readOnly, // Disable player in readonly mode
-            soundFont:
-              'https://cdn.jsdelivr.net/npm/@coderline/alphatab@latest/dist/soundfont/sonivox.sf2',
+            soundFont: '/soundfont/sonivox.sf2', // Local soundfont via Vite plugin
             scrollElement: rootRef.current,
           },
           display: {
@@ -347,8 +429,12 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
           },
         };
 
-        // 3. Initialize API
-        const api = new window.alphaTab.AlphaTabApi(containerRef.current, settings);
+        // 3. Initialize API (ESM import)
+        // Cast to local types for compatibility with library's internal types
+        const api = new AlphaTabApiClass(
+          containerRef.current,
+          settings as never // Settings structure matches library expectations
+        ) as unknown as AlphaTabApi;
         apiRef.current = api;
 
         // 4. Attach Events - Store handlers for cleanup
@@ -359,10 +445,26 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
           // AlphaTab renders first track by default
           setCurrentTrackIndex(0);
 
+          // Initialize track volumes to default 1.0 for all tracks
+          setTrackVolumes(new Array(score.tracks.length).fill(1.0));
+
           // Extract original tempo
           const tempo = score.tempo || 120; // Default to 120 if not specified
           setOriginalTempo(tempo);
           setCurrentBPM(Math.round(tempo * currentSpeed));
+
+          // Emit tracks to parent via callback (using ref to avoid stale closure)
+          if (onTracksLoadedRef.current) {
+            onTracksLoadedRef.current(
+              score.tracks.map((t, i) => ({
+                index: i,
+                name: t.name,
+                isMute: t.playbackInfo.isMute,
+                isSolo: t.playbackInfo.isSolo,
+                volume: 1.0, // Default volume
+              }))
+            );
+          }
 
           setLoading(false);
         };
@@ -385,6 +487,11 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
 
           setError(errorMsg);
           setLoading(false);
+
+          // Emit error to parent via callback (using ref to avoid stale closure)
+          if (onErrorRef.current) {
+            onErrorRef.current(errorMsg);
+          }
         };
 
         const handlePlayerStateChanged = (args: AlphaTabPlayerStateChangedEvent) => {
@@ -400,7 +507,8 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
           }
 
           setInternalIsPlaying(playing);
-          if (onPlaybackChange) onPlaybackChange(playing);
+          // Use ref to avoid stale closure
+          if (onPlaybackChangeRef.current) onPlaybackChangeRef.current(playing);
         };
 
         const handlePlayerReady = () => {
@@ -433,6 +541,11 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
 
           setCurrentTime(e.currentTime);
           setTotalTime(e.endTime);
+
+          // Emit position to parent via callback (using ref to avoid stale closure)
+          if (onPositionChangeRef.current) {
+            onPositionChangeRef.current(e.currentTime, e.endTime);
+          }
         };
 
         const handlePlayerFinished = () => {
@@ -445,7 +558,8 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
           }
 
           setInternalIsPlaying(false);
-          if (onPlaybackChange) onPlaybackChange(false);
+          // Use ref to avoid stale closure
+          if (onPlaybackChangeRef.current) onPlaybackChangeRef.current(false);
         };
 
         // Phase 1: Beat selection for loop - capture ref outside state setter to avoid stale closure
@@ -479,8 +593,23 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
           }
         };
 
-        // Phase 2: Visual metronome
-        api.midiEventsPlayedFilter = [window.alphaTab.midi.MidiEventType.AlphaTabMetronome];
+        // Phase 2: Visual metronome - Configure MIDI event filtering
+        // AlphaTabMetronome is required for visual beat indicator; additionalMidiFilters allows
+        // parent components to track other MIDI events (e.g., note events for visualization).
+        // Use Set to deduplicate filters in case of React Strict Mode double-mount or re-initialization
+        const existingFilters = api.midiEventsPlayedFilter || [];
+        const newFilters = [
+          midi.MidiEventType.AlphaTabMetronome,
+          ...additionalMidiFiltersRef.current,
+        ];
+        // Only add filters that aren't already present to prevent duplicates
+        const combinedFilters = [...existingFilters];
+        for (const filter of newFilters) {
+          if (!combinedFilters.includes(filter)) {
+            combinedFilters.push(filter);
+          }
+        }
+        api.midiEventsPlayedFilter = combinedFilters;
 
         const handleMidiEventsPlayed = (e: AlphaTabMidiEventsPlayedEvent) => {
           if (!isMounted) return;
@@ -505,6 +634,8 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
         };
 
         // Register all event handlers
+        // Note: beatMouseDown runtime provides wrapper with originalEvent, but types show Beat directly
+        // Cast to align types with actual runtime behavior
         api.scoreLoaded.on(handleScoreLoaded);
         api.error.on(handleError);
         api.playerStateChanged.on(handlePlayerStateChanged);
@@ -513,7 +644,7 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
         api.renderFinished.on(handleRenderFinished);
         api.playerPositionChanged.on(handlePositionChanged);
         api.playerFinished.on(handlePlayerFinished);
-        api.beatMouseDown.on(handleBeatMouseDown);
+        api.beatMouseDown.on(handleBeatMouseDown as unknown as (beat: AlphaTabBeat) => void);
         api.midiEventsPlayed.on(handleMidiEventsPlayed);
 
         // Store cleanup function in ref for cleanup phase
@@ -527,7 +658,7 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
             api.renderFinished.off(handleRenderFinished);
             api.playerPositionChanged.off(handlePositionChanged);
             api.playerFinished.off(handlePlayerFinished);
-            api.beatMouseDown.off(handleBeatMouseDown);
+            api.beatMouseDown.off(handleBeatMouseDown as unknown as (beat: AlphaTabBeat) => void);
             api.midiEventsPlayed.off(handleMidiEventsPlayed);
           }
         };
@@ -553,7 +684,8 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
       }
     };
 
-    checkLibrary();
+    // Direct initialization - no CDN check needed with ESM imports
+    initAlphaTab();
 
     return () => {
       isMounted = false;
@@ -575,9 +707,9 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
         }
       }
     };
-    // Dependencies intentionally limited to [fileData, readOnly, retryKey]
-    // Adding all hook dependencies would cause re-initialization on every state change
-    // This effect should only re-run when the file or retry counter changes
+    // Dependencies limited to [fileData, readOnly, retryKey] - effect should only re-run when file changes
+    // Callbacks (onTracksLoaded, onPositionChange, onStateChange, onError, onPlaybackChange) are
+    // accessed via refs to avoid stale closures while preventing re-initialization on callback changes
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fileData, readOnly, retryKey]);
 
@@ -684,7 +816,8 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
           pendingPlaybackActionRef.current = null;
           if (action === 'play') {
             setInternalIsPlaying(false);
-            if (onPlaybackChange) onPlaybackChange(false);
+            // Use ref to avoid stale closure
+            if (onPlaybackChangeRef.current) onPlaybackChangeRef.current(false);
           }
           return;
         }
@@ -696,7 +829,7 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
         }, PLAYBACK_RETRY_DELAY_MS);
       }
     },
-    [onPlaybackChange]
+    [] // No deps needed - uses refs for callbacks
   );
 
   // External Playback Sync
@@ -760,8 +893,10 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
     }
   };
 
-  const changeSpeed = (val: number) => {
-    if (apiRef.current) {
+  const changeSpeed = useCallback((val: number) => {
+    if (!apiRef.current) return;
+
+    try {
       apiRef.current.playbackSpeed = val;
       setCurrentSpeed(val);
 
@@ -769,19 +904,25 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
       if (originalTempo) {
         setCurrentBPM(Math.round(originalTempo * val));
       }
+    } catch (error) {
+      console.warn('[AlphaTab] Error changing speed:', error);
     }
-  };
+  }, [originalTempo]);
 
   const handleBPMChange = (newBPM: number) => {
     if (!originalTempo || !apiRef.current) return;
 
-    const newSpeed = newBPM / originalTempo;
-    // Clamp to supported range (0.25 to 2.0)
-    const clampedSpeed = Math.max(0.25, Math.min(2.0, newSpeed));
+    try {
+      const newSpeed = newBPM / originalTempo;
+      // Clamp to supported range (0.25 to 2.0)
+      const clampedSpeed = Math.max(0.25, Math.min(2.0, newSpeed));
 
-    apiRef.current.playbackSpeed = clampedSpeed;
-    setCurrentSpeed(clampedSpeed);
-    setCurrentBPM(Math.round(originalTempo * clampedSpeed));
+      apiRef.current.playbackSpeed = clampedSpeed;
+      setCurrentSpeed(clampedSpeed);
+      setCurrentBPM(Math.round(originalTempo * clampedSpeed));
+    } catch (error) {
+      console.warn('[AlphaTab] Error changing BPM:', error);
+    }
   };
 
   const startEditingBPM = () => {
@@ -807,24 +948,24 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
 
   // Helper to update tracks state from API
   const updateTracksFromAPI = () => {
-    if (apiRef.current) {
+    if (apiRef.current?.score) {
       // Create new array reference to force React re-render, but keep full track objects
       const updatedTracks = [...apiRef.current.score.tracks];
       setTracks(updatedTracks);
     }
   };
 
-  const renderTrack = (trackIndex: number) => {
-    if (apiRef.current) {
+  const renderTrack = useCallback((trackIndex: number) => {
+    if (apiRef.current?.score) {
       // Get the full track object from the API, not from React state
       const track = apiRef.current.score.tracks[trackIndex];
       apiRef.current.renderTracks([track]);
       setCurrentTrackIndex(trackIndex);
     }
-  };
+  }, []);
 
-  const toggleTrackMute = (trackIndex: number) => {
-    if (!apiRef.current) return;
+  const toggleTrackMute = useCallback((trackIndex: number) => {
+    if (!apiRef.current?.score) return;
 
     // Get track from API
     const track = apiRef.current.score.tracks[trackIndex];
@@ -837,10 +978,10 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
 
     // Force immediate UI update
     updateTracksFromAPI();
-  };
+  }, []);
 
-  const toggleTrackSolo = (trackIndex: number) => {
-    if (!apiRef.current) return;
+  const toggleTrackSolo = useCallback((trackIndex: number) => {
+    if (!apiRef.current?.score) return;
 
     const track = apiRef.current.score.tracks[trackIndex];
     const allTracks = apiRef.current.score.tracks;
@@ -875,10 +1016,10 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
 
     // Force immediate UI update
     updateTracksFromAPI();
-  };
+  }, [soloStateBeforeSolo]);
 
   // New transport control handlers
-  const stopPlayback = () => {
+  const stopPlayback = useCallback(() => {
     pendingPlaybackActionRef.current = null;
     if (playbackRetryTimeoutRef.current) {
       clearTimeout(playbackRetryTimeoutRef.current);
@@ -896,13 +1037,13 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
         }
       }
       setInternalIsPlaying(false);
-      if (onPlaybackChange) onPlaybackChange(false);
+      // Use ref to avoid stale closure
+      if (onPlaybackChangeRef.current) onPlaybackChangeRef.current(false);
     }
-  };
+  }, [internalIsPlaying]);
 
-  const seekTo = useCallback(
-    (percentage: number) => {
-      if (!apiRef.current || totalTime <= 0) return;
+  const seekTo = useCallback((percentage: number) => {
+    if (!apiRef.current || totalTime <= 0) return;
 
       try {
         const targetTime = totalTime * percentage;
@@ -914,25 +1055,209 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
       } catch (error) {
         console.error('[AlphaTab] Error seeking to position:', error);
       }
-    },
-    [totalTime]
-  );
+  }, [totalTime]);
 
   const toggleLoop = () => {
-    if (apiRef.current) {
+    if (!apiRef.current) return;
+
+    try {
       const newLooping = !isLooping;
       apiRef.current.isLooping = newLooping;
       setIsLooping(newLooping);
+    } catch (error) {
+      console.warn('[AlphaTab] Error toggling loop:', error);
     }
   };
 
   const clearLoopRange = () => {
-    if (apiRef.current) {
+    if (!apiRef.current) return;
+
+    try {
       apiRef.current.playbackRange = null;
       setLoopRange(null);
       setSelectionStart(null);
+    } catch (error) {
+      console.warn('[AlphaTab] Error clearing loop range:', error);
     }
   };
+
+  // Volume control methods (0-1 range)
+
+  /**
+   * Set volume for a specific track.
+   * @param index - Track index
+   * @param volume - Volume level (0-1, clamped)
+   */
+  const setTrackVolume = useCallback((index: number, volume: number) => {
+    if (!apiRef.current?.score) return;
+
+    const clampedVolume = Math.max(0, Math.min(1, volume));
+    const track = apiRef.current.score.tracks[index];
+
+    if (!track) {
+      console.warn(`[AlphaTab] Track index ${index} not found`);
+      return;
+    }
+
+    apiRef.current.changeTrackVolume([track], clampedVolume);
+    setTrackVolumes(prev => {
+      const newVolumes = [...prev];
+      newVolumes[index] = clampedVolume;
+      return newVolumes;
+    });
+  }, []);
+
+  /**
+   * Set master volume for all audio output.
+   * @param volume - Volume level (0-1, clamped)
+   */
+  const setMasterVolume = useCallback((volume: number) => {
+    if (!apiRef.current) return;
+
+    const clampedVolume = Math.max(0, Math.min(1, volume));
+    apiRef.current.masterVolume = clampedVolume;
+    setMasterVolumeState(clampedVolume);
+  }, []);
+
+  /**
+   * Set metronome volume. Setting > 0 enables metronome.
+   * @param volume - Volume level (0-1, clamped; 0 = disabled)
+   */
+  const setMetronomeVolume = useCallback((volume: number) => {
+    if (!apiRef.current) return;
+
+    const clampedVolume = Math.max(0, Math.min(1, volume));
+    // Setting metronomeVolume > 0 enables the metronome
+    apiRef.current.metronomeVolume = clampedVolume;
+    setMetronomeVolumeState(clampedVolume);
+  }, []);
+
+  /**
+   * Set count-in volume. Setting > 0 enables count-in.
+   * @param volume - Volume level (0-1, clamped; 0 = disabled)
+   */
+  const setCountInVolume = useCallback((volume: number) => {
+    if (!apiRef.current) return;
+
+    const clampedVolume = Math.max(0, Math.min(1, volume));
+    // Setting countInVolume > 0 enables count-in
+    apiRef.current.countInVolume = clampedVolume;
+    setCountInVolumeState(clampedVolume);
+  }, []);
+
+  /**
+   * Get track info with volume for all tracks.
+   */
+  const getTracks = useCallback((): TrackInfo[] => {
+    return tracks.map((track, index) => ({
+      index,
+      name: track.name,
+      isMute: track.playbackInfo.isMute,
+      isSolo: track.playbackInfo.isSolo,
+      volume: trackVolumes[index] ?? 1.0,
+    }));
+  }, [tracks, trackVolumes]);
+
+  /**
+   * Create the AlphaTabHandle for external control.
+   */
+  const handle: AlphaTabHandle = useMemo(
+    () => ({
+      play: () => {
+        if (apiRef.current && playerReady) {
+          pendingPlaybackActionRef.current = 'play';
+          runPlaybackAction('play');
+        }
+      },
+      pause: () => {
+        if (apiRef.current) {
+          pendingPlaybackActionRef.current = 'pause';
+          runPlaybackAction('pause');
+        }
+      },
+      stop: stopPlayback,
+      seekTo,
+      setPlaybackSpeed: changeSpeed,
+      setLoop: (enabled: boolean) => {
+        if (apiRef.current) {
+          apiRef.current.isLooping = enabled;
+          setIsLooping(enabled);
+        }
+      },
+      setLoopRange: (range: { startTick: number; endTick: number } | null) => {
+        if (apiRef.current) {
+          apiRef.current.playbackRange = range;
+          setLoopRange(range ? { start: range.startTick, end: range.endTick } : null);
+        }
+      },
+      renderTrack,
+      toggleTrackMute,
+      toggleTrackSolo,
+      setTrackVolume,
+      setMasterVolume,
+      setMetronomeVolume,
+      setCountInVolume,
+      getTracks,
+      getMasterVolume: () => masterVolume,
+      getMetronomeVolume: () => metronomeVolume,
+      getCountInVolume: () => countInVolume,
+    }),
+    [
+      playerReady,
+      runPlaybackAction,
+      stopPlayback,
+      seekTo,
+      changeSpeed,
+      renderTrack,
+      toggleTrackMute,
+      toggleTrackSolo,
+      setTrackVolume,
+      setMasterVolume,
+      setMetronomeVolume,
+      setCountInVolume,
+      getTracks,
+      masterVolume,
+      metronomeVolume,
+      countInVolume,
+    ]
+  );
+
+  // Call onReady when player is ready
+  useEffect(() => {
+    if (playerReady && onReady) {
+      onReady(handle);
+    }
+  }, [playerReady, onReady, handle]);
+
+  // Emit state changes to parent via onStateChange callback
+  useEffect(() => {
+    if (onStateChange) {
+      onStateChange({
+        isPlaying: internalIsPlaying,
+        isLooping,
+        currentSpeed,
+        currentBPM: currentBPM ?? originalTempo ?? 120,
+        originalTempo: originalTempo ?? 120,
+        currentTrackIndex: currentTrackIndex ?? 0,
+        metronomeBeat,
+        masterVolume,
+        metronomeVolume,
+        countInVolume,
+      });
+    }
+  }, [
+    internalIsPlaying,
+    isLooping,
+    currentSpeed,
+    currentBPM,
+    originalTempo,
+    currentTrackIndex,
+    metronomeBeat,
+    masterVolume,
+    metronomeVolume,
+    countInVolume,
+    onStateChange,
+  ]);
 
   // Helper for time formatting - memoized to prevent re-creation
   const formatTime = useCallback((milliseconds: number): string => {
@@ -988,7 +1313,8 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
 
   return (
     <div className="flex flex-col max-h-full bg-white text-black rounded-xl relative border border-zinc-200 overflow-hidden">
-      {/* Toolbar */}
+      {/* Toolbar - conditionally rendered */}
+      {showControls && (
       <div className="bg-zinc-100 border-b border-zinc-300 p-2 flex items-center justify-between shrink-0">
         {/* Left: Transport controls */}
         <div className="flex items-center gap-2 flex-1">
@@ -997,7 +1323,7 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
               <button
                 onClick={togglePlay}
                 disabled={!playerReady}
-                className={`w-11 h-11 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-colors ${
+                className={`h-11 w-11 sm:h-10 sm:w-10 rounded-full flex items-center justify-center transition-colors ${
                   !playerReady
                     ? 'bg-zinc-200 text-zinc-400 cursor-not-allowed'
                     : internalIsPlaying
@@ -1014,7 +1340,7 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
               <button
                 onClick={stopPlayback}
                 disabled={!internalIsPlaying && currentTime === 0}
-                className="w-11 h-11 sm:w-10 sm:h-10 rounded-full flex items-center justify-center bg-zinc-200 hover:bg-zinc-300 text-zinc-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                className="h-11 w-11 sm:h-10 sm:w-10 rounded-full flex items-center justify-center bg-zinc-200 hover:bg-zinc-300 text-zinc-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                 title="Stop and return to start"
                 aria-label="Stop playback and return to start"
               >
@@ -1025,7 +1351,7 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
               <div className="flex items-center gap-1">
                 <button
                   onClick={toggleLoop}
-                  className={`p-2.5 sm:p-2 min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 rounded transition-colors flex items-center justify-center ${
+                  className={`h-11 w-11 sm:h-9 sm:w-9 rounded flex items-center justify-center transition-colors ${
                     isLooping
                       ? 'bg-amber-500 text-white'
                       : 'bg-zinc-200 hover:bg-zinc-300 text-zinc-700'
@@ -1039,7 +1365,7 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
                 {loopRange && (
                   <button
                     onClick={clearLoopRange}
-                    className="p-2.5 sm:p-2 min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 rounded bg-zinc-200 hover:bg-red-200 text-zinc-700 hover:text-red-600 transition-colors flex items-center justify-center"
+                    className="h-11 w-11 sm:h-9 sm:w-9 rounded flex items-center justify-center bg-zinc-200 hover:bg-red-200 text-zinc-700 hover:text-red-600 transition-colors"
                     title="Clear loop range"
                     aria-label="Clear loop range"
                   >
@@ -1180,7 +1506,6 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
                   />
                   <div className="flex justify-between text-[10px] text-zinc-500">
                     <span>{Math.round(originalTempo * 0.25)}</span>
-                    <span className="font-semibold text-zinc-700">{currentBPM}</span>
                     <span>{Math.round(originalTempo * 2.0)}</span>
                   </div>
                 </div>
@@ -1206,9 +1531,10 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
           <span className="text-xs font-bold text-zinc-400 px-2">AlphaTab</span>
         </div>
       </div>
+      )}
 
-      {/* Progress Bar */}
-      {!readOnly && totalTime > 0 && (
+      {/* Progress Bar - conditionally rendered */}
+      {showProgressBar && !readOnly && totalTime > 0 && (
         <div className="bg-zinc-100 border-b border-zinc-300 px-4 py-2 flex items-center gap-3 shrink-0">
           <span className="text-xs font-mono text-zinc-600 w-12 text-right">
             {formattedCurrentTime}
