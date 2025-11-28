@@ -1,0 +1,1281 @@
+# Setlist Builder Design System Extension
+
+## Metadata
+
+| Field | Value |
+|-------|-------|
+| **Status** | Ready for Implementation |
+| **Authors** | AI Assistant |
+| **Date** | 2025-11-28 |
+| **Updated** | 2025-11-28 |
+| **Related Issues** | N/A |
+| **Design System Reference** | `docs/design-system.md` |
+| **Prior Art** | Dashboard redesign, Practice Room unified control bar |
+| **Prerequisites Verified** | ✅ All animations, utilities, and data flow confirmed |
+
+______________________________________________________________________
+
+## 1. Overview
+
+This specification details the extension of the "Backstage Command Center" design system to the Setlist Builder component. Following the approach used for the Dashboard and Practice Room PRs, this refactor will modernize the SetlistManager with consistent typography, status colors, animations, and component patterns.
+
+The goal is to transform the Setlist Builder from a functional but plain interface into a visually cohesive experience that matches the professional, warm aesthetic of the rest of the application.
+
+______________________________________________________________________
+
+## 2. Background / Problem Statement
+
+### Current Issues
+
+The Setlist Builder (`src/components/SetlistManager.tsx`) currently suffers from design inconsistencies:
+
+**1. Typography Mismatch**
+
+- Page title uses generic styling instead of `font-serif` (Brawler)
+- Duration displays don't use `font-mono tabular-nums` (JetBrains Mono)
+- Song metadata lacks consistent font hierarchy
+
+**2. Missing Status Communication**
+
+- StatusBadge is present but lacks supporting visual context
+- No progress indicators for setlist readiness
+- Missing "band readiness" metrics like Dashboard has
+
+**3. Card Pattern Inconsistencies**
+
+- Song list items use basic rounded corners without Card components
+- Drag handles lack proper touch targets and visual feedback
+- Add song form doesn't follow Card/CardContent patterns
+
+**4. Animation Gaps**
+
+- No staggered entrance animations for song list
+- Drag-and-drop lacks smooth transitions
+- Add song card uses basic animation
+
+**5. Missing Backstage Command Center Feel**
+
+- No ambient visual elements
+- Plain header without countdown/gig context
+- Missing connection to upcoming performance context
+
+### Root Cause Analysis
+
+The Setlist Builder was implemented before the Dashboard redesign established the "Backstage Command Center" design language. It remains functional but doesn't reflect the cohesive visual identity now present in Dashboard and Practice Room.
+
+______________________________________________________________________
+
+## 3. Goals
+
+- **Apply design system typography** - Brawler serif for headers, JetBrains Mono for durations/numbers, Barlow for UI elements
+- **Add readiness metrics** - Show setlist readiness percentage and status breakdown
+- **Implement Card patterns** - Use shadcn/ui Card components consistently
+- **Add entrance animations** - Staggered reveals for song list items
+- **Improve drag-and-drop UX** - Better visual feedback during reordering
+- **Connect to performance context** - Show upcoming gig countdown when available
+- **Maintain full functionality** - All existing features (add, delete, reorder, AI suggestions) work unchanged
+- **Follow accessibility guidelines** - ARIA labels, focus states, reduced motion support
+
+______________________________________________________________________
+
+## 4. Non-Goals
+
+- Changing the data model for songs or setlists
+- Adding new features (filtering, multiple setlists, setlist templates)
+- Modifying the AI suggestions functionality beyond styling
+- Adding real-time collaboration
+- Performance mode integration (separate component)
+- Mobile-specific setlist editing (touch gestures)
+
+______________________________________________________________________
+
+## 5. Technical Dependencies
+
+### External Libraries
+
+| Library | Version | Purpose |
+|---------|---------|---------|
+| `react` | ^19.2.0 | Component framework |
+| `lucide-react` | ^0.554.0 | Icon library |
+| `tailwind-merge` | ^3.4.0 | Class merging utility |
+
+### Internal Dependencies
+
+| Component/Module | Location | Purpose |
+|------------------|----------|---------|
+| Primitives | `@/components/primitives` | Button, Card, Input, Tooltip |
+| UI Components | `@/components/ui` | StatusBadge, EmptyState, toast |
+| Design System | `docs/design-system.md` | Typography, colors, animations |
+| Types | `@/types.ts` | Song interface |
+| Utils | `@/lib/utils` | cn() class merge utility |
+
+### Verified CSS Utilities (in `src/index.css`)
+
+All required animations and utilities already exist:
+
+| Utility Class | Location | Purpose |
+|---------------|----------|---------|
+| `animate-slide-in-from-bottom` | Line 260-262 | Entrance animation for items |
+| `animate-slide-in-from-top` | Line 264-266 | Entrance animation for add form |
+| `animate-progress-fill` | Line 337-340 | Progress bar fill animation |
+| `animate-pulse-glow` | Line 311-313 | Countdown badge glow effect |
+| `animate-fade-in` | Line 256-258 | Subtle fade entrance |
+| `animation-forwards` | Line 295-297 | Maintains final animation state |
+| `stagger-1` through `stagger-5` | Line 288-292 | Animation delay utilities (50ms increments) |
+
+### Current SetlistManager Implementation
+
+**File:** `src/components/SetlistManager.tsx` (309 lines)
+
+**Current Props Interface:**
+```typescript
+interface SetlistManagerProps {
+  songs: Song[];
+  setSongs: React.Dispatch<React.SetStateAction<Song[]>>;
+  onSelectSong: (songId: string) => void;
+}
+```
+
+**Existing Utilities (keep in place):**
+- `calculateTotalDuration(songs)` - Line 17-23
+- `formatTotalTime(totalSec)` - Line 28-32
+
+**Existing Drag-and-Drop Handlers (preserve logic, extract to SetlistItem):**
+- `handleDragStart` - Line 92-97
+- `handleDragOver` - Line 99-107
+- `handleDragEnd` - Line 109-112
+- `handleDrop` - Line 114-135 (includes `sortOrder` persistence)
+
+**Events Data Flow:**
+- `events` state exists in `App.tsx` (line 184)
+- Already passed to Dashboard, ScheduleManager
+- Add to SetlistManager call at `App.tsx:714`: `events={events}`
+
+______________________________________________________________________
+
+## 6. Detailed Design
+
+### 6.1 Architecture Overview
+
+The Setlist Builder will be refactored into the following structure:
+
+```
+Current:
+┌─────────────────────────────────────────────────────────┐
+│ Header (title + basic stats + buttons)                  │
+├─────────────────────────────────────────────────────────┤
+│ Add Song Card (conditional)                             │
+├─────────────────────────────────────────────────────────┤
+│ Song List (basic styled items)                          │
+└─────────────────────────────────────────────────────────┘
+
+Proposed:
+┌─────────────────────────────────────────────────────────┐
+│ Header Section                                          │
+│ ├─ Title (font-serif) + Gig Countdown                  │
+│ └─ Stats Row: Duration | Songs | Readiness %           │
+├─────────────────────────────────────────────────────────┤
+│ Setlist Readiness Card (2-col with Coming Up)          │
+│ ├─ Progress bar (segmented by status)                  │
+│ └─ Status legend with tooltips                         │
+├─────────────────────────────────────────────────────────┤
+│ Action Bar (Add Song + AI Suggestions)                  │
+├─────────────────────────────────────────────────────────┤
+│ Add Song Card (conditional, uses Card/CardContent)     │
+├─────────────────────────────────────────────────────────┤
+│ Song List (Card-based items with staggered animation)  │
+│ ├─ SetlistItem component (reusable)                    │
+│ └─ Drop indicator with design system styling           │
+└─────────────────────────────────────────────────────────┘
+```
+
+### 6.2 Component Structure
+
+#### New/Modified Files
+
+```
+src/components/
+├── SetlistManager.tsx          # Refactored main component
+├── setlist/                    # NEW: Setlist sub-components
+│   ├── index.ts               # Barrel export
+│   ├── SetlistHeader.tsx      # Header with title and gig context
+│   ├── SetlistStats.tsx       # Readiness metrics card
+│   ├── SetlistItem.tsx        # Individual song item
+│   ├── SetlistItem.test.tsx   # Unit tests
+│   ├── SetlistActionBar.tsx   # Add song + AI buttons
+│   └── AddSongForm.tsx        # Add song card form
+```
+
+### 6.3 SetlistHeader Component
+
+**Purpose**: Display page title with gig countdown context (when available)
+
+```typescript
+// src/components/setlist/SetlistHeader.tsx
+
+interface SetlistHeaderProps {
+  songCount: number;
+  totalDuration: string;
+  nextGig?: BandEvent;
+  daysUntilNextGig?: number;
+}
+
+export const SetlistHeader = memo(function SetlistHeader({
+  songCount,
+  totalDuration,
+  nextGig,
+  daysUntilNextGig,
+}: SetlistHeaderProps) {
+  return (
+    <header className="flex flex-col gap-4 sm:flex-row sm:items-end sm:justify-between">
+      <div>
+        {/* Brawler serif for headline */}
+        <h2 className="text-4xl font-bold font-serif text-foreground tracking-tight">
+          Setlist Builder
+        </h2>
+
+        {/* Glowing countdown badge (same as Dashboard) */}
+        {nextGig && daysUntilNextGig !== null ? (
+          <div className="mt-3 flex flex-wrap items-center gap-3">
+            <span
+              className={cn(
+                'inline-flex items-center gap-2 px-4 py-1.5 rounded-full',
+                'bg-gradient-to-r from-primary to-chart-2',
+                'text-primary-foreground font-mono text-sm font-bold',
+                'tracking-wider uppercase',
+                'shadow-lg shadow-primary/25',
+                'animate-pulse-glow'
+              )}
+            >
+              <span className="text-lg tabular-nums">{daysUntilNextGig}</span>
+              <span>{daysUntilNextGig === 1 ? 'day' : 'days'}</span>
+            </span>
+            <span className="text-muted-foreground">
+              until{' '}
+              <span className="text-foreground font-medium">{nextGig.title}</span>
+            </span>
+          </div>
+        ) : (
+          <div className="flex items-center gap-2 mt-2 text-muted-foreground">
+            <Clock size={16} />
+            <span className="font-mono tabular-nums">{totalDuration}</span>
+            <span className="mx-2">•</span>
+            <span>{songCount} {songCount === 1 ? 'Song' : 'Songs'}</span>
+          </div>
+        )}
+      </div>
+    </header>
+  );
+});
+```
+
+**Design System Alignment**:
+
+- Title: `text-4xl font-bold font-serif text-foreground tracking-tight`
+- Countdown badge: Same gradient + pulse-glow as Dashboard
+- Duration: `font-mono tabular-nums`
+
+### 6.4 SetlistStats Component
+
+**Purpose**: Display setlist readiness metrics (similar to Dashboard's Band Readiness card)
+
+```typescript
+// src/components/setlist/SetlistStats.tsx
+
+interface SetlistStatsProps {
+  songs: Song[];
+}
+
+export const SetlistStats = memo(function SetlistStats({ songs }: SetlistStatsProps) {
+  const stats = useMemo(() => {
+    const total = songs.length;
+    const ready = songs.filter(s => s.status === 'Performance Ready').length;
+    const inProgress = songs.filter(s => s.status === 'In Progress').length;
+    const toLearn = songs.filter(s => s.status === 'To Learn').length;
+    const percent = total > 0 ? Math.round((ready / total) * 100) : 0;
+    return { total, ready, inProgress, toLearn, percent };
+  }, [songs]);
+
+  return (
+    <Card className="overflow-hidden">
+      <CardContent className="p-5">
+        {/* Header row */}
+        <div className="flex items-start justify-between mb-4">
+          <div>
+            <h3 className="text-lg font-serif text-foreground">Setlist Readiness</h3>
+            <p className="text-sm text-muted-foreground">
+              {stats.total} {stats.total === 1 ? 'song' : 'songs'} in setlist
+            </p>
+          </div>
+          <div className="text-right">
+            <span className="text-3xl font-bold font-mono text-foreground tabular-nums">
+              {stats.percent}
+              <span className="text-sm text-muted-foreground">%</span>
+            </span>
+            <p className="text-xs text-muted-foreground">ready</p>
+          </div>
+        </div>
+
+        {/* Segmented progress bar with tooltips */}
+        <TooltipProvider delayDuration={100}>
+          <div className="h-3 bg-muted rounded-full overflow-hidden flex mb-3">
+            {/* Same pattern as Dashboard */}
+            {stats.ready > 0 && (
+              <Tooltip>
+                <TooltipTrigger asChild>
+                  <div
+                    className="h-full bg-success animate-progress-fill cursor-help"
+                    style={{ width: `${(stats.ready / stats.total) * 100}%` }}
+                  />
+                </TooltipTrigger>
+                <TooltipContent>
+                  <p>{stats.ready} Stage Ready</p>
+                </TooltipContent>
+              </Tooltip>
+            )}
+            {/* ... similar for inProgress and toLearn */}
+          </div>
+
+          {/* Legend with tooltips */}
+          <div className="flex items-center gap-4 text-xs text-muted-foreground">
+            {/* Same legend pattern as Dashboard */}
+          </div>
+        </TooltipProvider>
+      </CardContent>
+    </Card>
+  );
+});
+```
+
+**Design System Alignment**:
+
+- Section title: `text-lg font-serif text-foreground`
+- Percentage: `text-3xl font-bold font-mono tabular-nums`
+- Progress bar: Segmented with `bg-success`, `bg-info`, `bg-warning`
+- Animations: `animate-progress-fill`
+
+### 6.5 SetlistItem Component
+
+**Purpose**: Individual song item with drag handle, metadata, and actions
+
+```typescript
+// src/components/setlist/SetlistItem.tsx
+
+interface SetlistItemProps {
+  song: Song;
+  index: number;
+  isDragged: boolean;
+  onSelect: (id: string) => void;
+  onDelete: (id: string) => void;
+  onDragStart: (e: React.DragEvent, index: number) => void;
+  onDragOver: (e: React.DragEvent, index: number) => void;
+  onDrop: (e: React.DragEvent) => void;
+  onDragEnd: () => void;
+}
+
+export const SetlistItem = memo(function SetlistItem({
+  song,
+  index,
+  isDragged,
+  onSelect,
+  onDelete,
+  onDragStart,
+  onDragOver,
+  onDrop,
+  onDragEnd,
+}: SetlistItemProps) {
+  return (
+    <li
+      draggable
+      onDragStart={e => onDragStart(e, index)}
+      onDragOver={e => onDragOver(e, index)}
+      onDrop={onDrop}
+      onDragEnd={onDragEnd}
+      className={cn(
+        // Base styles
+        'group relative flex items-center gap-4 px-4 py-2.5',
+        // Card-like appearance
+        'bg-card rounded-xl border border-border',
+        // Left accent border (matches Dashboard Practice Queue)
+        'border-l-[3px] border-l-primary/60',
+        // Hover state
+        'hover:bg-muted/30 transition-all duration-200',
+        // Motion support
+        'motion-reduce:transition-none',
+        // Drag states
+        isDragged && 'opacity-0 h-0 p-0 border-0 my-0 overflow-hidden',
+        // Staggered animation
+        'opacity-0 animate-slide-in-from-bottom animation-forwards',
+      )}
+      style={{
+        animationDelay: `${index * 50}ms`,
+      }}
+    >
+      {/* Drag handle with proper touch target */}
+      <div
+        className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground p-2 touch-none -ml-2"
+        aria-label="Drag to reorder"
+      >
+        <GripVertical size={20} />
+      </div>
+
+      {/* Track number */}
+      <div className="w-8 text-center font-mono text-muted-foreground text-sm tabular-nums select-none">
+        {index + 1}
+      </div>
+
+      {/* Song info - clickable */}
+      <button
+        type="button"
+        className="flex-1 text-left cursor-pointer min-w-0"
+        onClick={() => onSelect(song.id)}
+      >
+        <p className="font-semibold text-foreground truncate text-sm group-hover:text-primary transition-colors">
+          {song.title}
+        </p>
+        <div className="flex items-center gap-2 text-xs text-muted-foreground mt-0.5">
+          <span>{song.key}</span>
+          <span className="text-border">•</span>
+          <span className="font-mono tabular-nums">{song.bpm} BPM</span>
+        </div>
+      </button>
+
+      {/* Duration - hidden on mobile */}
+      <div className="hidden md:block text-sm font-mono text-muted-foreground px-4 tabular-nums select-none">
+        {song.duration}
+      </div>
+
+      {/* Status + Actions */}
+      <div className="flex items-center gap-2 shrink-0">
+        <StatusBadge status={song.status} />
+        <TooltipProvider delayDuration={100}>
+          <Tooltip>
+            <TooltipTrigger asChild>
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={e => {
+                  e.stopPropagation();
+                  onDelete(song.id);
+                }}
+                className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                aria-label={`Delete ${song.title}`}
+              >
+                <Trash2 size={16} />
+              </Button>
+            </TooltipTrigger>
+            <TooltipContent>
+              <p>Remove from setlist</p>
+            </TooltipContent>
+          </Tooltip>
+        </TooltipProvider>
+      </div>
+    </li>
+  );
+});
+```
+
+**Design System Alignment**:
+
+- Left border accent: `border-l-[3px] border-l-primary/60`
+- Font hierarchy: `font-semibold` for title, `font-mono tabular-nums` for numbers
+- Hover state: `hover:bg-muted/30 transition-colors`
+- Staggered animation: `animate-slide-in-from-bottom` with delay
+- Delete button visibility: `opacity-0 group-hover:opacity-100`
+
+### 6.6 SetlistActionBar Component
+
+**Purpose**: Action buttons for adding songs and AI suggestions
+
+```typescript
+// src/components/setlist/SetlistActionBar.tsx
+
+interface SetlistActionBarProps {
+  onAddSong: () => void;
+  onAiSuggestions: () => void;
+  isLoadingSuggestions: boolean;
+}
+
+export const SetlistActionBar = memo(function SetlistActionBar({
+  onAddSong,
+  onAiSuggestions,
+  isLoadingSuggestions,
+}: SetlistActionBarProps) {
+  return (
+    <div className="flex items-center justify-between gap-3">
+      <h3 className="text-lg font-serif text-foreground">Songs</h3>
+      <div className="flex gap-3">
+        <Button
+          variant="secondary"
+          onClick={onAiSuggestions}
+          disabled={isLoadingSuggestions}
+          className="gap-2"
+        >
+          <Sparkles size={16} className={isLoadingSuggestions ? 'animate-spin' : ''} />
+          {isLoadingSuggestions ? 'Thinking...' : 'AI Suggestions'}
+        </Button>
+        <Button onClick={onAddSong} className="gap-2">
+          <Plus size={18} />
+          Add Song
+        </Button>
+      </div>
+    </div>
+  );
+});
+```
+
+### 6.7 AddSongForm Component
+
+**Purpose**: Card-based form for adding new songs
+
+```typescript
+// src/components/setlist/AddSongForm.tsx
+
+interface AddSongFormProps {
+  onSubmit: (title: string) => void;
+  onCancel: () => void;
+}
+
+export const AddSongForm = memo(function AddSongForm({
+  onSubmit,
+  onCancel,
+}: AddSongFormProps) {
+  const [title, setTitle] = useState('');
+
+  const handleSubmit = useCallback(() => {
+    if (title.trim()) {
+      onSubmit(title.trim());
+    }
+  }, [title, onSubmit]);
+
+  return (
+    <Card className="overflow-hidden animate-slide-in-from-top animation-forwards">
+      <CardContent className="pt-6">
+        <label
+          htmlFor="new-song-title"
+          className="block text-sm font-medium text-muted-foreground mb-2"
+        >
+          Song Title
+        </label>
+        <div className="flex gap-3">
+          <Input
+            id="new-song-title"
+            type="text"
+            value={title}
+            onChange={e => setTitle(e.target.value)}
+            placeholder="e.g., Sharp Dressed Man"
+            className="flex-1"
+            onKeyDown={e => e.key === 'Enter' && handleSubmit()}
+            autoFocus
+          />
+          <Button onClick={handleSubmit}>Add</Button>
+          <Button variant="ghost" onClick={onCancel}>
+            Cancel
+          </Button>
+        </div>
+      </CardContent>
+    </Card>
+  );
+});
+```
+
+### 6.8 Drop Indicator Component
+
+**Purpose**: Visual feedback for drag-and-drop target
+
+```typescript
+// Inline component in SetlistManager
+
+const DropIndicator = ({ index }: { index: number }) => (
+  <div
+    onDragOver={e => handleDragOver(e, index)}
+    onDrop={handleDrop}
+    className={cn(
+      'h-16 mb-3 rounded-xl',
+      'border-2 border-dashed border-primary/50',
+      'bg-primary/5',
+      'flex items-center justify-center',
+      'animate-fade-in'
+    )}
+  >
+    <span className="text-primary/60 text-sm font-bold uppercase tracking-widest pointer-events-none">
+      Drop Here
+    </span>
+  </div>
+);
+```
+
+### 6.9 Updated SetlistManager
+
+**Purpose**: Main component integrating all sub-components
+
+**Updated Props Interface:**
+```typescript
+interface SetlistManagerProps {
+  songs: Song[];
+  setSongs: React.Dispatch<React.SetStateAction<Song[]>>;
+  onSelectSong: (songId: string) => void;
+  events?: BandEvent[]; // NEW: optional, for gig countdown context
+}
+```
+
+```typescript
+// src/components/SetlistManager.tsx
+
+export const SetlistManager: React.FC<SetlistManagerProps> = memo(function SetlistManager({
+  songs,
+  setSongs,
+  onSelectSong,
+  events = [], // NEW: for gig context
+}) {
+  // ... existing state ...
+
+  // Compute next gig
+  const { nextGig, daysUntilNextGig } = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const upcoming = events
+      .filter(e => e.type === 'GIG' && new Date(e.date) >= today)
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    const next = upcoming[0];
+    if (!next) return { nextGig: undefined, daysUntilNextGig: undefined };
+    const days = Math.ceil((new Date(next.date).getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    return { nextGig: next, daysUntilNextGig: days };
+  }, [events]);
+
+  return (
+    <div className="relative p-4 sm:p-6 lg:p-10 max-w-5xl mx-auto space-y-8">
+      {/* Ambient background glow (same as Dashboard) */}
+      <div
+        className="absolute inset-0 pointer-events-none overflow-hidden"
+        aria-hidden="true"
+      >
+        <div
+          className="absolute -top-1/4 -left-1/4 w-1/2 h-1/2 rounded-full opacity-[0.03]"
+          style={{
+            background: 'radial-gradient(circle, var(--primary) 0%, transparent 70%)',
+          }}
+        />
+      </div>
+
+      {/* Header */}
+      <SetlistHeader
+        songCount={songs.length}
+        totalDuration={formatTotalTime(totalDurationSeconds)}
+        nextGig={nextGig}
+        daysUntilNextGig={daysUntilNextGig}
+      />
+
+      {/* Stats Card */}
+      <div className="animate-slide-in-from-bottom animation-forwards opacity-0 stagger-1">
+        <SetlistStats songs={songs} />
+      </div>
+
+      {/* Action Bar */}
+      <div className="animate-slide-in-from-bottom animation-forwards opacity-0 stagger-2">
+        <SetlistActionBar
+          onAddSong={handleStartAdding}
+          onAiSuggestions={askAiForSuggestions}
+          isLoadingSuggestions={loadingSuggestion}
+        />
+      </div>
+
+      {/* Add Song Form (conditional) */}
+      {isAdding && (
+        <AddSongForm onSubmit={handleAddSong} onCancel={handleCancelAdding} />
+      )}
+
+      {/* Song List */}
+      <div className="space-y-0">
+        {songs.length === 0 ? (
+          <EmptyState
+            icon={Music}
+            title="No songs in setlist"
+            description="Add your first song to start building your setlist."
+            action={{ label: 'Add Song', onClick: handleStartAdding }}
+          />
+        ) : (
+          <ul className="space-y-3 pb-20">
+            {songs.map((song, index) => {
+              const isDragged = draggedIndex === index;
+              const isOver = dragOverIndex === index;
+              const showPlaceholderBefore = isOver && draggedIndex !== null && draggedIndex > index;
+              const showPlaceholderAfter = isOver && draggedIndex !== null && draggedIndex < index;
+
+              return (
+                <React.Fragment key={song.id}>
+                  {showPlaceholderBefore && <DropIndicator index={index} />}
+                  <SetlistItem
+                    song={song}
+                    index={index}
+                    isDragged={isDragged}
+                    onSelect={onSelectSong}
+                    onDelete={handleDeleteSong}
+                    onDragStart={handleDragStart}
+                    onDragOver={handleDragOver}
+                    onDrop={handleDrop}
+                    onDragEnd={handleDragEnd}
+                  />
+                  {showPlaceholderAfter && <DropIndicator index={index} />}
+                </React.Fragment>
+              );
+            })}
+          </ul>
+        )}
+      </div>
+    </div>
+  );
+});
+```
+
+______________________________________________________________________
+
+## 7. User Experience
+
+### 7.1 User Flow
+
+1. User navigates to Setlist Builder
+1. **Header** shows:
+   - "Setlist Builder" title in Brawler serif
+   - Countdown badge if upcoming gig exists (glowing, gradient)
+   - Otherwise, shows duration + song count
+1. **Stats Card** displays:
+   - Readiness percentage with large mono number
+   - Segmented progress bar (green/blue/amber)
+   - Status legend with tooltips
+1. **Action Bar** provides:
+   - "Add Song" button (primary)
+   - "AI Suggestions" button (secondary)
+1. **Song List** shows:
+   - Items appear with staggered slide-in animation
+   - Each item has drag handle, track number, title, metadata, status badge
+   - Hover reveals delete button
+   - Drag-and-drop with visual drop indicator
+1. **Add Song Form** slides in above list when activated
+
+### 7.2 Animation Timeline
+
+```
+t=0ms:    Header visible (no animation)
+t=50ms:   Stats card slides in
+t=100ms:  Action bar slides in
+t=150ms:  First song item slides in
+t=200ms:  Second song item slides in
+...
+t=n*50ms: Nth song item slides in
+```
+
+### 7.3 Accessibility
+
+- All interactive elements have appropriate `aria-labels`
+- Keyboard navigation through song list
+- Focus visible rings on all buttons
+- Reduced motion respected via `motion-reduce:transition-none`
+- Color is not the only status indicator (badges have text)
+- Drag-and-drop has keyboard alternative (future enhancement)
+
+______________________________________________________________________
+
+## 8. Testing Strategy
+
+### Testing Scope
+
+**In Scope:** Unit tests for new visual components (SetlistItem, SetlistStats, SetlistHeader, SetlistActionBar, AddSongForm)
+
+**Out of Scope:** Regression tests for existing functionality (add, delete, reorder, AI suggestions). These features are working and will be tested implicitly through integration.
+
+### 8.1 Unit Tests
+
+#### SetlistHeader Tests
+
+```typescript
+// src/components/setlist/SetlistHeader.test.tsx
+
+describe('SetlistHeader', () => {
+  it('renders title with font-serif class', () => {
+    render(<SetlistHeader songCount={5} totalDuration="45m" />);
+    const title = screen.getByText('Setlist Builder');
+    expect(title).toHaveClass('font-serif');
+  });
+
+  it('shows gig countdown when nextGig provided', () => {
+    render(
+      <SetlistHeader
+        songCount={5}
+        totalDuration="45m"
+        nextGig={{ id: '1', title: 'Friday Night Gig', date: '2025-12-05', type: 'GIG' }}
+        daysUntilNextGig={7}
+      />
+    );
+    expect(screen.getByText('7')).toBeInTheDocument();
+    expect(screen.getByText('days')).toBeInTheDocument();
+    expect(screen.getByText('Friday Night Gig')).toBeInTheDocument();
+  });
+
+  it('shows duration and count when no gig', () => {
+    render(<SetlistHeader songCount={5} totalDuration="45m" />);
+    expect(screen.getByText('45m')).toBeInTheDocument();
+    expect(screen.getByText('5 Songs')).toBeInTheDocument();
+  });
+
+  it('uses singular "Song" for count of 1', () => {
+    render(<SetlistHeader songCount={1} totalDuration="3m" />);
+    expect(screen.getByText('1 Song')).toBeInTheDocument();
+  });
+});
+```
+
+#### SetlistStats Tests
+
+```typescript
+// src/components/setlist/SetlistStats.test.tsx
+
+describe('SetlistStats', () => {
+  const mockSongs = [
+    { id: '1', status: 'Performance Ready', ... },
+    { id: '2', status: 'In Progress', ... },
+    { id: '3', status: 'To Learn', ... },
+  ];
+
+  it('calculates correct percentages', () => {
+    render(<SetlistStats songs={mockSongs} />);
+    expect(screen.getByText('33')).toBeInTheDocument(); // 1/3 = 33%
+  });
+
+  it('shows progress bar segments for each status', () => {
+    render(<SetlistStats songs={mockSongs} />);
+    // Verify three segments exist
+    expect(screen.getByLabelText(/Stage Ready/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/In Progress/i)).toBeInTheDocument();
+    expect(screen.getByLabelText(/To Learn/i)).toBeInTheDocument();
+  });
+
+  it('uses font-mono for percentage display', () => {
+    render(<SetlistStats songs={mockSongs} />);
+    const percentage = screen.getByText('33');
+    expect(percentage).toHaveClass('font-mono', 'tabular-nums');
+  });
+});
+```
+
+#### SetlistItem Tests
+
+```typescript
+// src/components/setlist/SetlistItem.test.tsx
+
+describe('SetlistItem', () => {
+  const mockSong = {
+    id: '1',
+    title: 'Sharp Dressed Man',
+    key: 'E',
+    bpm: 128,
+    duration: '4:15',
+    status: 'Performance Ready',
+    ...
+  };
+
+  it('renders song title and metadata', () => {
+    render(<SetlistItem song={mockSong} index={0} ... />);
+    expect(screen.getByText('Sharp Dressed Man')).toBeInTheDocument();
+    expect(screen.getByText('E')).toBeInTheDocument();
+    expect(screen.getByText('128 BPM')).toBeInTheDocument();
+  });
+
+  it('displays track number with font-mono', () => {
+    render(<SetlistItem song={mockSong} index={2} ... />);
+    const trackNum = screen.getByText('3'); // 0-indexed + 1
+    expect(trackNum).toHaveClass('font-mono', 'tabular-nums');
+  });
+
+  it('shows delete button on hover', () => {
+    render(<SetlistItem song={mockSong} index={0} ... />);
+    const deleteBtn = screen.getByLabelText('Delete Sharp Dressed Man');
+    expect(deleteBtn).toHaveClass('opacity-0', 'group-hover:opacity-100');
+  });
+
+  it('calls onSelect when clicked', () => {
+    const onSelect = vi.fn();
+    render(<SetlistItem song={mockSong} index={0} onSelect={onSelect} ... />);
+    fireEvent.click(screen.getByText('Sharp Dressed Man'));
+    expect(onSelect).toHaveBeenCalledWith('1');
+  });
+
+  it('calls onDelete when delete clicked', () => {
+    const onDelete = vi.fn();
+    render(<SetlistItem song={mockSong} index={0} onDelete={onDelete} ... />);
+    fireEvent.click(screen.getByLabelText('Delete Sharp Dressed Man'));
+    expect(onDelete).toHaveBeenCalledWith('1');
+  });
+
+  it('has left border accent', () => {
+    const { container } = render(<SetlistItem song={mockSong} index={0} ... />);
+    const item = container.querySelector('li');
+    expect(item).toHaveClass('border-l-[3px]', 'border-l-primary/60');
+  });
+
+  it('applies staggered animation delay', () => {
+    const { container } = render(<SetlistItem song={mockSong} index={3} ... />);
+    const item = container.querySelector('li');
+    expect(item).toHaveStyle({ animationDelay: '150ms' });
+  });
+});
+```
+
+### 8.2 Integration Tests
+
+```typescript
+// src/components/SetlistManager.test.tsx
+
+describe('SetlistManager Integration', () => {
+  it('renders all design system components', () => {
+    render(<SetlistManager songs={mockSongs} setSongs={vi.fn()} onSelectSong={vi.fn()} />);
+
+    expect(screen.getByText('Setlist Builder')).toHaveClass('font-serif');
+    expect(screen.getByText('Setlist Readiness')).toBeInTheDocument();
+    expect(screen.getByText('AI Suggestions')).toBeInTheDocument();
+  });
+
+  it('shows gig countdown when events provided', () => {
+    const futureGig = {
+      id: '1',
+      title: 'Test Gig',
+      date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(),
+      type: 'GIG',
+    };
+
+    render(
+      <SetlistManager
+        songs={mockSongs}
+        setSongs={vi.fn()}
+        onSelectSong={vi.fn()}
+        events={[futureGig]}
+      />
+    );
+
+    expect(screen.getByText('Test Gig')).toBeInTheDocument();
+  });
+
+  it('renders staggered animations for song list', () => {
+    const songs = [mockSong1, mockSong2, mockSong3];
+    const { container } = render(
+      <SetlistManager songs={songs} setSongs={vi.fn()} onSelectSong={vi.fn()} />
+    );
+
+    const items = container.querySelectorAll('li');
+    expect(items[0]).toHaveStyle({ animationDelay: '0ms' });
+    expect(items[1]).toHaveStyle({ animationDelay: '50ms' });
+    expect(items[2]).toHaveStyle({ animationDelay: '100ms' });
+  });
+
+  it('drag and drop updates song order', async () => {
+    const setSongs = vi.fn();
+    render(
+      <SetlistManager songs={mockSongs} setSongs={setSongs} onSelectSong={vi.fn()} />
+    );
+
+    // Simulate drag from index 0 to index 2
+    const items = screen.getAllByRole('listitem');
+    fireEvent.dragStart(items[0]);
+    fireEvent.dragOver(items[2]);
+    fireEvent.drop(items[2]);
+
+    expect(setSongs).toHaveBeenCalled();
+  });
+});
+```
+
+### 8.3 Accessibility Tests
+
+```typescript
+describe('SetlistManager Accessibility', () => {
+  it('passes axe-core audit', async () => {
+    const { container } = render(
+      <SetlistManager songs={mockSongs} setSongs={vi.fn()} onSelectSong={vi.fn()} />
+    );
+    const results = await axe(container);
+    expect(results).toHaveNoViolations();
+  });
+
+  it('all buttons have aria-labels', () => {
+    render(
+      <SetlistManager songs={mockSongs} setSongs={vi.fn()} onSelectSong={vi.fn()} />
+    );
+
+    const buttons = screen.getAllByRole('button');
+    buttons.forEach(button => {
+      expect(
+        button.hasAttribute('aria-label') || button.textContent
+      ).toBeTruthy();
+    });
+  });
+
+  it('respects prefers-reduced-motion', () => {
+    window.matchMedia = vi.fn().mockImplementation(query => ({
+      matches: query === '(prefers-reduced-motion: reduce)',
+      media: query,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+    }));
+
+    const { container } = render(
+      <SetlistManager songs={mockSongs} setSongs={vi.fn()} onSelectSong={vi.fn()} />
+    );
+
+    const animatedElements = container.querySelectorAll('[class*="motion-reduce"]');
+    expect(animatedElements.length).toBeGreaterThan(0);
+  });
+});
+```
+
+______________________________________________________________________
+
+## 9. Performance Considerations
+
+### 9.1 Rendering Optimizations
+
+- **Memoize components** with `React.memo` for SetlistItem, SetlistStats, SetlistHeader
+- **Use `useCallback`** for all event handlers passed to children
+- **Memoize computed values** (stats, nextGig) with `useMemo`
+- **Avoid inline objects/arrays** in props
+
+### 9.2 Animation Performance
+
+- Use CSS animations over JavaScript for staggered reveals
+- Leverage `transform` and `opacity` for GPU acceleration
+- Keep animation duration short (200-300ms)
+- Disable animations with `prefers-reduced-motion`
+
+### 9.3 Drag-and-Drop
+
+- Throttle drag-over events to prevent excessive re-renders
+- Use `requestAnimationFrame` for visual updates during drag
+- Clear drag state immediately on drop
+
+______________________________________________________________________
+
+## 10. Security Considerations
+
+- No new API endpoints or data persistence changes
+- Song title input is already sanitized by existing handlers
+- No user-generated HTML content
+- AI suggestions use existing geminiService (rate-limited)
+
+______________________________________________________________________
+
+## 11. Documentation
+
+### Files to Update
+
+1. **`CLAUDE.md`**: Add setlist components to architecture overview
+1. **`docs/design-system.md`**: Reference SetlistManager as implementation example
+
+### Files to Create
+
+1. **`src/components/setlist/README.md`** (optional): Component usage guide
+
+______________________________________________________________________
+
+## 12. Implementation Phases
+
+### Phase 1: Component Extraction
+
+**Scope:**
+
+- Create `src/components/setlist/` directory
+- Extract SetlistItem as standalone component
+- Apply design system patterns to SetlistItem
+- Add unit tests for SetlistItem
+
+**Files Created:**
+
+- `src/components/setlist/index.ts`
+- `src/components/setlist/SetlistItem.tsx`
+- `src/components/setlist/SetlistItem.test.tsx`
+
+**Acceptance Criteria:**
+
+- [ ] SetlistItem uses `font-mono tabular-nums` for track numbers, BPM, duration
+- [ ] Left border accent applied (`border-l-[3px] border-l-primary/60`)
+- [ ] Staggered animation support via `animationDelay` prop
+- [ ] Delete button shows on hover (`opacity-0 group-hover:opacity-100`)
+- [ ] All tests pass
+
+### Phase 2: Header and Stats
+
+**Scope:**
+
+- Create SetlistHeader component with gig countdown
+- Create SetlistStats component with progress bar
+- Integrate into SetlistManager
+
+**Files Created:**
+
+- `src/components/setlist/SetlistHeader.tsx`
+- `src/components/setlist/SetlistStats.tsx`
+- `src/components/setlist/SetlistStats.test.tsx`
+
+**Acceptance Criteria:**
+
+- [ ] Header shows gig countdown when available
+- [ ] Countdown badge has gradient and pulse-glow
+- [ ] Stats card matches Dashboard's Band Readiness
+- [ ] Progress bar is segmented with tooltips
+- [ ] Typography follows design system
+
+### Phase 3: Action Bar and Form
+
+**Scope:**
+
+- Create SetlistActionBar component
+- Create AddSongForm component with Card pattern
+- Update SetlistManager to use new components
+
+**Files Created:**
+
+- `src/components/setlist/SetlistActionBar.tsx`
+- `src/components/setlist/AddSongForm.tsx`
+
+**Acceptance Criteria:**
+
+- [ ] Action bar has section title with `font-serif`
+- [ ] Buttons use shadcn/ui Button component
+- [ ] Add song form uses Card/CardContent
+- [ ] Form has slide-in animation
+
+### Phase 4: Integration and Polish
+
+**Scope:**
+
+- Update SetlistManager to compose all sub-components
+- Add ambient background glow
+- Ensure staggered animations work
+- Add `events` prop for gig context
+- Final styling adjustments
+
+**Files Modified:**
+
+- `src/components/SetlistManager.tsx`
+- `src/App.tsx` (line 714) - Add `events={events}` prop to SetlistManager
+
+**Acceptance Criteria:**
+
+- [ ] Ambient glow matches Dashboard
+- [ ] All animations staggered correctly
+- [ ] Gig countdown displays when events available
+- [ ] Empty state uses EmptyState component
+- [ ] All existing functionality preserved
+- [ ] `events` prop wired up in App.tsx
+
+### Phase 5: Testing and Documentation
+
+**Scope:**
+
+- Add remaining unit tests
+- Add integration tests
+- Update CLAUDE.md with setlist components
+- Add reference to design-system.md
+
+**Files Modified:**
+
+- `CLAUDE.md`
+- `docs/design-system.md`
+
+**Files Created:**
+
+- Additional test files as needed
+
+**Acceptance Criteria:**
+
+- [ ] Test coverage ≥80% for new components
+- [ ] All tests pass
+- [ ] TypeScript compiles without errors
+- [ ] ESLint passes
+- [ ] Documentation updated
+
+______________________________________________________________________
+
+## 13. Open Questions (Resolved)
+
+1. **Events Prop**: Should SetlistManager receive events from App context, or should it fetch them internally?
+
+   - ✅ **Resolved**: Receive as prop from parent. Events already available in `App.tsx:184`, add `events={events}` at line 714.
+
+2. **Keyboard Drag-and-Drop**: Should we add keyboard-accessible reordering (up/down arrows)?
+
+   - ✅ **Resolved**: Defer to future enhancement, not critical for design system alignment. Documented in Non-Goals.
+
+3. **Song Duration Input**: When adding a song, should we auto-populate duration or require manual entry?
+
+   - ✅ **Resolved**: Keep existing behavior (defaults to 3:30), out of scope for this PR.
+
+4. **Mobile Drag-and-Drop**: Touch-based reordering can be tricky. Should we add a dedicated mobile UX?
+
+   - ✅ **Resolved**: Keep native HTML5 drag-and-drop, defer touch improvements to future. Document as known limitation in PR.
+
+______________________________________________________________________
+
+## 14. References
+
+### Internal Documentation
+
+- [Design System Guide](../docs/design-system.md)
+- [CLAUDE.md Project Overview](../CLAUDE.md)
+- [Practice Room Unified Control Bar Spec](./feat-practice-room-unified-control-bar.md)
+
+### Related Files
+
+- `src/components/SetlistManager.tsx` - Current implementation
+- `src/components/Dashboard.tsx` - Design system reference implementation
+- `src/components/practice/` - Practice Room components following design system
+- `src/index.css` - Theme variables and animations
+
+______________________________________________________________________
+
+## 15. Success Criteria Summary
+
+| Metric | Target | Current | Validation |
+|--------|--------|---------|------------|
+| Design system typography | 100% | ~20% | Visual inspection |
+| Card component usage | All containers | 0 | Code review |
+| Staggered animations | Song list | None | Visual inspection |
+| Gig countdown context | When available | Never | Test with events prop |
+| Readiness metrics display | Prominent | None | Visual inspection |
+| Test coverage (new code) | ≥80% | N/A | `npm test -- --coverage` |
+| Accessibility violations | 0 | Unknown | axe-core audit |
+
+______________________________________________________________________
+
+## 16. Quick Reference for Implementation
+
+**Files to Create:**
+```
+src/components/setlist/
+├── index.ts
+├── SetlistHeader.tsx
+├── SetlistStats.tsx
+├── SetlistItem.tsx
+├── SetlistItem.test.tsx
+├── SetlistActionBar.tsx
+└── AddSongForm.tsx
+```
+
+**Files to Modify:**
+- `src/components/SetlistManager.tsx` - Refactor to use sub-components
+- `src/App.tsx:714` - Add `events={events}` prop
+
+**Key Imports for New Components:**
+```typescript
+import { memo, useMemo, useCallback, useState } from 'react';
+import { Clock, GripVertical, Plus, Trash2, Music, Sparkles } from 'lucide-react';
+import { Button, Card, CardContent, Input } from '@/components/primitives';
+import { Tooltip, TooltipTrigger, TooltipContent, TooltipProvider } from '@/components/primitives';
+import { StatusBadge, EmptyState, toast } from '@/components/ui';
+import { cn } from '@/lib/utils';
+import type { Song, BandEvent } from '@/types';
+```
+
+______________________________________________________________________
+
+*Document version: 1.1*
+*Last updated: 2025-11-28*
+*Status: Ready for Implementation - All prerequisites verified*
