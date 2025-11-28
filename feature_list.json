@@ -1387,7 +1387,7 @@
       "Step 4: Press Enter/Space to select a tab",
       "Step 5: Verify focus indicator is visible"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -1399,7 +1399,7 @@
       "Step 4: Verify tabs are announced with role='tab'",
       "Step 5: Verify buttons have accessible labels"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -1600,7 +1600,7 @@
       "Step 3: Verify toast uses bg-destructive for errors",
       "Step 4: Verify toast position is bottom-right"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",

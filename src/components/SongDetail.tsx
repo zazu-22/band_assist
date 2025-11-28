@@ -332,6 +332,34 @@ export const SongDetail: React.FC<SongDetailProps> = ({
     document.body.removeChild(a);
   };
 
+  // Keyboard navigation for tabs
+  const tabs = ['OVERVIEW', 'CHARTS', 'ASSIGNMENTS', 'AUDIO'] as const;
+  const handleTabKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
+    const currentIndex = tabs.indexOf(activeTab);
+    let newIndex = currentIndex;
+
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+      e.preventDefault();
+      newIndex = (currentIndex + 1) % tabs.length;
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      newIndex = (currentIndex - 1 + tabs.length) % tabs.length;
+    } else if (e.key === 'Home') {
+      e.preventDefault();
+      newIndex = 0;
+    } else if (e.key === 'End') {
+      e.preventDefault();
+      newIndex = tabs.length - 1;
+    }
+
+    if (newIndex !== currentIndex) {
+      setActiveTab(tabs[newIndex]);
+      // Focus the new tab
+      const tabButtons = e.currentTarget.querySelectorAll('[role="tab"]');
+      (tabButtons[newIndex] as HTMLButtonElement)?.focus();
+    }
+  };
+
   return (
     <div className="h-screen flex flex-col lg:flex-row overflow-hidden bg-background">
       {/* Main Content Area */}
@@ -394,13 +422,22 @@ export const SongDetail: React.FC<SongDetailProps> = ({
           </div>
 
           {/* Tab Navigation with primary indicator */}
-          <div className="flex items-center gap-1">
-            {(['OVERVIEW', 'CHARTS', 'ASSIGNMENTS', 'AUDIO'] as const).map(tab => (
+          <div
+            className="flex items-center gap-1"
+            role="tablist"
+            aria-label="Song sections"
+            onKeyDown={handleTabKeyDown}
+          >
+            {tabs.map(tab => (
               <button
                 key={tab}
+                role="tab"
+                aria-selected={activeTab === tab}
+                aria-controls={`tabpanel-${tab.toLowerCase()}`}
                 onClick={() => setActiveTab(tab)}
                 className={cn(
                   'relative px-4 py-2 text-sm font-bold transition-colors',
+                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded-md',
                   activeTab === tab
                     ? 'text-foreground'
                     : 'text-muted-foreground hover:text-foreground'
