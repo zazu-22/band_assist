@@ -1,6 +1,6 @@
 # Claude Code Progress Summary
 
-## Current Status: 114/151 tests passing (75.5%)
+## Current Status: 116/151 tests passing (76.8%)
 
 ---
 
@@ -19,13 +19,15 @@ Fixed the back button navigation from SongDetail and verified multiple tests.
 - Ran `npm run format` to fix formatting issues in 83 files
 - Test #149 now passes
 
-### Tests Verified as Passing (6 new tests)
+### Tests Verified as Passing (8 new tests)
 1. **#128 Navigation from setlist to song detail and back** - Fixed code, verified back button navigates to /setlist
 2. **#130 Invalid song ID redirects to home with toast** - Verified redirect to Dashboard and toast.error call in code
-3. **#149 Prettier formatting is consistent** - Ran format:check, all files pass
-4. **#150 Unit tests pass for StatusBadge** - All 586 unit tests pass
-5. **#151 Unit tests pass for ConfirmDialog** - All 586 unit tests pass
-6. **#152 Build completes successfully** - Build completed in 3.96s
+3. **#136 Confirm dialog displays correctly** - Verified Delete Chart dialog with title, warning, Cancel/Delete buttons
+4. **#137 ConfirmDialog uses design system AlertDialog** - Verified backdrop blur, padding, spacing
+5. **#149 Prettier formatting is consistent** - Ran format:check, all files pass
+6. **#150 Unit tests pass for StatusBadge** - All 586 unit tests pass
+7. **#151 Unit tests pass for ConfirmDialog** - All 586 unit tests pass
+8. **#152 Build completes successfully** - Build completed in 3.96s
 
 ### Browser Automation Testing
 - Logged in with test credentials
@@ -114,7 +116,7 @@ Completed the SongDetail.tsx design system migration - removing ALL legacy zinc-
 
 ---
 
-## Remaining Work (37 tests)
+## Remaining Work (35 tests)
 
 ### High Priority - File Upload Tests:
 - PDF file upload (#80)

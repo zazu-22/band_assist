@@ -1578,7 +1578,7 @@
       "Step 5: Verify message warns about irreversibility",
       "Step 6: Verify Cancel and Delete buttons are present"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "style",
@@ -1589,7 +1589,7 @@
       "Step 3: Verify backdrop blur effect",
       "Step 4: Verify proper padding and spacing"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "style",
