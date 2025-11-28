@@ -1,12 +1,13 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef } from 'react';
 import { Song, BandMember, Annotation, SongChart } from '@/types';
 import { INSTRUMENT_ICONS } from '@/constants';
 import { getMusicAnalysis } from '@/services/geminiService';
 import { getAvatarColor } from '@/lib/avatar';
+import { useBlobUrl } from '@/hooks/useBlobUrl';
 import { SmartTabEditor } from './SmartTabEditor';
 import { isSupabaseConfigured } from '@/services/supabaseClient';
 import { supabaseStorageService } from '@/services/supabaseStorageService';
-import { toast, ConfirmDialog } from './ui';
+import { toast, ConfirmDialog, ErrorBoundary } from './ui';
 import {
   Music2,
   Users,
@@ -53,7 +54,8 @@ export const SongDetail: React.FC<SongDetailProps> = ({
   const [aiChat, setAiChat] = useState('');
   const [aiResponse, setAiResponse] = useState('');
   const [loadingAi, setLoadingAi] = useState(false);
-  const [audioBlobUrl, setAudioBlobUrl] = useState<string | null>(null);
+  // Convert backing track data URI to blob URL for audio playback
+  const audioBlobUrl = useBlobUrl(song.backingTrackUrl);
   const [isEditingMetadata, setIsEditingMetadata] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -91,32 +93,6 @@ export const SongDetail: React.FC<SongDetailProps> = ({
   const closeConfirmDialog = () => setConfirmDialog(prev => ({ ...prev, isOpen: false }));
 
   const activeChart = song.charts.find(c => c.id === activeChartId);
-
-  // Audio blob URL creation from base64 data
-  // This effect synchronizes with the browser's Blob API (external system).
-  // Creating object URLs from base64 data requires cleanup (URL.revokeObjectURL),
-  // making useEffect the correct pattern for this external resource management.
-  useEffect(() => {
-    if (song.backingTrackUrl && song.backingTrackUrl.startsWith('data:audio')) {
-      try {
-        const mime = song.backingTrackUrl.split(';')[0].split(':')[1];
-        const base64 = song.backingTrackUrl.split(',')[1];
-        const byteCharacters = atob(base64);
-        const byteNumbers = new Array(byteCharacters.length);
-        for (let i = 0; i < byteCharacters.length; i++) {
-          byteNumbers[i] = byteCharacters.charCodeAt(i);
-        }
-        const byteArray = new Uint8Array(byteNumbers);
-        const blob = new Blob([byteArray], { type: mime });
-        const url = URL.createObjectURL(blob);
-        // eslint-disable-next-line react-hooks/set-state-in-effect -- Synchronizing with browser Blob API; cleanup handled in return
-        setAudioBlobUrl(url);
-        return () => URL.revokeObjectURL(url);
-      } catch (e) {
-        console.error('Error processing audio', e);
-      }
-    }
-  }, [song.backingTrackUrl]);
 
   // --- Assignment Handlers ---
   const handleAddRole = (memberId: string, role: string) => {
@@ -698,10 +674,31 @@ export const SongDetail: React.FC<SongDetailProps> = ({
                     onUpdateAnnotations={ann => handleUpdateChartAnnotations(activeChart.id, ann)}
                   />
                 ) : activeChart.type === 'GP' ? (
-                  <AlphaTabRenderer
-                    fileData={activeChart.storageBase64 || activeChart.url!}
-                    readOnly={true}
-                  />
+                  <ErrorBoundary
+                    fallback={
+                      <div className="flex flex-col items-center justify-center h-full bg-zinc-900 text-zinc-400 p-8">
+                        <Guitar size={48} className="opacity-40 mb-4" />
+                        <h3 className="text-lg font-semibold text-zinc-300 mb-2">
+                          Guitar Pro Render Error
+                        </h3>
+                        <p className="text-sm text-center max-w-md mb-4">
+                          An unexpected error occurred while rendering this file. Try refreshing the
+                          page or re-uploading the file in a different format.
+                        </p>
+                        <button
+                          onClick={() => window.location.reload()}
+                          className="px-4 py-2 bg-amber-600 hover:bg-amber-700 text-white rounded-lg font-medium transition-colors"
+                        >
+                          Refresh Page
+                        </button>
+                      </div>
+                    }
+                  >
+                    <AlphaTabRenderer
+                      fileData={activeChart.storageBase64 || activeChart.url!}
+                      readOnly={true}
+                    />
+                  </ErrorBoundary>
                 ) : (
                   <div className="w-full h-full relative bg-zinc-200 pdf-viewer-container">
                     <div className="absolute top-2 right-2 z-10 flex gap-2">
@@ -906,7 +903,6 @@ export const SongDetail: React.FC<SongDetailProps> = ({
                       <button
                         onClick={() => {
                           onUpdateSong({ ...song, backingTrackUrl: undefined });
-                          setAudioBlobUrl(null);
                         }}
                         className="text-xs text-red-500 hover:underline flex items-center gap-1"
                       >

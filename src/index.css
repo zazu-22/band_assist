@@ -265,6 +265,10 @@
     animation: slide-in-from-top 300ms ease-out;
   }
 
+  .animate-slide-in-from-left {
+    animation: slide-in-from-left 200ms ease-out;
+  }
+
   .animate-scale-in {
     animation: scale-in 200ms ease-out;
   }
@@ -360,5 +364,15 @@
       animation-iteration-count: 1 !important;
       transition-duration: 0.01ms !important;
     }
+  }
+
+  /* Scrollbar hide utility - enables scrolling without visible scrollbar */
+  .scrollbar-hide {
+    -ms-overflow-style: none;  /* IE and Edge */
+    scrollbar-width: none;  /* Firefox */
+  }
+
+  .scrollbar-hide::-webkit-scrollbar {
+    display: none;  /* Chrome, Safari, Opera */
   }
 }
