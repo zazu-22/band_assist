@@ -1,116 +1,104 @@
-# Claude Code Progress Summary - Session 1 (Initializer Agent)
+# Claude Code Progress Summary
 
-## Date: 2024-11-28
+## Current Status: 103/151 tests passing (68%)
 
-## Overview
+---
+
+## Session 2 - Nov 28, 2024 (Design System Migration)
+
+### Major Accomplishment
+Completed the SongDetail.tsx design system migration - removing ALL legacy zinc-* classes and replacing with design system tokens.
+
+### Changes Made
+
+**1. Background & Layout:**
+- bg-zinc-950 → bg-background
+- bg-zinc-900 → bg-card
+- border-zinc-800 → border-border
+
+**2. Typography:**
+- Added font-serif (Brawler) to song title and section headers
+- Applied font-mono tabular-nums to BPM, Duration, and date values
+- text-white → text-foreground
+- text-zinc-400/500 → text-muted-foreground
+- text-amber-600 → text-primary
+
+**3. Components:**
+- Replaced inline status span with StatusBadge component
+- Updated tab navigation with primary underline indicator pattern
+- Used Card/CardHeader/CardContent for content sections
+- Used Input primitive for form fields
+- Used Select primitive for dropdown selections
+- Used Button primitive for all action buttons
+
+**4. Animations:**
+- Added animate-slide-in-from-bottom for content sections
+- Added animate-slide-in-from-top for Add Chart form
+- Applied stagger-1 delays for sequential animations
+
+### Tests Completed (53 new tests passing)
+- All background and color token tests
+- All font styling tests (serif headers, mono numerics)
+- StatusBadge integration test
+- Tab navigation with primary indicator
+- Card component structure tests
+- Assignment tab styling tests
+- Audio tab styling tests
+- AI Assistant sidebar styling tests
+- Edit mode input/button styling tests
+- Animation tests
+- TypeScript and ESLint tests
+- zinc-* removal verification test
+
+### Git Commit
+- 77bbe98 - feat(song-detail): Apply design system to SongDetail page
+
+---
+
+## Remaining Work (48 tests)
+
+### Not Yet Implemented Components:
+1. **MetadataItem component** - New reusable component for metadata display
+2. **UploadZone component** - Drag-and-drop file upload component
+3. **Design system documentation** - Update docs/design-system.md
+
+### Functional Tests Needing Verification:
+- Audio file upload (MP3, WAV)
+- Chart creation/deletion workflows
+- PDF viewer integration
+- AlphaTab GP file rendering
+- Save metadata persistence
+- Direct URL navigation
+
+### Accessibility Tests:
+- Keyboard navigation
+- Screen reader announcements
+- aria-label attributes
+- Focus states
+
+---
+
+## Session 1 - Nov 28, 2024 (Initial Setup)
+
+### Overview
 This session focused on setting up the foundation for the SongDetail subpage design system extension project. The existing codebase already had SetlistManager components aligned with the design system (50 features, all passing). This session extended the feature tracking to include SongDetail subpage work.
 
-## Completed Tasks
+### Completed Tasks
+1. Created Extended feature_list.json (101 new features for SongDetail)
+2. Updated init.sh with guidance
+3. Project analysis complete
 
-### 1. Created Extended feature_list.json
-- Added 101 new features specifically for SongDetail subpages
-- Combined with existing 50 SetlistManager features (all passing)
-- Total: 151 features tracked
-- All new SongDetail features start with `"passes": false`
+### Git Commit
+- fb33dde - feat: extend feature_list.json with SongDetail subpage test cases
 
-### 2. Updated init.sh
-- Added guidance for SongDetail design extension workflow
-- Listed key files to modify:
-  - src/components/SongDetail.tsx (main refactor target)
-  - src/components/ui/MetadataItem.tsx (new component to create)
-  - src/components/ui/UploadZone.tsx (new component to create)
-  - docs/design-system.md (add new pattern sections)
-- Added feature tracking instructions
-
-### 3. Project Analysis Complete
-- Reviewed existing SongDetail.tsx (1020 lines, uses legacy zinc-* classes)
-- Reviewed design-system.md for established patterns
-- Reviewed SetlistManager components as exemplary implementations
-- Understood the gap between current SongDetail and design system
-
-## Feature Categories Added (101 new features)
-
-### Style Features (Design System Compliance)
-- Background/card color token migration (bg-background, bg-card, border-border)
-- Typography updates (font-serif for headers, font-mono for numbers)
-- StatusBadge component usage
-- Tab navigation styling with primary indicator
-- Card component patterns for all sections
-- Animation patterns (stagger, slide-in, transitions)
-- Responsive layout patterns
-- Light/dark mode support
-
-### Functional Features
-- Tab navigation between Overview/Charts/Assignments/Audio
-- Chart upload/management (PDF, Image, Guitar Pro, Text)
-- File size validation (50MB for charts, 10MB for audio)
-- Member role assignment CRUD
-- Audio track upload/playback/download
-- AI Assistant chat functionality
-- Metadata editing with inline forms
-- Keyboard navigation and accessibility
-
-### New Component Features
-- MetadataItem component for consistent metadata display
-- UploadZone component for drag-and-drop file uploads
-
-### Quality Assurance Features
-- TypeScript strict mode compliance
-- ESLint/Prettier validation
-- Unit test maintenance
-- Build verification
-
-## Key Files to Implement
-
-1. **src/components/SongDetail.tsx** - Major refactor needed
-   - Replace all zinc-* classes with design system tokens
-   - Use Card/CardHeader/CardContent structure
-   - Apply font-serif to section headers
-   - Use StatusBadge for status display
-   - Implement staggered entrance animations
-   - Use primitive Input/Select components
-
-2. **src/components/ui/MetadataItem.tsx** - Create new
-   - Reusable component for icon + label + value
-   - Support mono prop for numeric values
-
-3. **src/components/ui/UploadZone.tsx** - Create new
-   - Drag-and-drop file upload area
-   - Dashed border styling
-   - isDragging state handling
-
-4. **docs/design-system.md** - Extend
-   - Add Song Editor Patterns section
-   - Add Chart Upload/Management section
-   - Add Part Assignment section
-   - Add Audio Upload section
+---
 
 ## Next Steps for Future Sessions
 
-1. Start with Phase 1: SongDetail Typography & Colors
-   - Replace zinc-* classes with design system tokens
-   - Update StatusBadge usage
-   - Apply serif/mono font distinctions
-
-2. Proceed through remaining phases:
-   - Phase 2: Card & Layout Structure
-   - Phase 3: Form Patterns
-   - Phase 4: Chart Management
-   - Phase 5: Animations
-   - Phase 6: Audio Features
-
-3. Create new components:
-   - MetadataItem.tsx
-   - UploadZone.tsx
-
-4. Update design-system.md with new patterns
-
-5. Run tests and ensure build passes after each phase
-
-## Files Modified This Session
-- feature_list.json (extended with 101 new features)
-- init.sh (updated guidance for SongDetail work)
-- claude-progress.txt (this file)
+1. **Create MetadataItem component** in src/components/ui/
+2. **Create UploadZone component** for file uploads
+3. **Test remaining functional features**
+4. **Update design-system.md documentation**
 
 ## Environment Status
 - Git branch: feat/setlist-subpage-design-extension
