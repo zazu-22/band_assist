@@ -559,7 +559,7 @@
       "Step 4: Switch between light and dark themes",
       "Step 5: Verify background adapts correctly in both themes"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "style",
@@ -571,7 +571,7 @@
       "Step 4: Toggle dark/light mode",
       "Step 5: Verify header adapts correctly to theme changes"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "style",
@@ -583,7 +583,7 @@
       "Step 4: Verify text uses text-foreground color token",
       "Step 5: Check font renders correctly at text-2xl size"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "style",
@@ -594,7 +594,7 @@
       "Step 3: Verify text-muted-foreground class is applied",
       "Step 4: Verify proper contrast in both light and dark modes"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -608,7 +608,7 @@
       "Step 6: Test with 'In Progress' song - should show info variant",
       "Step 7: Test with 'To Learn' song - should show warning variant"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "style",
@@ -620,7 +620,7 @@
       "Step 4: Verify tabular-nums class for proper number alignment",
       "Step 5: Verify JetBrains Mono font is rendering"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "style",
@@ -631,7 +631,7 @@
       "Step 3: Verify font-mono and tabular-nums classes on numeric value",
       "Step 4: Verify consistent styling with BPM display"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "style",
@@ -642,7 +642,7 @@
       "Step 3: Verify value uses text-foreground color",
       "Step 4: Verify label uses text-muted-foreground"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "style",
@@ -654,7 +654,7 @@
       "Step 4: Verify bg-card and border-border classes",
       "Step 5: Verify rounded corners match design system radius"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "style",
@@ -666,7 +666,7 @@
       "Step 4: Verify inactive tabs use text-muted-foreground",
       "Step 5: Click different tabs and verify indicator moves correctly"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -679,7 +679,7 @@
       "Step 5: Click Audio tab and verify audio upload/playback area",
       "Step 6: Click Overview tab again to return"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "style",
@@ -690,7 +690,7 @@
       "Step 3: Verify font-serif (Brawler) class is applied",
       "Step 4: Verify text-lg font weight"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "style",
@@ -701,7 +701,7 @@
       "Step 3: Verify section title uses font-serif",
       "Step 4: Verify Sparkles icon has text-primary class (amber color)"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "style",
@@ -712,7 +712,7 @@
       "Step 3: Verify font-serif on heading",
       "Step 4: Verify Users icon is properly positioned"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "style",
@@ -723,7 +723,7 @@
       "Step 3: Verify cards use bg-card and border-border",
       "Step 4: Verify proper rounded corners (rounded-lg)"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "style",
@@ -735,7 +735,7 @@
       "Step 4: Verify inactive buttons use bg-card text-muted-foreground",
       "Step 5: Verify hover states work correctly"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -749,7 +749,7 @@
       "Step 6: Verify Upload and Create Text Tab buttons are present",
       "Step 7: Click Cancel and verify form closes"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "style",
@@ -761,7 +761,7 @@
       "Step 4: Verify CardHeader with section title",
       "Step 5: Verify CardContent with form fields"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "style",
@@ -772,7 +772,7 @@
       "Step 3: Verify chart name input uses design system Input primitive",
       "Step 4: Verify proper focus-visible styling on input"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "style",
@@ -784,7 +784,7 @@
       "Step 4: Click to open dropdown",
       "Step 5: Verify SelectContent styling matches design system"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -900,7 +900,7 @@
       "Step 3: Verify uses rounded-xl border-border bg-card",
       "Step 4: Verify overflow handling is correct"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "style",
@@ -911,7 +911,7 @@
       "Step 3: Verify bg-muted/30 background class",
       "Step 4: Verify border-b border-border styling"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "style",
@@ -923,7 +923,7 @@
       "Step 4: Verify FileText icon is displayed with opacity-20",
       "Step 5: Verify helpful text explains how to add charts"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "style",
@@ -934,7 +934,7 @@
       "Step 3: Verify Card component structure (CardHeader, CardContent)",
       "Step 4: Verify bg-card and border-border styling"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "style",
@@ -946,7 +946,7 @@
       "Step 4: Verify AvatarFallback shows initials",
       "Step 5: Verify consistent avatar colors"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "style",
@@ -956,7 +956,7 @@
       "Step 2: Inspect member card header area (avatar + name)",
       "Step 3: Verify bg-muted/30 class on header section"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "style",
@@ -968,7 +968,7 @@
       "Step 4: Verify variant=secondary styling",
       "Step 5: Verify X button for removal is visible on hover"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -981,7 +981,7 @@
       "Step 5: Verify new role badge appears on member card",
       "Step 6: Verify the role is saved to song assignments"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -994,7 +994,7 @@
       "Step 5: Verify role is removed from member",
       "Step 6: Verify role becomes available in Add dropdown again"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "style",
@@ -1004,7 +1004,7 @@
       "Step 2: Locate 'Roles' and 'Parts' section labels on cards",
       "Step 3: Verify text-xs text-muted-foreground uppercase tracking-wide classes"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "style",
@@ -1016,7 +1016,7 @@
       "Step 4: Resize to mobile (<768px)",
       "Step 5: Verify single column layout (grid-cols-1)"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "style",
@@ -1027,7 +1027,7 @@
       "Step 3: Verify border-2 border-dashed border-border styling",
       "Step 4: Verify hover state changes border to border-primary/50"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "style",
@@ -1038,7 +1038,7 @@
       "Step 3: Verify no zinc-* classes are used",
       "Step 4: Verify bg-card or bg-muted styling"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "style",
@@ -1048,7 +1048,7 @@
       "Step 2: Locate the UploadCloud icon in upload zone",
       "Step 3: Verify text-muted-foreground class"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -1127,7 +1127,7 @@
       "Step 3: Verify sidebar uses bg-card",
       "Step 4: Verify border-l border-border on left edge"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "style",
@@ -1138,7 +1138,7 @@
       "Step 3: Verify Sparkles icon has text-primary class",
       "Step 4: Verify 'Studio Assistant' heading uses text-foreground"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "style",
@@ -1149,7 +1149,7 @@
       "Step 3: Verify AI messages use bg-muted rounded-xl styling",
       "Step 4: Verify user messages (if any) use bg-primary"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -1172,7 +1172,7 @@
       "Step 3: Verify uses bg-background border-border styling",
       "Step 4: Verify focus state shows ring-primary"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "style",
@@ -1184,7 +1184,7 @@
       "Step 4: Verify hover:bg-muted/30 effect",
       "Step 5: Click and verify navigation back to setlist"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -1196,7 +1196,7 @@
       "Step 4: Verify artist field becomes editable input",
       "Step 5: Verify metadata fields become editable in Overview tab"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "style",
@@ -1208,7 +1208,7 @@
       "Step 4: Verify artist input uses Input primitive",
       "Step 5: Verify consistent border and focus styling"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -1234,7 +1234,7 @@
       "Step 3: Locate the Save button",
       "Step 4: Verify bg-primary text-primary-foreground styling"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "style",
@@ -1246,7 +1246,7 @@
       "Step 4: Verify Select primitive is used (not native select)",
       "Step 5: Click to open and verify SelectContent styling"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "style",
@@ -1257,7 +1257,7 @@
       "Step 3: Locate the target date input",
       "Step 4: Verify bg-background border-border styling"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "style",
@@ -1270,7 +1270,7 @@
       "Step 5: Verify main content animates third (stagger-3)",
       "Step 6: Verify sidebar animates fourth (stagger-4)"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "style",
@@ -1282,7 +1282,7 @@
       "Step 4: Click Assignments tab",
       "Step 5: Verify smooth transition between tab contents"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "style",
@@ -1293,7 +1293,7 @@
       "Step 3: Verify card slides in from top with animation",
       "Step 4: Verify animate-slide-in-from-top class applied"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "style",
@@ -1315,7 +1315,7 @@
       "Step 3: Verify zero occurrences found",
       "Step 4: Verify all colors use design system tokens"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "style",
@@ -1328,7 +1328,7 @@
       "Step 5: Verify text is readable (proper contrast)",
       "Step 6: Verify all sections maintain proper styling"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "style",
@@ -1341,7 +1341,7 @@
       "Step 5: Verify text is readable (proper contrast)",
       "Step 6: Verify all sections maintain proper styling"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "style",
@@ -1375,7 +1375,7 @@
       "Step 3: Verify full-width utilization",
       "Step 4: Verify proper grid layouts in content areas"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -1679,7 +1679,7 @@
       "Step 3: Verify no type errors in new components",
       "Step 4: Verify strict mode compliance"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -1690,7 +1690,7 @@
       "Step 3: Verify zero errors",
       "Step 4: Verify all files pass lint rules"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
