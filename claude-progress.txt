@@ -1,6 +1,6 @@
 # Claude Code Progress Summary
 
-## Current Status: 107/151 tests passing (71%)
+## Current Status: 108/151 tests passing (71.5%)
 
 ---
 
@@ -14,6 +14,7 @@ Verified chart creation and management functionality in the SongDetail Charts ta
 2. **Clicking chart in selector switches the active chart view** - Clicked between Working Chart and Test Chart, verified content switched correctly
 3. **Delete chart button shows confirmation dialog before deleting** - Clicked trash icon, verified ConfirmDialog appeared with proper warning message, Cancel and Delete buttons
 4. **Chart type icons are consistently styled** - Verified code uses correct icons: Guitar for GP, FileText for PDF, File for IMAGE, Music2 for TEXT, all size={14}
+5. **Icon-only buttons have aria-label attributes** - Verified back button (Go back), edit button (Edit song metadata), delete chart button (Delete chart) all have proper aria-label attributes
 
 ### Browser Automation Testing
 - Logged in with test credentials
@@ -81,7 +82,7 @@ Completed the SongDetail.tsx design system migration - removing ALL legacy zinc-
 
 ---
 
-## Remaining Work (44 tests)
+## Remaining Work (43 tests)
 
 ### Functional Tests Needing Implementation/Verification:
 - File upload (PDF, image, GP files) - tests #80-82, #84
