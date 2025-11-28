@@ -1424,7 +1424,7 @@
       "Step 3: Verify focus ring uses ring-ring color",
       "Step 4: Verify ring-2 ring-offset-2 pattern"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "style",
@@ -1482,7 +1482,7 @@
       "Step 3: Verify scrollbar-hide class hides scrollbar",
       "Step 4: Verify buttons are accessible via scroll"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
