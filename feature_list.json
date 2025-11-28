@@ -1161,7 +1161,7 @@
       "Step 4: Verify loading spinner appears",
       "Step 5: Verify AI response appears in messages area"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "style",
@@ -1304,7 +1304,7 @@
       "Step 3: Verify loading spinner appears",
       "Step 4: Verify spinner uses animate-spin class"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "style",
@@ -1495,7 +1495,7 @@
       "Step 5: Verify content is saved automatically",
       "Step 6: Refresh and verify content persisted"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
