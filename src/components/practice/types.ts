@@ -86,6 +86,14 @@ export interface AlphaTabRendererProps {
 
 /**
  * Playback state passed to PracticeControlBar for GP charts.
+ *
+ * Note: This interface intentionally excludes volume fields (masterVolume,
+ * metronomeVolume, countInVolume) that are present in AlphaTabState.
+ * Volume control is handled via the AlphaTabHandle imperative API rather
+ * than through state props, as volume changes don't need to trigger
+ * re-renders of the control bar UI. If volume UI controls are added in
+ * the future, consider adding volume fields here or creating a separate
+ * VolumeState interface.
  */
 export interface PlaybackState {
   isPlaying: boolean;

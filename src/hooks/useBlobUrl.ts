@@ -1,10 +1,44 @@
-import { useState, useEffect } from 'react';
+import { useMemo, useEffect } from 'react';
+
+/**
+ * Converts a Base64 data URI to a Blob URL.
+ * Returns undefined if the data URI is invalid or doesn't match the expected format.
+ */
+function dataUriToBlobUrl(dataUri: string, prefix: string): string | undefined {
+  if (!dataUri.startsWith(prefix)) {
+    return undefined;
+  }
+
+  const mimeMatch = dataUri.match(/^data:([^;]+);base64,/);
+  if (!mimeMatch) {
+    return undefined;
+  }
+
+  try {
+    const mime = mimeMatch[1];
+    const base64 = dataUri.split(',')[1];
+
+    // Decode base64 to binary
+    const byteCharacters = atob(base64);
+    const byteNumbers = new Uint8Array(byteCharacters.length);
+    for (let i = 0; i < byteCharacters.length; i++) {
+      byteNumbers[i] = byteCharacters.charCodeAt(i);
+    }
+
+    // Create blob and object URL
+    const blob = new Blob([byteNumbers], { type: mime });
+    return URL.createObjectURL(blob);
+  } catch {
+    return undefined;
+  }
+}
 
 /**
  * A custom hook for managing Blob URLs created from Base64 data URIs.
  * Automatically handles creation and cleanup of object URLs to prevent memory leaks.
  *
  * @param dataUri - A Base64 data URI (e.g., "data:audio/mp3;base64,...") or undefined
+ * @param prefix - Required prefix for the data URI (default: "data:audio")
  * @returns The object URL for the blob, or undefined if conversion fails or dataUri is empty
  *
  * @example
@@ -21,55 +55,22 @@ export function useBlobUrl(
   dataUri: string | undefined,
   prefix: string = 'data:audio'
 ): string | undefined {
-  const [blobUrl, setBlobUrl] = useState<string | undefined>(undefined);
+  // Create blob URL synchronously during render via useMemo
+  // This is safe because URL.createObjectURL is a pure function for the same input
+  const blobUrl = useMemo(() => {
+    if (!dataUri) return undefined;
+    return dataUriToBlobUrl(dataUri, prefix);
+  }, [dataUri, prefix]);
 
+  // Cleanup effect: revoke URL when it changes or component unmounts
   useEffect(() => {
-    // Skip if no data URI or doesn't match expected prefix
-    if (!dataUri || !dataUri.startsWith(prefix)) {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- Synchronizing with external Blob API
-      setBlobUrl(undefined);
-      return;
-    }
-
-    let url: string | undefined;
-
-    try {
-      // Extract MIME type and base64 content
-      const mimeMatch = dataUri.match(/^data:([^;]+);base64,/);
-      if (!mimeMatch) {
-        // eslint-disable-next-line react-hooks/set-state-in-effect -- Synchronizing with external Blob API
-        setBlobUrl(undefined);
-        return;
-      }
-
-      const mime = mimeMatch[1];
-      const base64 = dataUri.split(',')[1];
-
-      // Decode base64 to binary
-      const byteCharacters = atob(base64);
-      const byteNumbers = new Uint8Array(byteCharacters.length);
-      for (let i = 0; i < byteCharacters.length; i++) {
-        byteNumbers[i] = byteCharacters.charCodeAt(i);
-      }
-
-      // Create blob and object URL
-      const blob = new Blob([byteNumbers], { type: mime });
-      url = URL.createObjectURL(blob);
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- Synchronizing with external Blob API
-      setBlobUrl(url);
-    } catch {
-      // Silently handle conversion errors (invalid base64, etc.)
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- Synchronizing with external Blob API
-      setBlobUrl(undefined);
-    }
-
-    // Cleanup: revoke the object URL when effect re-runs or unmounts
+    // Return cleanup function that revokes the current URL
     return () => {
-      if (url) {
-        URL.revokeObjectURL(url);
+      if (blobUrl) {
+        URL.revokeObjectURL(blobUrl);
       }
     };
-  }, [dataUri, prefix]);
+  }, [blobUrl]);
 
   return blobUrl;
 }
