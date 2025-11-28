@@ -37,11 +37,11 @@ export const TempoControl = memo(function TempoControl({
   }, [currentBPM]);
 
   const handleSubmitEdit = useCallback(() => {
-    // Strict validation: trim whitespace, check for valid integer format
+    // Strict validation: trim whitespace, check for valid positive integer format
     const trimmed = inputValue.trim();
 
-    // Reject empty, non-numeric, or decimal inputs
-    if (!trimmed || !/^-?\d+$/.test(trimmed)) {
+    // Reject empty, non-numeric, decimal, or negative inputs
+    if (!trimmed || !/^\d+$/.test(trimmed)) {
       // Revert to current BPM on invalid input
       setIsEditing(false);
       return;
