@@ -1,6 +1,6 @@
 # Claude Code Progress Summary
 
-## Current Status: 127/151 tests passing (84.1%)
+## Current Status: 129/151 tests passing (85.4%)
 
 ---
 
@@ -35,11 +35,13 @@ Updated design system styling for responsive padding, button variants, and docum
 - Added "Audio Upload Section" with upload zone and player card
 - Test #139 now passes
 
-### Tests Verified as Passing (4 new tests)
-1. **#127 Page padding follows design system pattern** - Verified p-4 mobile, p-6 tablet, p-8 desktop
-2. **#129 Direct URL access to /songs/:songId works correctly** - Page loads with all data
-3. **#137 Download and external link buttons use ghost variant** - Both buttons properly styled
-4. **#139 design-system.md documentation updated** - All required sections added
+### Tests Verified as Passing (6 new tests)
+1. **#125 Focus visible states use ring-ring design token** - Primitives use focus-visible:ring-ring pattern
+2. **#127 Page padding follows design system pattern** - Verified p-4 mobile, p-6 tablet, p-8 desktop
+3. **#129 Direct URL access to /songs/:songId works correctly** - Page loads with all data
+4. **#130 Chart selector bar scrolls horizontally on overflow** - Has overflow-x-auto scrollbar-hide classes
+5. **#137 Download and external link buttons use ghost variant** - Both buttons properly styled
+6. **#139 design-system.md documentation updated** - All required sections added
 
 ### Browser Automation Testing
 - Used puppeteer_evaluate to extract current URL from page
