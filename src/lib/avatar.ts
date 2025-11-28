@@ -53,7 +53,9 @@ export function isValidAvatarColor(value: unknown): value is AvatarColorClass {
  * @param avatarColor - The member's assigned avatar color (may be undefined or legacy value)
  * @returns The avatar color class to use (always a valid Tailwind class)
  */
-export function getAvatarColor(avatarColor: AvatarColorClass | string | undefined): AvatarColorClass {
+export function getAvatarColor(
+  avatarColor: AvatarColorClass | string | undefined
+): AvatarColorClass {
   // Return default if no color provided
   if (!avatarColor) {
     return DEFAULT_AVATAR_COLOR;
@@ -75,7 +77,9 @@ export function getAvatarColor(avatarColor: AvatarColorClass | string | undefine
  * @param dbValue - The avatar_color value from database (may be null, undefined, or legacy string)
  * @returns Valid AvatarColorClass or undefined
  */
-export function validateAvatarColor(dbValue: string | null | undefined): AvatarColorClass | undefined {
+export function validateAvatarColor(
+  dbValue: string | null | undefined
+): AvatarColorClass | undefined {
   if (!dbValue) {
     return undefined;
   }

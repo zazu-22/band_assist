@@ -60,13 +60,16 @@ export const TempoControl = memo(function TempoControl({
     setIsEditing(false);
   }, [inputValue, minBPM, maxBPM, onSetBPM]);
 
-  const handleKeyDown = useCallback((e: React.KeyboardEvent) => {
-    if (e.key === 'Enter') {
-      handleSubmitEdit();
-    } else if (e.key === 'Escape') {
-      setIsEditing(false);
-    }
-  }, [handleSubmitEdit]);
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent) => {
+      if (e.key === 'Enter') {
+        handleSubmitEdit();
+      } else if (e.key === 'Escape') {
+        setIsEditing(false);
+      }
+    },
+    [handleSubmitEdit]
+  );
 
   return (
     <div className="flex items-center gap-2">
@@ -89,7 +92,7 @@ export const TempoControl = memo(function TempoControl({
                 <input
                   type="number"
                   value={inputValue}
-                  onChange={(e) => setInputValue(e.target.value)}
+                  onChange={e => setInputValue(e.target.value)}
                   onBlur={handleSubmitEdit}
                   onKeyDown={handleKeyDown}
                   autoFocus
@@ -98,7 +101,7 @@ export const TempoControl = memo(function TempoControl({
                     'text-sm font-mono tabular-nums text-center',
                     'focus:outline-none focus:ring-1 focus:ring-primary'
                   )}
-                  onClick={(e) => e.stopPropagation()}
+                  onClick={e => e.stopPropagation()}
                   data-testid="bpm-input"
                 />
               ) : (
@@ -142,7 +145,7 @@ export const TempoControl = memo(function TempoControl({
             max={maxBPM}
             step="1"
             value={currentBPM}
-            onChange={(e) => onSetBPM(parseInt(e.target.value))}
+            onChange={e => onSetBPM(parseInt(e.target.value))}
             className="w-24 h-1 bg-border rounded-lg appearance-none cursor-pointer accent-primary"
             aria-label="Tempo slider"
             data-testid="bpm-slider"

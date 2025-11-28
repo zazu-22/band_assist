@@ -69,12 +69,8 @@ export const StatCard: React.FC<StatCardProps> = memo(function StatCard({
         )}
         <div className="flex flex-col">
           <span className="text-sm text-muted-foreground">{title}</span>
-          <span className={cn('text-2xl font-bold', config.valueColor)}>
-            {value}
-          </span>
-          {subtitle && (
-            <span className="text-xs text-muted-foreground">{subtitle}</span>
-          )}
+          <span className={cn('text-2xl font-bold', config.valueColor)}>{value}</span>
+          {subtitle && <span className="text-xs text-muted-foreground">{subtitle}</span>}
         </div>
       </CardContent>
     </Card>

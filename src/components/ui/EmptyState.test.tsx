@@ -28,9 +28,7 @@ describe('EmptyState', () => {
     });
 
     it('applies custom className', () => {
-      const { container } = render(
-        <EmptyState {...defaultProps} className="custom-class" />
-      );
+      const { container } = render(<EmptyState {...defaultProps} className="custom-class" />);
       expect(container.firstChild).toHaveClass('custom-class');
     });
 
@@ -43,12 +41,7 @@ describe('EmptyState', () => {
   describe('action button', () => {
     it('renders action button when action prop provided', () => {
       const handleClick = vi.fn();
-      render(
-        <EmptyState
-          {...defaultProps}
-          action={{ label: 'Add Song', onClick: handleClick }}
-        />
-      );
+      render(<EmptyState {...defaultProps} action={{ label: 'Add Song', onClick: handleClick }} />);
       expect(screen.getByRole('button', { name: 'Add Song' })).toBeInTheDocument();
     });
 
@@ -59,12 +52,7 @@ describe('EmptyState', () => {
 
     it('calls onClick when action button clicked', () => {
       const handleClick = vi.fn();
-      render(
-        <EmptyState
-          {...defaultProps}
-          action={{ label: 'Add Song', onClick: handleClick }}
-        />
-      );
+      render(<EmptyState {...defaultProps} action={{ label: 'Add Song', onClick: handleClick }} />);
       fireEvent.click(screen.getByRole('button', { name: 'Add Song' }));
       expect(handleClick).toHaveBeenCalledTimes(1);
     });
@@ -72,10 +60,7 @@ describe('EmptyState', () => {
     it('renders correct button label', () => {
       const handleClick = vi.fn();
       render(
-        <EmptyState
-          {...defaultProps}
-          action={{ label: 'Create New', onClick: handleClick }}
-        />
+        <EmptyState {...defaultProps} action={{ label: 'Create New', onClick: handleClick }} />
       );
       expect(screen.getByRole('button', { name: 'Create New' })).toBeInTheDocument();
     });

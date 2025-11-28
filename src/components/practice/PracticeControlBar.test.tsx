@@ -155,7 +155,9 @@ describe('PracticeControlBar', () => {
         createMockChart({ id: 'c1', name: 'Chart 1' }),
         createMockChart({ id: 'c2', name: 'Chart 2' }),
       ];
-      render(<PracticeControlBar {...defaultProps} charts={charts} onSelectChart={onSelectChart} />);
+      render(
+        <PracticeControlBar {...defaultProps} charts={charts} onSelectChart={onSelectChart} />
+      );
       fireEvent.click(screen.getByText('Chart 2'));
       expect(onSelectChart).toHaveBeenCalledWith('c2');
     });

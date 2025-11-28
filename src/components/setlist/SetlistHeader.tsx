@@ -61,8 +61,7 @@ export const SetlistHeader = memo(function SetlistHeader({
               <span>{daysUntilNextGig === 1 ? 'day' : 'days'}</span>
             </span>
             <span className="text-muted-foreground">
-              until{' '}
-              <span className="text-foreground font-medium">{nextGig.title}</span>
+              until <span className="text-foreground font-medium">{nextGig.title}</span>
             </span>
           </div>
         ) : (

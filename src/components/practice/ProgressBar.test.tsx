@@ -140,7 +140,9 @@ describe('ProgressBar', () => {
   describe('keyboard navigation', () => {
     it('seeks backward on ArrowLeft', () => {
       const onSeek = vi.fn();
-      render(<ProgressBar {...defaultProps} onSeek={onSeek} currentTime={90000} totalTime={180000} />);
+      render(
+        <ProgressBar {...defaultProps} onSeek={onSeek} currentTime={90000} totalTime={180000} />
+      );
 
       const slider = screen.getByRole('slider');
       fireEvent.keyDown(slider, { key: 'ArrowLeft' });
@@ -151,7 +153,9 @@ describe('ProgressBar', () => {
 
     it('seeks forward on ArrowRight', () => {
       const onSeek = vi.fn();
-      render(<ProgressBar {...defaultProps} onSeek={onSeek} currentTime={90000} totalTime={180000} />);
+      render(
+        <ProgressBar {...defaultProps} onSeek={onSeek} currentTime={90000} totalTime={180000} />
+      );
 
       const slider = screen.getByRole('slider');
       fireEvent.keyDown(slider, { key: 'ArrowRight' });
@@ -230,7 +234,9 @@ describe('ProgressBar', () => {
 
     it('clamps ArrowLeft seek to 0', () => {
       const onSeek = vi.fn();
-      render(<ProgressBar {...defaultProps} onSeek={onSeek} currentTime={1000} totalTime={180000} />);
+      render(
+        <ProgressBar {...defaultProps} onSeek={onSeek} currentTime={1000} totalTime={180000} />
+      );
 
       const slider = screen.getByRole('slider');
       // Multiple arrow lefts from near start
@@ -244,7 +250,9 @@ describe('ProgressBar', () => {
 
     it('clamps ArrowRight seek to 1', () => {
       const onSeek = vi.fn();
-      render(<ProgressBar {...defaultProps} onSeek={onSeek} currentTime={175000} totalTime={180000} />);
+      render(
+        <ProgressBar {...defaultProps} onSeek={onSeek} currentTime={175000} totalTime={180000} />
+      );
 
       const slider = screen.getByRole('slider');
       fireEvent.keyDown(slider, { key: 'ArrowRight' });

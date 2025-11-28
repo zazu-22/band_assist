@@ -64,11 +64,7 @@ export const TrackSelector = memo(function TrackSelector({
         </Tooltip>
       </TooltipProvider>
 
-      <DropdownMenuContent
-        align="end"
-        className="w-56"
-        data-testid="track-dropdown"
-      >
+      <DropdownMenuContent align="end" className="w-56" data-testid="track-dropdown">
         {tracks.map((track, index) => (
           <DropdownMenuItem
             key={index}
@@ -76,7 +72,7 @@ export const TrackSelector = memo(function TrackSelector({
               'flex items-center justify-between gap-2 py-2',
               index === currentTrackIndex && 'bg-muted'
             )}
-            onSelect={(e) => e.preventDefault()}
+            onSelect={e => e.preventDefault()}
           >
             <button
               type="button"
@@ -89,10 +85,9 @@ export const TrackSelector = memo(function TrackSelector({
                   index === currentTrackIndex ? 'bg-primary' : 'bg-muted-foreground/30'
                 )}
               />
-              <span className={cn(
-                'truncate text-sm',
-                index === currentTrackIndex && 'font-semibold'
-              )}>
+              <span
+                className={cn('truncate text-sm', index === currentTrackIndex && 'font-semibold')}
+              >
                 {track.name}
               </span>
             </button>
@@ -100,7 +95,7 @@ export const TrackSelector = memo(function TrackSelector({
             <div className="flex gap-1 shrink-0">
               <button
                 type="button"
-                onClick={(e) => {
+                onClick={e => {
                   e.stopPropagation();
                   onToggleMute(index);
                 }}
@@ -116,7 +111,7 @@ export const TrackSelector = memo(function TrackSelector({
               </button>
               <button
                 type="button"
-                onClick={(e) => {
+                onClick={e => {
                   e.stopPropagation();
                   onToggleSolo(index);
                 }}

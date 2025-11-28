@@ -9,12 +9,14 @@ Source: specs/infra-alphatab-modernization.md
 This task breakdown covers modernizing the AlphaTab integration from CDN-based script loading to a proper Vite-bundled ESM module, plus exposing additional player controls (track volume, master volume, metronome volume, count-in).
 
 **Previous State:**
+
 - AlphaTab loaded via CDN with `@latest` tag
 - npm package installed for TypeScript types only
 - Runtime code loaded from external CDN
 - No volume controls beyond mute/solo
 
 **Current State (Implemented):**
+
 - ✅ AlphaTab bundled via Vite plugin (`@coderline/alphatab/vite`)
 - ✅ Version ^1.6.3 from package.json (semver range retained for patch updates)
 - ✅ Local fonts (`/font/`) and soundfont (`/soundfont/`)
@@ -35,6 +37,7 @@ This task breakdown covers modernizing the AlphaTab integration from CDN-based s
 **Source**: specs/infra-alphatab-modernization.md Section 5.1
 
 **Technical Requirements**:
+
 - Import the AlphaTab Vite plugin from `@coderline/alphatab/vite`
 - Add plugin to Vite configuration
 - Plugin automatically copies fonts to `/font` and soundfont to `/soundfont`
@@ -79,6 +82,7 @@ export default defineConfig(({ mode }) => {
 ```
 
 **Acceptance Criteria**:
+
 - [x] Vite plugin imported and configured
 - [x] `npm run build` succeeds
 - [x] `dist/font/` contains Bravura fonts after build
@@ -97,6 +101,7 @@ export default defineConfig(({ mode }) => {
 **Can run parallel with**: None
 
 **Technical Requirements**:
+
 - Run `npm run build`
 - Verify font files in dist/font/
 - Verify soundfont file in dist/soundfont/
@@ -105,17 +110,20 @@ export default defineConfig(({ mode }) => {
 **Implementation Steps**:
 
 1. Run production build:
+
 ```bash
 npm run build
 ```
 
 2. Check font directory:
+
 ```bash
 ls -la dist/font/
 # Should contain Bravura fonts (woff, woff2 files)
 ```
 
 3. Check soundfont directory:
+
 ```bash
 ls -la dist/soundfont/
 # Should contain sonivox.sf2
@@ -124,6 +132,7 @@ ls -la dist/soundfont/
 4. Verify build success in terminal output
 
 **Acceptance Criteria**:
+
 - [x] Build completes without errors
 - [x] `dist/font/` directory exists and contains font files
 - [x] `dist/soundfont/` directory exists and contains sonivox.sf2
@@ -145,6 +154,7 @@ ls -la dist/soundfont/
 **Source**: specs/infra-alphatab-modernization.md Section 5.3
 
 **Technical Requirements**:
+
 - Import AlphaTabApi and midi from @coderline/alphatab
 - Remove window.alphaTab global type declaration
 - Remove CDN availability check loop
@@ -225,9 +235,7 @@ useEffect(() => {
     // Set a timeout for loading
     timeoutId = setTimeout(() => {
       if (isMounted && loading) {
-        setError(
-          'Loading timeout. The file may be too large, corrupted, or incompatible.'
-        );
+        setError('Loading timeout. The file may be too large, corrupted, or incompatible.');
         setLoading(false);
       }
     }, 15000);
@@ -273,6 +281,7 @@ api.midiEventsPlayedFilter = [midi.MidiEventType.AlphaTabMetronome];
 ```
 
 **Key Changes Summary**:
+
 1. Add import at top: `import { AlphaTabApi, midi } from '@coderline/alphatab';`
 2. Remove entire `declare global { interface Window { alphaTab: ... } }` block
 3. Remove `checkLibrary()` function and related variables
@@ -282,6 +291,7 @@ api.midiEventsPlayedFilter = [midi.MidiEventType.AlphaTabMetronome];
 7. Call `initAlphaTab()` directly instead of `checkLibrary()`
 
 **Acceptance Criteria**:
+
 - [x] ESM imports compile without TypeScript errors
 - [x] No `window.alphaTab` references remain in code
 - [x] AlphaTabRenderer loads without errors
@@ -303,6 +313,7 @@ api.midiEventsPlayedFilter = [midi.MidiEventType.AlphaTabMetronome];
 **Source**: specs/infra-alphatab-modernization.md Section 5.2
 
 **Technical Requirements**:
+
 - Remove AlphaTab CDN script tag
 - Keep all other content unchanged
 - Verify no other files reference the CDN URL
@@ -319,7 +330,9 @@ api.midiEventsPlayedFilter = [midi.MidiEventType.AlphaTabMetronome];
 The entire script tag and comment should be removed.
 
 **Verification Steps**:
+
 1. Search codebase for CDN references:
+
 ```bash
 grep -r "cdn.jsdelivr.net/npm/@coderline/alphatab" .
 # Should only find this task file and spec, not any source files
@@ -328,6 +341,7 @@ grep -r "cdn.jsdelivr.net/npm/@coderline/alphatab" .
 2. Ensure soundFont CDN URL in AlphaTabRenderer.tsx is also updated (covered in Task 2.1)
 
 **Acceptance Criteria**:
+
 - [x] CDN script tag removed from index.html
 - [x] No CDN references in source code (except documentation)
 - [x] Application starts successfully without CDN
@@ -346,6 +360,7 @@ grep -r "cdn.jsdelivr.net/npm/@coderline/alphatab" .
 **Source**: specs/infra-alphatab-modernization.md Section 7
 
 **Technical Requirements**:
+
 - Use vi.mock for ESM imports instead of window.alphaTab
 - Mock must be hoisted to top of test file
 - Add new volume properties to mock for Phase 3
@@ -448,9 +463,7 @@ const mockApiInstance = {
 };
 
 // Get reference to mocked constructor for assertions
-const MockAlphaTabApi = vi.mocked(
-  (await import('@coderline/alphatab')).AlphaTabApi
-);
+const MockAlphaTabApi = vi.mocked((await import('@coderline/alphatab')).AlphaTabApi);
 
 describe('AlphaTabRenderer', () => {
   const mockFileData = 'data:application/octet-stream;base64,VEVTVERBVEE=';
@@ -477,6 +490,7 @@ describe('AlphaTabRenderer', () => {
 ```
 
 **Key Changes Summary**:
+
 1. Add `vi.mock('@coderline/alphatab', ...)` BEFORE component import
 2. Remove all `window.alphaTab = ...` assignments
 3. Add volume properties to mock: `masterVolume`, `metronomeVolume`, `countInVolume`, `changeTrackVolume`
@@ -484,6 +498,7 @@ describe('AlphaTabRenderer', () => {
 5. Use `vi.mocked()` to get typed reference to mocked constructor
 
 **Acceptance Criteria**:
+
 - [x] All existing tests pass with ESM mocks
 - [x] No `window.alphaTab` references in test file
 - [x] Mock includes volume properties for Phase 3
@@ -501,6 +516,7 @@ describe('AlphaTabRenderer', () => {
 **Can run parallel with**: None
 
 **Technical Requirements**:
+
 - Run full test suite
 - Test dev server with Guitar Pro file
 - Test production build
@@ -509,16 +525,19 @@ describe('AlphaTabRenderer', () => {
 **Verification Steps**:
 
 1. Run test suite:
+
 ```bash
 npm test
 ```
 
 2. Run type check:
+
 ```bash
 npm run typecheck
 ```
 
 3. Start dev server and test:
+
 ```bash
 npm run dev
 # Navigate to a song with Guitar Pro file
@@ -527,6 +546,7 @@ npm run dev
 ```
 
 4. Build and preview:
+
 ```bash
 npm run build
 npm run preview
@@ -534,11 +554,13 @@ npm run preview
 ```
 
 5. Check for CDN requests in DevTools:
+
 - Open Network tab
 - Filter by "jsdelivr" or "alphatab"
 - Should only see local asset requests
 
 **Acceptance Criteria**:
+
 - [x] `npm test` passes all tests
 - [x] `npm run typecheck` passes
 - [x] Guitar Pro files render in dev mode
@@ -562,6 +584,7 @@ npm run preview
 **Source**: specs/infra-alphatab-modernization.md Section 5.4
 
 **Technical Requirements**:
+
 - Create or extend types file with volume interfaces
 - Volume values use 0-1 range (0% to 100%)
 - Maintain backwards compatibility with existing interfaces
@@ -631,6 +654,7 @@ export interface TrackInfo {
 ```
 
 **Acceptance Criteria**:
+
 - [x] Types file created with all interfaces (in AlphaTabRenderer.tsx: `TrackInfo`, `AlphaTabHandle`)
 - [x] All volume ranges documented as 0-1
 - [x] TypeScript compiles without errors
@@ -649,6 +673,7 @@ export interface TrackInfo {
 **Source**: specs/infra-alphatab-modernization.md Section 5.5
 
 **Technical Requirements**:
+
 - Implement setTrackVolume, setMasterVolume, setMetronomeVolume, setCountInVolume
 - All volume values clamped to 0-1 range
 - Setting metronome/countIn volume > 0 enables the feature
@@ -763,16 +788,22 @@ export const AlphaTabRenderer = forwardRef<AlphaTabRendererHandle, AlphaTabRende
   ({ fileData, isPlaying, onPlaybackChange, readOnly = false }, ref) => {
     // ... existing code ...
 
-    useImperativeHandle(ref, () => ({
-      play: togglePlay, // or direct play
-      pause: () => apiRef.current?.pause(),
-      stop: stopPlayback,
-      seekTo,
-      setTrackVolume,
-      setMasterVolume,
-      setMetronomeVolume,
-      setCountInVolume,
-    }), [/* dependencies */]);
+    useImperativeHandle(
+      ref,
+      () => ({
+        play: togglePlay, // or direct play
+        pause: () => apiRef.current?.pause(),
+        stop: stopPlayback,
+        seekTo,
+        setTrackVolume,
+        setMasterVolume,
+        setMetronomeVolume,
+        setCountInVolume,
+      }),
+      [
+        /* dependencies */
+      ]
+    );
 
     // ... rest of component
   }
@@ -782,6 +813,7 @@ AlphaTabRenderer.displayName = 'AlphaTabRenderer';
 ```
 
 **Acceptance Criteria**:
+
 - [x] All four volume methods implemented (`setTrackVolume`, `setMasterVolume`, `setMetronomeVolume`, `setCountInVolume`)
 - [x] Volume values clamped to 0-1 range
 - [x] Invalid track index handled gracefully (logs warning, no-op)
@@ -802,6 +834,7 @@ AlphaTabRenderer.displayName = 'AlphaTabRenderer';
 **Source**: specs/infra-alphatab-modernization.md Section 7
 
 **Technical Requirements**:
+
 - Test all four volume methods
 - Test clamping behavior
 - Test state updates
@@ -952,6 +985,7 @@ describe('AlphaTabRenderer Volume Controls', () => {
 ```
 
 **Acceptance Criteria**:
+
 - [x] Tests for setTrackVolume (happy path, clamping, invalid index) - 4 tests
 - [x] Tests for setMasterVolume (happy path, clamping, getter) - 3 tests
 - [x] Tests for setMetronomeVolume (enable, disable, clamping, getter) - 4 tests
@@ -972,6 +1006,7 @@ describe('AlphaTabRenderer Volume Controls', () => {
 **Can run parallel with**: Task 4.2
 
 **Technical Requirements**:
+
 - Verify Vite plugin copies fonts to dist/font/
 - Remove public/font/ directory if it contains Bravura fonts
 - Verify fonts still load correctly after removal
@@ -979,17 +1014,20 @@ describe('AlphaTabRenderer Volume Controls', () => {
 **Verification Steps**:
 
 1. Check what's in public/font/:
+
 ```bash
 ls -la public/font/
 ```
 
 2. Build and verify plugin copies fonts:
+
 ```bash
 npm run build
 ls -la dist/font/
 ```
 
 3. If public/font/ contains Bravura fonts duplicated by plugin, remove:
+
 ```bash
 # Only if verified safe
 rm -rf public/font/Bravura*
@@ -1000,6 +1038,7 @@ rm -rf public/font/
 4. Test dev server and build still work
 
 **Acceptance Criteria**:
+
 - [x] No duplicate font files between public/ and dist/ (N/A - fonts were never in public/)
 - [x] Dev server still loads fonts correctly
 - [x] Production build still works
@@ -1018,6 +1057,7 @@ rm -rf public/font/
 **Can run parallel with**: Task 4.1
 
 **Technical Requirements**:
+
 - Document Vite plugin usage
 - Document ESM imports
 - Document volume control API
@@ -1027,36 +1067,42 @@ rm -rf public/font/
 
 Update the AlphaTab section in CLAUDE.md:
 
-```markdown
+````markdown
 ### AlphaTab Integration
 
 AlphaTab is bundled via the Vite plugin (`@coderline/alphatab/vite`):
 
 **Import Pattern:**
+
 ```typescript
 import { AlphaTabApi, midi } from '@coderline/alphatab';
 ```
+````
 
 **Asset Management:**
+
 - Fonts: Automatically copied to `/font` during build
 - SoundFont: Automatically copied to `/soundfont` during build
 - Workers: Configured automatically by plugin
 
 **Volume Controls (all use 0-1 range):**
+
 - `setTrackVolume(index, volume)` - Per-track volume (0-1, default 1)
 - `setMasterVolume(volume)` - Overall volume (0-1, default 1)
 - `setMetronomeVolume(volume)` - Metronome level (0-1, default 0; >0 enables metronome)
 - `setCountInVolume(volume)` - Count-in level (0-1, default 0; >0 enables count-in)
 
 **Note:** The npm package `@coderline/alphatab@^1.6.3` provides both TypeScript types and runtime code. No CDN dependency is required.
-```
+
+````
 
 Remove this section from Common Pitfalls:
 ```markdown
 1. **AlphaTab Global:** `AlphaTabRenderer` expects `window.alphaTab` from CDN. Ensure the script loads before React renders.
-```
+````
 
 **Acceptance Criteria**:
+
 - [x] CLAUDE.md updated with new integration details
 - [x] CDN references removed from documentation (Common Pitfalls section updated)
 - [x] Volume controls documented (with usage example)
@@ -1073,15 +1119,18 @@ Remove this section from Common Pitfalls:
 **Can run parallel with**: Any
 
 **Technical Requirements**:
+
 - Verify version is pinned (no ^ or ~)
 - Current version: 1.6.3
 
 **Current package.json**:
+
 ```json
 "@coderline/alphatab": "^1.6.3"
 ```
 
 **If pinning desired**:
+
 ```json
 "@coderline/alphatab": "1.6.3"
 ```
@@ -1089,6 +1138,7 @@ Remove this section from Common Pitfalls:
 **Note**: The spec recommends staying on ~1.6.3. The `^` allows minor version updates which is generally safe. Only pin if strict version control is needed.
 
 **Acceptance Criteria**:
+
 - [x] Review package.json version constraint - reviewed
 - [x] Decision made on pinning: **No** - kept `^1.6.3` to allow patch updates for bug fixes
 - [x] N/A - version not strictly pinned per decision
@@ -1137,22 +1187,24 @@ Phase 4: Cleanup (can run after respective dependencies)
 
 ### Total Tasks: 11 (All Complete ✅)
 
-| Phase | Tasks | Status |
-|-------|-------|--------|
-| Phase 1 | 2 | ✅ Complete |
-| Phase 2 | 4 | ✅ Complete |
-| Phase 3 | 3 | ✅ Complete |
-| Phase 4 | 3 | ✅ Complete |
+| Phase   | Tasks | Status      |
+| ------- | ----- | ----------- |
+| Phase 1 | 2     | ✅ Complete |
+| Phase 2 | 4     | ✅ Complete |
+| Phase 3 | 3     | ✅ Complete |
+| Phase 4 | 3     | ✅ Complete |
 
 ### Implementation Notes
 
 **Key Implementation Decisions:**
+
 1. Volume controls exposed via `onReady(handle)` callback pattern instead of `forwardRef`/`useImperativeHandle`
 2. Types (`TrackInfo`, `AlphaTabHandle`) defined inline in AlphaTabRenderer.tsx rather than separate types file
 3. Track volumes initialized to 1.0 when score loads (not lazily)
 4. Package version kept at `^1.6.3` for semver flexibility
 
 **Files Modified:**
+
 - `vite.config.ts` - Added AlphaTab Vite plugin
 - `index.html` - Removed CDN script tag
 - `src/components/AlphaTabRenderer.tsx` - ESM imports, volume controls, `onReady` callback
@@ -1160,11 +1212,12 @@ Phase 4: Cleanup (can run after respective dependencies)
 - `CLAUDE.md` - Updated documentation
 
 **Test Coverage:**
+
 - 339 total tests (17 new volume control tests)
 - All tests passing
 
 ---
 
-*Document version: 1.1*
-*Generated: 2025-11-27*
-*Completed: 2025-11-27*
+_Document version: 1.1_
+_Generated: 2025-11-27_
+_Completed: 2025-11-27_

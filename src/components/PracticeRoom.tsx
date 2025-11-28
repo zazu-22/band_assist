@@ -1,4 +1,12 @@
-import React, { useState, useEffect, useLayoutEffect, useRef, memo, useMemo, useCallback } from 'react';
+import React, {
+  useState,
+  useEffect,
+  useLayoutEffect,
+  useRef,
+  memo,
+  useMemo,
+  useCallback,
+} from 'react';
 import { Song } from '@/types';
 import {
   Play,
@@ -30,11 +38,7 @@ import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/useBreakpoint';
 import { useDerivedState, usePrevious } from '@/hooks/useDerivedState';
 import { useBlobUrl } from '@/hooks/useBlobUrl';
-import {
-  PracticeControlBar,
-  type AlphaTabState,
-  type TrackInfo,
-} from './practice';
+import { PracticeControlBar, type AlphaTabState, type TrackInfo } from './practice';
 
 // =============================================================================
 // TYPES
@@ -77,11 +81,7 @@ interface SongListItemProps {
   onSelect: (id: string) => void;
 }
 
-const SongListItem = memo(function SongListItem({
-  song,
-  isSelected,
-  onSelect,
-}: SongListItemProps) {
+const SongListItem = memo(function SongListItem({ song, isSelected, onSelect }: SongListItemProps) {
   return (
     <button
       type="button"
@@ -121,9 +121,7 @@ SongListItem.displayName = 'SongListItem';
 // MAIN COMPONENT
 // =============================================================================
 
-export const PracticeRoom: React.FC<PracticeRoomProps> = memo(function PracticeRoom({
-  songs,
-}) {
+export const PracticeRoom: React.FC<PracticeRoomProps> = memo(function PracticeRoom({ songs }) {
   const isMobile = useIsMobile();
 
   // ---------------------------------------------------------------------------
@@ -150,10 +148,7 @@ export const PracticeRoom: React.FC<PracticeRoomProps> = memo(function PracticeR
   // Blob URL for backing track audio (handles Base64 data URI conversion and cleanup)
   const audioSrc = useBlobUrl(currentSong?.backingTrackUrl);
 
-  const [metronomeBpm, setMetronomeBpm] = useDerivedState(
-    currentSong?.bpm ?? 120,
-    selectedSongId
-  );
+  const [metronomeBpm, setMetronomeBpm] = useDerivedState(currentSong?.bpm ?? 120, selectedSongId);
   const [activeChartId, setActiveChartId] = useDerivedState<string | null>(
     currentSong?.charts[0]?.id ?? null,
     selectedSongId
@@ -326,12 +321,15 @@ export const PracticeRoom: React.FC<PracticeRoomProps> = memo(function PracticeR
     }
   }, [gpState]);
 
-  const handleSetBPM = useCallback((bpm: number) => {
-    if (alphaTabRef.current && gpState) {
-      const speed = bpm / gpState.originalTempo;
-      alphaTabRef.current.setPlaybackSpeed(speed);
-    }
-  }, [gpState]);
+  const handleSetBPM = useCallback(
+    (bpm: number) => {
+      if (alphaTabRef.current && gpState) {
+        const speed = bpm / gpState.originalTempo;
+        alphaTabRef.current.setPlaybackSpeed(speed);
+      }
+    },
+    [gpState]
+  );
 
   const handleResetTempo = useCallback(() => {
     alphaTabRef.current?.setPlaybackSpeed(1.0);
@@ -391,13 +389,16 @@ export const PracticeRoom: React.FC<PracticeRoomProps> = memo(function PracticeR
     setIsPlaying(false);
   }, []);
 
-  const handleSongSelect = useCallback((id: string) => {
-    setSelectedSongId(id);
-    // Auto-hide song list on mobile after selection
-    if (isMobile) {
-      setShowSongList(false);
-    }
-  }, [isMobile]);
+  const handleSongSelect = useCallback(
+    (id: string) => {
+      setSelectedSongId(id);
+      // Auto-hide song list on mobile after selection
+      if (isMobile) {
+        setShowSongList(false);
+      }
+    },
+    [isMobile]
+  );
 
   const toggleSongList = useCallback(() => {
     setShowSongList(prev => !prev);
@@ -468,8 +469,8 @@ export const PracticeRoom: React.FC<PracticeRoomProps> = memo(function PracticeR
       {/* Main Content Area */}
       <div className="flex-1 flex overflow-hidden">
         {/* Left Sidebar: Song List */}
-        {showSongList && (
-          isMobile ? (
+        {showSongList &&
+          (isMobile ? (
             <Card className="w-64 border-r border-border rounded-none overflow-hidden shrink-0 animate-slide-in-from-left">
               <CardHeader className="py-2.5 px-4 border-b border-border">
                 <div className="flex items-center justify-between">
@@ -547,8 +548,7 @@ export const PracticeRoom: React.FC<PracticeRoomProps> = memo(function PracticeR
                 </CardContent>
               </Card>
             </ResizablePanel>
-          )
-        )}
+          ))}
 
         {/* Main Stage */}
         <div className="flex-1 flex flex-col relative min-w-0">
@@ -563,12 +563,7 @@ export const PracticeRoom: React.FC<PracticeRoomProps> = memo(function PracticeR
             )}
           >
             {activeChart ? (
-              <div
-                className={cn(
-                  'w-full h-full',
-                  !isGuitarPro && 'max-w-4xl mx-auto'
-                )}
-              >
+              <div className={cn('w-full h-full', !isGuitarPro && 'max-w-4xl mx-auto')}>
                 {activeChart.type === 'TEXT' ? (
                   <Card className="overflow-hidden h-full min-h-[500px]">
                     <SmartTabEditor

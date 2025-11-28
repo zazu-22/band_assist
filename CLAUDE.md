@@ -10,7 +10,7 @@ Band Assist (Sharp Dressed Band) is a React SPA for band management. It helps ba
 
 ## Design System
 
-The app follows a cohesive "Backstage Command Center". See **[docs/design-system.md](docs/design-system.md). When building new features or modifying existing pages, reference the design system to maintain visual consistency across the application.
+The app follows a cohesive "Backstage Command Center". See \*\*[docs/design-system.md](docs/design-system.md). When building new features or modifying existing pages, reference the design system to maintain visual consistency across the application.
 
 ### Components
 
@@ -103,7 +103,7 @@ Always use immutable updates:
 ```typescript
 // Good
 handleUpdateSong({ ...song, title: 'New Title' });
-setSongs(songs.map(s => s.id === id ? updated : s));
+setSongs(songs.map(s => (s.id === id ? updated : s)));
 
 // Bad - never mutate directly
 song.title = 'New Title';
@@ -138,6 +138,7 @@ navigate('/', { replace: true }); // For redirects
 ## Automated Testing (Puppeteer)
 
 For browser automation, read credentials from `test-credentials.json`:
+
 ```json
 { "email": "...", "password": "..." }
 ```

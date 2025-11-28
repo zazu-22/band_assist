@@ -305,9 +305,7 @@ interface PracticeControlBarProps {
   </div>
 
   {/* Progress bar row (GP only) */}
-  {isGuitarPro && playbackState && (
-    <ProgressBar />
-  )}
+  {isGuitarPro && playbackState && <ProgressBar />}
 </header>
 ```
 
@@ -628,11 +626,11 @@ describe('Design System Compliance', () => {
 
 **Breakpoint Strategy:**
 
-| Viewport | Behavior |
-|----------|----------|
-| Desktop (≥1024px) | Full controls visible |
+| Viewport            | Behavior                         |
+| ------------------- | -------------------------------- |
+| Desktop (≥1024px)   | Full controls visible            |
 | Tablet (768-1023px) | Compact BPM slider, smaller gaps |
-| Mobile (<768px) | Icon-only buttons, overflow menu |
+| Mobile (<768px)     | Icon-only buttons, overflow menu |
 
 **Mobile Adaptations:**
 
@@ -646,11 +644,7 @@ describe('Design System Compliance', () => {
 
 ```tsx
 // Responsive classes
-<Button
-  variant="ghost"
-  size="sm"
-  className="h-9 w-9 lg:w-auto lg:px-3"
->
+<Button variant="ghost" size="sm" className="h-9 w-9 lg:w-auto lg:px-3">
   <Play size={18} />
   <span className="hidden lg:inline ml-2">Play</span>
 </Button>
@@ -881,12 +875,12 @@ src/components/
 
 ## Risks & Mitigations
 
-| Risk | Impact | Mitigation |
-|------|--------|------------|
-| AlphaTab API instability | High | Keep `showControls` prop for fallback |
-| State sync complexity | Medium | Use reducer pattern for playback state |
-| Mobile usability regression | Medium | Test on real devices early |
-| Performance overhead | Low | Memoize callbacks, avoid unnecessary re-renders |
+| Risk                        | Impact | Mitigation                                      |
+| --------------------------- | ------ | ----------------------------------------------- |
+| AlphaTab API instability    | High   | Keep `showControls` prop for fallback           |
+| State sync complexity       | Medium | Use reducer pattern for playback state          |
+| Mobile usability regression | Medium | Test on real devices early                      |
+| Performance overhead        | Low    | Memoize callbacks, avoid unnecessary re-renders |
 
 ---
 

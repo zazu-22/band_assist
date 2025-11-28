@@ -27,7 +27,8 @@ describe('useBlobUrl', () => {
   });
 
   // Valid base64 audio data (minimal MP3 header bytes)
-  const validAudioDataUri = 'data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA//tQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAABhgC7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7//////////////////////////////////////////////////////////////////8AAAAATGF2YzU4LjEzAAAAAAAAAAAAAAAAJAAAAAAAAAAAAYYNf+ZHAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
+  const validAudioDataUri =
+    'data:audio/mp3;base64,SUQzBAAAAAAAI1RTU0UAAAAPAAADTGF2ZjU4Ljc2LjEwMAAAAAAAAAAAAAAA//tQAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAWGluZwAAAA8AAAACAAABhgC7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7u7//////////////////////////////////////////////////////////////////8AAAAATGF2YzU4LjEzAAAAAAAAAAAAAAAAJAAAAAAAAAAAAYYNf+ZHAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA';
 
   describe('valid data URI conversion', () => {
     it('should convert valid audio data URI to blob URL', () => {
@@ -46,7 +47,8 @@ describe('useBlobUrl', () => {
     });
 
     it('should handle different audio MIME types', () => {
-      const wavDataUri = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAgD4AAAB9AAACABAAZGF0YQAAAAA=';
+      const wavDataUri =
+        'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAgD4AAAB9AAACABAAZGF0YQAAAAA=';
       const { result } = renderHook(() => useBlobUrl(wavDataUri));
 
       expect(result.current).toBe('blob:test-url-1');
@@ -55,7 +57,8 @@ describe('useBlobUrl', () => {
     });
 
     it('should work with custom prefix', () => {
-      const imageDataUri = 'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
+      const imageDataUri =
+        'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
       const { result } = renderHook(() => useBlobUrl(imageDataUri, 'data:image'));
 
       expect(result.current).toBe('blob:test-url-1');
@@ -141,16 +144,16 @@ describe('useBlobUrl', () => {
 
   describe('URL revocation on dataUri changes', () => {
     it('should revoke old URL and create new one when dataUri changes', () => {
-      const { rerender } = renderHook(
-        ({ dataUri }) => useBlobUrl(dataUri),
-        { initialProps: { dataUri: validAudioDataUri } }
-      );
+      const { rerender } = renderHook(({ dataUri }) => useBlobUrl(dataUri), {
+        initialProps: { dataUri: validAudioDataUri },
+      });
 
       expect(createObjectURLMock).toHaveBeenCalledTimes(1);
       expect(revokeObjectURLMock).not.toHaveBeenCalled();
 
       // Create a different valid data URI
-      const newDataUri = 'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAgD4AAAB9AAACABAAZGF0YQAAAAA=';
+      const newDataUri =
+        'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAgD4AAAB9AAACABAAZGF0YQAAAAA=';
       rerender({ dataUri: newDataUri });
 
       // Old URL should be revoked, new one created
@@ -160,10 +163,9 @@ describe('useBlobUrl', () => {
     });
 
     it('should revoke URL when dataUri changes to undefined', () => {
-      const { result, rerender } = renderHook(
-        ({ dataUri }) => useBlobUrl(dataUri),
-        { initialProps: { dataUri: validAudioDataUri as string | undefined } }
-      );
+      const { result, rerender } = renderHook(({ dataUri }) => useBlobUrl(dataUri), {
+        initialProps: { dataUri: validAudioDataUri as string | undefined },
+      });
 
       expect(result.current).toBe('blob:test-url-1');
 
@@ -174,10 +176,9 @@ describe('useBlobUrl', () => {
     });
 
     it('should create URL when dataUri changes from undefined to valid', () => {
-      const { result, rerender } = renderHook(
-        ({ dataUri }) => useBlobUrl(dataUri),
-        { initialProps: { dataUri: undefined as string | undefined } }
-      );
+      const { result, rerender } = renderHook(({ dataUri }) => useBlobUrl(dataUri), {
+        initialProps: { dataUri: undefined as string | undefined },
+      });
 
       expect(result.current).toBeUndefined();
       expect(createObjectURLMock).not.toHaveBeenCalled();
@@ -189,10 +190,9 @@ describe('useBlobUrl', () => {
     });
 
     it('should not create new URL if dataUri is the same', () => {
-      const { rerender } = renderHook(
-        ({ dataUri }) => useBlobUrl(dataUri),
-        { initialProps: { dataUri: validAudioDataUri } }
-      );
+      const { rerender } = renderHook(({ dataUri }) => useBlobUrl(dataUri), {
+        initialProps: { dataUri: validAudioDataUri },
+      });
 
       expect(createObjectURLMock).toHaveBeenCalledTimes(1);
 
@@ -221,10 +221,9 @@ describe('useBlobUrl', () => {
 
     it('should update when prefix parameter changes', () => {
       const dataUri = 'data:audio/mp3;base64,SUQzBAA=';
-      const { result, rerender } = renderHook(
-        ({ prefix }) => useBlobUrl(dataUri, prefix),
-        { initialProps: { prefix: 'data:audio' } }
-      );
+      const { result, rerender } = renderHook(({ prefix }) => useBlobUrl(dataUri, prefix), {
+        initialProps: { prefix: 'data:audio' },
+      });
 
       expect(result.current).toBe('blob:test-url-1');
 

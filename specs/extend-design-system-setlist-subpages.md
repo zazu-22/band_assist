@@ -7,26 +7,28 @@ This specification extends the Band Assist design system (`docs/design-system.md
 ## Current State Assessment
 
 ### SetlistManager Components (Well-Aligned)
+
 The `SetlistManager.tsx` and its sub-components (`SetlistHeader`, `SetlistStats`, `SetlistItem`, `SetlistActionBar`, `AddSongForm`) are **exemplary implementations** of the design system:
 
-| Component | File | Status |
-|-----------|------|--------|
-| SetlistHeader | `src/components/setlist/SetlistHeader.tsx` | ✅ Aligned |
-| SetlistStats | `src/components/setlist/SetlistStats.tsx` | ✅ Aligned |
-| SetlistItem | `src/components/setlist/SetlistItem.tsx` | ✅ Aligned |
+| Component        | File                                          | Status     |
+| ---------------- | --------------------------------------------- | ---------- |
+| SetlistHeader    | `src/components/setlist/SetlistHeader.tsx`    | ✅ Aligned |
+| SetlistStats     | `src/components/setlist/SetlistStats.tsx`     | ✅ Aligned |
+| SetlistItem      | `src/components/setlist/SetlistItem.tsx`      | ✅ Aligned |
 | SetlistActionBar | `src/components/setlist/SetlistActionBar.tsx` | ✅ Aligned |
-| AddSongForm | `src/components/setlist/AddSongForm.tsx` | ✅ Aligned |
+| AddSongForm      | `src/components/setlist/AddSongForm.tsx`      | ✅ Aligned |
 
 ### SongDetail Component (Requires Redesign)
+
 The `SongDetail.tsx` component uses legacy zinc-based styling that predates the design system:
 
-| Issue | Current | Design System |
-|-------|---------|---------------|
-| Background | `bg-zinc-950` | `bg-background` |
-| Cards | `bg-zinc-900 border-zinc-800` | `bg-card border-border` |
-| Text | `text-white`, `text-zinc-300` | `text-foreground`, `text-muted-foreground` |
-| Status badges | Inline conditional classes | `StatusBadge` component |
-| Typography | No serif/mono distinction | Brawler serif, JetBrains Mono |
+| Issue         | Current                       | Design System                              |
+| ------------- | ----------------------------- | ------------------------------------------ |
+| Background    | `bg-zinc-950`                 | `bg-background`                            |
+| Cards         | `bg-zinc-900 border-zinc-800` | `bg-card border-border`                    |
+| Text          | `text-white`, `text-zinc-300` | `text-foreground`, `text-muted-foreground` |
+| Status badges | Inline conditional classes    | `StatusBadge` component                    |
+| Typography    | No serif/mono distinction     | Brawler serif, JetBrains Mono              |
 
 ---
 
@@ -41,9 +43,7 @@ The `SongDetail.tsx` component uses legacy zinc-based styling that predates the 
 <div className="h-screen flex flex-col lg:flex-row overflow-hidden bg-background">
   {/* Main content area */}
   <main className="flex-1 overflow-y-auto">
-    <div className="p-4 sm:p-6 lg:p-8 space-y-6">
-      {/* Content sections */}
-    </div>
+    <div className="p-4 sm:p-6 lg:p-8 space-y-6">{/* Content sections */}</div>
   </main>
 
   {/* Optional sidebar (AI Assistant, etc.) */}
@@ -61,9 +61,7 @@ The `SongDetail.tsx` component uses legacy zinc-based styling that predates the 
   <div className="flex items-start justify-between gap-4">
     {/* Left: Title and Artist */}
     <div className="flex-1 min-w-0">
-      <h1 className="text-2xl font-bold font-serif text-foreground truncate">
-        {song.title}
-      </h1>
+      <h1 className="text-2xl font-bold font-serif text-foreground truncate">{song.title}</h1>
       <p className="text-sm text-muted-foreground mt-1">{song.artist}</p>
     </div>
 
@@ -100,10 +98,7 @@ const MetadataItem = ({ icon: Icon, label, value, mono }: MetadataItemProps) => 
   <div className="flex items-center gap-2 text-sm">
     <Icon size={14} className="text-muted-foreground" />
     <span className="text-muted-foreground">{label}:</span>
-    <span className={cn(
-      "font-medium text-foreground",
-      mono && "font-mono tabular-nums"
-    )}>
+    <span className={cn('font-medium text-foreground', mono && 'font-mono tabular-nums')}>
       {value}
     </span>
   </div>
@@ -114,21 +109,23 @@ const MetadataItem = ({ icon: Icon, label, value, mono }: MetadataItemProps) => 
 
 ```tsx
 // Inline edit mode for metadata fields
-{isEditing ? (
-  <Input
-    value={editForm.title}
-    onChange={(e) => setEditForm({ ...editForm, title: e.target.value })}
-    className="text-xl font-bold font-serif"
-    autoFocus
-  />
-) : (
-  <h1
-    className="text-2xl font-bold font-serif text-foreground cursor-pointer hover:text-primary transition-colors"
-    onClick={() => setIsEditing(true)}
-  >
-    {song.title}
-  </h1>
-)}
+{
+  isEditing ? (
+    <Input
+      value={editForm.title}
+      onChange={e => setEditForm({ ...editForm, title: e.target.value })}
+      className="text-xl font-bold font-serif"
+      autoFocus
+    />
+  ) : (
+    <h1
+      className="text-2xl font-bold font-serif text-foreground cursor-pointer hover:text-primary transition-colors"
+      onClick={() => setIsEditing(true)}
+    >
+      {song.title}
+    </h1>
+  );
+}
 ```
 
 #### Tab Navigation Pattern
@@ -137,18 +134,16 @@ const MetadataItem = ({ icon: Icon, label, value, mono }: MetadataItemProps) => 
 // Horizontal tab bar for song sections
 <div className="border-b border-border">
   <nav className="flex gap-1 px-4" role="tablist">
-    {['Overview', 'Charts', 'Assignments', 'Audio'].map((tab) => (
+    {['Overview', 'Charts', 'Assignments', 'Audio'].map(tab => (
       <button
         key={tab}
         role="tab"
         aria-selected={activeTab === tab}
         onClick={() => setActiveTab(tab)}
         className={cn(
-          "px-4 py-2.5 text-sm font-medium transition-colors relative",
-          "hover:text-foreground",
-          activeTab === tab
-            ? "text-foreground"
-            : "text-muted-foreground"
+          'px-4 py-2.5 text-sm font-medium transition-colors relative',
+          'hover:text-foreground',
+          activeTab === tab ? 'text-foreground' : 'text-muted-foreground'
         )}
       >
         {tab}
@@ -175,11 +170,11 @@ const MetadataItem = ({ icon: Icon, label, value, mono }: MetadataItemProps) => 
       key={chart.id}
       onClick={() => setActiveChartId(chart.id)}
       className={cn(
-        "flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors",
-        "border",
+        'flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium whitespace-nowrap transition-colors',
+        'border',
         activeChartId === chart.id
-          ? "bg-primary text-primary-foreground border-primary"
-          : "bg-card text-muted-foreground border-border hover:border-primary/50 hover:text-foreground"
+          ? 'bg-primary text-primary-foreground border-primary'
+          : 'bg-card text-muted-foreground border-border hover:border-primary/50 hover:text-foreground'
       )}
     >
       <ChartTypeIcon type={chart.type} size={14} />
@@ -188,12 +183,7 @@ const MetadataItem = ({ icon: Icon, label, value, mono }: MetadataItemProps) => 
   ))}
 
   {/* Add chart button */}
-  <Button
-    variant="outline"
-    size="sm"
-    onClick={() => setIsAddingChart(true)}
-    className="shrink-0"
-  >
+  <Button variant="outline" size="sm" onClick={() => setIsAddingChart(true)} className="shrink-0">
     <Plus size={14} className="mr-1" />
     Add Chart
   </Button>
@@ -229,7 +219,7 @@ const CHART_TYPE_CONFIG = {
       <Input
         id="chart-name"
         value={newChartName}
-        onChange={(e) => setNewChartName(e.target.value)}
+        onChange={e => setNewChartName(e.target.value)}
         placeholder="e.g., Lead Guitar, Drums, Bass Tab"
         className="mt-1.5"
       />
@@ -245,8 +235,10 @@ const CHART_TYPE_CONFIG = {
           <SelectValue placeholder="Select instrument" />
         </SelectTrigger>
         <SelectContent>
-          {instruments.map((inst) => (
-            <SelectItem key={inst} value={inst}>{inst}</SelectItem>
+          {instruments.map(inst => (
+            <SelectItem key={inst} value={inst}>
+              {inst}
+            </SelectItem>
           ))}
         </SelectContent>
       </Select>
@@ -279,19 +271,13 @@ const CHART_TYPE_CONFIG = {
   onDragLeave={handleDragLeave}
   onDrop={handleDrop}
   className={cn(
-    "border-2 border-dashed rounded-xl p-8 text-center transition-colors",
-    isDragging
-      ? "border-primary bg-primary/5"
-      : "border-border hover:border-primary/50"
+    'border-2 border-dashed rounded-xl p-8 text-center transition-colors',
+    isDragging ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'
   )}
 >
   <Upload size={32} className="mx-auto text-muted-foreground mb-3" />
-  <p className="text-sm font-medium text-foreground mb-1">
-    Drop file here or click to upload
-  </p>
-  <p className="text-xs text-muted-foreground">
-    Supports PDF, PNG, JPG, TXT, GP/GPX (max 50MB)
-  </p>
+  <p className="text-sm font-medium text-foreground mb-1">Drop file here or click to upload</p>
+  <p className="text-xs text-muted-foreground">Supports PDF, PNG, JPG, TXT, GP/GPX (max 50MB)</p>
   <input
     ref={fileInputRef}
     type="file"
@@ -323,16 +309,19 @@ const CHART_TYPE_CONFIG = {
       <Button variant="ghost" size="sm" onClick={handleDownload}>
         <Download size={14} />
       </Button>
-      <Button variant="ghost" size="sm" onClick={handleDelete} className="text-destructive hover:text-destructive">
+      <Button
+        variant="ghost"
+        size="sm"
+        onClick={handleDelete}
+        className="text-destructive hover:text-destructive"
+      >
         <Trash2 size={14} />
       </Button>
     </div>
   </div>
 
   {/* Chart content */}
-  <div className="flex-1 overflow-auto p-4">
-    {renderChartContent(activeChart)}
-  </div>
+  <div className="flex-1 overflow-auto p-4">{renderChartContent(activeChart)}</div>
 </Card>
 ```
 
@@ -354,9 +343,7 @@ const CHART_TYPE_CONFIG = {
       </Avatar>
       <div className="flex-1 min-w-0">
         <h4 className="font-semibold text-foreground truncate">{member.name}</h4>
-        <p className="text-xs text-muted-foreground">
-          {member.roles.join(' • ')}
-        </p>
+        <p className="text-xs text-muted-foreground">{member.roles.join(' • ')}</p>
       </div>
     </div>
   </CardHeader>
@@ -368,12 +355,8 @@ const CHART_TYPE_CONFIG = {
         Roles on this song
       </Label>
       <div className="flex flex-wrap gap-2 mt-2">
-        {memberAssignments.map((assignment) => (
-          <Badge
-            key={assignment.role}
-            variant="secondary"
-            className="flex items-center gap-1"
-          >
+        {memberAssignments.map(assignment => (
+          <Badge key={assignment.role} variant="secondary" className="flex items-center gap-1">
             {assignment.role}
             <button
               onClick={() => handleRemoveRole(member.id, assignment.role)}
@@ -385,14 +368,16 @@ const CHART_TYPE_CONFIG = {
         ))}
 
         {/* Add role dropdown */}
-        <Select onValueChange={(role) => handleAddRole(member.id, role)}>
+        <Select onValueChange={role => handleAddRole(member.id, role)}>
           <SelectTrigger className="h-6 w-auto px-2 text-xs border-dashed">
             <Plus size={12} className="mr-1" />
             Add
           </SelectTrigger>
           <SelectContent>
-            {availableRoles.map((role) => (
-              <SelectItem key={role} value={role}>{role}</SelectItem>
+            {availableRoles.map(role => (
+              <SelectItem key={role} value={role}>
+                {role}
+              </SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -402,11 +387,9 @@ const CHART_TYPE_CONFIG = {
     {/* Assigned parts */}
     {memberParts.length > 0 && (
       <div>
-        <Label className="text-xs text-muted-foreground uppercase tracking-wide">
-          Song Parts
-        </Label>
+        <Label className="text-xs text-muted-foreground uppercase tracking-wide">Song Parts</Label>
         <div className="mt-2 space-y-1">
-          {memberParts.map((part) => (
+          {memberParts.map(part => (
             <div
               key={part.id}
               className="flex items-center gap-2 text-sm px-2 py-1.5 rounded bg-muted/50"
@@ -427,7 +410,7 @@ const CHART_TYPE_CONFIG = {
 ```tsx
 // Responsive grid for member cards
 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-  {members.map((member) => (
+  {members.map(member => (
     <MemberAssignmentCard
       key={member.id}
       member={member}
@@ -448,9 +431,7 @@ const CHART_TYPE_CONFIG = {
   <DialogContent className="sm:max-w-md">
     <DialogHeader>
       <DialogTitle className="font-serif">Edit Part</DialogTitle>
-      <DialogDescription>
-        Configure the song section and assign to a band member
-      </DialogDescription>
+      <DialogDescription>Configure the song section and assign to a band member</DialogDescription>
     </DialogHeader>
 
     <div className="space-y-4 py-4">
@@ -459,7 +440,7 @@ const CHART_TYPE_CONFIG = {
         <Input
           id="part-name"
           value={editPart.name}
-          onChange={(e) => setEditPart({ ...editPart, name: e.target.value })}
+          onChange={e => setEditPart({ ...editPart, name: e.target.value })}
           placeholder="e.g., Intro, Verse 1, Guitar Solo"
           className="mt-1.5"
         />
@@ -469,14 +450,16 @@ const CHART_TYPE_CONFIG = {
         <Label htmlFor="part-instrument">Instrument</Label>
         <Select
           value={editPart.instrument}
-          onValueChange={(v) => setEditPart({ ...editPart, instrument: v })}
+          onValueChange={v => setEditPart({ ...editPart, instrument: v })}
         >
           <SelectTrigger className="mt-1.5">
             <SelectValue placeholder="Select instrument" />
           </SelectTrigger>
           <SelectContent>
-            {availableRoles.map((role) => (
-              <SelectItem key={role} value={role}>{role}</SelectItem>
+            {availableRoles.map(role => (
+              <SelectItem key={role} value={role}>
+                {role}
+              </SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -486,15 +469,17 @@ const CHART_TYPE_CONFIG = {
         <Label htmlFor="assigned-member">Assign To</Label>
         <Select
           value={editPart.assignedToMemberId || ''}
-          onValueChange={(v) => setEditPart({ ...editPart, assignedToMemberId: v || undefined })}
+          onValueChange={v => setEditPart({ ...editPart, assignedToMemberId: v || undefined })}
         >
           <SelectTrigger className="mt-1.5">
             <SelectValue placeholder="Unassigned" />
           </SelectTrigger>
           <SelectContent>
             <SelectItem value="">Unassigned</SelectItem>
-            {members.map((member) => (
-              <SelectItem key={member.id} value={member.id}>{member.name}</SelectItem>
+            {members.map(member => (
+              <SelectItem key={member.id} value={member.id}>
+                {member.name}
+              </SelectItem>
             ))}
           </SelectContent>
         </Select>
@@ -537,12 +522,7 @@ const CHART_TYPE_CONFIG = {
       <div className="space-y-4">
         {/* Audio player */}
         <div className="bg-muted/50 rounded-lg p-4">
-          <audio
-            ref={audioPlayerRef}
-            src={audioBlobUrl}
-            controls
-            className="w-full"
-          />
+          <audio ref={audioPlayerRef} src={audioBlobUrl} controls className="w-full" />
         </div>
 
         {/* Download button */}
@@ -568,19 +548,13 @@ const CHART_TYPE_CONFIG = {
   onDragLeave={handleDragLeave}
   onDrop={handleAudioDrop}
   className={cn(
-    "border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-colors",
-    isDragging
-      ? "border-primary bg-primary/5"
-      : "border-border hover:border-primary/50"
+    'border-2 border-dashed rounded-xl p-8 text-center cursor-pointer transition-colors',
+    isDragging ? 'border-primary bg-primary/5' : 'border-border hover:border-primary/50'
   )}
 >
   <Music size={32} className="mx-auto text-muted-foreground mb-3" />
-  <p className="text-sm font-medium text-foreground mb-1">
-    Upload backing track
-  </p>
-  <p className="text-xs text-muted-foreground">
-    MP3 or WAV (max 10MB)
-  </p>
+  <p className="text-sm font-medium text-foreground mb-1">Upload backing track</p>
+  <p className="text-xs text-muted-foreground">MP3 or WAV (max 10MB)</p>
   <input
     ref={audioInputRef}
     type="file"
@@ -650,10 +624,10 @@ const CHART_TYPE_CONFIG = {
       <div
         key={i}
         className={cn(
-          "rounded-xl p-3 text-sm",
+          'rounded-xl p-3 text-sm',
           message.role === 'user'
-            ? "bg-primary text-primary-foreground ml-8"
-            : "bg-muted text-foreground mr-8"
+            ? 'bg-primary text-primary-foreground ml-8'
+            : 'bg-muted text-foreground mr-8'
         )}
       >
         {message.content}
@@ -673,8 +647,8 @@ const CHART_TYPE_CONFIG = {
     <div className="flex gap-2">
       <Input
         value={input}
-        onChange={(e) => setInput(e.target.value)}
-        onKeyDown={(e) => e.key === 'Enter' && handleSend()}
+        onChange={e => setInput(e.target.value)}
+        onKeyDown={e => e.key === 'Enter' && handleSend()}
         placeholder="Ask about this song..."
         className="flex-1"
       />
@@ -746,6 +720,7 @@ const sections = ['header', 'tabs', 'content', 'sidebar'];
 ## Implementation Checklist
 
 ### Phase 1: SongDetail Typography & Colors
+
 - [ ] Replace all `zinc-*` classes with design system tokens
 - [ ] Update status badges to use `StatusBadge` component
 - [ ] Apply serif font to section headers
@@ -753,30 +728,35 @@ const sections = ['header', 'tabs', 'content', 'sidebar'];
 - [ ] Update text colors: `text-foreground`, `text-muted-foreground`
 
 ### Phase 2: Card & Layout Structure
+
 - [ ] Wrap sections in `Card`/`CardHeader`/`CardContent` components
 - [ ] Apply consistent padding (`p-4 sm:p-6 lg:p-8`)
 - [ ] Update tab navigation to design system pattern
 - [ ] Add proper spacing between sections (`space-y-6`)
 
 ### Phase 3: Form Patterns
+
 - [ ] Update all inputs to use primitive `Input` component
 - [ ] Update dropdowns to use `Select` primitives
 - [ ] Apply consistent label styling
 - [ ] Add proper form spacing
 
 ### Phase 4: Chart Management
+
 - [ ] Implement chart selector bar pattern
 - [ ] Add chart type icons consistently
 - [ ] Update add chart form to card-based pattern
 - [ ] Implement file upload drop zone
 
 ### Phase 5: Animations
+
 - [ ] Add staggered entrance animations
 - [ ] Add tab transition animations
 - [ ] Add loading state skeletons
 - [ ] Verify motion-reduce support
 
 ### Phase 6: Audio Features
+
 - [ ] Style audio upload zone
 - [ ] Create custom audio player wrapper (optional)
 - [ ] Add download/remove actions
@@ -785,13 +765,13 @@ const sections = ['header', 'tabs', 'content', 'sidebar'];
 
 ## File Changes Required
 
-| File | Change Type | Priority |
-|------|-------------|----------|
-| `src/components/SongDetail.tsx` | Major refactor | High |
-| `docs/design-system.md` | Add new sections | Medium |
-| `src/components/ui/MetadataItem.tsx` | New component | Medium |
-| `src/components/ui/AudioPlayer.tsx` | New component (optional) | Low |
-| `src/components/ui/UploadZone.tsx` | New component | Medium |
+| File                                 | Change Type              | Priority |
+| ------------------------------------ | ------------------------ | -------- |
+| `src/components/SongDetail.tsx`      | Major refactor           | High     |
+| `docs/design-system.md`              | Add new sections         | Medium   |
+| `src/components/ui/MetadataItem.tsx` | New component            | Medium   |
+| `src/components/ui/AudioPlayer.tsx`  | New component (optional) | Low      |
+| `src/components/ui/UploadZone.tsx`   | New component            | Medium   |
 
 ---
 
@@ -817,6 +797,6 @@ const sections = ['header', 'tabs', 'content', 'sidebar'];
 
 ---
 
-*Author: Claude Code*
-*Created: 2025-11-28*
-*Status: Draft*
+_Author: Claude Code_
+_Created: 2025-11-28_
+_Status: Draft_

@@ -43,7 +43,7 @@ export const ChartTabs = memo(function ChartTabs({
       aria-label="Chart type selector"
     >
       <TooltipProvider delayDuration={100}>
-        {charts.map((chart) => {
+        {charts.map(chart => {
           const Icon = CHART_ICON_MAP[chart.type];
           const isActive = chart.id === activeChartId;
 
@@ -71,7 +71,9 @@ export const ChartTabs = memo(function ChartTabs({
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
-                <p>{chart.name} ({chart.type})</p>
+                <p>
+                  {chart.name} ({chart.type})
+                </p>
               </TooltipContent>
             </Tooltip>
           );

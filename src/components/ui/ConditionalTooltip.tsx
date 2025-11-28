@@ -1,9 +1,5 @@
 import React, { memo } from 'react';
-import {
-  Tooltip,
-  TooltipContent,
-  TooltipTrigger,
-} from '@/components/primitives/tooltip';
+import { Tooltip, TooltipContent, TooltipTrigger } from '@/components/primitives/tooltip';
 
 interface ConditionalTooltipProps {
   /** When true, wraps children in a Tooltip. When false, renders children directly. */

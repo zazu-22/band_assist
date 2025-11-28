@@ -47,28 +47,33 @@ src/components/
 ## Implementation Phases
 
 ### Phase 1: Component Extraction
+
 - Create `src/components/setlist/` directory
 - Extract SetlistItem as standalone component
 - Apply design system patterns to SetlistItem
 - Add unit tests
 
 ### Phase 2: Header and Stats
+
 - Create SetlistHeader with gig countdown
 - Create SetlistStats with progress bar
 - Integrate into SetlistManager
 
 ### Phase 3: Action Bar and Form
+
 - Create SetlistActionBar component
 - Create AddSongForm with Card pattern
 - Update SetlistManager
 
 ### Phase 4: Integration and Polish
+
 - Add ambient background glow
 - Ensure staggered animations
 - Wire up `events` prop in App.tsx
 - Final styling
 
 ### Phase 5: Testing and Documentation
+
 - Complete unit tests
 - Update CLAUDE.md
 - Update design-system.md
@@ -98,6 +103,7 @@ All features are tracked in `feature_list.json`. Each feature starts with `"pass
 ## Design System Reference
 
 See `docs/design-system.md` for:
+
 - Typography guidelines
 - Status colors
 - Animation patterns
@@ -106,13 +112,13 @@ See `docs/design-system.md` for:
 
 ## Key Files
 
-| File | Purpose |
-|------|---------|
-| `feature_list.json` | Feature tracking (50 test cases) |
-| `init.sh` | Development setup script |
-| `src/components/SetlistManager.tsx` | Current implementation |
-| `docs/design-system.md` | Design system reference |
-| `src/index.css` | Theme variables and animations |
+| File                                | Purpose                          |
+| ----------------------------------- | -------------------------------- |
+| `feature_list.json`                 | Feature tracking (50 test cases) |
+| `init.sh`                           | Development setup script         |
+| `src/components/SetlistManager.tsx` | Current implementation           |
+| `docs/design-system.md`             | Design system reference          |
+| `src/index.css`                     | Theme variables and animations   |
 
 ## Development Notes
 
@@ -160,6 +166,7 @@ interface SetlistManagerProps {
 ### App.tsx Update Required
 
 Line ~714 needs to change from:
+
 ```tsx
 <SetlistManager
   songs={songs}
@@ -169,29 +176,31 @@ Line ~714 needs to change from:
 ```
 
 To:
+
 ```tsx
 <SetlistManager
   songs={songs}
   setSongs={setSongs}
   onSelectSong={id => navigate(getSongDetailRoute(id))}
-  events={events}  // ADD THIS
+  events={events} // ADD THIS
 />
 ```
 
 ## Success Criteria
 
-| Metric | Target |
-|--------|--------|
+| Metric                   | Target          |
+| ------------------------ | --------------- |
 | Design system typography | 100% compliance |
-| Card component usage | All containers |
-| Staggered animations | Song list items |
-| Gig countdown context | When available |
-| Test coverage (new code) | ≥80% |
-| Accessibility violations | 0 |
+| Card component usage     | All containers  |
+| Staggered animations     | Song list items |
+| Gig countdown context    | When available  |
+| Test coverage (new code) | ≥80%            |
+| Accessibility violations | 0               |
 
 ## Session Handoff
 
 When ending a session:
+
 1. Commit all work with descriptive messages
 2. Update `feature_list.json` with passing tests
 3. Create `claude-progress.txt` with summary

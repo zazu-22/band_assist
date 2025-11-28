@@ -852,7 +852,8 @@ export const SongDetail: React.FC<SongDetailProps> = ({
                                   className="group bg-card border border-border text-primary px-2 py-1 rounded-md text-sm font-bold flex items-center gap-2"
                                 >
                                   <span>
-                                    {INSTRUMENT_ICONS[a.role] || INSTRUMENT_ICONS['default']} {a.role}
+                                    {INSTRUMENT_ICONS[a.role] || INSTRUMENT_ICONS['default']}{' '}
+                                    {a.role}
                                   </span>
                                   <button
                                     onClick={() => handleRemoveRole(member.id, a.role)}

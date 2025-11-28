@@ -30,11 +30,13 @@ describe('ThemeProvider', () => {
           mediaQueryListeners.push(callback);
         }
       }),
-      removeEventListener: vi.fn((event: string, callback: (event: MediaQueryListEvent) => void) => {
-        if (event === 'change') {
-          mediaQueryListeners = mediaQueryListeners.filter((l) => l !== callback);
+      removeEventListener: vi.fn(
+        (event: string, callback: (event: MediaQueryListEvent) => void) => {
+          if (event === 'change') {
+            mediaQueryListeners = mediaQueryListeners.filter(l => l !== callback);
+          }
         }
-      }),
+      ),
       dispatchEvent: vi.fn(),
     }));
   };

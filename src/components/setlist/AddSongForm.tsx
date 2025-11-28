@@ -23,10 +23,7 @@ export interface AddSongFormProps {
  * - Uses Card/CardContent components
  * - Has slide-in animation (animate-slide-in-from-top)
  */
-export const AddSongForm = memo(function AddSongForm({
-  onSubmit,
-  onCancel,
-}: AddSongFormProps) {
+export const AddSongForm = memo(function AddSongForm({ onSubmit, onCancel }: AddSongFormProps) {
   const [title, setTitle] = useState('');
 
   const handleSubmit = useCallback(() => {

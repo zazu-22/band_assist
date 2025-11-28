@@ -79,7 +79,9 @@ export const BandDashboard: React.FC<BandDashboardProps> = memo(function BandDas
     <div className="p-4 sm:p-6 lg:p-10 h-full flex flex-col">
       <header className="mb-8">
         <h2 className="text-3xl font-bold text-foreground">Band Lineup</h2>
-        <p className="text-muted-foreground mt-1">View individual gig sheets and responsibilities</p>
+        <p className="text-muted-foreground mt-1">
+          View individual gig sheets and responsibilities
+        </p>
       </header>
 
       {/* Grid of Members */}
@@ -105,9 +107,10 @@ export const BandDashboard: React.FC<BandDashboardProps> = memo(function BandDas
                 className={`
                   relative overflow-hidden cursor-pointer transition-all duration-200 group
                   focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2
-                  ${isSelected
-                    ? 'ring-2 ring-primary shadow-lg'
-                    : 'hover:bg-muted/50 hover:border-border/80'
+                  ${
+                    isSelected
+                      ? 'ring-2 ring-primary shadow-lg'
+                      : 'hover:bg-muted/50 hover:border-border/80'
                   }
                 `}
                 onClick={() => handleSelectMember(member.id)}
@@ -124,7 +127,9 @@ export const BandDashboard: React.FC<BandDashboardProps> = memo(function BandDas
               >
                 <CardContent className="p-6 flex flex-col items-center text-center gap-4">
                   <Avatar className="w-20 h-20">
-                    <AvatarFallback className={`text-3xl font-bold ${getAvatarColor(member.avatarColor)}`}>
+                    <AvatarFallback
+                      className={`text-3xl font-bold ${getAvatarColor(member.avatarColor)}`}
+                    >
                       {member.name.charAt(0).toUpperCase()}
                     </AvatarFallback>
                   </Avatar>
@@ -149,14 +154,14 @@ export const BandDashboard: React.FC<BandDashboardProps> = memo(function BandDas
           <CardHeader className="border-b border-border bg-muted/30 flex flex-row items-center justify-between space-y-0 p-6">
             <div className="flex items-center gap-4">
               <Avatar className="w-12 h-12">
-                <AvatarFallback className={`text-xl font-bold ${getAvatarColor(selectedMember.avatarColor)}`}>
+                <AvatarFallback
+                  className={`text-xl font-bold ${getAvatarColor(selectedMember.avatarColor)}`}
+                >
                   {selectedMember.name.charAt(0)}
                 </AvatarFallback>
               </Avatar>
               <div>
-                <CardTitle className="text-xl">
-                  {selectedMember.name}&apos;s Gig Sheet
-                </CardTitle>
+                <CardTitle className="text-xl">{selectedMember.name}&apos;s Gig Sheet</CardTitle>
                 <p className="text-muted-foreground text-sm">{memberSongs.length} Songs Assigned</p>
               </div>
             </div>
@@ -218,7 +223,9 @@ export const BandDashboard: React.FC<BandDashboardProps> = memo(function BandDas
                               variant="secondary"
                               className="bg-primary/20 text-primary border border-primary/30"
                             >
-                              <span className="mr-1.5">{INSTRUMENT_ICONS[r.role] || INSTRUMENT_ICONS['default']}</span>
+                              <span className="mr-1.5">
+                                {INSTRUMENT_ICONS[r.role] || INSTRUMENT_ICONS['default']}
+                              </span>
                               {r.role}
                             </Badge>
                           ))}
@@ -253,7 +260,9 @@ export const BandDashboard: React.FC<BandDashboardProps> = memo(function BandDas
         </Card>
       ) : (
         <Card className="flex-1 flex items-center justify-center border-2 border-dashed">
-          <p className="text-muted-foreground">Select a band member above to view their personalized setlist.</p>
+          <p className="text-muted-foreground">
+            Select a band member above to view their personalized setlist.
+          </p>
         </Card>
       )}
     </div>

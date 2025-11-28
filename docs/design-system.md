@@ -20,11 +20,11 @@ This document captures the design philosophy, patterns, and guidelines establish
 
 ### Font Families
 
-| Font | CSS Class | Usage |
-|------|-----------|-------|
-| **Brawler** (Serif) | `font-serif` | Headlines, section titles, emotional emphasis |
-| **Barlow** (Sans-serif) | `font-sans` (default) | Body text, labels, UI elements |
-| **JetBrains Mono** | `font-mono` | Numbers, countdowns, technical data |
+| Font                    | CSS Class             | Usage                                         |
+| ----------------------- | --------------------- | --------------------------------------------- |
+| **Brawler** (Serif)     | `font-serif`          | Headlines, section titles, emotional emphasis |
+| **Barlow** (Sans-serif) | `font-sans` (default) | Body text, labels, UI elements                |
+| **JetBrains Mono**      | `font-mono`           | Numbers, countdowns, technical data           |
 
 ### Typography Patterns
 
@@ -51,19 +51,19 @@ This document captures the design philosophy, patterns, and guidelines establish
 
 These colors communicate song learning status consistently across the app:
 
-| Status | CSS Variable | Background | Usage |
-|--------|--------------|------------|-------|
-| **Stage Ready** | `--success` | `bg-success` | Green - mastered songs ready to perform |
-| **In Progress** | `--info` | `bg-info` | Blue - songs currently being learned |
-| **To Learn** | `--warning` | `bg-warning` | Amber/Gold - songs not yet started |
+| Status          | CSS Variable | Background   | Usage                                   |
+| --------------- | ------------ | ------------ | --------------------------------------- |
+| **Stage Ready** | `--success`  | `bg-success` | Green - mastered songs ready to perform |
+| **In Progress** | `--info`     | `bg-info`    | Blue - songs currently being learned    |
+| **To Learn**    | `--warning`  | `bg-warning` | Amber/Gold - songs not yet started      |
 
 ### Semantic Colors
 
-| Purpose | CSS Variable | Usage |
-|---------|--------------|-------|
-| Primary | `--primary` | Brand color (amber/gold), primary buttons, active states |
-| Destructive | `--destructive` | Errors, overdue items, critical warnings |
-| Muted | `--muted-foreground` | Secondary text, disabled states, subtle UI |
+| Purpose     | CSS Variable         | Usage                                                    |
+| ----------- | -------------------- | -------------------------------------------------------- |
+| Primary     | `--primary`          | Brand color (amber/gold), primary buttons, active states |
+| Destructive | `--destructive`      | Errors, overdue items, critical warnings                 |
+| Muted       | `--muted-foreground` | Secondary text, disabled states, subtle UI               |
 
 ### Color Application Examples
 
@@ -108,8 +108,12 @@ Use staggered reveals for groups of elements appearing together:
 ```css
 /* Progress bar fill */
 @keyframes progress-fill {
-  from { transform: scaleX(0); }
-  to { transform: scaleX(1); }
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
 }
 
 .animate-progress-fill {
@@ -123,7 +127,8 @@ Use staggered reveals for groups of elements appearing together:
 ```css
 /* Pulse glow for countdown badges */
 @keyframes pulse-glow {
-  0%, 100% {
+  0%,
+  100% {
     box-shadow: 0 0 15px oklch(0.7686 0.1647 70.0804 / 0.3);
   }
   50% {
@@ -180,9 +185,7 @@ Pattern for actionable list rows:
 <div className="flex items-center gap-4 px-4 py-2.5 border-l-[3px] border-l-primary/60 hover:bg-muted/30 transition-colors">
   {/* Left: Primary content + secondary action */}
   <div className="flex-1 min-w-0 flex items-center gap-2">
-    <p className="font-semibold text-foreground truncate text-sm">
-      Item Title
-    </p>
+    <p className="font-semibold text-foreground truncate text-sm">Item Title</p>
     <button className="text-[11px] text-muted-foreground/60 hover:text-primary">
       Edit <ArrowRight size={10} />
     </button>
@@ -274,7 +277,7 @@ className="text-muted-foreground/60 hover:text-primary transition-colors"
 Rely on the theme's ring utilities for focus indication:
 
 ```tsx
-className="focus-visible:ring-2 focus-visible:ring-ring"
+className = 'focus-visible:ring-2 focus-visible:ring-ring';
 ```
 
 ## Accessibility
@@ -296,5 +299,5 @@ When extending this design system to other pages:
 
 ---
 
-*Last updated: November 2024*
-*Reference implementation: `src/components/Dashboard.tsx`*
+_Last updated: November 2024_
+_Reference implementation: `src/components/Dashboard.tsx`_

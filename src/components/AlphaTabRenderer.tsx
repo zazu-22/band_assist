@@ -982,21 +982,24 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
     }
   };
 
-  const changeSpeed = useCallback((val: number) => {
-    if (!apiRef.current) return;
+  const changeSpeed = useCallback(
+    (val: number) => {
+      if (!apiRef.current) return;
 
-    try {
-      apiRef.current.playbackSpeed = val;
-      setCurrentSpeed(val);
+      try {
+        apiRef.current.playbackSpeed = val;
+        setCurrentSpeed(val);
 
-      // Update current BPM
-      if (originalTempo) {
-        setCurrentBPM(Math.round(originalTempo * val));
+        // Update current BPM
+        if (originalTempo) {
+          setCurrentBPM(Math.round(originalTempo * val));
+        }
+      } catch (error) {
+        console.warn('[AlphaTab] Error changing speed:', error);
       }
-    } catch (error) {
-      console.warn('[AlphaTab] Error changing speed:', error);
-    }
-  }, [originalTempo]);
+    },
+    [originalTempo]
+  );
 
   const handleBPMChange = (newBPM: number) => {
     if (!originalTempo || !apiRef.current) return;
@@ -1069,43 +1072,46 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
     updateTracksFromAPI();
   }, []);
 
-  const toggleTrackSolo = useCallback((trackIndex: number) => {
-    if (!apiRef.current?.score) return;
+  const toggleTrackSolo = useCallback(
+    (trackIndex: number) => {
+      if (!apiRef.current?.score) return;
 
-    const track = apiRef.current.score.tracks[trackIndex];
-    const allTracks = apiRef.current.score.tracks;
-    const currentSoloState = track.playbackInfo.isSolo;
-    const newSoloState = !currentSoloState;
+      const track = apiRef.current.score.tracks[trackIndex];
+      const allTracks = apiRef.current.score.tracks;
+      const currentSoloState = track.playbackInfo.isSolo;
+      const newSoloState = !currentSoloState;
 
-    if (newSoloState) {
-      // ENABLING SOLO: Save current state before soloing
-      const currentMutes = allTracks.map(t => t.playbackInfo.isMute);
-      const currentSolos = allTracks.map(t => t.playbackInfo.isSolo);
-      setSoloStateBeforeSolo({ mutes: currentMutes, solos: currentSolos });
+      if (newSoloState) {
+        // ENABLING SOLO: Save current state before soloing
+        const currentMutes = allTracks.map(t => t.playbackInfo.isMute);
+        const currentSolos = allTracks.map(t => t.playbackInfo.isSolo);
+        setSoloStateBeforeSolo({ mutes: currentMutes, solos: currentSolos });
 
-      // Set property directly AND call API method
-      track.playbackInfo.isSolo = true;
-      apiRef.current.changeTrackSolo([track], true);
-    } else {
-      // DISABLING SOLO: Restore previous state
-      track.playbackInfo.isSolo = false;
-      apiRef.current.changeTrackSolo([track], false);
+        // Set property directly AND call API method
+        track.playbackInfo.isSolo = true;
+        apiRef.current.changeTrackSolo([track], true);
+      } else {
+        // DISABLING SOLO: Restore previous state
+        track.playbackInfo.isSolo = false;
+        apiRef.current.changeTrackSolo([track], false);
 
-      if (soloStateBeforeSolo) {
-        // Restore mute states
-        allTracks.forEach((t, i) => {
-          if (t.playbackInfo.isMute !== soloStateBeforeSolo.mutes[i]) {
-            t.playbackInfo.isMute = soloStateBeforeSolo.mutes[i];
-            apiRef.current!.changeTrackMute([t], soloStateBeforeSolo.mutes[i]);
-          }
-        });
-        setSoloStateBeforeSolo(null);
+        if (soloStateBeforeSolo) {
+          // Restore mute states
+          allTracks.forEach((t, i) => {
+            if (t.playbackInfo.isMute !== soloStateBeforeSolo.mutes[i]) {
+              t.playbackInfo.isMute = soloStateBeforeSolo.mutes[i];
+              apiRef.current!.changeTrackMute([t], soloStateBeforeSolo.mutes[i]);
+            }
+          });
+          setSoloStateBeforeSolo(null);
+        }
       }
-    }
 
-    // Force immediate UI update
-    updateTracksFromAPI();
-  }, [soloStateBeforeSolo]);
+      // Force immediate UI update
+      updateTracksFromAPI();
+    },
+    [soloStateBeforeSolo]
+  );
 
   // New transport control handlers
   const stopPlayback = useCallback(() => {
@@ -1131,8 +1137,9 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
     }
   }, [internalIsPlaying]);
 
-  const seekTo = useCallback((percentage: number) => {
-    if (!apiRef.current || totalTime <= 0) return;
+  const seekTo = useCallback(
+    (percentage: number) => {
+      if (!apiRef.current || totalTime <= 0) return;
 
       try {
         const targetTime = totalTime * percentage;
@@ -1144,7 +1151,9 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
       } catch (error) {
         console.error('[AlphaTab] Error seeking to position:', error);
       }
-  }, [totalTime]);
+    },
+    [totalTime]
+  );
 
   const toggleLoop = () => {
     if (!apiRef.current) return;
@@ -1404,222 +1413,231 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
     <div className="flex flex-col max-h-full bg-white text-black rounded-xl relative border border-zinc-200 overflow-hidden">
       {/* Toolbar - conditionally rendered */}
       {showControls && (
-      <div className="bg-zinc-100 border-b border-zinc-300 p-2 flex items-center justify-between shrink-0">
-        {/* Left: Transport controls */}
-        <div className="flex items-center gap-2 flex-1">
-          {!readOnly && (
-            <>
-              <button
-                onClick={togglePlay}
-                disabled={!playerReady}
-                className={`h-11 w-11 sm:h-10 sm:w-10 rounded-full flex items-center justify-center transition-colors ${
-                  !playerReady
-                    ? 'bg-zinc-200 text-zinc-400 cursor-not-allowed'
-                    : internalIsPlaying
-                      ? 'bg-amber-500 text-white'
-                      : 'bg-zinc-200 hover:bg-zinc-300 text-zinc-700'
-                }`}
-                title={!playerReady ? 'Loading player...' : internalIsPlaying ? 'Pause' : 'Play'}
-                aria-label={!playerReady ? 'Loading player' : internalIsPlaying ? 'Pause playback' : 'Start playback'}
-              >
-                {internalIsPlaying ? <Pause size={20} /> : <Play size={20} className="ml-1" />}
-              </button>
-
-              {/* Stop button */}
-              <button
-                onClick={stopPlayback}
-                disabled={!internalIsPlaying && currentTime === 0}
-                className="h-11 w-11 sm:h-10 sm:w-10 rounded-full flex items-center justify-center bg-zinc-200 hover:bg-zinc-300 text-zinc-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
-                title="Stop and return to start"
-                aria-label="Stop playback and return to start"
-              >
-                <Square size={18} />
-              </button>
-
-              {/* Loop controls */}
-              <div className="flex items-center gap-1">
+        <div className="bg-zinc-100 border-b border-zinc-300 p-2 flex items-center justify-between shrink-0">
+          {/* Left: Transport controls */}
+          <div className="flex items-center gap-2 flex-1">
+            {!readOnly && (
+              <>
                 <button
-                  onClick={toggleLoop}
-                  className={`h-11 w-11 sm:h-9 sm:w-9 rounded flex items-center justify-center transition-colors ${
-                    isLooping
-                      ? 'bg-amber-500 text-white'
-                      : 'bg-zinc-200 hover:bg-zinc-300 text-zinc-700'
+                  onClick={togglePlay}
+                  disabled={!playerReady}
+                  className={`h-11 w-11 sm:h-10 sm:w-10 rounded-full flex items-center justify-center transition-colors ${
+                    !playerReady
+                      ? 'bg-zinc-200 text-zinc-400 cursor-not-allowed'
+                      : internalIsPlaying
+                        ? 'bg-amber-500 text-white'
+                        : 'bg-zinc-200 hover:bg-zinc-300 text-zinc-700'
                   }`}
-                  title="Toggle loop"
-                  aria-label={isLooping ? 'Disable loop' : 'Enable loop'}
+                  title={!playerReady ? 'Loading player...' : internalIsPlaying ? 'Pause' : 'Play'}
+                  aria-label={
+                    !playerReady
+                      ? 'Loading player'
+                      : internalIsPlaying
+                        ? 'Pause playback'
+                        : 'Start playback'
+                  }
                 >
-                  <Repeat size={16} />
+                  {internalIsPlaying ? <Pause size={20} /> : <Play size={20} className="ml-1" />}
                 </button>
 
-                {loopRange && (
+                {/* Stop button */}
+                <button
+                  onClick={stopPlayback}
+                  disabled={!internalIsPlaying && currentTime === 0}
+                  className="h-11 w-11 sm:h-10 sm:w-10 rounded-full flex items-center justify-center bg-zinc-200 hover:bg-zinc-300 text-zinc-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                  title="Stop and return to start"
+                  aria-label="Stop playback and return to start"
+                >
+                  <Square size={18} />
+                </button>
+
+                {/* Loop controls */}
+                <div className="flex items-center gap-1">
                   <button
-                    onClick={clearLoopRange}
-                    className="h-11 w-11 sm:h-9 sm:w-9 rounded flex items-center justify-center bg-zinc-200 hover:bg-red-200 text-zinc-700 hover:text-red-600 transition-colors"
-                    title="Clear loop range"
-                    aria-label="Clear loop range"
+                    onClick={toggleLoop}
+                    className={`h-11 w-11 sm:h-9 sm:w-9 rounded flex items-center justify-center transition-colors ${
+                      isLooping
+                        ? 'bg-amber-500 text-white'
+                        : 'bg-zinc-200 hover:bg-zinc-300 text-zinc-700'
+                    }`}
+                    title="Toggle loop"
+                    aria-label={isLooping ? 'Disable loop' : 'Enable loop'}
                   >
-                    <X size={16} />
+                    <Repeat size={16} />
                   </button>
-                )}
-              </div>
-            </>
-          )}
-        </div>
 
-        {/* Center: Track selector */}
-        <div className="flex items-center justify-center flex-1 min-w-0">
-          {tracks.length > 0 &&
-            currentTrackIndex !== null &&
-            currentTrackIndex >= 0 &&
-            currentTrackIndex < tracks.length &&
-            tracks[currentTrackIndex] && (
-              <button
-                ref={mixerButtonRef}
-                onClick={() => setShowSettings(!showSettings)}
-                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all max-w-[200px] ${
-                  showSettings
-                    ? 'bg-amber-500 text-white shadow-md'
-                    : 'bg-zinc-200 hover:bg-zinc-300 text-zinc-800 hover:shadow-sm'
-                }`}
-                title={`${tracks[currentTrackIndex]?.name ?? 'Track'} - Click to open mixer and switch tracks`}
-                aria-label={`Current track: ${tracks[currentTrackIndex]?.name ?? 'Unknown'}. Click to open mixer`}
-              >
-                <div
-                  className={`w-2.5 h-2.5 rounded-full shrink-0 ${showSettings ? 'bg-white' : 'bg-amber-500'}`}
-                ></div>
-                <span className="text-sm font-semibold truncate">
-                  {tracks[currentTrackIndex]?.name ?? 'Track'}
-                </span>
-                <Sliders size={16} className={`shrink-0 ${showSettings ? 'opacity-90' : 'opacity-60'}`} />
-              </button>
-            )}
-        </div>
-
-        {/* Right: Auto-scroll + BPM Display + Metronome + Speed control */}
-        <div className="flex items-center gap-2 flex-1 justify-end">
-          {/* Auto-Scroll Controls - Only shown in Performance Mode (readOnly) */}
-          {readOnly && (
-            <>
-              <div className="flex items-center gap-2 bg-zinc-200 rounded px-2 py-1">
-                <button
-                  onClick={() => setAutoScrollEnabled(!autoScrollEnabled)}
-                  className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-bold transition-colors ${
-                    autoScrollEnabled
-                      ? 'bg-amber-500 text-white'
-                      : 'bg-white text-zinc-600 hover:bg-zinc-50'
-                  }`}
-                  title="Toggle auto-scroll"
-                >
-                  <Scroll size={12} /> Auto
-                </button>
-                <div className="flex items-center gap-1 border-l border-zinc-300 pl-2">
-                  <Gauge size={12} className="text-zinc-500" />
-                  <input
-                    type="range"
-                    min="0.1"
-                    max="1.0"
-                    step="0.1"
-                    value={scrollSpeed}
-                    onChange={e => setScrollSpeed(parseFloat(e.target.value))}
-                    className="w-16 h-1 bg-zinc-300 rounded-lg appearance-none cursor-pointer accent-amber-500"
-                    title="Scroll speed multiplier"
-                  />
-                  <span className="text-[10px] font-mono text-zinc-600 w-6">{scrollSpeed}x</span>
+                  {loopRange && (
+                    <button
+                      onClick={clearLoopRange}
+                      className="h-11 w-11 sm:h-9 sm:w-9 rounded flex items-center justify-center bg-zinc-200 hover:bg-red-200 text-zinc-700 hover:text-red-600 transition-colors"
+                      title="Clear loop range"
+                      aria-label="Clear loop range"
+                    >
+                      <X size={16} />
+                    </button>
+                  )}
                 </div>
-              </div>
-            </>
-          )}
+              </>
+            )}
+          </div>
 
-          {/* BPM Display + Visual metronome */}
-          {!readOnly && originalTempo && (
-            <div className="flex items-center gap-2">
-              {/* BPM Display - Clickable for direct input */}
-              <div
-                className="flex items-center gap-1 bg-zinc-200 rounded px-3 py-1 cursor-pointer hover:bg-zinc-300 transition-colors"
-                onClick={startEditingBPM}
-                title="Click to enter BPM directly"
-              >
-                <Music2 size={14} className="text-zinc-500" />
-                {isEditingBPM ? (
-                  <input
-                    type="text"
-                    inputMode="numeric"
-                    pattern="[0-9]*"
-                    value={bpmInputValue}
-                    onChange={e => {
-                      // Only allow numeric input
-                      const value = e.target.value.replace(/[^0-9]/g, '');
-                      setBpmInputValue(value);
-                    }}
-                    onBlur={submitBPMEdit}
-                    onKeyDown={e => {
-                      if (e.key === 'Enter') submitBPMEdit();
-                      if (e.key === 'Escape') setIsEditingBPM(false);
-                    }}
-                    autoFocus
-                    className="w-12 bg-white border border-amber-500 rounded px-1 text-sm font-semibold text-center focus:outline-none"
-                    onClick={e => e.stopPropagation()}
-                    aria-label="Enter BPM value"
-                  />
-                ) : (
-                  <span className="text-sm font-semibold text-zinc-700">
-                    {currentBPM || originalTempo}
-                  </span>
-                )}
-                <span className="text-xs text-zinc-500">BPM</span>
-              </div>
-
-              {/* Reset button - only show when not at original tempo */}
-              {currentSpeed !== 1.0 && (
+          {/* Center: Track selector */}
+          <div className="flex items-center justify-center flex-1 min-w-0">
+            {tracks.length > 0 &&
+              currentTrackIndex !== null &&
+              currentTrackIndex >= 0 &&
+              currentTrackIndex < tracks.length &&
+              tracks[currentTrackIndex] && (
                 <button
-                  onClick={resetToOriginalTempo}
-                  className="px-2 py-1 rounded bg-amber-100 hover:bg-amber-200 text-amber-700 text-xs font-semibold transition-colors"
-                  title="Reset to original tempo"
+                  ref={mixerButtonRef}
+                  onClick={() => setShowSettings(!showSettings)}
+                  className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all max-w-[200px] ${
+                    showSettings
+                      ? 'bg-amber-500 text-white shadow-md'
+                      : 'bg-zinc-200 hover:bg-zinc-300 text-zinc-800 hover:shadow-sm'
+                  }`}
+                  title={`${tracks[currentTrackIndex]?.name ?? 'Track'} - Click to open mixer and switch tracks`}
+                  aria-label={`Current track: ${tracks[currentTrackIndex]?.name ?? 'Unknown'}. Click to open mixer`}
                 >
-                  Reset
+                  <div
+                    className={`w-2.5 h-2.5 rounded-full shrink-0 ${showSettings ? 'bg-white' : 'bg-amber-500'}`}
+                  ></div>
+                  <span className="text-sm font-semibold truncate">
+                    {tracks[currentTrackIndex]?.name ?? 'Track'}
+                  </span>
+                  <Sliders
+                    size={16}
+                    className={`shrink-0 ${showSettings ? 'opacity-90' : 'opacity-60'}`}
+                  />
                 </button>
               )}
+          </div>
 
-              {/* BPM Slider Control */}
-              <div className="flex items-center gap-2 bg-zinc-200 rounded px-3 py-2">
-                <Timer size={14} className="text-zinc-500" />
-                <div className="flex flex-col gap-1">
-                  <input
-                    type="range"
-                    min={Math.round(originalTempo * 0.25)}
-                    max={Math.round(originalTempo * 2.0)}
-                    step="1"
-                    value={currentBPM || originalTempo}
-                    onChange={e => handleBPMChange(parseInt(e.target.value))}
-                    className="w-32 h-1 bg-zinc-300 rounded-lg appearance-none cursor-pointer accent-amber-500"
-                  />
-                  <div className="flex justify-between text-[10px] text-zinc-500">
-                    <span>{Math.round(originalTempo * 0.25)}</span>
-                    <span>{Math.round(originalTempo * 2.0)}</span>
+          {/* Right: Auto-scroll + BPM Display + Metronome + Speed control */}
+          <div className="flex items-center gap-2 flex-1 justify-end">
+            {/* Auto-Scroll Controls - Only shown in Performance Mode (readOnly) */}
+            {readOnly && (
+              <>
+                <div className="flex items-center gap-2 bg-zinc-200 rounded px-2 py-1">
+                  <button
+                    onClick={() => setAutoScrollEnabled(!autoScrollEnabled)}
+                    className={`flex items-center gap-1 px-2 py-1 rounded text-xs font-bold transition-colors ${
+                      autoScrollEnabled
+                        ? 'bg-amber-500 text-white'
+                        : 'bg-white text-zinc-600 hover:bg-zinc-50'
+                    }`}
+                    title="Toggle auto-scroll"
+                  >
+                    <Scroll size={12} /> Auto
+                  </button>
+                  <div className="flex items-center gap-1 border-l border-zinc-300 pl-2">
+                    <Gauge size={12} className="text-zinc-500" />
+                    <input
+                      type="range"
+                      min="0.1"
+                      max="1.0"
+                      step="0.1"
+                      value={scrollSpeed}
+                      onChange={e => setScrollSpeed(parseFloat(e.target.value))}
+                      className="w-16 h-1 bg-zinc-300 rounded-lg appearance-none cursor-pointer accent-amber-500"
+                      title="Scroll speed multiplier"
+                    />
+                    <span className="text-[10px] font-mono text-zinc-600 w-6">{scrollSpeed}x</span>
+                  </div>
+                </div>
+              </>
+            )}
+
+            {/* BPM Display + Visual metronome */}
+            {!readOnly && originalTempo && (
+              <div className="flex items-center gap-2">
+                {/* BPM Display - Clickable for direct input */}
+                <div
+                  className="flex items-center gap-1 bg-zinc-200 rounded px-3 py-1 cursor-pointer hover:bg-zinc-300 transition-colors"
+                  onClick={startEditingBPM}
+                  title="Click to enter BPM directly"
+                >
+                  <Music2 size={14} className="text-zinc-500" />
+                  {isEditingBPM ? (
+                    <input
+                      type="text"
+                      inputMode="numeric"
+                      pattern="[0-9]*"
+                      value={bpmInputValue}
+                      onChange={e => {
+                        // Only allow numeric input
+                        const value = e.target.value.replace(/[^0-9]/g, '');
+                        setBpmInputValue(value);
+                      }}
+                      onBlur={submitBPMEdit}
+                      onKeyDown={e => {
+                        if (e.key === 'Enter') submitBPMEdit();
+                        if (e.key === 'Escape') setIsEditingBPM(false);
+                      }}
+                      autoFocus
+                      className="w-12 bg-white border border-amber-500 rounded px-1 text-sm font-semibold text-center focus:outline-none"
+                      onClick={e => e.stopPropagation()}
+                      aria-label="Enter BPM value"
+                    />
+                  ) : (
+                    <span className="text-sm font-semibold text-zinc-700">
+                      {currentBPM || originalTempo}
+                    </span>
+                  )}
+                  <span className="text-xs text-zinc-500">BPM</span>
+                </div>
+
+                {/* Reset button - only show when not at original tempo */}
+                {currentSpeed !== 1.0 && (
+                  <button
+                    onClick={resetToOriginalTempo}
+                    className="px-2 py-1 rounded bg-amber-100 hover:bg-amber-200 text-amber-700 text-xs font-semibold transition-colors"
+                    title="Reset to original tempo"
+                  >
+                    Reset
+                  </button>
+                )}
+
+                {/* BPM Slider Control */}
+                <div className="flex items-center gap-2 bg-zinc-200 rounded px-3 py-2">
+                  <Timer size={14} className="text-zinc-500" />
+                  <div className="flex flex-col gap-1">
+                    <input
+                      type="range"
+                      min={Math.round(originalTempo * 0.25)}
+                      max={Math.round(originalTempo * 2.0)}
+                      step="1"
+                      value={currentBPM || originalTempo}
+                      onChange={e => handleBPMChange(parseInt(e.target.value))}
+                      className="w-32 h-1 bg-zinc-300 rounded-lg appearance-none cursor-pointer accent-amber-500"
+                    />
+                    <div className="flex justify-between text-[10px] text-zinc-500">
+                      <span>{Math.round(originalTempo * 0.25)}</span>
+                      <span>{Math.round(originalTempo * 2.0)}</span>
+                    </div>
+                  </div>
+                </div>
+
+                {/* Metronome beat indicators */}
+                <div className="flex items-center gap-1 bg-zinc-200 rounded px-2 py-1">
+                  <CircleGauge size={14} className="text-zinc-500" />
+                  <div className="flex gap-1">
+                    {[1, 2, 3, 4].map(beat => (
+                      <div
+                        key={beat}
+                        className={`w-2 h-2 rounded-full transition-all duration-75 ${
+                          metronomeBeat === beat ? 'bg-amber-500 scale-150' : 'bg-zinc-400'
+                        }`}
+                      />
+                    ))}
                   </div>
                 </div>
               </div>
+            )}
 
-              {/* Metronome beat indicators */}
-              <div className="flex items-center gap-1 bg-zinc-200 rounded px-2 py-1">
-                <CircleGauge size={14} className="text-zinc-500" />
-                <div className="flex gap-1">
-                  {[1, 2, 3, 4].map(beat => (
-                    <div
-                      key={beat}
-                      className={`w-2 h-2 rounded-full transition-all duration-75 ${
-                        metronomeBeat === beat ? 'bg-amber-500 scale-150' : 'bg-zinc-400'
-                      }`}
-                    />
-                  ))}
-                </div>
-              </div>
-            </div>
-          )}
-
-          <span className="text-xs font-bold text-zinc-400 px-2">AlphaTab</span>
+            <span className="text-xs font-bold text-zinc-400 px-2">AlphaTab</span>
+          </div>
         </div>
-      </div>
       )}
 
       {/* Progress Bar - conditionally rendered */}

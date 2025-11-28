@@ -49,16 +49,12 @@ describe('TrackSelector', () => {
     });
 
     it('returns null when tracks array is empty', () => {
-      const { container } = render(
-        <TrackSelector {...defaultProps} tracks={[]} />
-      );
+      const { container } = render(<TrackSelector {...defaultProps} tracks={[]} />);
       expect(container.firstChild).toBeNull();
     });
 
     it('returns null when currentTrack does not exist', () => {
-      const { container } = render(
-        <TrackSelector {...defaultProps} currentTrackIndex={99} />
-      );
+      const { container } = render(<TrackSelector {...defaultProps} currentTrackIndex={99} />);
       expect(container.firstChild).toBeNull();
     });
   });
@@ -72,9 +68,7 @@ describe('TrackSelector', () => {
     });
 
     it('shows destructive dot when track is muted', () => {
-      const mutedTracks = [
-        createMockTrack({ index: 0, name: 'Muted Track', isMute: true }),
-      ];
+      const mutedTracks = [createMockTrack({ index: 0, name: 'Muted Track', isMute: true })];
       render(<TrackSelector {...defaultProps} tracks={mutedTracks} />);
       const trigger = screen.getByTestId('track-selector');
       const dot = trigger.querySelector('.bg-destructive');
@@ -219,9 +213,7 @@ describe('TrackSelector', () => {
         // Electric Bass appears twice: in trigger and dropdown
         // Find the one inside the dropdown menu item
         const bassTexts = screen.getAllByText('Electric Bass');
-        const dropdownBass = bassTexts.find(el =>
-          el.closest('[role="menuitem"]')
-        );
+        const dropdownBass = bassTexts.find(el => el.closest('[role="menuitem"]'));
         const bassItem = dropdownBass?.closest('[role="menuitem"]');
         expect(bassItem).toHaveClass('bg-muted');
       });

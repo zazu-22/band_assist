@@ -108,139 +108,145 @@ export const InvitationManager: React.FC<InvitationManagerProps> = memo(function
     loadInvitations();
   }, [loadInvitations]);
 
-  const handleInvite = useCallback(async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setHasValidationError(false);
-    setSuccessMessage('');
+  const handleInvite = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault();
+      setError('');
+      setHasValidationError(false);
+      setSuccessMessage('');
 
-    const validation = validateEmail(newEmail);
-    if (!validation.isValid) {
-      setError(validation.error || 'Invalid email address');
-      setHasValidationError(true);
-      return;
-    }
+      const validation = validateEmail(newEmail);
+      if (!validation.isValid) {
+        setError(validation.error || 'Invalid email address');
+        setHasValidationError(true);
+        return;
+      }
 
-    if (!isAdmin) {
-      setError('Only band admins can send invitations');
-      return;
-    }
+      if (!isAdmin) {
+        setError('Only band admins can send invitations');
+        return;
+      }
 
-    setIsLoading(true);
+      setIsLoading(true);
 
-    const supabase = getSupabaseClient();
-    if (!supabase) {
-      setError('Supabase is not configured');
-      setIsLoading(false);
-      return;
-    }
-
-    const normalizedEmail = normalizeEmail(newEmail);
-
-    try {
-      const { data: rateLimitCheck, error: rateLimitError } = await supabase.rpc(
-        'check_invitation_rate_limit',
-        { p_band_id: bandId }
-      );
-
-      if (rateLimitError) {
-        console.error('Rate limit check error:', rateLimitError);
-        setError('Unable to verify rate limit. Please try again.');
+      const supabase = getSupabaseClient();
+      if (!supabase) {
+        setError('Supabase is not configured');
         setIsLoading(false);
         return;
       }
 
-      if (rateLimitCheck === false) {
-        setError('Rate limit exceeded. Maximum 10 invitations per hour per band.');
-        setIsLoading(false);
-        return;
-      }
+      const normalizedEmail = normalizeEmail(newEmail);
 
-      const { data: isMember, error: memberCheckError } = await supabase.rpc(
-        'is_email_band_member',
-        { p_band_id: bandId, p_email: normalizedEmail }
-      );
+      try {
+        const { data: rateLimitCheck, error: rateLimitError } = await supabase.rpc(
+          'check_invitation_rate_limit',
+          { p_band_id: bandId }
+        );
 
-      if (memberCheckError) {
-        console.error('Member check error:', memberCheckError);
-        setError('Unable to verify membership. Please try again.');
-        setIsLoading(false);
-        return;
-      }
-
-      if (isMember) {
-        setError('This email address is already a member of the band.');
-        setIsLoading(false);
-        return;
-      }
-
-      const { data: existing } = await supabase
-        .from('invitations')
-        .select('*')
-        .eq('band_id', bandId)
-        .eq('email', normalizedEmail)
-        .eq('status', 'pending')
-        .single();
-
-      if (existing) {
-        setError('An invitation has already been sent to this email');
-        setIsLoading(false);
-        return;
-      }
-
-      const { error: inviteError } = await supabase.from('invitations').insert({
-        band_id: bandId,
-        email: normalizedEmail,
-        invited_by: currentUserId,
-        status: 'pending',
-      });
-
-      if (inviteError) {
-        if (isPostgresError(inviteError)) {
-          const { code, message } = inviteError;
-          if (code === 'P0001' || message?.includes('Rate limit exceeded')) {
-            setError('Rate limit exceeded. Maximum 10 invitations per hour per band.');
-            setIsLoading(false);
-            return;
-          }
+        if (rateLimitError) {
+          console.error('Rate limit check error:', rateLimitError);
+          setError('Unable to verify rate limit. Please try again.');
+          setIsLoading(false);
+          return;
         }
-        throw inviteError;
+
+        if (rateLimitCheck === false) {
+          setError('Rate limit exceeded. Maximum 10 invitations per hour per band.');
+          setIsLoading(false);
+          return;
+        }
+
+        const { data: isMember, error: memberCheckError } = await supabase.rpc(
+          'is_email_band_member',
+          { p_band_id: bandId, p_email: normalizedEmail }
+        );
+
+        if (memberCheckError) {
+          console.error('Member check error:', memberCheckError);
+          setError('Unable to verify membership. Please try again.');
+          setIsLoading(false);
+          return;
+        }
+
+        if (isMember) {
+          setError('This email address is already a member of the band.');
+          setIsLoading(false);
+          return;
+        }
+
+        const { data: existing } = await supabase
+          .from('invitations')
+          .select('*')
+          .eq('band_id', bandId)
+          .eq('email', normalizedEmail)
+          .eq('status', 'pending')
+          .single();
+
+        if (existing) {
+          setError('An invitation has already been sent to this email');
+          setIsLoading(false);
+          return;
+        }
+
+        const { error: inviteError } = await supabase.from('invitations').insert({
+          band_id: bandId,
+          email: normalizedEmail,
+          invited_by: currentUserId,
+          status: 'pending',
+        });
+
+        if (inviteError) {
+          if (isPostgresError(inviteError)) {
+            const { code, message } = inviteError;
+            if (code === 'P0001' || message?.includes('Rate limit exceeded')) {
+              setError('Rate limit exceeded. Maximum 10 invitations per hour per band.');
+              setIsLoading(false);
+              return;
+            }
+          }
+          throw inviteError;
+        }
+
+        setSuccessMessage(`Invitation sent to ${normalizedEmail}`);
+        setNewEmail('');
+        loadInvitations();
+      } catch (err) {
+        console.error('Error sending invitation:', err);
+        setError(err instanceof Error ? err.message : 'Failed to send invitation');
+      } finally {
+        setIsLoading(false);
       }
+    },
+    [newEmail, isAdmin, bandId, currentUserId, loadInvitations]
+  );
 
-      setSuccessMessage(`Invitation sent to ${normalizedEmail}`);
-      setNewEmail('');
-      loadInvitations();
-    } catch (err) {
-      console.error('Error sending invitation:', err);
-      setError(err instanceof Error ? err.message : 'Failed to send invitation');
-    } finally {
-      setIsLoading(false);
-    }
-  }, [newEmail, isAdmin, bandId, currentUserId, loadInvitations]);
+  const handleCancelInvitation = useCallback(
+    async (invitationId: string) => {
+      if (!isAdmin) return;
 
-  const handleCancelInvitation = useCallback(async (invitationId: string) => {
-    if (!isAdmin) return;
+      const supabase = getSupabaseClient();
+      if (!supabase) return;
 
-    const supabase = getSupabaseClient();
-    if (!supabase) return;
+      setError('');
+      setSuccessMessage('');
 
-    setError('');
-    setSuccessMessage('');
+      try {
+        const { error } = await supabase
+          .from('invitations')
+          .update({ status: 'cancelled' })
+          .eq('id', invitationId);
 
-    try {
-      const { error } = await supabase
-        .from('invitations')
-        .update({ status: 'cancelled' })
-        .eq('id', invitationId);
-
-      if (error) throw error;
-      setSuccessMessage('Invitation cancelled');
-      loadInvitations();
-    } catch (err) {
-      console.error('Error cancelling invitation:', err);
-      setError('Failed to cancel invitation. Please try again.');
-    }
-  }, [isAdmin, loadInvitations]);
+        if (error) throw error;
+        setSuccessMessage('Invitation cancelled');
+        loadInvitations();
+      } catch (err) {
+        console.error('Error cancelling invitation:', err);
+        setError('Failed to cancel invitation. Please try again.');
+      }
+    },
+    [isAdmin, loadInvitations]
+  );
 
   return (
     <div className="space-y-6">
@@ -284,7 +290,10 @@ export const InvitationManager: React.FC<InvitationManagerProps> = memo(function
           </div>
 
           {error && (
-            <div className="bg-destructive/10 border border-destructive/30 rounded-lg p-3" role="alert">
+            <div
+              className="bg-destructive/10 border border-destructive/30 rounded-lg p-3"
+              role="alert"
+            >
               <p id="invitation-error" className="text-sm text-destructive">
                 {error}
               </p>
@@ -324,16 +333,15 @@ export const InvitationManager: React.FC<InvitationManagerProps> = memo(function
               <Card key={invitation.id} className="bg-muted/30">
                 <CardContent className="p-3 flex items-center justify-between">
                   <div className="flex-1 min-w-0">
-                    <p className="text-sm font-medium text-foreground truncate">{invitation.email}</p>
+                    <p className="text-sm font-medium text-foreground truncate">
+                      {invitation.email}
+                    </p>
                     <p className="text-xs text-muted-foreground">
                       Invited {formatDate(invitation.invited_at)}
                     </p>
                   </div>
                   <div className="flex items-center gap-3">
-                    <Badge
-                      variant="outline"
-                      className={getStatusBadgeStyle(invitation.status)}
-                    >
+                    <Badge variant="outline" className={getStatusBadgeStyle(invitation.status)}>
                       {getStatusIcon(invitation.status)}
                       <span className="ml-1 capitalize">{invitation.status}</span>
                     </Badge>

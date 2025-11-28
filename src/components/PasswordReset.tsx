@@ -9,52 +9,57 @@ interface PasswordResetProps {
   onNavigate: (view: string) => void;
 }
 
-export const PasswordReset: React.FC<PasswordResetProps> = memo(function PasswordReset({ onNavigate }) {
+export const PasswordReset: React.FC<PasswordResetProps> = memo(function PasswordReset({
+  onNavigate,
+}) {
   const [email, setEmail] = useState('');
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = useCallback(async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setSuccess(false);
-    setIsLoading(true);
+  const handleSubmit = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault();
+      setError('');
+      setSuccess(false);
+      setIsLoading(true);
 
-    const emailValidation = validateEmail(email);
-    if (!emailValidation.isValid) {
-      setError(emailValidation.error || 'Invalid email address');
-      setIsLoading(false);
-      return;
-    }
-
-    const supabase = getSupabaseClient();
-    if (!supabase) {
-      setError('Supabase is not configured. Check environment variables.');
-      setIsLoading(false);
-      return;
-    }
-
-    try {
-      const normalizedEmail = normalizeEmail(email);
-      const { error: resetError } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
-        redirectTo: `${window.location.origin}/#password-update`,
-      });
-
-      if (resetError) {
-        throw resetError;
+      const emailValidation = validateEmail(email);
+      if (!emailValidation.isValid) {
+        setError(emailValidation.error || 'Invalid email address');
+        setIsLoading(false);
+        return;
       }
 
-      setSuccess(true);
-    } catch (err) {
-      console.error('Password reset error:', err);
-      setError(
-        err instanceof Error ? err.message : 'Failed to send reset email. Please try again.'
-      );
-    } finally {
-      setIsLoading(false);
-    }
-  }, [email]);
+      const supabase = getSupabaseClient();
+      if (!supabase) {
+        setError('Supabase is not configured. Check environment variables.');
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        const normalizedEmail = normalizeEmail(email);
+        const { error: resetError } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
+          redirectTo: `${window.location.origin}/#password-update`,
+        });
+
+        if (resetError) {
+          throw resetError;
+        }
+
+        setSuccess(true);
+      } catch (err) {
+        console.error('Password reset error:', err);
+        setError(
+          err instanceof Error ? err.message : 'Failed to send reset email. Please try again.'
+        );
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [email]
+  );
 
   const handleNavigateToLogin = useCallback(() => {
     onNavigate('LOGIN');
@@ -100,7 +105,10 @@ export const PasswordReset: React.FC<PasswordResetProps> = memo(function Passwor
 
           {/* Error Message */}
           {error && (
-            <div className="bg-destructive/10 border border-destructive/30 rounded-md p-3" role="alert">
+            <div
+              className="bg-destructive/10 border border-destructive/30 rounded-md p-3"
+              role="alert"
+            >
               <p className="text-sm text-destructive">{error}</p>
             </div>
           )}
@@ -122,7 +130,11 @@ export const PasswordReset: React.FC<PasswordResetProps> = memo(function Passwor
       {/* Back to Login */}
       {!success && (
         <div className="mt-6 text-center">
-          <Button variant="link" onClick={handleNavigateToLogin} className="text-sm text-muted-foreground">
+          <Button
+            variant="link"
+            onClick={handleNavigateToLogin}
+            className="text-sm text-muted-foreground"
+          >
             <ArrowLeft className="w-4 h-4" />
             Back to Sign In
           </Button>

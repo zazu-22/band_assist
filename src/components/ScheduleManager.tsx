@@ -64,7 +64,9 @@ export const ScheduleManager: React.FC<ScheduleManagerProps> = memo(function Sch
     if (!newEvent.title || !newEvent.date) return;
 
     if (editingId) {
-      setEvents(prev => prev.map(e => (e.id === editingId ? ({ ...e, ...newEvent } as BandEvent) : e)));
+      setEvents(prev =>
+        prev.map(e => (e.id === editingId ? ({ ...e, ...newEvent } as BandEvent) : e))
+      );
     } else {
       const event: BandEvent = {
         id: crypto.randomUUID(),
@@ -137,10 +139,9 @@ export const ScheduleManager: React.FC<ScheduleManagerProps> = memo(function Sch
         isEvent: false as const,
       }));
 
-    return [
-      ...events.map(e => ({ ...e, isEvent: true as const })),
-      ...songTargets,
-    ].sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+    return [...events.map(e => ({ ...e, isEvent: true as const })), ...songTargets].sort(
+      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+    );
   }, [events, songs]);
 
   const getEventIcon = useCallback((type: string) => {
@@ -203,7 +204,7 @@ export const ScheduleManager: React.FC<ScheduleManagerProps> = memo(function Sch
                 <Label htmlFor="event-type">Type</Label>
                 <Select
                   value={newEvent.type}
-                  onValueChange={(value) => handleEventFieldChange('type', value)}
+                  onValueChange={value => handleEventFieldChange('type', value)}
                 >
                   <SelectTrigger id="event-type">
                     <SelectValue placeholder="Select type" />
@@ -258,9 +259,7 @@ export const ScheduleManager: React.FC<ScheduleManagerProps> = memo(function Sch
               <Button variant="ghost" onClick={resetForm}>
                 Cancel
               </Button>
-              <Button onClick={handleSaveEvent}>
-                {editingId ? 'Update Event' : 'Save Event'}
-              </Button>
+              <Button onClick={handleSaveEvent}>{editingId ? 'Update Event' : 'Save Event'}</Button>
             </div>
           </CardContent>
         </Card>
@@ -287,11 +286,12 @@ export const ScheduleManager: React.FC<ScheduleManagerProps> = memo(function Sch
               const dateObj = new Date(item.date + (time ? `T${time}` : 'T00:00'));
               const isPast = dateObj < new Date();
 
-              const dotColor = item.type === 'GIG'
-                ? 'bg-primary'
-                : item.type === 'DEADLINE'
-                  ? 'bg-destructive'
-                  : 'bg-info';
+              const dotColor =
+                item.type === 'GIG'
+                  ? 'bg-primary'
+                  : item.type === 'DEADLINE'
+                    ? 'bg-destructive'
+                    : 'bg-info';
 
               return (
                 <div key={item.id} className={`relative ${isPast ? 'opacity-50 grayscale' : ''}`}>
@@ -313,9 +313,7 @@ export const ScheduleManager: React.FC<ScheduleManagerProps> = memo(function Sch
                           </span>
                         </div>
                         {item.isEvent ? (
-                          <h3 className="text-xl font-bold text-foreground">
-                            {item.title}
-                          </h3>
+                          <h3 className="text-xl font-bold text-foreground">{item.title}</h3>
                         ) : (
                           <button
                             type="button"
@@ -332,7 +330,9 @@ export const ScheduleManager: React.FC<ScheduleManagerProps> = memo(function Sch
                           </div>
                         )}
                         {notes && (
-                          <p className="text-muted-foreground text-sm mt-2 whitespace-pre-wrap">{notes}</p>
+                          <p className="text-muted-foreground text-sm mt-2 whitespace-pre-wrap">
+                            {notes}
+                          </p>
                         )}
                       </div>
 
@@ -344,7 +344,11 @@ export const ScheduleManager: React.FC<ScheduleManagerProps> = memo(function Sch
                           <div className="text-sm text-muted-foreground uppercase font-bold">
                             {dateObj.toLocaleDateString('en-US', { month: 'short' })}
                           </div>
-                          {time && <div className="text-xs text-muted-foreground font-mono mt-1">{time}</div>}
+                          {time && (
+                            <div className="text-xs text-muted-foreground font-mono mt-1">
+                              {time}
+                            </div>
+                          )}
                         </div>
 
                         {item.isEvent && (

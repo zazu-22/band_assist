@@ -1,6 +1,12 @@
 import React, { memo } from 'react';
 import { Moon, Sun, Monitor } from 'lucide-react';
-import { Button, DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/primitives';
+import {
+  Button,
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+} from '@/components/primitives';
 import { useTheme } from '@/components/ui/ThemeProvider';
 import { cn } from '@/lib/utils';
 
