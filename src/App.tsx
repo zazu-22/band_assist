@@ -715,6 +715,7 @@ const App: React.FC = () => {
                 songs={songs}
                 setSongs={setSongs}
                 onSelectSong={id => navigate(getSongDetailRoute(id))}
+                events={events}
               />
             }
           />

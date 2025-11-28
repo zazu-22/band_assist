@@ -1,15 +1,31 @@
 import React, { memo, useState, useCallback, useMemo } from 'react';
-import { GripVertical, Plus, Clock, Trash2, Music, Sparkles } from 'lucide-react';
-import { Button, Card, CardContent, Input } from '@/components/primitives';
-import { toast, EmptyState, StatusBadge } from '@/components/ui';
+import { Music } from 'lucide-react';
+import { toast, EmptyState } from '@/components/ui';
 import { getMusicAnalysis } from '@/services/geminiService';
-import type { Song } from '@/types';
+import {
+  SetlistHeader,
+  SetlistStats,
+  SetlistItem,
+  SetlistActionBar,
+  AddSongForm,
+} from '@/components/setlist';
+import type { Song, BandEvent } from '@/types';
+
+// =============================================================================
+// TYPES
+// =============================================================================
 
 interface SetlistManagerProps {
   songs: Song[];
   setSongs: React.Dispatch<React.SetStateAction<Song[]>>;
   onSelectSong: (songId: string) => void;
+  /** Optional events for gig countdown context */
+  events?: BandEvent[];
 }
+
+// =============================================================================
+// UTILITIES
+// =============================================================================
 
 /**
  * Calculate total duration in seconds from array of songs
@@ -31,13 +47,61 @@ function formatTotalTime(totalSec: number): string {
   return h > 0 ? `${h}h ${m}m` : `${m}m`;
 }
 
+// =============================================================================
+// DROP INDICATOR COMPONENT
+// =============================================================================
+
+interface DropIndicatorProps {
+  index: number;
+  onDragOver: (e: React.DragEvent<HTMLElement>, index: number) => void;
+  onDrop: (e: React.DragEvent<HTMLElement>) => void;
+}
+
+const DropIndicator = memo(function DropIndicator({
+  index,
+  onDragOver,
+  onDrop,
+}: DropIndicatorProps) {
+  return (
+    <div
+      onDragOver={e => onDragOver(e, index)}
+      onDrop={onDrop}
+      className="h-16 mb-3 rounded-xl border-2 border-dashed border-primary/50 bg-primary/5 flex items-center justify-center animate-fade-in"
+    >
+      <span className="text-primary/60 text-sm font-bold uppercase tracking-widest pointer-events-none">
+        Drop Here
+      </span>
+    </div>
+  );
+});
+
+DropIndicator.displayName = 'DropIndicator';
+
+// =============================================================================
+// MAIN COMPONENT
+// =============================================================================
+
+/**
+ * SetlistManager - Main setlist builder component
+ *
+ * Refactored to use sub-components following the "Backstage Command Center"
+ * design system patterns from the Dashboard and Practice Room.
+ *
+ * Design System Features:
+ * - Brawler serif typography for headlines
+ * - JetBrains Mono for numbers and durations
+ * - Staggered entrance animations
+ * - Gig countdown context (when events available)
+ * - Segmented progress bar for readiness metrics
+ * - Ambient background glow
+ */
 export const SetlistManager: React.FC<SetlistManagerProps> = memo(function SetlistManager({
   songs,
   setSongs,
   onSelectSong,
+  events = [],
 }) {
   const [isAdding, setIsAdding] = useState(false);
-  const [newSongTitle, setNewSongTitle] = useState('');
   const [loadingSuggestion, setLoadingSuggestion] = useState(false);
 
   // DnD State
@@ -47,27 +111,62 @@ export const SetlistManager: React.FC<SetlistManagerProps> = memo(function Setli
   // Memoize total duration calculation
   const totalDurationSeconds = useMemo(() => calculateTotalDuration(songs), [songs]);
 
-  const handleAddSong = useCallback(() => {
-    if (!newSongTitle.trim()) return;
+  // Compute next gig from events
+  const { nextGig, daysUntilNextGig } = useMemo(() => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
 
-    const newSong: Song = {
-      id: crypto.randomUUID(),
-      title: newSongTitle,
-      artist: 'ZZ Top',
-      duration: '3:30',
-      bpm: 120,
-      key: 'E',
-      isOriginal: false,
-      status: 'To Learn',
-      assignments: [],
-      parts: [],
-      charts: [],
-    };
+    const upcoming = events
+      .filter(e => e.type === 'GIG' && new Date(e.date) >= today)
+      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
 
-    setSongs(prev => [...prev, newSong]);
-    setNewSongTitle('');
+    const next = upcoming[0];
+    if (!next) {
+      return { nextGig: undefined, daysUntilNextGig: undefined };
+    }
+
+    const gigDate = new Date(next.date);
+    gigDate.setHours(0, 0, 0, 0);
+    const days = Math.ceil(
+      (gigDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
+    );
+
+    return { nextGig: next, daysUntilNextGig: days };
+  }, [events]);
+
+  // --- Add Song Handlers ---
+
+  const handleAddSong = useCallback(
+    (title: string) => {
+      const newSong: Song = {
+        id: crypto.randomUUID(),
+        title,
+        artist: 'ZZ Top',
+        duration: '3:30',
+        bpm: 120,
+        key: 'E',
+        isOriginal: false,
+        status: 'To Learn',
+        assignments: [],
+        parts: [],
+        charts: [],
+      };
+
+      setSongs(prev => [...prev, newSong]);
+      setIsAdding(false);
+    },
+    [setSongs]
+  );
+
+  const handleStartAdding = useCallback(() => {
+    setIsAdding(true);
+  }, []);
+
+  const handleCancelAdding = useCallback(() => {
     setIsAdding(false);
-  }, [newSongTitle, setSongs]);
+  }, []);
+
+  // --- AI Suggestions ---
 
   const askAiForSuggestions = useCallback(async () => {
     setLoadingSuggestion(true);
@@ -76,7 +175,6 @@ export const SetlistManager: React.FC<SetlistManagerProps> = memo(function Setli
       const suggestion = await getMusicAnalysis(prompt);
       toast.info(suggestion, { duration: 10000 });
     } catch (err) {
-      // Only log error message to avoid exposing full error objects with potential PII
       const errorMessage = err instanceof Error ? err.message : 'Unknown error';
       console.error('[SetlistManager] AI suggestion error:', errorMessage, {
         songCount: songs.length,
@@ -89,133 +187,116 @@ export const SetlistManager: React.FC<SetlistManagerProps> = memo(function Setli
 
   // --- Drag and Drop Handlers ---
 
-  const handleDragStart = useCallback((e: React.DragEvent<HTMLLIElement>, index: number) => {
-    e.dataTransfer.effectAllowed = 'move';
-    setTimeout(() => {
-      setDraggedIndex(index);
-    }, 0);
-  }, []);
+  const handleDragStart = useCallback(
+    (e: React.DragEvent<HTMLLIElement>, index: number) => {
+      e.dataTransfer.effectAllowed = 'move';
+      setTimeout(() => {
+        setDraggedIndex(index);
+      }, 0);
+    },
+    []
+  );
 
-  const handleDragOver = useCallback((e: React.DragEvent<HTMLElement>, index: number) => {
-    e.preventDefault();
-    e.dataTransfer.dropEffect = 'move';
+  const handleDragOver = useCallback(
+    (e: React.DragEvent<HTMLElement>, index: number) => {
+      e.preventDefault();
+      e.dataTransfer.dropEffect = 'move';
 
-    if (draggedIndex === null) return;
-    if (dragOverIndex !== index) {
-      setDragOverIndex(index);
-    }
-  }, [draggedIndex, dragOverIndex]);
+      if (draggedIndex === null) return;
+      if (dragOverIndex !== index) {
+        setDragOverIndex(index);
+      }
+    },
+    [draggedIndex, dragOverIndex]
+  );
 
   const handleDragEnd = useCallback(() => {
     setDraggedIndex(null);
     setDragOverIndex(null);
   }, []);
 
-  const handleDrop = useCallback((e: React.DragEvent<HTMLElement>) => {
-    e.preventDefault();
+  const handleDrop = useCallback(
+    (e: React.DragEvent<HTMLElement>) => {
+      e.preventDefault();
 
-    if (draggedIndex === null || dragOverIndex === null) {
+      if (draggedIndex === null || dragOverIndex === null) {
+        handleDragEnd();
+        return;
+      }
+
+      const newSongs = [...songs];
+      const [movedSong] = newSongs.splice(draggedIndex, 1);
+      const targetIndex = dragOverIndex;
+      newSongs.splice(targetIndex, 0, movedSong);
+
+      // Update sortOrder for all songs to persist ordering
+      const songsWithOrder = newSongs.map((song, index) => ({
+        ...song,
+        sortOrder: index,
+      }));
+
+      setSongs(songsWithOrder);
       handleDragEnd();
-      return;
-    }
-
-    const newSongs = [...songs];
-    const [movedSong] = newSongs.splice(draggedIndex, 1);
-    const targetIndex = dragOverIndex;
-    newSongs.splice(targetIndex, 0, movedSong);
-
-    // Update sortOrder for all songs to persist ordering
-    const songsWithOrder = newSongs.map((song, index) => ({
-      ...song,
-      sortOrder: index,
-    }));
-
-    setSongs(songsWithOrder);
-    handleDragEnd();
-  }, [draggedIndex, dragOverIndex, songs, setSongs, handleDragEnd]);
-
-  const handleDeleteSong = useCallback((songId: string) => {
-    setSongs(prev => prev.filter(s => s.id !== songId));
-  }, [setSongs]);
-
-  const handleStartAdding = useCallback(() => {
-    setIsAdding(true);
-  }, []);
-
-  const handleCancelAdding = useCallback(() => {
-    setIsAdding(false);
-    setNewSongTitle('');
-  }, []);
-
-  // Component for the drop placeholder
-  const DropIndicator = ({ index }: { index: number }) => (
-    <div
-      onDragOver={e => handleDragOver(e, index)}
-      onDrop={handleDrop}
-      className="h-20 mb-3 rounded-xl border-2 border-dashed border-primary/50 bg-primary/5 flex items-center justify-center animate-fade-in"
-    >
-      <span className="text-primary/50 text-sm font-bold uppercase tracking-widest pointer-events-none">
-        Drop Here
-      </span>
-    </div>
+    },
+    [draggedIndex, dragOverIndex, songs, setSongs, handleDragEnd]
   );
 
+  const handleDeleteSong = useCallback(
+    (songId: string) => {
+      setSongs(prev => prev.filter(s => s.id !== songId));
+    },
+    [setSongs]
+  );
+
+  // ==========================================================================
+  // RENDER
+  // ==========================================================================
+
   return (
-    <div className="p-4 sm:p-6 lg:p-10 max-w-5xl mx-auto">
-      <div className="flex flex-col md:flex-row md:items-center justify-between mb-8 gap-4">
-        <div>
-          <h2 className="text-3xl font-bold text-foreground">Setlist Builder</h2>
-          <div className="flex items-center gap-2 mt-2 text-muted-foreground">
-            <Clock size={16} />
-            <span>Est. Run Time: {formatTotalTime(totalDurationSeconds)}</span>
-            <span className="mx-2">•</span>
-            <span>{songs.length} Songs</span>
-          </div>
-        </div>
-        <div className="flex gap-3">
-          <Button
-            variant="secondary"
-            onClick={askAiForSuggestions}
-            disabled={loadingSuggestion}
-          >
-            <Sparkles size={16} />
-            {loadingSuggestion ? 'Thinking...' : 'AI Suggestions'}
-          </Button>
-          <Button onClick={handleStartAdding}>
-            <Plus size={18} />
-            Add Song
-          </Button>
-        </div>
+    <div className="relative p-4 sm:p-6 lg:p-10 max-w-5xl mx-auto space-y-8">
+      {/* Ambient background glow (same as Dashboard) */}
+      <div
+        className="absolute inset-0 pointer-events-none overflow-hidden"
+        aria-hidden="true"
+      >
+        <div
+          className="absolute -top-1/4 -left-1/4 w-1/2 h-1/2 rounded-full opacity-[0.03]"
+          style={{
+            background: 'radial-gradient(circle, var(--primary) 0%, transparent 70%)',
+          }}
+        />
       </div>
 
-      {isAdding && (
-        <Card className="mb-6 animate-slide-in-from-top">
-          <CardContent className="pt-6">
-            <label htmlFor="new-song-title" className="block text-sm font-medium text-muted-foreground mb-2">
-              Song Title
-            </label>
-            <div className="flex gap-3">
-              <Input
-                id="new-song-title"
-                type="text"
-                value={newSongTitle}
-                onChange={e => setNewSongTitle(e.target.value)}
-                placeholder="e.g., Legs"
-                className="flex-1"
-                onKeyDown={e => e.key === 'Enter' && handleAddSong()}
-                autoFocus
-              />
-              <Button onClick={handleAddSong}>
-                Add
-              </Button>
-              <Button variant="ghost" onClick={handleCancelAdding}>
-                Cancel
-              </Button>
-            </div>
-          </CardContent>
-        </Card>
+      {/* Header */}
+      <SetlistHeader
+        songCount={songs.length}
+        totalDuration={formatTotalTime(totalDurationSeconds)}
+        nextGig={nextGig}
+        daysUntilNextGig={daysUntilNextGig}
+      />
+
+      {/* Stats Card - only show when songs exist */}
+      {songs.length > 0 && (
+        <div className="animate-slide-in-from-bottom animation-forwards opacity-0 stagger-1">
+          <SetlistStats songs={songs} />
+        </div>
       )}
 
+      {/* Action Bar */}
+      <div className="animate-slide-in-from-bottom animation-forwards opacity-0 stagger-2">
+        <SetlistActionBar
+          onAddSong={handleStartAdding}
+          onAiSuggestions={askAiForSuggestions}
+          isLoadingSuggestions={loadingSuggestion}
+        />
+      </div>
+
+      {/* Add Song Form (conditional) */}
+      {isAdding && (
+        <AddSongForm onSubmit={handleAddSong} onCancel={handleCancelAdding} />
+      )}
+
+      {/* Song List */}
       <div className="space-y-0">
         {songs.length === 0 ? (
           <EmptyState
@@ -233,69 +314,42 @@ export const SetlistManager: React.FC<SetlistManagerProps> = memo(function Setli
               const isDragged = draggedIndex === index;
               const isOver = dragOverIndex === index;
 
-              const showPlaceholderBefore = isOver && draggedIndex !== null && draggedIndex > index;
-              const showPlaceholderAfter = isOver && draggedIndex !== null && draggedIndex < index;
+              const showPlaceholderBefore =
+                isOver && draggedIndex !== null && draggedIndex > index;
+              const showPlaceholderAfter =
+                isOver && draggedIndex !== null && draggedIndex < index;
 
               return (
                 <React.Fragment key={song.id}>
                   {/* Conditional Placeholder Above */}
-                  {showPlaceholderBefore && <DropIndicator index={index} />}
+                  {showPlaceholderBefore && (
+                    <DropIndicator
+                      index={index}
+                      onDragOver={handleDragOver}
+                      onDrop={handleDrop}
+                    />
+                  )}
 
-                  <li
-                    draggable
-                    onDragStart={e => handleDragStart(e, index)}
-                    onDragOver={e => handleDragOver(e, index)}
+                  <SetlistItem
+                    song={song}
+                    index={index}
+                    isDragged={isDragged}
+                    onSelect={onSelectSong}
+                    onDelete={handleDeleteSong}
+                    onDragStart={handleDragStart}
+                    onDragOver={handleDragOver}
                     onDrop={handleDrop}
                     onDragEnd={handleDragEnd}
-                    className={`
-                      group flex items-center gap-4 p-4 bg-card rounded-xl border border-border
-                      hover:border-border/80 transition-all duration-200 w-full
-                      ${isDragged ? 'opacity-0 h-0 p-0 border-0 my-0 overflow-hidden' : 'opacity-100 shadow-sm'}
-                    `}
-                  >
-                    <div
-                      className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground p-2 touch-none"
-                      aria-label="Drag to reorder"
-                    >
-                      <GripVertical size={20} />
-                    </div>
-                    <div className="w-8 text-center font-mono text-muted-foreground text-sm select-none">
-                      {index + 1}
-                    </div>
-                    <button
-                      type="button"
-                      className="flex-1 text-left cursor-pointer"
-                      onClick={() => onSelectSong(song.id)}
-                    >
-                      <h4 className="font-bold text-foreground group-hover:text-primary transition-colors">
-                        {song.title}
-                      </h4>
-                      <p className="text-xs text-muted-foreground">
-                        {song.key} • {song.bpm} BPM
-                      </p>
-                    </button>
-                    <div className="hidden md:block text-sm font-mono text-muted-foreground px-4 select-none">
-                      {song.duration}
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <StatusBadge status={song.status} />
-                      <Button
-                        variant="ghost"
-                        size="icon"
-                        onClick={e => {
-                          e.stopPropagation();
-                          handleDeleteSong(song.id);
-                        }}
-                        className="text-muted-foreground hover:text-destructive"
-                        aria-label={`Delete ${song.title}`}
-                      >
-                        <Trash2 size={18} />
-                      </Button>
-                    </div>
-                  </li>
+                  />
 
                   {/* Conditional Placeholder Below */}
-                  {showPlaceholderAfter && <DropIndicator index={index} />}
+                  {showPlaceholderAfter && (
+                    <DropIndicator
+                      index={index}
+                      onDragOver={handleDragOver}
+                      onDrop={handleDrop}
+                    />
+                  )}
                 </React.Fragment>
               );
             })}
