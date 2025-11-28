@@ -135,6 +135,17 @@ navigate('/', { replace: true }); // For redirects
 - `currentBandId` tracks active band
 - Band change triggers full data reload
 
+## Automated Testing (Puppeteer)
+
+For browser automation, read credentials from `test-credentials.json`:
+```json
+{ "email": "...", "password": "..." }
+```
+
+Login flow: Navigate to `/login` → fill `#email` → fill `#password` → click submit → wait for redirect to `/`.
+
+Test data is isolated in a dedicated test band (seeded via `npm run seed:test`).
+
 ## Common Pitfalls
 
 1. **AlphaTab Assets:** AlphaTab requires fonts and soundfont files. The Vite plugin automatically copies these to `/font` and `/soundfont` during build. If playback fails, verify these directories exist in the build output.
