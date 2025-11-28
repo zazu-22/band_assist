@@ -1096,6 +1096,60 @@ These features were identified but not included in this ticket:
 
 Consider creating follow-up tickets for high-value items.
 
+### Volume Control API Reference
+
+For future implementation of volume control, AlphaTab provides the following API:
+
+**Master Volume**:
+```typescript
+// Get current master volume (0.0 to 1.0)
+const currentVolume = api.masterVolume;
+
+// Set master volume
+api.masterVolume = 0.75; // 75% volume
+```
+
+**Track Volume** (per-track):
+```typescript
+// Get track volume (0.0 to 16.0, where 1.0 is default)
+const trackVolume = api.score.tracks[index].playbackInfo.volume;
+
+// Set track volume
+api.changeTrackVolume([track], 0.5); // 50% of default
+
+// Example: Implement volume slider
+const handleVolumeChange = (trackIndex: number, volume: number) => {
+  if (apiRef.current) {
+    const track = apiRef.current.score.tracks[trackIndex];
+    apiRef.current.changeTrackVolume([track], volume);
+  }
+};
+```
+
+**Metronome Volume**:
+```typescript
+// Get metronome volume
+const metronomeVolume = api.metronomeVolume;
+
+// Set metronome volume (0.0 to 1.0)
+api.metronomeVolume = 0.5; // 50% volume
+```
+
+**Count-In Volume**:
+```typescript
+// Get count-in volume
+const countInVolume = api.countInVolume;
+
+// Set count-in volume (0.0 to 1.0)
+api.countInVolume = 0.8; // 80% volume
+```
+
+**Implementation Notes**:
+- Volume values are normalized (0.0 to 1.0) for master, metronome, and count-in
+- Track volume ranges from 0.0 to 16.0 (1.0 is the default/normal level)
+- Always check `if (apiRef.current)` before accessing volume properties
+- Volume changes take effect immediately during playback
+
 ---
 
 ## Resources

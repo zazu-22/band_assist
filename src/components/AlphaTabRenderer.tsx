@@ -900,20 +900,23 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
     }
   };
 
-  const seekTo = (percentage: number) => {
-    if (!apiRef.current || totalTime <= 0) return;
+  const seekTo = useCallback(
+    (percentage: number) => {
+      if (!apiRef.current || totalTime <= 0) return;
 
-    try {
-      const targetTime = totalTime * percentage;
-      if (isNaN(targetTime) || targetTime < 0 || targetTime > totalTime) {
-        console.error('[AlphaTab] Invalid seek time:', targetTime);
-        return;
+      try {
+        const targetTime = totalTime * percentage;
+        if (isNaN(targetTime) || targetTime < 0 || targetTime > totalTime) {
+          console.error('[AlphaTab] Invalid seek time:', targetTime);
+          return;
+        }
+        apiRef.current.timePosition = targetTime;
+      } catch (error) {
+        console.error('[AlphaTab] Error seeking to position:', error);
       }
-      apiRef.current.timePosition = targetTime;
-    } catch (error) {
-      console.error('[AlphaTab] Error seeking to position:', error);
-    }
-  };
+    },
+    [totalTime]
+  );
 
   const toggleLoop = () => {
     if (apiRef.current) {
@@ -942,9 +945,45 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
   // Memoize formatted times to reduce string operations
   const formattedCurrentTime = useMemo(() => formatTime(currentTime), [currentTime, formatTime]);
   const formattedTotalTime = useMemo(() => formatTime(totalTime), [totalTime, formatTime]);
+
+  // Memoize progress percentage with fixed precision to avoid floating point issues
   const progressPercentage = useMemo(
-    () => (totalTime > 0 ? (currentTime / totalTime) * 100 : 0),
+    () => (totalTime > 0 ? Math.round((currentTime / totalTime) * 10000) / 100 : 0),
     [currentTime, totalTime]
+  );
+
+  // Memoize progress bar style objects to prevent re-renders
+  const progressFillStyle = useMemo(
+    () => ({ width: `${progressPercentage}%` }),
+    [progressPercentage]
+  );
+  const progressScrubberStyle = useMemo(
+    () => ({ left: `${progressPercentage}%` }),
+    [progressPercentage]
+  );
+
+  // Memoize playback state for external consumers (prefixed with _ as currently internal-only)
+  // TODO: Expose this via props callback or imperative handle for parent component access
+  const _playbackState = useMemo(
+    () => ({
+      isPlaying: internalIsPlaying,
+      currentTime,
+      totalTime,
+      isLooping,
+      currentSpeed,
+    }),
+    [internalIsPlaying, currentTime, totalTime, isLooping, currentSpeed]
+  );
+
+  // Memoize progress bar click handler
+  const handleProgressBarClick = useCallback(
+    (e: React.MouseEvent<HTMLDivElement>) => {
+      const rect = e.currentTarget.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const percentage = Math.max(0, Math.min(1, x / rect.width));
+      seekTo(percentage);
+    },
+    [seekTo]
   );
 
   return (
@@ -958,7 +997,7 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
               <button
                 onClick={togglePlay}
                 disabled={!playerReady}
-                className={`w-10 h-10 rounded-full flex items-center justify-center transition-colors ${
+                className={`w-11 h-11 sm:w-10 sm:h-10 rounded-full flex items-center justify-center transition-colors ${
                   !playerReady
                     ? 'bg-zinc-200 text-zinc-400 cursor-not-allowed'
                     : internalIsPlaying
@@ -966,6 +1005,7 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
                       : 'bg-zinc-200 hover:bg-zinc-300 text-zinc-700'
                 }`}
                 title={!playerReady ? 'Loading player...' : internalIsPlaying ? 'Pause' : 'Play'}
+                aria-label={!playerReady ? 'Loading player' : internalIsPlaying ? 'Pause playback' : 'Start playback'}
               >
                 {internalIsPlaying ? <Pause size={20} /> : <Play size={20} className="ml-1" />}
               </button>
@@ -974,8 +1014,9 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
               <button
                 onClick={stopPlayback}
                 disabled={!internalIsPlaying && currentTime === 0}
-                className="w-10 h-10 rounded-full flex items-center justify-center bg-zinc-200 hover:bg-zinc-300 text-zinc-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
+                className="w-11 h-11 sm:w-10 sm:h-10 rounded-full flex items-center justify-center bg-zinc-200 hover:bg-zinc-300 text-zinc-700 disabled:opacity-30 disabled:cursor-not-allowed transition-colors"
                 title="Stop and return to start"
+                aria-label="Stop playback and return to start"
               >
                 <Square size={18} />
               </button>
@@ -984,12 +1025,13 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
               <div className="flex items-center gap-1">
                 <button
                   onClick={toggleLoop}
-                  className={`p-2 rounded transition-colors ${
+                  className={`p-2.5 sm:p-2 min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 rounded transition-colors flex items-center justify-center ${
                     isLooping
                       ? 'bg-amber-500 text-white'
                       : 'bg-zinc-200 hover:bg-zinc-300 text-zinc-700'
                   }`}
                   title="Toggle loop"
+                  aria-label={isLooping ? 'Disable loop' : 'Enable loop'}
                 >
                   <Repeat size={16} />
                 </button>
@@ -997,8 +1039,9 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
                 {loopRange && (
                   <button
                     onClick={clearLoopRange}
-                    className="p-2 rounded bg-zinc-200 hover:bg-red-200 text-zinc-700 hover:text-red-600 transition-colors"
+                    className="p-2.5 sm:p-2 min-w-[44px] min-h-[44px] sm:min-w-0 sm:min-h-0 rounded bg-zinc-200 hover:bg-red-200 text-zinc-700 hover:text-red-600 transition-colors flex items-center justify-center"
                     title="Clear loop range"
+                    aria-label="Clear loop range"
                   >
                     <X size={16} />
                   </button>
@@ -1010,24 +1053,31 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
 
         {/* Center: Track selector */}
         <div className="flex items-center justify-center flex-1 min-w-0">
-          {currentTrackIndex !== null && tracks[currentTrackIndex] && (
-            <button
-              ref={mixerButtonRef}
-              onClick={() => setShowSettings(!showSettings)}
-              className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all max-w-[200px] ${
-                showSettings
-                  ? 'bg-amber-500 text-white shadow-md'
-                  : 'bg-zinc-200 hover:bg-zinc-300 text-zinc-800 hover:shadow-sm'
-              }`}
-              title={`${tracks[currentTrackIndex].name} - Click to open mixer and switch tracks`}
-            >
-              <div
-                className={`w-2.5 h-2.5 rounded-full shrink-0 ${showSettings ? 'bg-white' : 'bg-amber-500'}`}
-              ></div>
-              <span className="text-sm font-semibold truncate">{tracks[currentTrackIndex].name}</span>
-              <Sliders size={16} className={`shrink-0 ${showSettings ? 'opacity-90' : 'opacity-60'}`} />
-            </button>
-          )}
+          {tracks.length > 0 &&
+            currentTrackIndex !== null &&
+            currentTrackIndex >= 0 &&
+            currentTrackIndex < tracks.length &&
+            tracks[currentTrackIndex] && (
+              <button
+                ref={mixerButtonRef}
+                onClick={() => setShowSettings(!showSettings)}
+                className={`flex items-center gap-2 px-4 py-2 rounded-lg transition-all max-w-[200px] ${
+                  showSettings
+                    ? 'bg-amber-500 text-white shadow-md'
+                    : 'bg-zinc-200 hover:bg-zinc-300 text-zinc-800 hover:shadow-sm'
+                }`}
+                title={`${tracks[currentTrackIndex]?.name ?? 'Track'} - Click to open mixer and switch tracks`}
+                aria-label={`Current track: ${tracks[currentTrackIndex]?.name ?? 'Unknown'}. Click to open mixer`}
+              >
+                <div
+                  className={`w-2.5 h-2.5 rounded-full shrink-0 ${showSettings ? 'bg-white' : 'bg-amber-500'}`}
+                ></div>
+                <span className="text-sm font-semibold truncate">
+                  {tracks[currentTrackIndex]?.name ?? 'Track'}
+                </span>
+                <Sliders size={16} className={`shrink-0 ${showSettings ? 'opacity-90' : 'opacity-60'}`} />
+              </button>
+            )}
         </div>
 
         {/* Right: Auto-scroll + BPM Display + Metronome + Speed control */}
@@ -1077,9 +1127,15 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
                 <Music2 size={14} className="text-zinc-500" />
                 {isEditingBPM ? (
                   <input
-                    type="number"
+                    type="text"
+                    inputMode="numeric"
+                    pattern="[0-9]*"
                     value={bpmInputValue}
-                    onChange={e => setBpmInputValue(e.target.value)}
+                    onChange={e => {
+                      // Only allow numeric input
+                      const value = e.target.value.replace(/[^0-9]/g, '');
+                      setBpmInputValue(value);
+                    }}
                     onBlur={submitBPMEdit}
                     onKeyDown={e => {
                       if (e.key === 'Enter') submitBPMEdit();
@@ -1088,6 +1144,7 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
                     autoFocus
                     className="w-12 bg-white border border-amber-500 rounded px-1 text-sm font-semibold text-center focus:outline-none"
                     onClick={e => e.stopPropagation()}
+                    aria-label="Enter BPM value"
                   />
                 ) : (
                   <span className="text-sm font-semibold text-zinc-700">
@@ -1159,23 +1216,24 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
 
           <div
             className="flex-1 h-2 bg-zinc-200 rounded-full cursor-pointer group relative"
-            onClick={e => {
-              const rect = e.currentTarget.getBoundingClientRect();
-              const x = e.clientX - rect.left;
-              const percentage = Math.max(0, Math.min(1, x / rect.width));
-              seekTo(percentage);
-            }}
+            onClick={handleProgressBarClick}
+            role="slider"
+            aria-label="Playback progress"
+            aria-valuemin={0}
+            aria-valuemax={100}
+            aria-valuenow={Math.round(progressPercentage)}
+            tabIndex={0}
           >
             {/* Progress fill */}
             <div
               className="h-full bg-amber-500 rounded-full transition-all"
-              style={{ width: `${progressPercentage}%` }}
+              style={progressFillStyle}
             />
 
             {/* Hover scrubber */}
             <div
               className="absolute top-1/2 -translate-y-1/2 w-3 h-3 bg-white border-2 border-amber-500 rounded-full opacity-0 group-hover:opacity-100 transition-opacity pointer-events-none"
-              style={{ left: `${progressPercentage}%` }}
+              style={progressScrubberStyle}
             />
           </div>
 
@@ -1209,66 +1267,75 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
             </button>
           </div>
           <div className="overflow-y-auto flex-1 space-y-2">
-            {tracks.map((track, i) => (
-              <div
-                key={i}
-                className={`flex items-center justify-between p-2 rounded border transition-all ${
-                  currentTrackIndex === i
-                    ? 'bg-amber-50 border-amber-400 shadow-sm'
-                    : 'bg-zinc-50 border-zinc-100'
-                }`}
-              >
+            {tracks.map((track, i) => {
+              // Defensive null checks for track properties
+              const trackName = track?.name ?? `Track ${i + 1}`;
+              const isMuted = track?.playbackInfo?.isMute ?? false;
+              const isSolo = track?.playbackInfo?.isSolo ?? false;
+
+              return (
                 <div
-                  className="flex items-center gap-2 overflow-hidden cursor-pointer"
-                  onClick={() => renderTrack(i)}
+                  key={i}
+                  className={`flex items-center justify-between p-2 rounded border transition-all ${
+                    currentTrackIndex === i
+                      ? 'bg-amber-50 border-amber-400 shadow-sm'
+                      : 'bg-zinc-50 border-zinc-100'
+                  }`}
                 >
                   <div
-                    className={`w-3 h-3 rounded-full transition-all ${
-                      currentTrackIndex === i ? 'bg-amber-500' : 'bg-zinc-400'
-                    }`}
-                  ></div>
-                  <span
-                    className={`text-xs truncate hover:underline ${
-                      currentTrackIndex === i
-                        ? 'font-bold text-amber-900'
-                        : 'font-medium text-zinc-700'
-                    }`}
+                    className="flex items-center gap-2 overflow-hidden cursor-pointer"
+                    onClick={() => renderTrack(i)}
                   >
-                    {track.name}
-                  </span>
+                    <div
+                      className={`w-3 h-3 rounded-full transition-all ${
+                        currentTrackIndex === i ? 'bg-amber-500' : 'bg-zinc-400'
+                      }`}
+                    ></div>
+                    <span
+                      className={`text-xs truncate hover:underline ${
+                        currentTrackIndex === i
+                          ? 'font-bold text-amber-900'
+                          : 'font-medium text-zinc-700'
+                      }`}
+                    >
+                      {trackName}
+                    </span>
+                  </div>
+                  <div className="flex gap-1">
+                    <button
+                      onClick={e => {
+                        e.stopPropagation();
+                        toggleTrackMute(i);
+                      }}
+                      className={`text-[10px] font-bold px-2 py-1 rounded border transition-all ${
+                        isMuted
+                          ? 'bg-red-500 text-white border-red-600 shadow-sm'
+                          : 'bg-white text-zinc-500 border-zinc-300 hover:bg-zinc-50'
+                      }`}
+                      title={isMuted ? 'Unmute track' : 'Mute track'}
+                      aria-label={isMuted ? `Unmute ${trackName}` : `Mute ${trackName}`}
+                    >
+                      M
+                    </button>
+                    <button
+                      onClick={e => {
+                        e.stopPropagation();
+                        toggleTrackSolo(i);
+                      }}
+                      className={`text-[10px] font-bold px-2 py-1 rounded border transition-all ${
+                        isSolo
+                          ? 'bg-amber-500 text-white border-amber-600 shadow-sm'
+                          : 'bg-white text-zinc-500 border-zinc-300 hover:bg-zinc-50'
+                      }`}
+                      title={isSolo ? 'Unsolo track' : 'Solo track'}
+                      aria-label={isSolo ? `Unsolo ${trackName}` : `Solo ${trackName}`}
+                    >
+                      S
+                    </button>
+                  </div>
                 </div>
-                <div className="flex gap-1">
-                  <button
-                    onClick={e => {
-                      e.stopPropagation();
-                      toggleTrackMute(i);
-                    }}
-                    className={`text-[10px] font-bold px-2 py-1 rounded border transition-all ${
-                      track.playbackInfo.isMute
-                        ? 'bg-red-500 text-white border-red-600 shadow-sm'
-                        : 'bg-white text-zinc-500 border-zinc-300 hover:bg-zinc-50'
-                    }`}
-                    title={track.playbackInfo.isMute ? 'Unmute track' : 'Mute track'}
-                  >
-                    M
-                  </button>
-                  <button
-                    onClick={e => {
-                      e.stopPropagation();
-                      toggleTrackSolo(i);
-                    }}
-                    className={`text-[10px] font-bold px-2 py-1 rounded border transition-all ${
-                      track.playbackInfo.isSolo
-                        ? 'bg-amber-500 text-white border-amber-600 shadow-sm'
-                        : 'bg-white text-zinc-500 border-zinc-300 hover:bg-zinc-50'
-                    }`}
-                    title={track.playbackInfo.isSolo ? 'Unsolo track' : 'Solo track'}
-                  >
-                    S
-                  </button>
-                </div>
-              </div>
-            ))}
+              );
+            })}
           </div>
         </div>
       )}
