@@ -3,6 +3,8 @@
 .env.production
 .envrc
 supabase/.temp
+test-credentials.json
+.test-credentials
 
 # Logs
 logs
