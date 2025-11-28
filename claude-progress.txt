@@ -1,6 +1,57 @@
 # Claude Code Progress Summary
 
-## Current Status: 118/151 tests passing (78.1%)
+## Current Status: 121/151 tests passing (80.1%)
+
+---
+
+## Session 5 - Nov 28, 2024 (Component Creation & Test Verification)
+
+### Major Accomplishment
+Created new MetadataItem and UploadZone reusable components, verified save metadata persistence.
+
+### Changes Made
+
+**1. New MetadataItem Component:**
+- Created `src/components/ui/MetadataItem.tsx`
+- Accepts icon, label, value, mono props
+- Uses design system classes (text-muted-foreground for label, text-foreground font-medium for value)
+- Includes displayName for React DevTools
+- Test #140 now passes
+
+**2. New UploadZone Component:**
+- Created `src/components/ui/UploadZone.tsx`
+- Handles drag-and-drop file uploads
+- Uses border-dashed styling pattern
+- isDragging state changes border color to primary
+- Supports accept, multiple, disabled props
+- Test #141 now passes
+
+**3. Verified Save Metadata Persistence:**
+- Tested edit mode in SongDetail page
+- Changed BPM from 120 to 125
+- Clicked Save
+- Refreshed page and verified BPM persisted
+- Test #117 now passes
+
+### Tests Verified as Passing (3 new tests)
+1. **#117 Save button persists metadata changes** - Changed BPM, saved, refreshed, verified persistence
+2. **#140 New MetadataItem component created in ui/ folder** - Component created with correct props and displayName
+3. **#141 New UploadZone component created in ui/ folder** - Component created with drag-and-drop and isDragging state
+
+### Browser Automation Testing
+- Logged in with test credentials
+- Verified setlist page renders correctly
+- Navigated to song detail page
+- Tested edit mode and save functionality
+- Verified BPM change persisted after page refresh
+
+### Git Commit
+- 92e8f96 - feat(ui): Add MetadataItem and UploadZone components
+
+### Observations
+- Puppeteer fill command appends to input instead of replacing (known issue from previous sessions)
+- Used JavaScript native input setter approach to properly set React controlled input values
+- Core app functionality works correctly when users interact directly
 
 ---
 
@@ -116,7 +167,7 @@ Completed the SongDetail.tsx design system migration - removing ALL legacy zinc-
 
 ---
 
-## Remaining Work (33 tests)
+## Remaining Work (30 tests)
 
 ### High Priority - File Upload Tests:
 - PDF file upload (#80)
@@ -126,17 +177,17 @@ Completed the SongDetail.tsx design system migration - removing ALL legacy zinc-
 - Audio file upload MP3/WAV (#100-105)
 
 ### Medium Priority - Functional Tests:
-- Save metadata persistence with page refresh (#117)
 - Direct URL access verification (#129)
 - Text chart content editing (#131)
 - AI chat functionality (#107)
 
 ### Lower Priority - Styling/Documentation:
 - design-system.md documentation (#139)
-- MetadataItem component creation (#140)
-- UploadZone component creation (#141)
-- Responsive design tests (#119-121)
+- MetadataItem displays correctly (#126) - component created but not integrated into SongDetail
+- Responsive design tests (#119-120) - mobile, tablet viewports
 - Accessibility tests (#122-126)
+- Page padding responsive test (#128)
+- Chart selector scroll test (#130)
 
 ---
 
