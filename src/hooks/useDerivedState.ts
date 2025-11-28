@@ -30,8 +30,12 @@ export function useDerivedState<T>(
   const isFirstRenderRef = useRef(true);
   // Track initialValue in a ref to always have the latest value without adding to deps
   const initialValueRef = useRef<T>(initialValue);
-  // eslint-disable-next-line react-hooks/refs -- Safe: ref is only read in effect, not during render output
-  initialValueRef.current = initialValue;
+
+  // Update ref in useLayoutEffect to avoid mutation during render (React purity requirement)
+  // Dependency array ensures this only runs when initialValue actually changes
+  useLayoutEffect(() => {
+    initialValueRef.current = initialValue;
+  }, [initialValue]);
 
   // Use useLayoutEffect to sync before paint, avoiding visual flicker
   useLayoutEffect(() => {
@@ -78,8 +82,12 @@ export function useDerivedStateLazy<T>(
   const isFirstRenderRef = useRef(true);
   // Track initialValueFn in a ref to always have the latest function without adding to deps
   const initialValueFnRef = useRef<() => T>(initialValueFn);
-  // eslint-disable-next-line react-hooks/refs -- Safe: ref is only read in effect, not during render output
-  initialValueFnRef.current = initialValueFn;
+
+  // Update ref in useLayoutEffect to avoid mutation during render (React purity requirement)
+  // Dependency array ensures this only runs when initialValueFn reference changes
+  useLayoutEffect(() => {
+    initialValueFnRef.current = initialValueFn;
+  }, [initialValueFn]);
 
   useLayoutEffect(() => {
     // On first render, just capture the initial key (state already initialized correctly)

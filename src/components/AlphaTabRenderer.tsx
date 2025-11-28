@@ -157,6 +157,11 @@ export interface TrackInfo {
 /**
  * Handle interface for controlling AlphaTab from parent components.
  * All volume values use 0-1 range (0% to 100%).
+ *
+ * Design note: This interface uses index-based track methods (e.g., setTrackVolume(index, volume))
+ * rather than the underlying array-based AlphaTab API (e.g., changeTrackVolume([track], volume)).
+ * This provides a simpler, more intuitive API for consumers while the component handles
+ * the conversion to AlphaTab's internal track object arrays.
  */
 export interface AlphaTabHandle {
   // Playback controls
@@ -204,6 +209,18 @@ interface AlphaTabRendererProps {
   onTracksLoaded?: (tracks: TrackInfo[]) => void;
   /** Callback when an error occurs */
   onError?: (error: string) => void;
+  /**
+   * Additional MIDI event types to include in the midiEventsPlayedFilter.
+   * The metronome filter (AlphaTabMetronome) is always included by default.
+   *
+   * Note: This prop configures which MIDI events AlphaTab processes internally.
+   * Currently, only metronome events are handled for the visual beat indicator.
+   * This prop exists for forward compatibility if custom MIDI event handling
+   * is added in future versions.
+   *
+   * @see https://alphatab.net/docs/reference/api/midiEventsPlayedFilter
+   */
+  additionalMidiFilters?: number[];
 }
 
 export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
@@ -218,6 +235,7 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
   onPositionChange,
   onTracksLoaded,
   onError,
+  additionalMidiFilters = [],
 }) => {
   const rootRef = useRef<HTMLDivElement>(null);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -226,6 +244,25 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
   const cleanupEventListenersRef = useRef<(() => void) | null>(null);
   const mixerButtonRef = useRef<HTMLButtonElement | null>(null);
   const mixerPanelRef = useRef<HTMLDivElement | null>(null);
+
+  // Refs for callbacks to prevent stale closures in event handlers
+  // These refs are updated on each render and read inside the useEffect event handlers
+  const onTracksLoadedRef = useRef(onTracksLoaded);
+  const onPositionChangeRef = useRef(onPositionChange);
+  const onStateChangeRef = useRef(onStateChange);
+  const onErrorRef = useRef(onError);
+  const onPlaybackChangeRef = useRef(onPlaybackChange);
+
+  // Ref for additional MIDI filters to avoid stale closure
+  const additionalMidiFiltersRef = useRef(additionalMidiFilters);
+
+  // Keep refs in sync with latest callback props
+  onTracksLoadedRef.current = onTracksLoaded;
+  onPositionChangeRef.current = onPositionChange;
+  onStateChangeRef.current = onStateChange;
+  onErrorRef.current = onError;
+  onPlaybackChangeRef.current = onPlaybackChange;
+  additionalMidiFiltersRef.current = additionalMidiFilters;
 
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -416,9 +453,9 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
           setOriginalTempo(tempo);
           setCurrentBPM(Math.round(tempo * currentSpeed));
 
-          // Emit tracks to parent via callback
-          if (onTracksLoaded) {
-            onTracksLoaded(
+          // Emit tracks to parent via callback (using ref to avoid stale closure)
+          if (onTracksLoadedRef.current) {
+            onTracksLoadedRef.current(
               score.tracks.map((t, i) => ({
                 index: i,
                 name: t.name,
@@ -451,9 +488,9 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
           setError(errorMsg);
           setLoading(false);
 
-          // Emit error to parent via callback
-          if (onError) {
-            onError(errorMsg);
+          // Emit error to parent via callback (using ref to avoid stale closure)
+          if (onErrorRef.current) {
+            onErrorRef.current(errorMsg);
           }
         };
 
@@ -470,7 +507,8 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
           }
 
           setInternalIsPlaying(playing);
-          if (onPlaybackChange) onPlaybackChange(playing);
+          // Use ref to avoid stale closure
+          if (onPlaybackChangeRef.current) onPlaybackChangeRef.current(playing);
         };
 
         const handlePlayerReady = () => {
@@ -504,9 +542,9 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
           setCurrentTime(e.currentTime);
           setTotalTime(e.endTime);
 
-          // Emit position to parent via callback
-          if (onPositionChange) {
-            onPositionChange(e.currentTime, e.endTime);
+          // Emit position to parent via callback (using ref to avoid stale closure)
+          if (onPositionChangeRef.current) {
+            onPositionChangeRef.current(e.currentTime, e.endTime);
           }
         };
 
@@ -520,7 +558,8 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
           }
 
           setInternalIsPlaying(false);
-          if (onPlaybackChange) onPlaybackChange(false);
+          // Use ref to avoid stale closure
+          if (onPlaybackChangeRef.current) onPlaybackChangeRef.current(false);
         };
 
         // Phase 1: Beat selection for loop - capture ref outside state setter to avoid stale closure
@@ -554,8 +593,23 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
           }
         };
 
-        // Phase 2: Visual metronome (ESM import)
-        api.midiEventsPlayedFilter = [midi.MidiEventType.AlphaTabMetronome];
+        // Phase 2: Visual metronome - Configure MIDI event filtering
+        // AlphaTabMetronome is required for visual beat indicator; additionalMidiFilters allows
+        // parent components to track other MIDI events (e.g., note events for visualization).
+        // Use Set to deduplicate filters in case of React Strict Mode double-mount or re-initialization
+        const existingFilters = api.midiEventsPlayedFilter || [];
+        const newFilters = [
+          midi.MidiEventType.AlphaTabMetronome,
+          ...additionalMidiFiltersRef.current,
+        ];
+        // Only add filters that aren't already present to prevent duplicates
+        const combinedFilters = [...existingFilters];
+        for (const filter of newFilters) {
+          if (!combinedFilters.includes(filter)) {
+            combinedFilters.push(filter);
+          }
+        }
+        api.midiEventsPlayedFilter = combinedFilters;
 
         const handleMidiEventsPlayed = (e: AlphaTabMidiEventsPlayedEvent) => {
           if (!isMounted) return;
@@ -653,9 +707,9 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
         }
       }
     };
-    // Dependencies intentionally limited to [fileData, readOnly, retryKey]
-    // Adding all hook dependencies would cause re-initialization on every state change
-    // This effect should only re-run when the file or retry counter changes
+    // Dependencies limited to [fileData, readOnly, retryKey] - effect should only re-run when file changes
+    // Callbacks (onTracksLoaded, onPositionChange, onStateChange, onError, onPlaybackChange) are
+    // accessed via refs to avoid stale closures while preventing re-initialization on callback changes
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [fileData, readOnly, retryKey]);
 
@@ -762,7 +816,8 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
           pendingPlaybackActionRef.current = null;
           if (action === 'play') {
             setInternalIsPlaying(false);
-            if (onPlaybackChange) onPlaybackChange(false);
+            // Use ref to avoid stale closure
+            if (onPlaybackChangeRef.current) onPlaybackChangeRef.current(false);
           }
           return;
         }
@@ -774,7 +829,7 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
         }, PLAYBACK_RETRY_DELAY_MS);
       }
     },
-    [onPlaybackChange]
+    [] // No deps needed - uses refs for callbacks
   );
 
   // External Playback Sync
@@ -982,9 +1037,10 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
         }
       }
       setInternalIsPlaying(false);
-      if (onPlaybackChange) onPlaybackChange(false);
+      // Use ref to avoid stale closure
+      if (onPlaybackChangeRef.current) onPlaybackChangeRef.current(false);
     }
-  }, [internalIsPlaying, onPlaybackChange]);
+  }, [internalIsPlaying]);
 
   const seekTo = useCallback((percentage: number) => {
     if (!apiRef.current || totalTime <= 0) return;

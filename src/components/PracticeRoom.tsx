@@ -29,6 +29,7 @@ import {
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/useBreakpoint';
 import { useDerivedState, usePrevious } from '@/hooks/useDerivedState';
+import { useBlobUrl } from '@/hooks/useBlobUrl';
 import {
   PracticeControlBar,
   type AlphaTabState,
@@ -139,13 +140,16 @@ export const PracticeRoom: React.FC<PracticeRoomProps> = memo(function PracticeR
   const [duration, setDuration] = useState(0);
   const [metronomeActive, setMetronomeActive] = useState(false);
   const [showSongList, setShowSongList] = useState(!isMobile);
-  const [audioSrc, setAudioSrc] = useState<string | undefined>(undefined);
 
   // Derived state that resets when song changes
   const currentSong = useMemo(
     () => songs.find(s => s.id === selectedSongId),
     [songs, selectedSongId]
   );
+
+  // Blob URL for backing track audio (handles Base64 data URI conversion and cleanup)
+  const audioSrc = useBlobUrl(currentSong?.backingTrackUrl);
+
   const [metronomeBpm, setMetronomeBpm] = useDerivedState(
     currentSong?.bpm ?? 120,
     selectedSongId
@@ -219,15 +223,18 @@ export const PracticeRoom: React.FC<PracticeRoomProps> = memo(function PracticeR
   // Track previous GP state for cleanup on transition
   const prevIsGuitarPro = usePrevious(isGuitarPro);
 
-  // Clear AlphaTab state when transitioning away from GP chart
-  // Using useLayoutEffect to reset state before paint, avoiding visual flicker
+  // Consolidated cleanup in useLayoutEffect to prevent race condition between ref and state
+  // Both ref and state are reset synchronously to maintain consistency
   useLayoutEffect(() => {
     // Only reset when transitioning from GP to non-GP (not on initial render)
     if (prevIsGuitarPro === true && !isGuitarPro) {
+      // Clear ref and state together to prevent mismatches
       alphaTabRef.current = null;
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- Intentional: cleanup on chart type transition
+      // eslint-disable-next-line react-hooks/set-state-in-effect -- Intentional: cleanup state on chart type transition (consolidated with ref cleanup to prevent race condition)
       setGpState(null);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setGpTracks([]);
+      // eslint-disable-next-line react-hooks/set-state-in-effect
       setGpPosition({ current: 0, total: 0 });
     }
 
@@ -272,32 +279,6 @@ export const PracticeRoom: React.FC<PracticeRoomProps> = memo(function PracticeR
       if (metronomeInterval.current) clearInterval(metronomeInterval.current);
     };
   }, [metronomeActive, metronomeBpm]);
-
-  // Handle backing track URL loading from Data URI or Blob
-  useEffect(() => {
-    if (currentSong?.backingTrackUrl && currentSong.backingTrackUrl.startsWith('data:audio')) {
-      try {
-        const mime = currentSong.backingTrackUrl.split(';')[0].split(':')[1];
-        const base64 = currentSong.backingTrackUrl.split(',')[1];
-        const byteCharacters = atob(base64);
-        const byteNumbers = new Array(byteCharacters.length);
-        for (let i = 0; i < byteCharacters.length; i++) {
-          byteNumbers[i] = byteCharacters.charCodeAt(i);
-        }
-        const byteArray = new Uint8Array(byteNumbers);
-        const blob = new Blob([byteArray], { type: mime });
-        const url = URL.createObjectURL(blob);
-        // eslint-disable-next-line react-hooks/set-state-in-effect -- Synchronizing with browser Blob API; cleanup handled in return
-        setAudioSrc(url);
-        return () => URL.revokeObjectURL(url);
-      } catch {
-        // Silently handle conversion errors
-      }
-    } else {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- Clearing external resource reference
-      setAudioSrc(undefined);
-    }
-  }, [currentSong]);
 
   // ---------------------------------------------------------------------------
   // ALPHATAB CALLBACKS

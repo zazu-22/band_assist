@@ -37,11 +37,26 @@ export const TempoControl = memo(function TempoControl({
   }, [currentBPM]);
 
   const handleSubmitEdit = useCallback(() => {
-    const newBPM = parseInt(inputValue);
-    if (!isNaN(newBPM)) {
-      const clampedBPM = Math.max(minBPM, Math.min(maxBPM, newBPM));
-      onSetBPM(clampedBPM);
+    // Strict validation: trim whitespace, check for valid positive integer format
+    const trimmed = inputValue.trim();
+
+    // Reject empty, non-numeric, decimal, or negative inputs
+    if (!trimmed || !/^\d+$/.test(trimmed)) {
+      // Revert to current BPM on invalid input
+      setIsEditing(false);
+      return;
     }
+
+    const newBPM = parseInt(trimmed, 10);
+
+    // Additional NaN check (should not happen with regex, but defensive)
+    if (isNaN(newBPM) || !isFinite(newBPM)) {
+      setIsEditing(false);
+      return;
+    }
+
+    const clampedBPM = Math.max(minBPM, Math.min(maxBPM, newBPM));
+    onSetBPM(clampedBPM);
     setIsEditing(false);
   }, [inputValue, minBPM, maxBPM, onSetBPM]);
 

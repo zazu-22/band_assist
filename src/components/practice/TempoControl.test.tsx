@@ -139,6 +139,77 @@ describe('TempoControl', () => {
       // Should not call onSetBPM with NaN
       expect(onSetBPM).not.toHaveBeenCalled();
     });
+
+    it('rejects decimal input values', () => {
+      const onSetBPM = vi.fn();
+      render(<TempoControl {...defaultProps} onSetBPM={onSetBPM} />);
+
+      fireEvent.click(screen.getByLabelText('Click to edit BPM'));
+      const input = screen.getByTestId('bpm-input');
+
+      fireEvent.change(input, { target: { value: '120.5' } });
+      fireEvent.keyDown(input, { key: 'Enter' });
+
+      // Decimal values should be rejected (regex requires integers only)
+      expect(onSetBPM).not.toHaveBeenCalled();
+    });
+
+    it('rejects negative input values', () => {
+      const onSetBPM = vi.fn();
+      render(<TempoControl {...defaultProps} onSetBPM={onSetBPM} />);
+
+      fireEvent.click(screen.getByLabelText('Click to edit BPM'));
+      const input = screen.getByTestId('bpm-input');
+
+      fireEvent.change(input, { target: { value: '-120' } });
+      fireEvent.keyDown(input, { key: 'Enter' });
+
+      // Negative values should be rejected
+      expect(onSetBPM).not.toHaveBeenCalled();
+    });
+
+    it('rejects whitespace-only input', () => {
+      const onSetBPM = vi.fn();
+      render(<TempoControl {...defaultProps} onSetBPM={onSetBPM} />);
+
+      fireEvent.click(screen.getByLabelText('Click to edit BPM'));
+      const input = screen.getByTestId('bpm-input');
+
+      // Note: type="number" inputs typically coerce whitespace to empty string
+      fireEvent.change(input, { target: { value: '' } });
+      fireEvent.keyDown(input, { key: 'Enter' });
+
+      // Whitespace-only/empty input should be rejected
+      expect(onSetBPM).not.toHaveBeenCalled();
+    });
+
+    it('rejects empty input', () => {
+      const onSetBPM = vi.fn();
+      render(<TempoControl {...defaultProps} onSetBPM={onSetBPM} />);
+
+      fireEvent.click(screen.getByLabelText('Click to edit BPM'));
+      const input = screen.getByTestId('bpm-input');
+
+      fireEvent.change(input, { target: { value: '' } });
+      fireEvent.keyDown(input, { key: 'Enter' });
+
+      // Empty input should be rejected
+      expect(onSetBPM).not.toHaveBeenCalled();
+    });
+
+    it('rejects input with mixed numbers and text', () => {
+      const onSetBPM = vi.fn();
+      render(<TempoControl {...defaultProps} onSetBPM={onSetBPM} />);
+
+      fireEvent.click(screen.getByLabelText('Click to edit BPM'));
+      const input = screen.getByTestId('bpm-input');
+
+      fireEvent.change(input, { target: { value: '12abc' } });
+      fireEvent.keyDown(input, { key: 'Enter' });
+
+      // Mixed input should be rejected (regex requires pure digits)
+      expect(onSetBPM).not.toHaveBeenCalled();
+    });
   });
 
   describe('slider interaction', () => {
