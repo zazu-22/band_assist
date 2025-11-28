@@ -1543,7 +1543,7 @@
       "Step 4: Verify 'Refresh Page' button is present",
       "Step 5: Verify no crash or white screen"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "style",
@@ -1554,7 +1554,7 @@
       "Step 3: Verify fallback UI displays with proper styling",
       "Step 4: Verify 'Open PDF in New Tab' button works"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "style",
