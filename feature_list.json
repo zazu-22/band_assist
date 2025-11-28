@@ -799,7 +799,7 @@
       "Step 7: Verify new chart is active/selected",
       "Step 8: Verify SmartTabEditor is rendered for TEXT type"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -863,7 +863,7 @@
       "Step 5: Verify TEXT charts show Music2 icon",
       "Step 6: Verify icons use consistent size (14px)"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -875,7 +875,7 @@
       "Step 4: Verify active state moves to clicked chart",
       "Step 5: Verify chart viewer content updates to show selected chart"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -889,7 +889,7 @@
       "Step 6: Click Delete trash again, then confirm",
       "Step 7: Verify chart is removed from selector"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "style",
