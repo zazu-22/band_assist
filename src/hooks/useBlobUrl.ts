@@ -59,7 +59,15 @@ export function useBlobUrl(
   // This is safe because URL.createObjectURL is a pure function for the same input
   const blobUrl = useMemo(() => {
     if (!dataUri) return undefined;
-    return dataUriToBlobUrl(dataUri, prefix);
+    const result = dataUriToBlobUrl(dataUri, prefix);
+    // Log conversion failures to help debug backing track issues
+    if (!result && dataUri) {
+      console.warn('[useBlobUrl] Failed to convert data URI to blob URL', {
+        prefix,
+        dataUriPrefix: dataUri.substring(0, 50) + '...',
+      });
+    }
+    return result;
   }, [dataUri, prefix]);
 
   // Cleanup effect: revoke URL when it changes or component unmounts

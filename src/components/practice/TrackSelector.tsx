@@ -79,6 +79,7 @@ export const TrackSelector = memo(function TrackSelector({
             onSelect={(e) => e.preventDefault()}
           >
             <button
+              type="button"
               className="flex-1 flex items-center gap-2 text-left"
               onClick={() => onSelectTrack(index)}
             >
@@ -98,6 +99,7 @@ export const TrackSelector = memo(function TrackSelector({
 
             <div className="flex gap-1 shrink-0">
               <button
+                type="button"
                 onClick={(e) => {
                   e.stopPropagation();
                   onToggleMute(index);
@@ -113,6 +115,7 @@ export const TrackSelector = memo(function TrackSelector({
                 {track.isMute ? <VolumeX size={12} /> : <Volume2 size={12} />}
               </button>
               <button
+                type="button"
                 onClick={(e) => {
                   e.stopPropagation();
                   onToggleSolo(index);

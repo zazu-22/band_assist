@@ -75,6 +75,7 @@ export const TempoControl = memo(function TempoControl({
         <Tooltip>
           <TooltipTrigger asChild>
             <button
+              type="button"
               onClick={handleStartEdit}
               className={cn(
                 'flex items-center gap-1.5 px-2 py-1 rounded',

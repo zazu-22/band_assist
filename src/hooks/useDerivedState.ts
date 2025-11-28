@@ -31,14 +31,12 @@ export function useDerivedState<T>(
   // Track initialValue in a ref to always have the latest value without adding to deps
   const initialValueRef = useRef<T>(initialValue);
 
-  // Update ref in useLayoutEffect to avoid mutation during render (React purity requirement)
-  // Dependency array ensures this only runs when initialValue actually changes
+  // Combined effect: update ref AND check identity key in same effect to prevent race condition.
+  // This ensures initialValueRef is always updated before we read it for state reset.
   useLayoutEffect(() => {
+    // Always update the ref first (prevents stale value on identity key change)
     initialValueRef.current = initialValue;
-  }, [initialValue]);
 
-  // Use useLayoutEffect to sync before paint, avoiding visual flicker
-  useLayoutEffect(() => {
     // On first render, just capture the initial key (state already initialized correctly)
     if (isFirstRenderRef.current) {
       isFirstRenderRef.current = false;
@@ -52,12 +50,9 @@ export function useDerivedState<T>(
       // eslint-disable-next-line react-hooks/set-state-in-effect -- Intentional: "controlled component with reset" pattern
       setState(initialValueRef.current);
     }
-    // Dependency array intentionally excludes initialValue:
-    // - We capture it via ref (initialValueRef) to always have the latest value
-    // - Including it would cause resets whenever initialValue recalculates
-    //   (e.g., `currentSong?.bpm ?? 120` creates new value each render)
-    // - We only want to reset when identityKey changes, not when props re-compute
-  }, [identityKey]);
+    // Including initialValue ensures ref is always fresh before identity check.
+    // The identity key comparison prevents unnecessary state resets.
+  }, [initialValue, identityKey]);
 
   return [state, setState];
 }
@@ -83,13 +78,12 @@ export function useDerivedStateLazy<T>(
   // Track initialValueFn in a ref to always have the latest function without adding to deps
   const initialValueFnRef = useRef<() => T>(initialValueFn);
 
-  // Update ref in useLayoutEffect to avoid mutation during render (React purity requirement)
-  // Dependency array ensures this only runs when initialValueFn reference changes
+  // Combined effect: update ref AND check identity key in same effect to prevent race condition.
+  // This ensures initialValueFnRef is always updated before we read it for state reset.
   useLayoutEffect(() => {
+    // Always update the ref first (prevents stale function on identity key change)
     initialValueFnRef.current = initialValueFn;
-  }, [initialValueFn]);
 
-  useLayoutEffect(() => {
     // On first render, just capture the initial key (state already initialized correctly)
     if (isFirstRenderRef.current) {
       isFirstRenderRef.current = false;
@@ -102,12 +96,9 @@ export function useDerivedStateLazy<T>(
       // eslint-disable-next-line react-hooks/set-state-in-effect -- Intentional: "controlled component with reset" pattern
       setState(initialValueFnRef.current());
     }
-    // Dependency array intentionally excludes initialValueFn:
-    // - We capture it via ref (initialValueFnRef) to always have the latest function
-    // - Including it would cause resets whenever the function reference changes
-    //   (inline arrow functions create new references each render)
-    // - We only want to reset when identityKey changes, not when parent re-renders
-  }, [identityKey]);
+    // Including initialValueFn ensures ref is always fresh before identity check.
+    // The identity key comparison prevents unnecessary state resets.
+  }, [initialValueFn, identityKey]);
 
   return [state, setState];
 }

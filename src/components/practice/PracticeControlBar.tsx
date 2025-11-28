@@ -191,6 +191,7 @@ export const PracticeControlBar = memo(function PracticeControlBar({
                   <Tooltip>
                     <TooltipTrigger asChild>
                       <button
+                        type="button"
                         onClick={onMetronomeToggle}
                         className={cn(
                           'p-2 rounded-md transition-colors',
