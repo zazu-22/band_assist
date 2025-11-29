@@ -112,11 +112,19 @@ describe('useBlobUrl', () => {
       expect(result.current).toBeUndefined();
     });
 
-    it('should return undefined for regular URL (not data URI)', () => {
-      const regularUrl = 'https://example.com/audio.mp3';
-      const { result } = renderHook(() => useBlobUrl(regularUrl));
+    it('should pass through regular URLs (https, http, blob)', () => {
+      const httpsUrl = 'https://example.com/audio.mp3';
+      const { result: httpsResult } = renderHook(() => useBlobUrl(httpsUrl));
+      expect(httpsResult.current).toBe(httpsUrl);
 
-      expect(result.current).toBeUndefined();
+      const httpUrl = 'http://example.com/audio.mp3';
+      const { result: httpResult } = renderHook(() => useBlobUrl(httpUrl));
+      expect(httpResult.current).toBe(httpUrl);
+
+      const blobUrl = 'blob:http://localhost/abc-123';
+      const { result: blobResult } = renderHook(() => useBlobUrl(blobUrl));
+      expect(blobResult.current).toBe(blobUrl);
+
       expect(createObjectURLMock).not.toHaveBeenCalled();
     });
   });
@@ -138,6 +146,20 @@ describe('useBlobUrl', () => {
 
       unmount();
 
+      expect(revokeObjectURLMock).not.toHaveBeenCalled();
+    });
+
+    it('should not revoke passed-through URLs (https, http)', () => {
+      const { unmount: unmountHttps } = renderHook(() =>
+        useBlobUrl('https://example.com/audio.mp3')
+      );
+      unmountHttps();
+      expect(revokeObjectURLMock).not.toHaveBeenCalled();
+
+      const { unmount: unmountHttp } = renderHook(() =>
+        useBlobUrl('http://example.com/audio.mp3')
+      );
+      unmountHttp();
       expect(revokeObjectURLMock).not.toHaveBeenCalled();
     });
   });

@@ -812,7 +812,7 @@
       "Step 5: Verify chart is created with PDF type",
       "Step 6: Verify PDF viewer iframe is rendered"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -825,7 +825,7 @@
       "Step 5: Verify chart is created with IMAGE type",
       "Step 6: Verify image is displayed in viewer"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -838,7 +838,7 @@
       "Step 5: Verify chart is created with GP type",
       "Step 6: Verify AlphaTabRenderer component is rendered"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -1060,7 +1060,7 @@
       "Step 4: Verify file uploads successfully",
       "Step 5: Verify audio player appears with uploaded track"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -1072,7 +1072,7 @@
       "Step 4: Verify file uploads successfully",
       "Step 5: Verify audio player appears with uploaded track"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -1105,7 +1105,7 @@
       "Step 3: Verify file download initiates",
       "Step 4: Verify downloaded file matches uploaded content"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -1116,7 +1116,7 @@
       "Step 3: Verify track is removed",
       "Step 4: Verify upload zone appears again"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "style",
@@ -1507,7 +1507,7 @@
       "Step 4: Verify scroll works within PDF viewer",
       "Step 5: Verify download button works"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -1519,7 +1519,7 @@
       "Step 4: Verify max-width constraint",
       "Step 5: Verify download button works"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
@@ -1531,7 +1531,7 @@
       "Step 4: Verify tab notation renders correctly",
       "Step 5: Verify no console errors from AlphaTab"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "functional",
