@@ -103,6 +103,30 @@ Use staggered reveals for groups of elements appearing together:
 .animate-slide-in-from-bottom.animation-forwards.opacity-0.stagger-1
 ```
 
+### Animation Delay Guidelines
+
+Choose the appropriate technique based on the number of elements:
+
+| Scenario | Technique | Example |
+| --- | --- | --- |
+| Fixed-count elements (≤5 items) | `.stagger-1` through `.stagger-5` classes | Tab panels, stat cards |
+| Dynamic lists (unknown count) | Inline `style={{ animationDelay: \`${index * 75}ms\` }}` | Member grids, song lists |
+
+```tsx
+// Fixed elements - use stagger classes
+<Card className="animate-slide-in-from-bottom animation-forwards opacity-0 stagger-1">
+<Card className="animate-slide-in-from-bottom animation-forwards opacity-0 stagger-2">
+
+// Dynamic lists - use inline delay
+{items.map((item, index) => (
+  <Card
+    key={item.id}
+    className="animate-slide-in-from-bottom animation-forwards opacity-0"
+    style={{ animationDelay: `${index * 75}ms` }}
+  >
+))}
+```
+
 ### Progress Animations
 
 ```css

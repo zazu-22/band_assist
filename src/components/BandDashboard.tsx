@@ -14,6 +14,7 @@ import {
 import { EmptyState } from '@/components/ui';
 import { INSTRUMENT_ICONS } from '@/constants';
 import { getAvatarColor } from '@/lib/avatar';
+import { cn } from '@/lib/utils';
 import { ROUTES } from '@/routes';
 import type { BandMember, Song } from '@/types';
 
@@ -76,9 +77,17 @@ export const BandDashboard: React.FC<BandDashboardProps> = memo(function BandDas
   }, [navigate]);
 
   return (
-    <div className="p-4 sm:p-6 lg:p-10 h-full flex flex-col">
+    <div className="relative p-4 sm:p-6 lg:p-10 h-full flex flex-col">
+      {/* Ambient background glow */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
+        <div
+          className="absolute -top-1/4 -left-1/4 w-1/2 h-1/2 rounded-full opacity-[0.03]"
+          style={{ background: 'radial-gradient(circle, var(--primary) 0%, transparent 70%)' }}
+        />
+      </div>
+
       <header className="mb-8">
-        <h2 className="text-3xl font-bold text-foreground">Band Lineup</h2>
+        <h2 className="text-4xl font-bold font-serif text-foreground tracking-tight">Band Lineup</h2>
         <p className="text-muted-foreground mt-1">
           View individual gig sheets and responsibilities
         </p>
@@ -97,22 +106,22 @@ export const BandDashboard: React.FC<BandDashboardProps> = memo(function BandDas
         />
       ) : (
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 sm:gap-6 mb-8">
-          {members.map(member => {
+          {members.map((member, index) => {
             const isSelected = selectedMemberId === member.id;
             const roleCount = getMemberRoleCount(songs, member.id);
 
             return (
               <Card
                 key={member.id}
-                className={`
-                  relative overflow-hidden cursor-pointer transition-all duration-200 group
-                  focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2
-                  ${
-                    isSelected
-                      ? 'ring-2 ring-primary shadow-lg'
-                      : 'hover:bg-muted/50 hover:border-border/80'
-                  }
-                `}
+                className={cn(
+                  'relative overflow-hidden cursor-pointer transition-all duration-200 group',
+                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
+                  'animate-slide-in-from-bottom animation-forwards opacity-0',
+                  isSelected
+                    ? 'bg-muted/50 border-l-[3px] border-l-primary/60'
+                    : 'hover:bg-muted/50 hover:border-border/80'
+                )}
+                style={{ animationDelay: `${index * 75}ms` }}
                 onClick={() => handleSelectMember(member.id)}
                 role="button"
                 tabIndex={0}
@@ -138,7 +147,7 @@ export const BandDashboard: React.FC<BandDashboardProps> = memo(function BandDas
                       {member.name}
                     </h3>
                     <p className="text-xs text-muted-foreground mt-1">
-                      {roleCount} Active Role{roleCount !== 1 ? 's' : ''}
+                      <span className="font-mono tabular-nums">{roleCount}</span> Active Role{roleCount !== 1 ? 's' : ''}
                     </p>
                   </div>
                 </CardContent>
@@ -161,8 +170,8 @@ export const BandDashboard: React.FC<BandDashboardProps> = memo(function BandDas
                 </AvatarFallback>
               </Avatar>
               <div>
-                <CardTitle className="text-xl">{selectedMember.name}&apos;s Gig Sheet</CardTitle>
-                <p className="text-muted-foreground text-sm">{memberSongs.length} Songs Assigned</p>
+                <CardTitle className="text-xl font-serif">{selectedMember.name}&apos;s Gig Sheet</CardTitle>
+                <p className="text-muted-foreground text-sm"><span className="font-mono tabular-nums">{memberSongs.length}</span> Songs Assigned</p>
               </div>
             </div>
             <Button
@@ -202,7 +211,7 @@ export const BandDashboard: React.FC<BandDashboardProps> = memo(function BandDas
                           <div>
                             <h4 className="font-bold text-foreground text-lg">{song.title}</h4>
                             <p className="text-muted-foreground text-sm">
-                              {song.key} • {song.bpm} BPM
+                              {song.key} • <span className="font-mono tabular-nums">{song.bpm}</span> BPM
                             </p>
                           </div>
                           <Button
