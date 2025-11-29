@@ -700,6 +700,7 @@ const App: React.FC = () => {
                     setSongs={setSongs}
                     onSelectSong={id => navigate(getSongDetailRoute(id))}
                     events={events}
+                    isAdmin={isAdmin}
                   />
                 }
               />

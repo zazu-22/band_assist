@@ -28,7 +28,7 @@ import {
   AvatarFallback,
   Badge,
 } from '@/components/primitives';
-import { toast, ConfirmDialog } from '@/components/ui';
+import { toast, ConfirmDialog, DangerousActionDialog } from '@/components/ui';
 import { StorageService } from '@/services/storageService';
 import { InvitationManager } from '@/components/InvitationManager';
 import { isSupabaseConfigured } from '@/services/supabaseClient';
@@ -102,6 +102,26 @@ export const Settings: React.FC<SettingsProps> = memo(function Settings({
   const closeDialog = useCallback(() => {
     setConfirmDialog(prev => ({ ...prev, isOpen: false }));
   }, []);
+
+  // --- Dangerous Action Dialog State (Delete All Data) ---
+  const [dangerDialogOpen, setDangerDialogOpen] = useState(false);
+
+  const openDangerDialog = useCallback(() => {
+    setDangerDialogOpen(true);
+  }, []);
+
+  const closeDangerDialog = useCallback(() => {
+    setDangerDialogOpen(false);
+  }, []);
+
+  const handleDeleteAllData = useCallback(() => {
+    setSongs?.([]);
+    setMembers([]);
+    setAvailableRoles([]);
+    setEvents?.([]);
+    setDangerDialogOpen(false);
+    toast.success('All data has been deleted');
+  }, [setSongs, setMembers, setAvailableRoles, setEvents]);
 
   // --- Member Handlers ---
   const handleAddMember = useCallback(() => {
@@ -494,6 +514,25 @@ export const Settings: React.FC<SettingsProps> = memo(function Settings({
               </div>
             </CardContent>
           </Card>
+
+          {/* Danger Zone - Admin Only */}
+          {isAdmin && (
+            <Card className="border-destructive bg-destructive/5">
+              <CardHeader>
+                <CardTitle className="font-serif text-destructive">Danger Zone</CardTitle>
+                <CardDescription>
+                  Permanently delete all band data including songs, members, roles, and events. This
+                  action cannot be undone.
+                </CardDescription>
+              </CardHeader>
+              <CardContent>
+                <Button variant="destructive" onClick={openDangerDialog} className="gap-2">
+                  <Trash2 className="h-4 w-4" />
+                  Delete All Data
+                </Button>
+              </CardContent>
+            </Card>
+          )}
         </TabsContent>
       </Tabs>
 
@@ -507,6 +546,17 @@ export const Settings: React.FC<SettingsProps> = memo(function Settings({
         onCancel={closeDialog}
         confirmLabel="Confirm"
         cancelLabel="Cancel"
+      />
+
+      {/* Dangerous Action Dialog (Delete All Data) */}
+      <DangerousActionDialog
+        isOpen={dangerDialogOpen}
+        title="Delete All Data"
+        message="This will permanently delete all songs, members, roles, and events. This action cannot be undone."
+        confirmPhrase="DELETE ALL DATA"
+        confirmLabel="Delete Everything"
+        onConfirm={handleDeleteAllData}
+        onCancel={closeDangerDialog}
       />
     </div>
   );
