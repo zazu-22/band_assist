@@ -55,7 +55,7 @@ export const PlaybackControls = memo(function PlaybackControls({
           </TooltipContent>
         </Tooltip>
 
-        {/* Stop Button */}
+        {/* Stop Button - h-11 ensures 44px touch target on mobile per accessibility guidelines */}
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
@@ -63,7 +63,7 @@ export const PlaybackControls = memo(function PlaybackControls({
               size="sm"
               onClick={onStop}
               disabled={disabled}
-              className="h-10 w-10 sm:h-9 sm:w-9 p-0 shrink-0"
+              className="h-11 w-11 sm:h-9 sm:w-9 p-0 shrink-0"
               aria-label="Stop"
             >
               <Square size={16} />
@@ -74,7 +74,7 @@ export const PlaybackControls = memo(function PlaybackControls({
           </TooltipContent>
         </Tooltip>
 
-        {/* Loop Button */}
+        {/* Loop Button - h-11 ensures 44px touch target on mobile per accessibility guidelines */}
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
@@ -83,7 +83,7 @@ export const PlaybackControls = memo(function PlaybackControls({
               onClick={onToggleLoop}
               disabled={disabled}
               className={cn(
-                'h-10 w-10 sm:h-9 sm:w-9 p-0 shrink-0',
+                'h-11 w-11 sm:h-9 sm:w-9 p-0 shrink-0',
                 isLooping && 'bg-primary text-primary-foreground hover:bg-primary/90'
               )}
               aria-label={isLooping ? 'Disable loop' : 'Enable loop'}

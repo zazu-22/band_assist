@@ -120,4 +120,30 @@ describe('PlaybackControls', () => {
       expect(PlaybackControls.displayName).toBe('PlaybackControls');
     });
   });
+
+  describe('accessibility - touch target compliance', () => {
+    it('play/pause button has h-11 (44px) touch target on mobile', () => {
+      render(<PlaybackControls {...defaultProps} />);
+      const playButton = screen.getByRole('button', { name: 'Play' });
+      // h-11 ensures 44px touch target on mobile per WCAG accessibility guidelines
+      expect(playButton).toHaveClass('h-11');
+      expect(playButton).toHaveClass('w-11');
+    });
+
+    it('stop button has h-11 (44px) touch target on mobile', () => {
+      render(<PlaybackControls {...defaultProps} />);
+      const stopButton = screen.getByRole('button', { name: 'Stop' });
+      // h-11 ensures 44px touch target on mobile per WCAG accessibility guidelines
+      expect(stopButton).toHaveClass('h-11');
+      expect(stopButton).toHaveClass('w-11');
+    });
+
+    it('loop button has h-11 (44px) touch target on mobile', () => {
+      render(<PlaybackControls {...defaultProps} />);
+      const loopButton = screen.getByRole('button', { name: 'Enable loop' });
+      // h-11 ensures 44px touch target on mobile per WCAG accessibility guidelines
+      expect(loopButton).toHaveClass('h-11');
+      expect(loopButton).toHaveClass('w-11');
+    });
+  });
 });

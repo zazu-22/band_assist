@@ -30,6 +30,9 @@ export type { TempoControlProps } from './TempoControl';
 export { MetronomeIndicator } from './MetronomeIndicator';
 export type { MetronomeIndicatorProps } from './MetronomeIndicator';
 
+export { MetronomeControls } from './MetronomeControls';
+export type { MetronomeControlsProps } from './MetronomeControls';
+
 export { ProgressBar } from './ProgressBar';
 export type { ProgressBarProps } from './ProgressBar';
 

@@ -1,1736 +1,649 @@
 [
   {
     "category": "functional",
-    "description": "SetlistHeader component renders page title with Brawler serif font",
+    "description": "Touch target compliance: Stop button has 44px touch target on mobile",
     "steps": [
-      "Step 1: Navigate to /setlist",
-      "Step 2: Locate the page title 'Setlist Builder'",
-      "Step 3: Verify title has class 'font-serif'",
-      "Step 4: Verify title has class 'text-4xl font-bold'"
+      "Step 1: Navigate to practice room with a Guitar Pro chart",
+      "Step 2: Resize viewport to mobile width (< 640px)",
+      "Step 3: Inspect Stop button element",
+      "Step 4: Verify button has h-11 w-11 classes (44px x 44px touch target)"
     ],
-    "passes": true
+    "passes": false,
+    "requires_manual_testing": false
   },
   {
     "category": "functional",
-    "description": "SetlistHeader shows gig countdown badge when upcoming gig exists",
+    "description": "Touch target compliance: Loop button has 44px touch target on mobile",
     "steps": [
-      "Step 1: Create a gig event in the future (e.g., 7 days from now)",
-      "Step 2: Navigate to /setlist",
-      "Step 3: Verify countdown badge displays the number of days",
-      "Step 4: Verify badge shows 'days' text",
-      "Step 5: Verify gig title is displayed alongside countdown"
+      "Step 1: Navigate to practice room with a Guitar Pro chart",
+      "Step 2: Resize viewport to mobile width (< 640px)",
+      "Step 3: Inspect Loop button element",
+      "Step 4: Verify button has h-11 w-11 classes (44px x 44px touch target)"
     ],
-    "passes": true
+    "passes": false,
+    "requires_manual_testing": false
   },
   {
-    "category": "style",
-    "description": "SetlistHeader countdown badge has gradient and pulse-glow animation",
-    "steps": [
-      "Step 1: Create a gig event in the future",
-      "Step 2: Navigate to /setlist",
-      "Step 3: Verify countdown badge has gradient background (from-primary to-chart-2)",
-      "Step 4: Verify badge has animate-pulse-glow class"
-    ],
-    "passes": true
-  },
-  {
-    "category": "functional",
-    "description": "SetlistHeader shows duration and song count when no upcoming gig",
-    "steps": [
-      "Step 1: Ensure no upcoming gig events exist",
-      "Step 2: Navigate to /setlist with songs in the list",
-      "Step 3: Verify total duration is displayed with font-mono class",
-      "Step 4: Verify song count is displayed with correct singular/plural form"
-    ],
-    "passes": true
-  },
-  {
-    "category": "functional",
-    "description": "SetlistStats component calculates correct readiness percentage",
-    "steps": [
-      "Step 1: Add 3 songs: 1 Performance Ready, 1 In Progress, 1 To Learn",
-      "Step 2: Navigate to /setlist",
-      "Step 3: Verify SetlistStats shows 33% readiness (1/3)",
-      "Step 4: Change one song to Performance Ready",
-      "Step 5: Verify SetlistStats updates to 67% readiness (2/3)"
-    ],
-    "passes": true
-  },
-  {
-    "category": "style",
-    "description": "SetlistStats percentage display uses mono font with tabular-nums",
-    "steps": [
-      "Step 1: Navigate to /setlist with songs",
-      "Step 2: Locate the percentage display in SetlistStats card",
-      "Step 3: Verify percentage has font-mono class",
-      "Step 4: Verify percentage has tabular-nums class"
-    ],
-    "passes": true
-  },
-  {
-    "category": "functional",
-    "description": "SetlistStats progress bar shows segmented status breakdown",
-    "steps": [
-      "Step 1: Add songs with mixed statuses (Ready, In Progress, To Learn)",
-      "Step 2: Navigate to /setlist",
-      "Step 3: Verify progress bar has green segment for Performance Ready songs",
-      "Step 4: Verify progress bar has blue segment for In Progress songs",
-      "Step 5: Verify progress bar has amber segment for To Learn songs"
-    ],
-    "passes": true
-  },
-  {
-    "category": "style",
-    "description": "SetlistStats progress bar has animate-progress-fill animation",
-    "steps": [
-      "Step 1: Navigate to /setlist",
-      "Step 2: Verify progress bar segments have animate-progress-fill class"
-    ],
-    "passes": true
-  },
-  {
-    "category": "functional",
-    "description": "SetlistStats progress bar segments have tooltips showing counts",
-    "steps": [
-      "Step 1: Add songs with mixed statuses",
-      "Step 2: Navigate to /setlist",
-      "Step 3: Hover over green progress bar segment",
-      "Step 4: Verify tooltip shows 'Stage Ready' count",
-      "Step 5: Repeat for In Progress and To Learn segments"
-    ],
-    "passes": true
-  },
-  {
-    "category": "style",
-    "description": "SetlistStats section title uses font-serif typography",
-    "steps": [
-      "Step 1: Navigate to /setlist",
-      "Step 2: Locate 'Setlist Readiness' heading in stats card",
-      "Step 3: Verify heading has font-serif class",
-      "Step 4: Verify heading has text-lg class"
-    ],
-    "passes": true
-  },
-  {
-    "category": "functional",
-    "description": "SetlistItem displays song title and triggers navigation on click",
-    "steps": [
-      "Step 1: Add a song to the setlist",
-      "Step 2: Navigate to /setlist",
-      "Step 3: Click on the song title",
-      "Step 4: Verify navigation to song detail page occurs"
-    ],
-    "passes": true
-  },
-  {
-    "category": "functional",
-    "description": "SetlistItem displays track number with font-mono styling",
-    "steps": [
-      "Step 1: Add multiple songs to the setlist",
-      "Step 2: Navigate to /setlist",
-      "Step 3: Verify first song shows track number '1'",
-      "Step 4: Verify track number has font-mono and tabular-nums classes"
-    ],
-    "passes": true
-  },
-  {
-    "category": "functional",
-    "description": "SetlistItem displays song key and BPM metadata",
-    "steps": [
-      "Step 1: Add a song with key 'E' and bpm 120",
-      "Step 2: Navigate to /setlist",
-      "Step 3: Verify song item displays 'E'",
-      "Step 4: Verify song item displays '120 BPM'"
-    ],
-    "passes": true
-  },
-  {
-    "category": "functional",
-    "description": "SetlistItem displays duration with font-mono on desktop",
-    "steps": [
-      "Step 1: Add a song with duration '4:15'",
-      "Step 2: Navigate to /setlist on desktop viewport",
-      "Step 3: Verify duration '4:15' is displayed",
-      "Step 4: Verify duration has font-mono tabular-nums classes"
-    ],
-    "passes": true
-  },
-  {
-    "category": "functional",
-    "description": "SetlistItem hides duration on mobile viewport",
-    "steps": [
-      "Step 1: Add a song with duration",
-      "Step 2: Navigate to /setlist on mobile viewport (< 768px)",
-      "Step 3: Verify duration is hidden (hidden md:block class)"
-    ],
-    "passes": true
-  },
-  {
-    "category": "style",
-    "description": "SetlistItem has left border accent styling",
-    "steps": [
-      "Step 1: Navigate to /setlist with songs",
-      "Step 2: Verify song items have border-l-[3px] class",
-      "Step 3: Verify song items have border-l-primary/60 class"
-    ],
-    "passes": true
-  },
-  {
-    "category": "functional",
-    "description": "SetlistItem delete button appears on hover",
-    "steps": [
-      "Step 1: Navigate to /setlist with songs",
-      "Step 2: Verify delete button has opacity-0 class initially",
-      "Step 3: Hover over a song item",
-      "Step 4: Verify delete button becomes visible (group-hover:opacity-100)"
-    ],
-    "passes": true
-  },
-  {
-    "category": "functional",
-    "description": "SetlistItem delete button removes song from setlist",
-    "steps": [
-      "Step 1: Add 3 songs to setlist",
-      "Step 2: Navigate to /setlist",
-      "Step 3: Click delete button on second song",
-      "Step 4: Verify only 2 songs remain",
-      "Step 5: Verify the correct song was removed"
-    ],
-    "passes": true
-  },
-  {
-    "category": "functional",
-    "description": "SetlistItem displays StatusBadge with correct status",
-    "steps": [
-      "Step 1: Add songs with different statuses",
-      "Step 2: Navigate to /setlist",
-      "Step 3: Verify Performance Ready songs have green StatusBadge",
-      "Step 4: Verify In Progress songs have blue StatusBadge",
-      "Step 5: Verify To Learn songs have amber StatusBadge"
-    ],
-    "passes": true
-  },
-  {
-    "category": "style",
-    "description": "SetlistItem has staggered entrance animation",
-    "steps": [
-      "Step 1: Add 5 songs to setlist",
-      "Step 2: Navigate to /setlist",
-      "Step 3: Verify first item has animation-delay of 0ms",
-      "Step 4: Verify second item has animation-delay of 50ms",
-      "Step 5: Verify items have animate-slide-in-from-bottom class"
-    ],
-    "passes": true
-  },
-  {
-    "category": "functional",
-    "description": "SetlistActionBar Add Song button triggers add form display",
-    "steps": [
-      "Step 1: Navigate to /setlist",
-      "Step 2: Click 'Add Song' button in action bar",
-      "Step 3: Verify AddSongForm appears with slide-in animation"
-    ],
-    "passes": true
-  },
-  {
-    "category": "functional",
-    "description": "SetlistActionBar AI Suggestions button triggers loading state",
-    "steps": [
-      "Step 1: Navigate to /setlist with songs",
-      "Step 2: Click 'AI Suggestions' button",
-      "Step 3: Verify button shows 'Thinking...' text",
-      "Step 4: Verify Sparkles icon has animation"
-    ],
-    "passes": true
-  },
-  {
-    "category": "style",
-    "description": "SetlistActionBar section title uses font-serif styling",
-    "steps": [
-      "Step 1: Navigate to /setlist",
-      "Step 2: Locate 'Songs' section title in action bar",
-      "Step 3: Verify title has font-serif text-lg classes"
-    ],
-    "passes": true
-  },
-  {
-    "category": "functional",
-    "description": "AddSongForm accepts song title and creates new song",
-    "steps": [
-      "Step 1: Navigate to /setlist",
-      "Step 2: Click 'Add Song' button",
-      "Step 3: Enter 'Sharp Dressed Man' in title input",
-      "Step 4: Click Add button",
-      "Step 5: Verify new song appears in setlist with title 'Sharp Dressed Man'"
-    ],
-    "passes": true
-  },
-  {
-    "category": "functional",
-    "description": "AddSongForm submits on Enter key press",
-    "steps": [
-      "Step 1: Navigate to /setlist and click Add Song",
-      "Step 2: Enter title in input field",
-      "Step 3: Press Enter key",
-      "Step 4: Verify form submits and song is added"
-    ],
-    "passes": true
-  },
-  {
-    "category": "functional",
-    "description": "AddSongForm Cancel button hides the form",
-    "steps": [
-      "Step 1: Navigate to /setlist and click Add Song",
-      "Step 2: Verify form is visible",
-      "Step 3: Click Cancel button",
-      "Step 4: Verify form is hidden"
-    ],
-    "passes": true
-  },
-  {
-    "category": "style",
-    "description": "AddSongForm uses Card/CardContent components with slide animation",
-    "steps": [
-      "Step 1: Navigate to /setlist and click Add Song",
-      "Step 2: Verify form is wrapped in Card component",
-      "Step 3: Verify form has animate-slide-in-from-top animation"
-    ],
-    "passes": true
-  },
-  {
-    "category": "functional",
-    "description": "Drag-and-drop reorders songs in setlist",
-    "steps": [
-      "Step 1: Add 3 songs to setlist: A, B, C",
-      "Step 2: Navigate to /setlist",
-      "Step 3: Drag song A to position 3",
-      "Step 4: Verify order is now B, C, A",
-      "Step 5: Verify sortOrder is persisted"
-    ],
-    "passes": true
-  },
-  {
-    "category": "style",
-    "description": "Drag-and-drop shows drop indicator during drag",
-    "steps": [
-      "Step 1: Add multiple songs to setlist",
-      "Step 2: Start dragging a song item",
-      "Step 3: Verify drop indicator appears at valid drop positions",
-      "Step 4: Verify drop indicator has 'Drop Here' text",
-      "Step 5: Verify drop indicator has dashed border styling"
-    ],
-    "passes": true
-  },
-  {
-    "category": "functional",
-    "description": "Dragged song item becomes hidden during drag",
-    "steps": [
-      "Step 1: Add songs to setlist",
-      "Step 2: Start dragging a song item",
-      "Step 3: Verify dragged item has opacity-0 and h-0 classes"
-    ],
-    "passes": true
-  },
-  {
-    "category": "functional",
-    "description": "Empty state displays when no songs in setlist",
-    "steps": [
-      "Step 1: Navigate to /setlist with empty song list",
-      "Step 2: Verify EmptyState component is displayed",
-      "Step 3: Verify 'No songs in setlist' title is shown",
-      "Step 4: Verify 'Add Song' action button is present"
-    ],
-    "passes": true
-  },
-  {
     "category": "functional",
-    "description": "Empty state Add Song action triggers add form",
-    "steps": [
-      "Step 1: Navigate to /setlist with empty song list",
-      "Step 2: Click 'Add Song' action in empty state",
-      "Step 3: Verify AddSongForm appears"
-    ],
-    "passes": true
-  },
-  {
-    "category": "style",
-    "description": "SetlistManager has ambient background glow effect",
-    "steps": [
-      "Step 1: Navigate to /setlist",
-      "Step 2: Verify ambient glow div exists with radial-gradient",
-      "Step 3: Verify glow has pointer-events-none and aria-hidden"
-    ],
-    "passes": true
-  },
-  {
-    "category": "style",
-    "description": "SetlistManager uses proper page padding responsive classes",
+    "description": "Touch target compliance: Play/Pause button has 44px touch target on mobile",
     "steps": [
-      "Step 1: Navigate to /setlist",
-      "Step 2: Verify container has p-4 sm:p-6 lg:p-10 classes"
+      "Step 1: Navigate to practice room with a Guitar Pro chart",
+      "Step 2: Resize viewport to mobile width (< 640px)",
+      "Step 3: Inspect Play/Pause button element",
+      "Step 4: Verify button has h-11 w-11 classes (44px x 44px touch target)"
     ],
-    "passes": true
+    "passes": false,
+    "requires_manual_testing": false
   },
   {
     "category": "functional",
-    "description": "SetlistManager receives events prop from App.tsx",
+    "description": "MetronomeControls: Desktop variant uses compact width (w-20 slider, w-8 display)",
     "steps": [
-      "Step 1: Verify SetlistManager component accepts events prop",
-      "Step 2: Verify App.tsx passes events={events} to SetlistManager"
+      "Step 1: Navigate to practice room with a non-GP chart (PDF or text)",
+      "Step 2: Resize viewport to desktop width (>= 640px)",
+      "Step 3: Inspect metronome slider element",
+      "Step 4: Verify slider has w-20 class",
+      "Step 5: Verify BPM display has w-8 class"
     ],
-    "passes": true
+    "passes": false,
+    "requires_manual_testing": false
   },
   {
     "category": "functional",
-    "description": "Next gig calculation filters for future GIG events only",
+    "description": "MetronomeControls: Mobile variant uses expanded width (w-24 slider, w-10 display)",
     "steps": [
-      "Step 1: Create events: past GIG, future PRACTICE, future GIG",
-      "Step 2: Navigate to /setlist",
-      "Step 3: Verify countdown shows only the future GIG",
-      "Step 4: Verify PRACTICE event is not shown as countdown"
+      "Step 1: Navigate to practice room with a non-GP chart (PDF or text)",
+      "Step 2: Resize viewport to mobile width (< 640px)",
+      "Step 3: Inspect metronome slider element",
+      "Step 4: Verify slider has w-24 class",
+      "Step 5: Verify BPM display has w-10 class"
     ],
-    "passes": true
+    "passes": false,
+    "requires_manual_testing": false
   },
   {
     "category": "functional",
-    "description": "Days until gig calculation is accurate",
-    "steps": [
-      "Step 1: Create a gig exactly 7 days from today",
-      "Step 2: Navigate to /setlist",
-      "Step 3: Verify countdown shows '7 days'",
-      "Step 4: Verify singular 'day' is used when 1 day away"
-    ],
-    "passes": true
-  },
-  {
-    "category": "style",
-    "description": "SetlistItem hover state changes background",
-    "steps": [
-      "Step 1: Navigate to /setlist with songs",
-      "Step 2: Verify song items have hover:bg-muted/30 class",
-      "Step 3: Hover over a song item",
-      "Step 4: Verify background color changes"
-    ],
-    "passes": true
-  },
-  {
-    "category": "style",
-    "description": "SetlistItem title hover changes to primary color",
+    "description": "MetronomeControls toggle button functionality",
     "steps": [
-      "Step 1: Navigate to /setlist with songs",
-      "Step 2: Verify song title has group-hover:text-primary class",
-      "Step 3: Hover over song item",
-      "Step 4: Verify title color changes"
+      "Step 1: Navigate to practice room with a non-GP chart",
+      "Step 2: Find metronome toggle button (Clock icon)",
+      "Step 3: Verify aria-label is 'Start metronome'",
+      "Step 4: Click the toggle button",
+      "Step 5: Verify metronome starts (button shows active state)",
+      "Step 6: Verify aria-label changes to 'Stop metronome'",
+      "Step 7: Click the toggle button again",
+      "Step 8: Verify metronome stops (button returns to inactive state)"
     ],
-    "passes": true
+    "passes": false,
+    "requires_manual_testing": false
   },
   {
     "category": "functional",
-    "description": "Drag handle has proper cursor and touch-none styles",
+    "description": "MetronomeControls BPM slider functionality",
     "steps": [
-      "Step 1: Navigate to /setlist with songs",
-      "Step 2: Verify drag handle has cursor-grab class",
-      "Step 3: Verify drag handle has active:cursor-grabbing class",
-      "Step 4: Verify drag handle has touch-none class"
+      "Step 1: Navigate to practice room with a non-GP chart",
+      "Step 2: Find metronome BPM slider",
+      "Step 3: Verify slider has min=40 and max=220",
+      "Step 4: Note current BPM display value",
+      "Step 5: Drag slider to change value",
+      "Step 6: Verify BPM display updates to reflect new value"
     ],
-    "passes": true
+    "passes": false,
+    "requires_manual_testing": false
   },
   {
     "category": "functional",
-    "description": "Delete button has proper aria-label for accessibility",
-    "steps": [
-      "Step 1: Add a song titled 'Legs'",
-      "Step 2: Navigate to /setlist",
-      "Step 3: Verify delete button has aria-label='Delete Legs'"
-    ],
-    "passes": true
-  },
-  {
-    "category": "style",
-    "description": "SetlistStats legend shows all three status colors",
+    "description": "ScrollableContainer: Right fade indicator appears when content overflows",
     "steps": [
-      "Step 1: Navigate to /setlist with mixed status songs",
-      "Step 2: Verify legend shows green dot for Stage Ready",
-      "Step 3: Verify legend shows blue dot for In Progress",
-      "Step 4: Verify legend shows amber dot for To Learn"
+      "Step 1: Navigate to practice room",
+      "Step 2: Select a song with multiple charts",
+      "Step 3: Resize viewport until chart tabs overflow horizontally",
+      "Step 4: Verify right fade indicator with chevron appears",
+      "Step 5: Verify left fade indicator is NOT visible (at scroll start)"
     ],
-    "passes": true
+    "passes": false,
+    "requires_manual_testing": false
   },
   {
     "category": "functional",
-    "description": "SetlistStats card uses Card component from primitives",
-    "steps": [
-      "Step 1: Navigate to /setlist",
-      "Step 2: Verify SetlistStats is wrapped in Card component",
-      "Step 3: Verify content is wrapped in CardContent component"
-    ],
-    "passes": true
-  },
-  {
-    "category": "style",
-    "description": "SetlistStats has staggered entrance animation",
-    "steps": [
-      "Step 1: Navigate to /setlist",
-      "Step 2: Verify stats card has animate-slide-in-from-bottom class",
-      "Step 3: Verify stats card has animation-forwards class",
-      "Step 4: Verify stats card has stagger-1 delay"
-    ],
-    "passes": true
-  },
-  {
-    "category": "style",
-    "description": "SetlistActionBar has staggered entrance animation",
+    "description": "ScrollableContainer: Left fade indicator appears when scrolled",
     "steps": [
-      "Step 1: Navigate to /setlist",
-      "Step 2: Verify action bar has animate-slide-in-from-bottom class",
-      "Step 3: Verify action bar has stagger-2 delay"
+      "Step 1: Navigate to practice room with overflowing content",
+      "Step 2: Scroll horizontally to the right beyond 4px threshold",
+      "Step 3: Verify left fade indicator with chevron appears",
+      "Step 4: Verify both fade indicators visible when in middle of content"
     ],
-    "passes": true
+    "passes": false,
+    "requires_manual_testing": false
   },
   {
     "category": "functional",
-    "description": "SetlistItem component is memoized with React.memo",
+    "description": "ScrollableContainer: Fade indicators hide when no overflow",
     "steps": [
-      "Step 1: Check SetlistItem component implementation",
-      "Step 2: Verify component is wrapped with memo()",
-      "Step 3: Verify displayName is set for React DevTools"
+      "Step 1: Navigate to practice room",
+      "Step 2: Select a song with only one or two charts",
+      "Step 3: Resize viewport to desktop width (content fits)",
+      "Step 4: Verify neither left nor right fade indicators are visible"
     ],
-    "passes": true
+    "passes": false,
+    "requires_manual_testing": false
   },
   {
     "category": "functional",
-    "description": "All new components export from barrel file",
-    "steps": [
-      "Step 1: Check src/components/setlist/index.ts exists",
-      "Step 2: Verify SetlistHeader is exported",
-      "Step 3: Verify SetlistStats is exported",
-      "Step 4: Verify SetlistItem is exported",
-      "Step 5: Verify SetlistActionBar is exported",
-      "Step 6: Verify AddSongForm is exported"
-    ],
-    "passes": true
-  },
-  {
-    "category": "style",
-    "description": "All text animations respect prefers-reduced-motion",
+    "description": "ScrollableContainer: Uses documented threshold constant (4px)",
     "steps": [
-      "Step 1: Enable prefers-reduced-motion in browser settings",
-      "Step 2: Navigate to /setlist",
-      "Step 3: Verify animations are disabled or minimal",
-      "Step 4: Verify motion-reduce:transition-none classes are applied"
+      "Step 1: Open PracticeControlBar.tsx source file",
+      "Step 2: Find SCROLL_FADE_THRESHOLD_PX constant",
+      "Step 3: Verify constant value is 4",
+      "Step 4: Verify constant is documented with JSDoc comment",
+      "Step 5: Verify constant is used in checkScroll function"
     ],
-    "passes": true
+    "passes": false,
+    "requires_manual_testing": false
   },
   {
     "category": "functional",
-    "description": "SetlistItem unit tests pass for rendering and interactions",
+    "description": "PlaybackControls: Play button triggers playback",
     "steps": [
-      "Step 1: Run npm test with SetlistItem.test.tsx",
-      "Step 2: Verify test for song title rendering passes",
-      "Step 3: Verify test for track number display passes",
-      "Step 4: Verify test for onSelect callback passes",
-      "Step 5: Verify test for onDelete callback passes",
-      "Step 6: Verify test for animation delay passes"
+      "Step 1: Navigate to practice room with a Guitar Pro chart",
+      "Step 2: Verify Play button is visible",
+      "Step 3: Click Play button",
+      "Step 4: Verify button changes to Pause state",
+      "Step 5: Verify audio playback begins"
     ],
-    "passes": true
+    "passes": false,
+    "requires_manual_testing": false
   },
   {
     "category": "functional",
-    "description": "All existing SetlistManager functionality preserved after refactor",
-    "steps": [
-      "Step 1: Navigate to /setlist",
-      "Step 2: Add a new song - verify it works",
-      "Step 3: Delete a song - verify it works",
-      "Step 4: Reorder songs via drag-and-drop - verify it works",
-      "Step 5: Click AI Suggestions - verify it works",
-      "Step 6: Click song to navigate - verify it works",
-      "Step 7: Verify total duration calculates correctly",
-      "Step 8: Verify song count displays correctly"
-    ],
-    "passes": true
-  },
-  {
-    "category": "style",
-    "description": "SongDetail page background uses design system bg-background instead of legacy bg-zinc-950",
-    "steps": [
-      "Step 1: Navigate to /songs/:songId to view SongDetail page",
-      "Step 2: Inspect the main container element",
-      "Step 3: Verify background color uses bg-background CSS variable",
-      "Step 4: Switch between light and dark themes",
-      "Step 5: Verify background adapts correctly in both themes"
-    ],
-    "passes": true
-  },
-  {
-    "category": "style",
-    "description": "SongDetail header uses Card component with bg-card border-border instead of legacy bg-zinc-900 border-zinc-800",
-    "steps": [
-      "Step 1: Navigate to /songs/:songId",
-      "Step 2: Inspect the header element",
-      "Step 3: Verify header uses bg-card and border-border tokens",
-      "Step 4: Toggle dark/light mode",
-      "Step 5: Verify header adapts correctly to theme changes"
-    ],
-    "passes": true
-  },
-  {
-    "category": "style",
-    "description": "Song title uses serif font (Brawler) with text-foreground color",
-    "steps": [
-      "Step 1: Navigate to /songs/:songId",
-      "Step 2: Locate the song title h1/h2 element",
-      "Step 3: Verify font-serif class is applied (Brawler font)",
-      "Step 4: Verify text uses text-foreground color token",
-      "Step 5: Check font renders correctly at text-2xl size"
-    ],
-    "passes": true
-  },
-  {
-    "category": "style",
-    "description": "Artist name uses text-muted-foreground for secondary text styling",
+    "description": "PlaybackControls: Pause button stops playback",
     "steps": [
-      "Step 1: Navigate to /songs/:songId",
-      "Step 2: Locate the artist name element below title",
-      "Step 3: Verify text-muted-foreground class is applied",
-      "Step 4: Verify proper contrast in both light and dark modes"
+      "Step 1: Navigate to practice room with a Guitar Pro chart",
+      "Step 2: Click Play button to start playback",
+      "Step 3: Click Pause button",
+      "Step 4: Verify button changes back to Play state",
+      "Step 5: Verify playback is paused (progress bar stops)"
     ],
-    "passes": true
+    "passes": false,
+    "requires_manual_testing": false
   },
   {
     "category": "functional",
-    "description": "StatusBadge component replaces inline status styling in song header",
-    "steps": [
-      "Step 1: Navigate to /songs/:songId",
-      "Step 2: Locate the status indicator near song title",
-      "Step 3: Verify StatusBadge component is rendered (not inline classes)",
-      "Step 4: Verify status displays correct variant (success/info/warning)",
-      "Step 5: Test with 'Performance Ready' song - should show success variant",
-      "Step 6: Test with 'In Progress' song - should show info variant",
-      "Step 7: Test with 'To Learn' song - should show warning variant"
-    ],
-    "passes": true
-  },
-  {
-    "category": "style",
-    "description": "BPM value uses font-mono tabular-nums for numeric alignment",
-    "steps": [
-      "Step 1: Navigate to /songs/:songId",
-      "Step 2: Locate the BPM metadata display",
-      "Step 3: Verify font-mono class is applied to the numeric value",
-      "Step 4: Verify tabular-nums class for proper number alignment",
-      "Step 5: Verify JetBrains Mono font is rendering"
-    ],
-    "passes": true
-  },
-  {
-    "category": "style",
-    "description": "Duration value uses font-mono tabular-nums styling",
-    "steps": [
-      "Step 1: Navigate to /songs/:songId",
-      "Step 2: Locate the Duration metadata display",
-      "Step 3: Verify font-mono and tabular-nums classes on numeric value",
-      "Step 4: Verify consistent styling with BPM display"
-    ],
-    "passes": true
-  },
-  {
-    "category": "style",
-    "description": "Key metadata displays with text-foreground for value text",
-    "steps": [
-      "Step 1: Navigate to /songs/:songId",
-      "Step 2: Locate the Key metadata field",
-      "Step 3: Verify value uses text-foreground color",
-      "Step 4: Verify label uses text-muted-foreground"
-    ],
-    "passes": true
-  },
-  {
-    "category": "style",
-    "description": "Metadata cards use design system Card component with proper borders",
-    "steps": [
-      "Step 1: Navigate to /songs/:songId Overview tab",
-      "Step 2: Inspect metadata card container",
-      "Step 3: Verify Card/CardHeader/CardContent structure",
-      "Step 4: Verify bg-card and border-border classes",
-      "Step 5: Verify rounded corners match design system radius"
-    ],
-    "passes": true
-  },
-  {
-    "category": "style",
-    "description": "Tab navigation uses design system pattern with primary indicator",
+    "description": "PlaybackControls: Stop button resets to beginning",
     "steps": [
-      "Step 1: Navigate to /songs/:songId",
-      "Step 2: Locate the tab navigation (OVERVIEW, CHARTS, etc.)",
-      "Step 3: Verify active tab shows primary color indicator (h-0.5 bg-primary bar)",
-      "Step 4: Verify inactive tabs use text-muted-foreground",
-      "Step 5: Click different tabs and verify indicator moves correctly"
+      "Step 1: Navigate to practice room with a Guitar Pro chart",
+      "Step 2: Click Play button to start playback",
+      "Step 3: Wait for progress bar to advance",
+      "Step 4: Click Stop button",
+      "Step 5: Verify playback stops",
+      "Step 6: Verify progress bar resets to beginning"
     ],
-    "passes": true
+    "passes": false,
+    "requires_manual_testing": false
   },
   {
     "category": "functional",
-    "description": "Tab navigation switches between Overview, Charts, Assignments, and Audio tabs",
-    "steps": [
-      "Step 1: Navigate to /songs/:songId",
-      "Step 2: Verify Overview tab is visible and displays song metadata",
-      "Step 3: Click Charts tab and verify charts content loads",
-      "Step 4: Click Assignments tab and verify member assignments display",
-      "Step 5: Click Audio tab and verify audio upload/playback area",
-      "Step 6: Click Overview tab again to return"
-    ],
-    "passes": true
-  },
-  {
-    "category": "style",
-    "description": "Overview tab Metadata section header uses font-serif styling",
-    "steps": [
-      "Step 1: Navigate to /songs/:songId Overview tab",
-      "Step 2: Locate the 'Metadata' section heading",
-      "Step 3: Verify font-serif (Brawler) class is applied",
-      "Step 4: Verify text-lg font weight"
-    ],
-    "passes": true
-  },
-  {
-    "category": "style",
-    "description": "AI Analysis section header uses font-serif with Sparkles icon styled in primary color",
-    "steps": [
-      "Step 1: Navigate to /songs/:songId Overview tab",
-      "Step 2: Locate 'AI Analysis' section",
-      "Step 3: Verify section title uses font-serif",
-      "Step 4: Verify Sparkles icon has text-primary class (amber color)"
-    ],
-    "passes": true
-  },
-  {
-    "category": "style",
-    "description": "Lineup section header uses font-serif styling with Users icon",
-    "steps": [
-      "Step 1: Navigate to /songs/:songId Overview tab",
-      "Step 2: Locate 'Lineup' section",
-      "Step 3: Verify font-serif on heading",
-      "Step 4: Verify Users icon is properly positioned"
-    ],
-    "passes": true
-  },
-  {
-    "category": "style",
-    "description": "Lineup member cards use design system bg-card styling",
-    "steps": [
-      "Step 1: Navigate to /songs/:songId Overview tab",
-      "Step 2: Locate assignment cards in Lineup section",
-      "Step 3: Verify cards use bg-card and border-border",
-      "Step 4: Verify proper rounded corners (rounded-lg)"
-    ],
-    "passes": true
-  },
-  {
-    "category": "style",
-    "description": "Charts tab chart selector uses design system Button patterns",
+    "description": "PlaybackControls: Loop toggle enables looping",
     "steps": [
-      "Step 1: Navigate to /songs/:songId Charts tab",
-      "Step 2: Locate the horizontal chart selector bar",
-      "Step 3: Verify active chart button uses bg-primary text-primary-foreground",
-      "Step 4: Verify inactive buttons use bg-card text-muted-foreground",
-      "Step 5: Verify hover states work correctly"
+      "Step 1: Navigate to practice room with a Guitar Pro chart",
+      "Step 2: Verify Loop button shows 'Enable loop' aria-label",
+      "Step 3: Click Loop button",
+      "Step 4: Verify button shows active state (gold background)",
+      "Step 5: Verify aria-label changes to 'Disable loop'"
     ],
-    "passes": true
+    "passes": false,
+    "requires_manual_testing": false
   },
   {
     "category": "functional",
-    "description": "Add Chart button opens inline form when clicked",
-    "steps": [
-      "Step 1: Navigate to /songs/:songId Charts tab",
-      "Step 2: Click the '+ Add Chart' button",
-      "Step 3: Verify inline card form appears with animation",
-      "Step 4: Verify form contains chart name input",
-      "Step 5: Verify form contains instrument selector",
-      "Step 6: Verify Upload and Create Text Tab buttons are present",
-      "Step 7: Click Cancel and verify form closes"
-    ],
-    "passes": true
-  },
-  {
-    "category": "style",
-    "description": "Add Chart inline form uses Card component pattern",
-    "steps": [
-      "Step 1: Navigate to /songs/:songId Charts tab",
-      "Step 2: Click '+ Add Chart' button",
-      "Step 3: Verify form is wrapped in Card component",
-      "Step 4: Verify CardHeader with section title",
-      "Step 5: Verify CardContent with form fields"
-    ],
-    "passes": true
-  },
-  {
-    "category": "style",
-    "description": "Add Chart form inputs use primitive Input component",
-    "steps": [
-      "Step 1: Navigate to /songs/:songId Charts tab",
-      "Step 2: Click '+ Add Chart' button",
-      "Step 3: Verify chart name input uses design system Input primitive",
-      "Step 4: Verify proper focus-visible styling on input"
-    ],
-    "passes": true
-  },
-  {
-    "category": "style",
-    "description": "Add Chart form select uses primitive Select component",
+    "description": "PracticeControlBar: Song title displays correctly",
     "steps": [
-      "Step 1: Navigate to /songs/:songId Charts tab",
-      "Step 2: Click '+ Add Chart' button",
-      "Step 3: Verify instrument dropdown uses Select primitive",
-      "Step 4: Click to open dropdown",
-      "Step 5: Verify SelectContent styling matches design system"
+      "Step 1: Navigate to practice room",
+      "Step 2: Select a song from the song list",
+      "Step 3: Verify song title appears in control bar header",
+      "Step 4: Verify BPM is displayed next to title"
     ],
-    "passes": true
+    "passes": false,
+    "requires_manual_testing": false
   },
   {
     "category": "functional",
-    "description": "Create Text Tab button creates new TEXT type chart",
+    "description": "PracticeControlBar: Song key displays when available",
     "steps": [
-      "Step 1: Navigate to /songs/:songId Charts tab",
-      "Step 2: Click '+ Add Chart' button",
-      "Step 3: Enter 'Test Chart' as chart name",
-      "Step 4: Select an instrument from dropdown",
-      "Step 5: Click 'Create Text Tab' button",
-      "Step 6: Verify new chart appears in selector",
-      "Step 7: Verify new chart is active/selected",
-      "Step 8: Verify SmartTabEditor is rendered for TEXT type"
+      "Step 1: Navigate to practice room",
+      "Step 2: Select a song that has a key defined",
+      "Step 3: Verify 'Key of X' appears on desktop view",
+      "Step 4: Verify key is hidden on mobile view"
     ],
-    "passes": true
+    "passes": false,
+    "requires_manual_testing": false
   },
   {
     "category": "functional",
-    "description": "File upload accepts PDF files for chart creation",
+    "description": "PracticeControlBar: Toggle song list button functionality",
     "steps": [
-      "Step 1: Navigate to /songs/:songId Charts tab",
-      "Step 2: Click '+ Add Chart' button",
-      "Step 3: Enter chart name",
-      "Step 4: Click Upload button and select a PDF file",
-      "Step 5: Verify chart is created with PDF type",
-      "Step 6: Verify PDF viewer iframe is rendered"
+      "Step 1: Navigate to practice room",
+      "Step 2: Verify song list panel is visible",
+      "Step 3: Click toggle button",
+      "Step 4: Verify song list panel hides",
+      "Step 5: Verify toggle button icon changes",
+      "Step 6: Click toggle button again",
+      "Step 7: Verify song list panel shows again"
     ],
-    "passes": true
+    "passes": false,
+    "requires_manual_testing": false
   },
   {
     "category": "functional",
-    "description": "File upload accepts image files (PNG, JPG) for chart creation",
+    "description": "ChartTabs: Switching between charts",
     "steps": [
-      "Step 1: Navigate to /songs/:songId Charts tab",
-      "Step 2: Click '+ Add Chart' button",
-      "Step 3: Enter chart name",
-      "Step 4: Click Upload button and select an image file",
-      "Step 5: Verify chart is created with IMAGE type",
-      "Step 6: Verify image is displayed in viewer"
+      "Step 1: Navigate to practice room",
+      "Step 2: Select a song with multiple charts",
+      "Step 3: Verify all chart tabs are visible",
+      "Step 4: Click on a different chart tab",
+      "Step 5: Verify chart display updates to show selected chart",
+      "Step 6: Verify selected tab shows active state"
     ],
-    "passes": true
+    "passes": false,
+    "requires_manual_testing": false
   },
   {
     "category": "functional",
-    "description": "File upload accepts Guitar Pro files (.gp, .gpx) for chart creation",
+    "description": "TrackSelector: Displays available tracks",
     "steps": [
-      "Step 1: Navigate to /songs/:songId Charts tab",
-      "Step 2: Click '+ Add Chart' button",
-      "Step 3: Enter chart name",
-      "Step 4: Click Upload button and select a .gpx file",
-      "Step 5: Verify chart is created with GP type",
-      "Step 6: Verify AlphaTabRenderer component is rendered"
+      "Step 1: Navigate to practice room with a multi-track Guitar Pro file",
+      "Step 2: Verify TrackSelector component is visible",
+      "Step 3: Open track dropdown",
+      "Step 4: Verify all tracks from the GP file are listed",
+      "Step 5: Verify current track is highlighted"
     ],
-    "passes": true
+    "passes": false,
+    "requires_manual_testing": false
   },
   {
     "category": "functional",
-    "description": "File upload shows error for files exceeding 50MB limit",
-    "steps": [
-      "Step 1: Navigate to /songs/:songId Charts tab",
-      "Step 2: Click '+ Add Chart' button",
-      "Step 3: Attempt to upload a file larger than 50MB",
-      "Step 4: Verify toast error message appears",
-      "Step 5: Verify no chart is created"
-    ],
-    "passes": true
-  },
-  {
-    "category": "style",
-    "description": "Chart type icons are consistently styled (FileText for PDF, Guitar for GP, etc.)",
+    "description": "TrackSelector: Mute track functionality",
     "steps": [
-      "Step 1: Navigate to /songs/:songId Charts tab with multiple chart types",
-      "Step 2: Verify PDF charts show FileText icon",
-      "Step 3: Verify GP charts show Guitar icon",
-      "Step 4: Verify IMAGE charts show File icon",
-      "Step 5: Verify TEXT charts show Music2 icon",
-      "Step 6: Verify icons use consistent size (14px)"
+      "Step 1: Navigate to practice room with a multi-track Guitar Pro file",
+      "Step 2: Start playback",
+      "Step 3: Click mute button for a track",
+      "Step 4: Verify track is muted (visual indicator)",
+      "Step 5: Verify audio for that track is muted",
+      "Step 6: Click mute button again to unmute",
+      "Step 7: Verify track audio returns"
     ],
-    "passes": true
+    "passes": false,
+    "requires_manual_testing": false
   },
   {
     "category": "functional",
-    "description": "Clicking chart in selector switches the active chart view",
+    "description": "TrackSelector: Solo track functionality",
     "steps": [
-      "Step 1: Navigate to /songs/:songId Charts tab with multiple charts",
-      "Step 2: Note which chart is currently active",
-      "Step 3: Click on a different chart button",
-      "Step 4: Verify active state moves to clicked chart",
-      "Step 5: Verify chart viewer content updates to show selected chart"
+      "Step 1: Navigate to practice room with a multi-track Guitar Pro file",
+      "Step 2: Start playback",
+      "Step 3: Click solo button for a track",
+      "Step 4: Verify track is soloed (visual indicator)",
+      "Step 5: Verify only that track's audio is heard",
+      "Step 6: Click solo button again to disable",
+      "Step 7: Verify all tracks audio returns"
     ],
-    "passes": true
+    "passes": false,
+    "requires_manual_testing": false
   },
   {
     "category": "functional",
-    "description": "Delete chart button shows confirmation dialog before deleting",
-    "steps": [
-      "Step 1: Navigate to /songs/:songId Charts tab",
-      "Step 2: Select a chart",
-      "Step 3: Click the trash icon to delete",
-      "Step 4: Verify ConfirmDialog appears with warning message",
-      "Step 5: Click Cancel and verify chart is not deleted",
-      "Step 6: Click Delete trash again, then confirm",
-      "Step 7: Verify chart is removed from selector"
-    ],
-    "passes": true
-  },
-  {
-    "category": "style",
-    "description": "Chart viewer container uses design system Card styling",
-    "steps": [
-      "Step 1: Navigate to /songs/:songId Charts tab",
-      "Step 2: Inspect the main chart viewer area",
-      "Step 3: Verify uses rounded-xl border-border bg-card",
-      "Step 4: Verify overflow handling is correct"
-    ],
-    "passes": true
-  },
-  {
-    "category": "style",
-    "description": "Chart toolbar uses bg-muted/30 background with proper border styling",
-    "steps": [
-      "Step 1: Navigate to /songs/:songId Charts tab with an active chart",
-      "Step 2: Inspect the chart toolbar above viewer",
-      "Step 3: Verify bg-muted/30 background class",
-      "Step 4: Verify border-b border-border styling"
-    ],
-    "passes": true
-  },
-  {
-    "category": "style",
-    "description": "Empty charts state shows centered message with icon",
-    "steps": [
-      "Step 1: Navigate to /songs/:songId with no charts",
-      "Step 2: Go to Charts tab",
-      "Step 3: Verify empty state message is centered",
-      "Step 4: Verify FileText icon is displayed with opacity-20",
-      "Step 5: Verify helpful text explains how to add charts"
-    ],
-    "passes": true
-  },
-  {
-    "category": "style",
-    "description": "Assignments tab uses design system Card for member cards",
-    "steps": [
-      "Step 1: Navigate to /songs/:songId Assignments tab",
-      "Step 2: Inspect member assignment cards",
-      "Step 3: Verify Card component structure (CardHeader, CardContent)",
-      "Step 4: Verify bg-card and border-border styling"
-    ],
-    "passes": true
-  },
-  {
-    "category": "style",
-    "description": "Member avatar uses proper design system Avatar component",
-    "steps": [
-      "Step 1: Navigate to /songs/:songId Assignments tab",
-      "Step 2: Locate member avatars in cards",
-      "Step 3: Verify Avatar primitive component is used",
-      "Step 4: Verify AvatarFallback shows initials",
-      "Step 5: Verify consistent avatar colors"
-    ],
-    "passes": true
-  },
-  {
-    "category": "style",
-    "description": "Member card header uses bg-muted/30 background",
-    "steps": [
-      "Step 1: Navigate to /songs/:songId Assignments tab",
-      "Step 2: Inspect member card header area (avatar + name)",
-      "Step 3: Verify bg-muted/30 class on header section"
-    ],
-    "passes": true
-  },
-  {
-    "category": "style",
-    "description": "Role badges use Badge component with secondary variant",
+    "description": "TempoControl: Displays current BPM",
     "steps": [
-      "Step 1: Navigate to /songs/:songId Assignments tab",
-      "Step 2: Locate role badges on member cards",
-      "Step 3: Verify Badge primitive is used",
-      "Step 4: Verify variant=secondary styling",
-      "Step 5: Verify X button for removal is visible on hover"
+      "Step 1: Navigate to practice room with a Guitar Pro chart",
+      "Step 2: Verify TempoControl component is visible",
+      "Step 3: Verify current BPM is displayed",
+      "Step 4: Verify speed percentage indicator is shown"
     ],
-    "passes": true
+    "passes": false,
+    "requires_manual_testing": false
   },
   {
     "category": "functional",
-    "description": "Add role dropdown adds new role to member",
+    "description": "TempoControl: Change tempo via slider",
     "steps": [
-      "Step 1: Navigate to /songs/:songId Assignments tab",
-      "Step 2: Find a member without all roles assigned",
-      "Step 3: Click the '+ Add' role dropdown",
-      "Step 4: Select an available role",
-      "Step 5: Verify new role badge appears on member card",
-      "Step 6: Verify the role is saved to song assignments"
+      "Step 1: Navigate to practice room with a Guitar Pro chart",
+      "Step 2: Note current BPM value",
+      "Step 3: Drag tempo slider to change BPM",
+      "Step 4: Verify BPM display updates",
+      "Step 5: Start playback",
+      "Step 6: Verify playback is at new tempo"
     ],
-    "passes": true
+    "passes": false,
+    "requires_manual_testing": false
   },
   {
     "category": "functional",
-    "description": "Remove role button removes role from member assignment",
-    "steps": [
-      "Step 1: Navigate to /songs/:songId Assignments tab",
-      "Step 2: Find a member with an assigned role",
-      "Step 3: Hover over the role badge to reveal X button",
-      "Step 4: Click the X button",
-      "Step 5: Verify role is removed from member",
-      "Step 6: Verify role becomes available in Add dropdown again"
-    ],
-    "passes": true
-  },
-  {
-    "category": "style",
-    "description": "Parts section label uses uppercase tracking-wide text-muted-foreground",
-    "steps": [
-      "Step 1: Navigate to /songs/:songId Assignments tab",
-      "Step 2: Locate 'Roles' and 'Parts' section labels on cards",
-      "Step 3: Verify text-xs text-muted-foreground uppercase tracking-wide classes"
-    ],
-    "passes": true
-  },
-  {
-    "category": "style",
-    "description": "Assignment grid uses responsive 2-column layout on medium screens",
-    "steps": [
-      "Step 1: Navigate to /songs/:songId Assignments tab",
-      "Step 2: View on desktop (>768px)",
-      "Step 3: Verify 2-column grid layout (grid-cols-2)",
-      "Step 4: Resize to mobile (<768px)",
-      "Step 5: Verify single column layout (grid-cols-1)"
-    ],
-    "passes": true
-  },
-  {
-    "category": "style",
-    "description": "Audio tab upload zone uses dashed border pattern",
-    "steps": [
-      "Step 1: Navigate to /songs/:songId Audio tab (without uploaded track)",
-      "Step 2: Locate the upload drop zone",
-      "Step 3: Verify border-2 border-dashed border-border styling",
-      "Step 4: Verify hover state changes border to border-primary/50"
-    ],
-    "passes": true
-  },
-  {
-    "category": "style",
-    "description": "Audio upload zone uses design system colors (not zinc)",
-    "steps": [
-      "Step 1: Navigate to /songs/:songId Audio tab",
-      "Step 2: Inspect upload zone background",
-      "Step 3: Verify no zinc-* classes are used",
-      "Step 4: Verify bg-card or bg-muted styling"
-    ],
-    "passes": true
-  },
-  {
-    "category": "style",
-    "description": "Audio upload icon uses text-muted-foreground color",
+    "description": "TempoControl: Reset tempo to original",
     "steps": [
-      "Step 1: Navigate to /songs/:songId Audio tab",
-      "Step 2: Locate the UploadCloud icon in upload zone",
-      "Step 3: Verify text-muted-foreground class"
+      "Step 1: Navigate to practice room with a Guitar Pro chart",
+      "Step 2: Change tempo using slider",
+      "Step 3: Click reset tempo button",
+      "Step 4: Verify BPM returns to original value",
+      "Step 5: Verify speed percentage shows 100%"
     ],
-    "passes": true
+    "passes": false,
+    "requires_manual_testing": false
   },
   {
     "category": "functional",
-    "description": "Audio file upload accepts MP3 files",
+    "description": "MetronomeIndicator: Shows beat indicator for GP charts",
     "steps": [
-      "Step 1: Navigate to /songs/:songId Audio tab",
-      "Step 2: Click 'Select Audio File' button",
-      "Step 3: Select an MP3 file under 10MB",
-      "Step 4: Verify file uploads successfully",
-      "Step 5: Verify audio player appears with uploaded track"
+      "Step 1: Navigate to practice room with a Guitar Pro chart",
+      "Step 2: Verify MetronomeIndicator component is visible",
+      "Step 3: Start playback",
+      "Step 4: Verify beat indicator pulses in time with music"
     ],
-    "passes": true
+    "passes": false,
+    "requires_manual_testing": false
   },
   {
     "category": "functional",
-    "description": "Audio file upload accepts WAV files",
+    "description": "ProgressBar: Displays playback progress",
     "steps": [
-      "Step 1: Navigate to /songs/:songId Audio tab",
-      "Step 2: Click 'Select Audio File' button",
-      "Step 3: Select a WAV file under 10MB",
-      "Step 4: Verify file uploads successfully",
-      "Step 5: Verify audio player appears with uploaded track"
+      "Step 1: Navigate to practice room with a Guitar Pro chart",
+      "Step 2: Verify ProgressBar component is visible",
+      "Step 3: Verify current time shows 0:00",
+      "Step 4: Start playback",
+      "Step 5: Verify progress bar fills as song plays",
+      "Step 6: Verify current time updates"
     ],
-    "passes": true
+    "passes": false,
+    "requires_manual_testing": false
   },
   {
     "category": "functional",
-    "description": "Audio upload shows error for files exceeding 10MB limit",
-    "steps": [
-      "Step 1: Navigate to /songs/:songId Audio tab",
-      "Step 2: Attempt to upload audio file larger than 10MB",
-      "Step 3: Verify toast error message appears",
-      "Step 4: Verify no audio track is saved"
-    ],
-    "passes": true
-  },
-  {
-    "category": "style",
-    "description": "Audio player uses design system Card styling when track is present",
+    "description": "ProgressBar: Seek functionality",
     "steps": [
-      "Step 1: Navigate to /songs/:songId Audio tab with uploaded track",
-      "Step 2: Inspect audio player container",
-      "Step 3: Verify Card component structure",
-      "Step 4: Verify bg-card border-border styling"
+      "Step 1: Navigate to practice room with a Guitar Pro chart",
+      "Step 2: Start playback",
+      "Step 3: Click on a different position in the progress bar",
+      "Step 4: Verify playback jumps to clicked position",
+      "Step 5: Verify current time updates to match seek position"
     ],
-    "passes": true
+    "passes": false,
+    "requires_manual_testing": false
   },
   {
     "category": "functional",
-    "description": "Download track button downloads the backing track file",
+    "description": "Mobile: Transport controls row visible for GP charts",
     "steps": [
-      "Step 1: Navigate to /songs/:songId Audio tab with uploaded track",
-      "Step 2: Click 'Download Track' button",
-      "Step 3: Verify file download initiates",
-      "Step 4: Verify downloaded file matches uploaded content"
+      "Step 1: Navigate to practice room with a Guitar Pro chart",
+      "Step 2: Resize viewport to mobile width (< 640px)",
+      "Step 3: Verify dedicated transport controls row appears",
+      "Step 4: Verify Play, Pause, Stop, Loop buttons are visible",
+      "Step 5: Verify buttons are accessible and clickable"
     ],
-    "passes": true
+    "passes": false,
+    "requires_manual_testing": false
   },
   {
     "category": "functional",
-    "description": "Remove track button clears the backing track",
-    "steps": [
-      "Step 1: Navigate to /songs/:songId Audio tab with uploaded track",
-      "Step 2: Click 'Remove Track' button",
-      "Step 3: Verify track is removed",
-      "Step 4: Verify upload zone appears again"
-    ],
-    "passes": true
-  },
-  {
-    "category": "style",
-    "description": "AI Assistant sidebar uses design system bg-card styling",
-    "steps": [
-      "Step 1: Navigate to /songs/:songId",
-      "Step 2: View on desktop to see sidebar",
-      "Step 3: Verify sidebar uses bg-card",
-      "Step 4: Verify border-l border-border on left edge"
-    ],
-    "passes": true
-  },
-  {
-    "category": "style",
-    "description": "AI Assistant header uses Sparkles icon with text-primary color",
-    "steps": [
-      "Step 1: Navigate to /songs/:songId",
-      "Step 2: Locate AI Assistant sidebar header",
-      "Step 3: Verify Sparkles icon has text-primary class",
-      "Step 4: Verify 'Studio Assistant' heading uses text-foreground"
-    ],
-    "passes": true
-  },
-  {
-    "category": "style",
-    "description": "AI message bubbles use rounded-xl styling pattern",
+    "description": "Mobile: Metronome controls row visible for non-GP charts",
     "steps": [
-      "Step 1: Navigate to /songs/:songId",
-      "Step 2: View AI Assistant messages",
-      "Step 3: Verify AI messages use bg-muted rounded-xl styling",
-      "Step 4: Verify user messages (if any) use bg-primary"
+      "Step 1: Navigate to practice room with a non-GP chart",
+      "Step 2: Resize viewport to mobile width (< 640px)",
+      "Step 3: Verify metronome controls row appears",
+      "Step 4: Verify metronome toggle and slider are visible",
+      "Step 5: Verify controls are functional"
     ],
-    "passes": true
+    "passes": false,
+    "requires_manual_testing": false
   },
   {
     "category": "functional",
-    "description": "AI chat input sends message and receives response",
-    "steps": [
-      "Step 1: Navigate to /songs/:songId",
-      "Step 2: Type a question in AI chat input",
-      "Step 3: Press Enter or click send button",
-      "Step 4: Verify loading spinner appears",
-      "Step 5: Verify AI response appears in messages area"
-    ],
-    "passes": true
-  },
-  {
-    "category": "style",
-    "description": "AI chat input uses design system Input primitive styling",
-    "steps": [
-      "Step 1: Navigate to /songs/:songId",
-      "Step 2: Inspect the AI chat input field",
-      "Step 3: Verify uses bg-background border-border styling",
-      "Step 4: Verify focus state shows ring-primary"
-    ],
-    "passes": true
-  },
-  {
-    "category": "style",
-    "description": "Back button uses ghost variant Button styling",
+    "description": "Mobile: Secondary controls are scrollable",
     "steps": [
-      "Step 1: Navigate to /songs/:songId",
-      "Step 2: Locate the back button (ChevronLeft icon)",
-      "Step 3: Verify Button variant='ghost' is used",
-      "Step 4: Verify hover:bg-muted/30 effect",
-      "Step 5: Click and verify navigation back to setlist"
+      "Step 1: Navigate to practice room with a GP chart",
+      "Step 2: Resize viewport to mobile width (< 640px)",
+      "Step 3: Verify secondary controls (TrackSelector, TempoControl, etc.) are in scrollable container",
+      "Step 4: Scroll horizontally through controls",
+      "Step 5: Verify fade indicators appear when scrollable"
     ],
-    "passes": true
+    "passes": false,
+    "requires_manual_testing": false
   },
   {
     "category": "functional",
-    "description": "Edit metadata button enables inline editing mode",
-    "steps": [
-      "Step 1: Navigate to /songs/:songId",
-      "Step 2: Click the edit (pencil) icon button",
-      "Step 3: Verify title field becomes editable input",
-      "Step 4: Verify artist field becomes editable input",
-      "Step 5: Verify metadata fields become editable in Overview tab"
-    ],
-    "passes": true
-  },
-  {
-    "category": "style",
-    "description": "Edit mode inputs use design system Input primitive",
+    "description": "Desktop: All controls inline in main row",
     "steps": [
-      "Step 1: Navigate to /songs/:songId",
-      "Step 2: Enter edit mode by clicking edit button",
-      "Step 3: Verify title input uses Input primitive",
-      "Step 4: Verify artist input uses Input primitive",
-      "Step 5: Verify consistent border and focus styling"
+      "Step 1: Navigate to practice room with a GP chart",
+      "Step 2: Resize viewport to desktop width (>= 640px)",
+      "Step 3: Verify all controls appear in single row",
+      "Step 4: Verify no separate transport controls row",
+      "Step 5: Verify PlaybackControls, TrackSelector, TempoControl, MetronomeIndicator all visible"
     ],
-    "passes": true
+    "passes": false,
+    "requires_manual_testing": false
   },
   {
     "category": "functional",
-    "description": "Save button persists metadata changes",
-    "steps": [
-      "Step 1: Navigate to /songs/:songId",
-      "Step 2: Enter edit mode",
-      "Step 3: Change the song title",
-      "Step 4: Change the BPM value",
-      "Step 5: Click Save button",
-      "Step 6: Verify edit mode exits",
-      "Step 7: Verify new values are displayed",
-      "Step 8: Refresh page and verify changes persisted"
-    ],
-    "passes": true
-  },
-  {
-    "category": "style",
-    "description": "Save button uses default Button variant (primary color)",
-    "steps": [
-      "Step 1: Navigate to /songs/:songId",
-      "Step 2: Enter edit mode",
-      "Step 3: Locate the Save button",
-      "Step 4: Verify bg-primary text-primary-foreground styling"
-    ],
-    "passes": true
-  },
-  {
-    "category": "style",
-    "description": "Status select in edit mode uses primitive Select component",
-    "steps": [
-      "Step 1: Navigate to /songs/:songId Overview tab",
-      "Step 2: Enter edit mode",
-      "Step 3: Locate the status dropdown",
-      "Step 4: Verify Select primitive is used (not native select)",
-      "Step 5: Click to open and verify SelectContent styling"
-    ],
-    "passes": true
-  },
-  {
-    "category": "style",
-    "description": "Target date input uses design system styling",
-    "steps": [
-      "Step 1: Navigate to /songs/:songId Overview tab",
-      "Step 2: Enter edit mode",
-      "Step 3: Locate the target date input",
-      "Step 4: Verify bg-background border-border styling"
-    ],
-    "passes": true
-  },
-  {
-    "category": "style",
-    "description": "Page uses staggered entrance animations for sections",
-    "steps": [
-      "Step 1: Navigate to /songs/:songId",
-      "Step 2: Observe page load",
-      "Step 3: Verify header animates in first (stagger-1)",
-      "Step 4: Verify tabs animate second (stagger-2)",
-      "Step 5: Verify main content animates third (stagger-3)",
-      "Step 6: Verify sidebar animates fourth (stagger-4)"
-    ],
-    "passes": true
-  },
-  {
-    "category": "style",
-    "description": "Tab content transitions smoothly when switching tabs",
-    "steps": [
-      "Step 1: Navigate to /songs/:songId",
-      "Step 2: Click Charts tab",
-      "Step 3: Observe fade animation on content change",
-      "Step 4: Click Assignments tab",
-      "Step 5: Verify smooth transition between tab contents"
-    ],
-    "passes": true
-  },
-  {
-    "category": "style",
-    "description": "Add Chart form uses animate-slide-in-from-top entrance",
-    "steps": [
-      "Step 1: Navigate to /songs/:songId Charts tab",
-      "Step 2: Click '+ Add Chart' button",
-      "Step 3: Verify card slides in from top with animation",
-      "Step 4: Verify animate-slide-in-from-top class applied"
-    ],
-    "passes": true
-  },
-  {
-    "category": "style",
-    "description": "Loading states use design system Loader2 spinner",
-    "steps": [
-      "Step 1: Navigate to /songs/:songId",
-      "Step 2: Send an AI chat message",
-      "Step 3: Verify loading spinner appears",
-      "Step 4: Verify spinner uses animate-spin class"
-    ],
-    "passes": true
-  },
-  {
-    "category": "style",
-    "description": "All zinc-* classes removed from SongDetail component",
-    "steps": [
-      "Step 1: Open SongDetail.tsx in code editor",
-      "Step 2: Search for 'zinc-' string",
-      "Step 3: Verify zero occurrences found",
-      "Step 4: Verify all colors use design system tokens"
-    ],
-    "passes": true
-  },
-  {
-    "category": "style",
-    "description": "Dark mode renders correctly for entire SongDetail page",
-    "steps": [
-      "Step 1: Set system/app to dark mode",
-      "Step 2: Navigate to /songs/:songId",
-      "Step 3: Verify background uses dark bg-background",
-      "Step 4: Verify cards use dark bg-card",
-      "Step 5: Verify text is readable (proper contrast)",
-      "Step 6: Verify all sections maintain proper styling"
-    ],
-    "passes": true
-  },
-  {
-    "category": "style",
-    "description": "Light mode renders correctly for entire SongDetail page",
-    "steps": [
-      "Step 1: Set system/app to light mode",
-      "Step 2: Navigate to /songs/:songId",
-      "Step 3: Verify background uses light bg-background",
-      "Step 4: Verify cards use light bg-card",
-      "Step 5: Verify text is readable (proper contrast)",
-      "Step 6: Verify all sections maintain proper styling"
-    ],
-    "passes": true
-  },
-  {
-    "category": "style",
-    "description": "Responsive layout works on mobile (< 640px)",
-    "steps": [
-      "Step 1: Navigate to /songs/:songId on mobile viewport",
-      "Step 2: Verify header stacks vertically",
-      "Step 3: Verify tabs are scrollable horizontally",
-      "Step 4: Verify AI sidebar moves to bottom or is hidden",
-      "Step 5: Verify all content is accessible"
-    ],
-    "passes": true
-  },
-  {
-    "category": "style",
-    "description": "Responsive layout works on tablet (640px - 1024px)",
-    "steps": [
-      "Step 1: Navigate to /songs/:songId on tablet viewport",
-      "Step 2: Verify appropriate grid layouts (1-2 columns)",
-      "Step 3: Verify sidebar visibility/positioning",
-      "Step 4: Verify no horizontal overflow"
-    ],
-    "passes": true
-  },
-  {
-    "category": "style",
-    "description": "Responsive layout works on desktop (> 1024px)",
+    "description": "Authentication: Login with valid credentials",
     "steps": [
-      "Step 1: Navigate to /songs/:songId on desktop viewport",
-      "Step 2: Verify main content and sidebar side-by-side",
-      "Step 3: Verify full-width utilization",
-      "Step 4: Verify proper grid layouts in content areas"
+      "Step 1: Navigate to /login",
+      "Step 2: Enter valid email from test credentials",
+      "Step 3: Enter valid password from test credentials",
+      "Step 4: Click submit button",
+      "Step 5: Verify redirect to home page (/)",
+      "Step 6: Verify user is authenticated"
     ],
-    "passes": true
+    "passes": false,
+    "requires_manual_testing": false
   },
   {
     "category": "functional",
-    "description": "Keyboard navigation works for tab switching",
+    "description": "Authentication: Logout functionality",
     "steps": [
-      "Step 1: Navigate to /songs/:songId",
-      "Step 2: Tab to focus on tab navigation",
-      "Step 3: Use arrow keys to move between tabs",
-      "Step 4: Press Enter/Space to select a tab",
-      "Step 5: Verify focus indicator is visible"
+      "Step 1: Login with valid credentials",
+      "Step 2: Find and click logout button",
+      "Step 3: Verify redirect to login page",
+      "Step 4: Verify user session is cleared"
     ],
-    "passes": true
+    "passes": false,
+    "requires_manual_testing": false
   },
   {
     "category": "functional",
-    "description": "Screen reader announces page structure correctly",
+    "description": "Song list: Displays available songs",
     "steps": [
-      "Step 1: Enable screen reader",
-      "Step 2: Navigate to /songs/:songId",
-      "Step 3: Verify song title is announced as heading",
-      "Step 4: Verify tabs are announced with role='tab'",
-      "Step 5: Verify buttons have accessible labels"
+      "Step 1: Login and navigate to practice room",
+      "Step 2: Verify song list panel is visible",
+      "Step 3: Verify songs are listed with titles",
+      "Step 4: Verify song metadata (BPM, key) is shown"
     ],
-    "passes": true
+    "passes": false,
+    "requires_manual_testing": false
   },
   {
     "category": "functional",
-    "description": "Icon-only buttons have aria-label attributes",
-    "steps": [
-      "Step 1: Navigate to /songs/:songId",
-      "Step 2: Inspect the back button",
-      "Step 3: Verify aria-label='Go back' or similar",
-      "Step 4: Inspect edit button",
-      "Step 5: Verify aria-label='Edit song metadata' or similar",
-      "Step 6: Inspect delete chart button",
-      "Step 7: Verify aria-label='Delete chart'"
-    ],
-    "passes": true
-  },
-  {
-    "category": "style",
-    "description": "Focus visible states use ring-ring design token",
+    "description": "Song list: Select a song",
     "steps": [
-      "Step 1: Navigate to /songs/:songId",
-      "Step 2: Tab through interactive elements",
-      "Step 3: Verify focus ring uses ring-ring color",
-      "Step 4: Verify ring-2 ring-offset-2 pattern"
+      "Step 1: Navigate to practice room",
+      "Step 2: Click on a song in the song list",
+      "Step 3: Verify song is selected (highlighted)",
+      "Step 4: Verify control bar updates with song info",
+      "Step 5: Verify charts for song are displayed"
     ],
-    "passes": true
+    "passes": false,
+    "requires_manual_testing": false
   },
   {
     "category": "style",
-    "description": "MetadataItem component displays icon, label, and value correctly",
+    "description": "Touch target visual consistency across all transport buttons",
     "steps": [
-      "Step 1: Navigate to /songs/:songId Overview tab",
-      "Step 2: View metadata items (BPM, Key, Duration)",
-      "Step 3: Verify icon renders at 14px size",
-      "Step 4: Verify label uses text-muted-foreground",
-      "Step 5: Verify value uses text-foreground font-medium"
+      "Step 1: Navigate to practice room with a GP chart on mobile viewport",
+      "Step 2: Take screenshot of transport controls",
+      "Step 3: Verify all buttons (Play, Stop, Loop) appear same size",
+      "Step 4: Verify spacing is consistent between buttons",
+      "Step 5: Verify buttons are properly aligned"
     ],
-    "passes": true
+    "passes": false,
+    "requires_manual_testing": false
   },
   {
     "category": "style",
-    "description": "Consistent 6-unit spacing (space-y-6) between major sections",
+    "description": "MetronomeControls visual styling matches design system",
     "steps": [
-      "Step 1: Navigate to /songs/:songId",
-      "Step 2: Inspect spacing between header and content",
-      "Step 3: Inspect spacing between content sections",
-      "Step 4: Verify space-y-6 (24px) is consistently applied"
+      "Step 1: Navigate to practice room with a non-GP chart",
+      "Step 2: Inspect MetronomeControls component",
+      "Step 3: Verify uses bg-muted for container background",
+      "Step 4: Verify rounded-lg border radius",
+      "Step 5: Verify border-border color on container",
+      "Step 6: Verify active state uses bg-primary color"
     ],
-    "passes": true
+    "passes": false,
+    "requires_manual_testing": false
   },
   {
     "category": "style",
-    "description": "Page padding follows design system pattern (p-4 sm:p-6 lg:p-8)",
+    "description": "Fade indicators use correct gradient colors",
     "steps": [
-      "Step 1: Navigate to /songs/:songId at mobile width",
-      "Step 2: Verify padding is p-4 (16px)",
-      "Step 3: Increase to tablet width",
-      "Step 4: Verify padding is p-6 (24px)",
-      "Step 5: Increase to desktop width",
-      "Step 6: Verify padding is p-8 (32px)"
+      "Step 1: Navigate to practice room with overflowing content",
+      "Step 2: Inspect fade indicator elements",
+      "Step 3: Verify gradients use from-card color",
+      "Step 4: Verify gradients fade to transparent",
+      "Step 5: Verify chevron icons are muted-foreground color"
     ],
-    "passes": true
+    "passes": false,
+    "requires_manual_testing": false
   },
   {
     "category": "style",
-    "description": "Card gap spacing uses gap-4 or gap-6 consistently",
+    "description": "Control bar header styling matches design system",
     "steps": [
-      "Step 1: Navigate to /songs/:songId Overview tab",
-      "Step 2: Inspect gap between grid items",
-      "Step 3: Verify gap-4 (16px) or gap-6 (24px) is used",
-      "Step 4: Check consistency across different tabs"
+      "Step 1: Navigate to practice room",
+      "Step 2: Inspect control bar header element",
+      "Step 3: Verify uses bg-card background",
+      "Step 4: Verify border-b border-border bottom border",
+      "Step 5: Verify shrink-0 prevents shrinking"
     ],
-    "passes": true
+    "passes": false,
+    "requires_manual_testing": false
   },
   {
     "category": "style",
-    "description": "Chart selector bar scrolls horizontally on overflow",
-    "steps": [
-      "Step 1: Navigate to /songs/:songId Charts tab with many charts",
-      "Step 2: Verify chart selector shows horizontal scroll",
-      "Step 3: Verify scrollbar-hide class hides scrollbar",
-      "Step 4: Verify buttons are accessible via scroll"
-    ],
-    "passes": true
-  },
-  {
-    "category": "functional",
-    "description": "Text chart content is editable in SmartTabEditor",
-    "steps": [
-      "Step 1: Navigate to /songs/:songId Charts tab",
-      "Step 2: Create or select a TEXT type chart",
-      "Step 3: Click in the editor area",
-      "Step 4: Type new content",
-      "Step 5: Verify content is saved automatically",
-      "Step 6: Refresh and verify content persisted"
-    ],
-    "passes": true
-  },
-  {
-    "category": "functional",
-    "description": "PDF chart displays correctly in iframe viewer",
-    "steps": [
-      "Step 1: Navigate to /songs/:songId Charts tab with PDF chart",
-      "Step 2: Select the PDF chart",
-      "Step 3: Verify PDF renders in iframe",
-      "Step 4: Verify scroll works within PDF viewer",
-      "Step 5: Verify download button works"
-    ],
-    "passes": true
-  },
-  {
-    "category": "functional",
-    "description": "Image chart displays with proper scaling",
-    "steps": [
-      "Step 1: Navigate to /songs/:songId Charts tab with image chart",
-      "Step 2: Select the image chart",
-      "Step 3: Verify image displays at appropriate size",
-      "Step 4: Verify max-width constraint",
-      "Step 5: Verify download button works"
-    ],
-    "passes": true
-  },
-  {
-    "category": "functional",
-    "description": "Guitar Pro chart renders in AlphaTabRenderer",
-    "steps": [
-      "Step 1: Navigate to /songs/:songId Charts tab with GP chart",
-      "Step 2: Select the GP chart",
-      "Step 3: Verify AlphaTabRenderer component mounts",
-      "Step 4: Verify tab notation renders correctly",
-      "Step 5: Verify no console errors from AlphaTab"
-    ],
-    "passes": true
-  },
-  {
-    "category": "functional",
-    "description": "AlphaTab ErrorBoundary catches render errors gracefully",
+    "description": "Mobile transport row styling",
     "steps": [
-      "Step 1: Navigate to /songs/:songId Charts tab",
-      "Step 2: Upload or create a corrupted GP file",
-      "Step 3: Verify ErrorBoundary displays fallback UI",
-      "Step 4: Verify 'Refresh Page' button is present",
-      "Step 5: Verify no crash or white screen"
+      "Step 1: Navigate to practice room with GP chart on mobile",
+      "Step 2: Inspect mobile transport controls row",
+      "Step 3: Verify border-t border-border/50 top border",
+      "Step 4: Verify bg-card/80 semi-transparent background",
+      "Step 5: Verify proper padding (px-3 py-2)"
     ],
-    "passes": true
+    "passes": false,
+    "requires_manual_testing": false
   },
   {
     "category": "style",
-    "description": "PDF viewer fallback UI uses design system styling",
+    "description": "Song title typography follows design system",
     "steps": [
-      "Step 1: Navigate to /songs/:songId Charts tab with PDF chart",
-      "Step 2: Simulate iframe load failure",
-      "Step 3: Verify fallback UI displays with proper styling",
-      "Step 4: Verify 'Open PDF in New Tab' button works"
+      "Step 1: Navigate to practice room with a song selected",
+      "Step 2: Inspect song title element",
+      "Step 3: Verify font-bold font-serif classes",
+      "Step 4: Verify text-base on mobile, text-lg on desktop",
+      "Step 5: Verify text-foreground color",
+      "Step 6: Verify truncate class for overflow"
     ],
-    "passes": true
+    "passes": false,
+    "requires_manual_testing": false
   },
   {
     "category": "style",
-    "description": "Download and external link buttons use ghost variant",
-    "steps": [
-      "Step 1: Navigate to /songs/:songId Charts tab with file chart",
-      "Step 2: Locate download button in toolbar",
-      "Step 3: Verify Button variant='ghost' styling",
-      "Step 4: Verify hover state shows bg-muted"
-    ],
-    "passes": true
-  },
-  {
-    "category": "functional",
-    "description": "Confirm dialog displays correctly for destructive actions",
+    "description": "BPM display uses tabular numbers",
     "steps": [
-      "Step 1: Navigate to /songs/:songId Charts tab",
-      "Step 2: Click delete on a chart",
-      "Step 3: Verify ConfirmDialog appears",
-      "Step 4: Verify title shows 'Delete Chart'",
-      "Step 5: Verify message warns about irreversibility",
-      "Step 6: Verify Cancel and Delete buttons are present"
+      "Step 1: Navigate to practice room with a song selected",
+      "Step 2: Inspect BPM display in song info",
+      "Step 3: Verify font-mono tabular-nums classes",
+      "Step 4: Verify numbers don't shift when value changes"
     ],
-    "passes": true
+    "passes": false,
+    "requires_manual_testing": false
   },
   {
     "category": "style",
-    "description": "ConfirmDialog uses design system AlertDialog primitive",
+    "description": "Button hover states work correctly",
     "steps": [
-      "Step 1: Open any confirm dialog in SongDetail",
-      "Step 2: Verify AlertDialog component structure",
-      "Step 3: Verify backdrop blur effect",
-      "Step 4: Verify proper padding and spacing"
+      "Step 1: Navigate to practice room",
+      "Step 2: Hover over transport buttons",
+      "Step 3: Verify hover:bg-muted state applies",
+      "Step 4: Verify active buttons use primary colors on hover"
     ],
-    "passes": true
+    "passes": false,
+    "requires_manual_testing": false
   },
   {
     "category": "style",
-    "description": "Toast notifications use design system styling",
+    "description": "Focus states are visible for keyboard navigation",
     "steps": [
-      "Step 1: Trigger an error (upload too large file)",
-      "Step 2: Verify toast appears",
-      "Step 3: Verify toast uses bg-destructive for errors",
-      "Step 4: Verify toast position is bottom-right"
+      "Step 1: Navigate to practice room",
+      "Step 2: Use Tab key to navigate through controls",
+      "Step 3: Verify focus-visible rings appear on focusable elements",
+      "Step 4: Verify focus order is logical"
     ],
-    "passes": true
+    "passes": false,
+    "requires_manual_testing": false
   },
   {
     "category": "functional",
-    "description": "Navigation from setlist to song detail and back works correctly",
+    "description": "Unit tests pass: PlaybackControls touch target compliance",
     "steps": [
-      "Step 1: Navigate to /setlist",
-      "Step 2: Click on a song to view details",
-      "Step 3: Verify /songs/:songId route loads",
-      "Step 4: Click back button",
-      "Step 5: Verify return to /setlist page"
+      "Step 1: Run npm test -- --run src/components/practice/PlaybackControls.test.tsx",
+      "Step 2: Verify 'accessibility - touch target compliance' tests pass",
+      "Step 3: Verify all 18 tests pass"
     ],
-    "passes": true
+    "passes": false,
+    "requires_manual_testing": false
   },
   {
     "category": "functional",
-    "description": "Direct URL access to /songs/:songId works correctly",
+    "description": "Unit tests pass: MetronomeControls component",
     "steps": [
-      "Step 1: Copy a song detail URL",
-      "Step 2: Open new browser tab",
-      "Step 3: Paste URL directly",
-      "Step 4: Verify page loads correctly",
-      "Step 5: Verify all data is present"
+      "Step 1: Run npm test -- --run src/components/practice/MetronomeControls.test.tsx",
+      "Step 2: Verify rendering tests pass",
+      "Step 3: Verify interaction tests pass",
+      "Step 4: Verify variant tests pass",
+      "Step 5: Verify accessibility tests pass",
+      "Step 6: Verify all 14 tests pass"
     ],
-    "passes": true
+    "passes": false,
+    "requires_manual_testing": false
   },
   {
     "category": "functional",
-    "description": "Invalid song ID redirects to home with toast message",
-    "steps": [
-      "Step 1: Navigate to /songs/invalid-id",
-      "Step 2: Verify redirect to home page (/)",
-      "Step 3: Verify toast message about song not found"
-    ],
-    "passes": true
-  },
-  {
-    "category": "style",
-    "description": "design-system.md documentation updated with new patterns",
-    "steps": [
-      "Step 1: Open docs/design-system.md",
-      "Step 2: Verify Song Editor Patterns section exists",
-      "Step 3: Verify Chart Upload/Management section exists",
-      "Step 4: Verify Part Assignment section exists",
-      "Step 5: Verify Audio Upload section exists"
-    ],
-    "passes": true
-  },
-  {
-    "category": "style",
-    "description": "New MetadataItem component created in ui/ folder",
-    "steps": [
-      "Step 1: Verify src/components/ui/MetadataItem.tsx exists",
-      "Step 2: Verify component accepts icon, label, value, mono props",
-      "Step 3: Verify component uses correct design system classes",
-      "Step 4: Verify component has displayName"
-    ],
-    "passes": true
-  },
-  {
-    "category": "style",
-    "description": "New UploadZone component created in ui/ folder",
+    "description": "Unit tests pass: All practice components",
     "steps": [
-      "Step 1: Verify src/components/ui/UploadZone.tsx exists",
-      "Step 2: Verify component handles drag-and-drop",
-      "Step 3: Verify border-dashed styling on drop zone",
-      "Step 4: Verify isDragging state changes border color"
+      "Step 1: Run npm test -- --run src/components/practice/",
+      "Step 2: Verify all 8 test files pass",
+      "Step 3: Verify all 187+ tests pass",
+      "Step 4: Verify no test failures or errors"
     ],
-    "passes": true
+    "passes": false,
+    "requires_manual_testing": false
   },
   {
     "category": "functional",
-    "description": "All TypeScript types are properly defined (no any types)",
+    "description": "TypeScript type checking passes",
     "steps": [
       "Step 1: Run npm run typecheck",
-      "Step 2: Verify no type errors in SongDetail.tsx",
-      "Step 3: Verify no type errors in new components",
-      "Step 4: Verify strict mode compliance"
+      "Step 2: Verify command completes without errors",
+      "Step 3: Verify no type errors reported"
     ],
-    "passes": true
+    "passes": false,
+    "requires_manual_testing": false
   },
   {
     "category": "functional",
-    "description": "ESLint passes with no warnings or errors",
+    "description": "ESLint passes with no warnings",
     "steps": [
-      "Step 1: Run npm run lint",
-      "Step 2: Verify zero warnings",
-      "Step 3: Verify zero errors",
-      "Step 4: Verify all files pass lint rules"
+      "Step 1: Run npm run lint -- --max-warnings 0",
+      "Step 2: Verify command completes without errors",
+      "Step 3: Verify no linting warnings or errors"
     ],
-    "passes": true
-  },
-  {
-    "category": "functional",
-    "description": "Prettier formatting is consistent across all modified files",
-    "steps": [
-      "Step 1: Run npm run format:check",
-      "Step 2: Verify all modified files pass formatting check",
-      "Step 3: If failures, run npm run format to fix"
-    ],
-    "passes": true
-  },
-  {
-    "category": "functional",
-    "description": "Unit tests pass for StatusBadge component",
-    "steps": [
-      "Step 1: Run npm test StatusBadge",
-      "Step 2: Verify all existing tests pass",
-      "Step 3: Verify coverage is maintained"
-    ],
-    "passes": true
-  },
-  {
-    "category": "functional",
-    "description": "Unit tests pass for ConfirmDialog component",
-    "steps": [
-      "Step 1: Run npm test ConfirmDialog",
-      "Step 2: Verify all existing tests pass",
-      "Step 3: Verify coverage is maintained"
-    ],
-    "passes": true
-  },
-  {
-    "category": "functional",
-    "description": "Build completes successfully without errors",
-    "steps": [
-      "Step 1: Run npm run build",
-      "Step 2: Verify build completes",
-      "Step 3: Verify no TypeScript errors",
-      "Step 4: Verify output files are generated"
-    ],
-    "passes": true
+    "passes": false,
+    "requires_manual_testing": false
   }
 ]
