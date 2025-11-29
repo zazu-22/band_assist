@@ -151,7 +151,7 @@
       "Step 5: Click checkmark to save",
       "Step 6: Verify member name is updated in list"
     ],
-    "passes": false,
+    "passes": true,
     "requires_manual_testing": false
   },
   {
@@ -165,7 +165,7 @@
       "Step 5: Click 'Confirm' to proceed",
       "Step 6: Verify member is removed from list"
     ],
-    "passes": false,
+    "passes": true,
     "requires_manual_testing": false
   },
   {
@@ -193,7 +193,7 @@
       "Step 6: Click 'Confirm' to proceed",
       "Step 7: Verify role is removed from list"
     ],
-    "passes": false,
+    "passes": true,
     "requires_manual_testing": false
   },
   {
@@ -365,7 +365,7 @@
       "Step 2: Inspect role count text on member cards",
       "Step 3: Verify role count number is wrapped in span with 'font-mono tabular-nums'"
     ],
-    "passes": false,
+    "passes": true,
     "requires_manual_testing": false
   },
   {
@@ -389,7 +389,7 @@
       "Step 3: Inspect BPM display on song cards",
       "Step 4: Verify BPM number is wrapped in span with 'font-mono tabular-nums'"
     ],
-    "passes": false,
+    "passes": true,
     "requires_manual_testing": false
   },
   {
@@ -503,7 +503,7 @@
       "Step 5: Verify timeline is visible and accessible",
       "Step 6: Verify 'Add Event' button is accessible"
     ],
-    "passes": false,
+    "passes": true,
     "requires_manual_testing": false
   },
   {
@@ -516,7 +516,7 @@
       "Step 4: Verify cards have adequate touch target sizes",
       "Step 5: Verify gig sheet is readable below member cards"
     ],
-    "passes": false,
+    "passes": true,
     "requires_manual_testing": false
   },
   {
@@ -529,7 +529,7 @@
       "Step 4: Verify member list items are touch-friendly",
       "Step 5: Verify export/import cards stack vertically"
     ],
-    "passes": false,
+    "passes": true,
     "requires_manual_testing": false
   },
   {
@@ -542,7 +542,7 @@
       "Step 4: Verify event form uses multi-column layout",
       "Step 5: Verify timeline uses appropriate spacing"
     ],
-    "passes": false,
+    "passes": true,
     "requires_manual_testing": false
   },
   {
@@ -554,7 +554,7 @@
       "Step 3: Verify member cards display in 4-column grid",
       "Step 4: Verify gig sheet song cards use appropriate columns"
     ],
-    "passes": false,
+    "passes": true,
     "requires_manual_testing": false
   },
   {
@@ -566,7 +566,7 @@
       "Step 3: Verify tabs display horizontally with labels",
       "Step 4: Verify export/import cards display side-by-side"
     ],
-    "passes": false,
+    "passes": true,
     "requires_manual_testing": false
   },
   {
@@ -579,7 +579,7 @@
       "Step 4: Navigate to /settings page and verify proper max-width constraint",
       "Step 5: Verify adequate whitespace on all pages"
     ],
-    "passes": false,
+    "passes": true,
     "requires_manual_testing": false
   },
   {
@@ -593,7 +593,7 @@
       "Step 5: Navigate to /band page and verify styling",
       "Step 6: Navigate to /settings page and verify styling"
     ],
-    "passes": false,
+    "passes": true,
     "requires_manual_testing": false
   },
   {
@@ -606,7 +606,7 @@
       "Step 4: Verify 'No upcoming events' title is shown",
       "Step 5: Verify 'Add Event' action button is present"
     ],
-    "passes": false,
+    "passes": true,
     "requires_manual_testing": false
   },
   {
@@ -619,7 +619,7 @@
       "Step 4: Verify 'No band members' title is shown",
       "Step 5: Verify 'Go to Settings' action button is present"
     ],
-    "passes": false,
+    "passes": true,
     "requires_manual_testing": false
   },
   {
@@ -634,7 +634,7 @@
       "Step 6: Press Space to select member",
       "Step 7: Verify gig sheet updates"
     ],
-    "passes": false,
+    "passes": true,
     "requires_manual_testing": false
   },
   {
@@ -646,7 +646,7 @@
       "Step 3: Verify past events have grayscale filter applied",
       "Step 4: Verify past events are still visible but dimmed"
     ],
-    "passes": false,
+    "passes": true,
     "requires_manual_testing": false
   }
 ]
