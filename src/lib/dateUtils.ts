@@ -23,6 +23,13 @@ const DATE_PATTERN = /^\d{4}-\d{2}-\d{2}$/;
  * parseLocalDate("2024-11-29") // Nov 29 12am in PST
  *
  * @throws Error if dateStr is not in YYYY-MM-DD format or represents an invalid date
+ *
+ * @remarks
+ * This function intentionally throws on invalid input rather than returning null.
+ * Callers should ensure dates are validated at system boundaries (e.g., form input,
+ * API responses) before storage. If a date reaches this function, it should be valid
+ * per the database schema. An exception here indicates data corruption that should
+ * surface immediately rather than fail silently.
  */
 export function parseLocalDate(dateStr: string): Date {
   if (!dateStr || !DATE_PATTERN.test(dateStr)) {
@@ -51,9 +58,9 @@ export function getLocalToday(): Date {
 /**
  * Calculate whole days between two dates (ignoring time component).
  *
- * Uses Math.floor since both dates are normalized to midnight, ensuring
- * the result is always a whole number. This is semantically correct and
- * avoids any floating-point rounding edge cases.
+ * Both dates are normalized to midnight, so the millisecond difference
+ * is always a multiple of 86400000 (24 * 60 * 60 * 1000). Math.trunc
+ * handles both positive and negative values correctly by rounding toward zero.
  *
  * @returns Positive if `to` is in the future, negative if in the past, 0 if same day.
  */
@@ -61,10 +68,7 @@ export function daysBetween(from: Date, to: Date): number {
   const fromMidnight = new Date(from.getFullYear(), from.getMonth(), from.getDate());
   const toMidnight = new Date(to.getFullYear(), to.getMonth(), to.getDate());
   const diffMs = toMidnight.getTime() - fromMidnight.getTime();
-  // Use Math.floor for positive, Math.ceil for negative to always round toward zero
-  return diffMs >= 0
-    ? Math.floor(diffMs / (1000 * 60 * 60 * 24))
-    : Math.ceil(diffMs / (1000 * 60 * 60 * 24));
+  return Math.trunc(diffMs / (1000 * 60 * 60 * 24));
 }
 
 /**
