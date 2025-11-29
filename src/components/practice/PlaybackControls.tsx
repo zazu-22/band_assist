@@ -29,9 +29,9 @@ export const PlaybackControls = memo(function PlaybackControls({
   onToggleLoop,
 }: PlaybackControlsProps) {
   return (
-    <div className="flex items-center gap-1">
+    <div className="flex items-center gap-0.5 sm:gap-1">
       <TooltipProvider delayDuration={100}>
-        {/* Play/Pause Button */}
+        {/* Play/Pause Button - primary action, larger and prominent */}
         <Tooltip>
           <TooltipTrigger asChild>
             <Button
@@ -40,12 +40,14 @@ export const PlaybackControls = memo(function PlaybackControls({
               onClick={isPlaying ? onPause : onPlay}
               disabled={disabled}
               className={cn(
-                'h-10 w-10 rounded-full p-0',
-                isPlaying && 'bg-primary text-primary-foreground hover:bg-primary/90'
+                'h-11 w-11 sm:h-10 sm:w-10 rounded-full p-0 shrink-0',
+                isPlaying
+                  ? 'bg-primary text-primary-foreground hover:bg-primary/90 shadow-md'
+                  : 'hover:bg-muted'
               )}
               aria-label={isPlaying ? 'Pause' : 'Play'}
             >
-              {isPlaying ? <Pause size={18} /> : <Play size={18} className="ml-0.5" />}
+              {isPlaying ? <Pause size={20} /> : <Play size={20} className="ml-0.5" />}
             </Button>
           </TooltipTrigger>
           <TooltipContent>
@@ -61,7 +63,7 @@ export const PlaybackControls = memo(function PlaybackControls({
               size="sm"
               onClick={onStop}
               disabled={disabled}
-              className="h-11 w-11 sm:h-9 sm:w-9 p-0"
+              className="h-10 w-10 sm:h-9 sm:w-9 p-0 shrink-0"
               aria-label="Stop"
             >
               <Square size={16} />
@@ -81,7 +83,7 @@ export const PlaybackControls = memo(function PlaybackControls({
               onClick={onToggleLoop}
               disabled={disabled}
               className={cn(
-                'h-11 w-11 sm:h-9 sm:w-9 p-0',
+                'h-10 w-10 sm:h-9 sm:w-9 p-0 shrink-0',
                 isLooping && 'bg-primary text-primary-foreground hover:bg-primary/90'
               )}
               aria-label={isLooping ? 'Disable loop' : 'Enable loop'}

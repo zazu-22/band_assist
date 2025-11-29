@@ -44,7 +44,7 @@ export const TrackSelector = memo(function TrackSelector({
               <Button
                 variant="outline"
                 size="sm"
-                className="h-8 gap-2 text-xs font-medium max-w-[140px]"
+                className="h-8 gap-1 sm:gap-2 text-xs font-medium max-w-[100px] sm:max-w-[140px] shrink-0"
                 data-testid="track-selector"
               >
                 <div

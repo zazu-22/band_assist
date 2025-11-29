@@ -72,7 +72,7 @@ export const TempoControl = memo(function TempoControl({
   );
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center gap-1 sm:gap-2">
       <TooltipProvider delayDuration={100}>
         {/* BPM Display / Input */}
         <Tooltip>
@@ -81,13 +81,13 @@ export const TempoControl = memo(function TempoControl({
               type="button"
               onClick={handleStartEdit}
               className={cn(
-                'flex items-center gap-1.5 px-2 py-1 rounded',
+                'flex items-center gap-1 sm:gap-1.5 px-1.5 sm:px-2 py-1 rounded',
                 'bg-muted hover:bg-muted/80 transition-colors',
-                'cursor-pointer'
+                'cursor-pointer shrink-0'
               )}
               aria-label="Click to edit BPM"
             >
-              <Timer size={14} className="text-muted-foreground" />
+              <Timer size={14} className="text-muted-foreground hidden sm:block" />
               {isEditing ? (
                 <input
                   type="number"
@@ -117,7 +117,7 @@ export const TempoControl = memo(function TempoControl({
           </TooltipContent>
         </Tooltip>
 
-        {/* Reset Button */}
+        {/* Reset Button - icon only on mobile */}
         {isModified && (
           <Tooltip>
             <TooltipTrigger asChild>
@@ -125,10 +125,10 @@ export const TempoControl = memo(function TempoControl({
                 variant="ghost"
                 size="sm"
                 onClick={onReset}
-                className="h-7 px-2 text-xs gap-1"
+                className="h-8 w-8 sm:h-7 sm:w-auto sm:px-2 p-0 text-xs gap-1 shrink-0"
               >
                 <RotateCcw size={12} />
-                Reset
+                <span className="hidden sm:inline">Reset</span>
               </Button>
             </TooltipTrigger>
             <TooltipContent>
@@ -137,8 +137,8 @@ export const TempoControl = memo(function TempoControl({
           </Tooltip>
         )}
 
-        {/* BPM Slider */}
-        <div className="flex items-center gap-2 bg-muted rounded px-2 py-1">
+        {/* BPM Slider - hidden on mobile to save space */}
+        <div className="hidden sm:flex items-center gap-2 bg-muted rounded px-2 py-1">
           <input
             type="range"
             min={minBPM}
