@@ -2,15 +2,15 @@
 
 ## Metadata
 
-| Field | Value |
-|-------|-------|
-| **Status** | Ready for Implementation |
-| **Authors** | AI Assistant |
-| **Date** | 2025-11-27 |
-| **Updated** | 2025-11-27 |
-| **Related Issues** | N/A |
-| **Source Document** | `docs/ai_docs/practice-room-refactor-plan.md` |
-| **Depends On** | `infra-alphatab-modernization.md` ✅ **COMPLETE** |
+| Field               | Value                                             |
+| ------------------- | ------------------------------------------------- |
+| **Status**          | Ready for Implementation                          |
+| **Authors**         | AI Assistant                                      |
+| **Date**            | 2025-11-27                                        |
+| **Updated**         | 2025-11-27                                        |
+| **Related Issues**  | N/A                                               |
+| **Source Document** | `docs/ai_docs/practice-room-refactor-plan.md`     |
+| **Depends On**      | `infra-alphatab-modernization.md` ✅ **COMPLETE** |
 
 ---
 
@@ -29,6 +29,7 @@ The refactor transforms AlphaTabRenderer from a self-contained component with it
 The Practice Room currently suffers from four key problems:
 
 **1. Excessive Vertical Space Consumption (~192px overhead)**
+
 - Practice Room header: ~56px
 - Chart selector row: ~48px
 - AlphaTab toolbar: ~48px
@@ -41,6 +42,7 @@ When the song list panel collapses, chart selector tabs shift position, creating
 
 **3. Visual Inconsistency**
 AlphaTabRenderer uses a zinc/white color scheme instead of the app's amber/dark theme. It lacks:
+
 - Brawler serif fonts for headers
 - JetBrains Mono for numeric displays
 - shadcn/ui Button components
@@ -52,6 +54,7 @@ The AlphaTab toolbar overflows on narrow screens. BPM slider, metronome indicato
 ### Root Cause Analysis
 
 The current architecture treats AlphaTabRenderer as a standalone component with complete control over its own UI. This creates:
+
 - Duplicate state management between PracticeRoom and AlphaTabRenderer
 - Inconsistent styling (AlphaTabRenderer predates the design system)
 - No coordination of controls across chart types
@@ -87,29 +90,30 @@ The current architecture treats AlphaTabRenderer as a standalone component with 
 
 ### External Libraries
 
-| Library | Version | Purpose |
-|---------|---------|---------|
-| `@coderline/alphatab` | ^1.6.3 | Guitar Pro file rendering and playback |
-| `react` | ^19.2.0 | Component framework |
-| `lucide-react` | ^0.554.0 | Icon library |
-| `tailwind-merge` | ^3.4.0 | Class merging utility |
-| `class-variance-authority` | ^0.7.1 | Component variant management |
+| Library                    | Version  | Purpose                                |
+| -------------------------- | -------- | -------------------------------------- |
+| `@coderline/alphatab`      | ^1.6.3   | Guitar Pro file rendering and playback |
+| `react`                    | ^19.2.0  | Component framework                    |
+| `lucide-react`             | ^0.554.0 | Icon library                           |
+| `tailwind-merge`           | ^3.4.0   | Class merging utility                  |
+| `class-variance-authority` | ^0.7.1   | Component variant management           |
 
 ### Internal Dependencies
 
-| Component/Module | Location | Purpose |
-|------------------|----------|---------|
-| Primitives | `@/components/primitives` | Button, Tooltip, Card, etc. |
-| UI Components | `@/components/ui` | StatusBadge, EmptyState, ResizablePanel |
-| Design System | `docs/design-system.md` | Typography, colors, animations |
-| Types | `@/types.ts` | Song, SongChart interfaces |
-| AlphaTab Types | `@/components/AlphaTabRenderer` | `AlphaTabHandle`, `TrackInfo` exports |
+| Component/Module | Location                        | Purpose                                 |
+| ---------------- | ------------------------------- | --------------------------------------- |
+| Primitives       | `@/components/primitives`       | Button, Tooltip, Card, etc.             |
+| UI Components    | `@/components/ui`               | StatusBadge, EmptyState, ResizablePanel |
+| Design System    | `docs/design-system.md`         | Typography, colors, animations          |
+| Types            | `@/types.ts`                    | Song, SongChart interfaces              |
+| AlphaTab Types   | `@/components/AlphaTabRenderer` | `AlphaTabHandle`, `TrackInfo` exports   |
 
 ### AlphaTab ESM Integration
 
 **Status: ✅ Implemented** (see `infra-alphatab-modernization.md`)
 
 AlphaTab is bundled via Vite plugin (`@coderline/alphatab/vite`):
+
 ```typescript
 // ESM import pattern
 import { AlphaTabApi, midi } from '@coderline/alphatab';
@@ -251,17 +255,17 @@ export interface AlphaTabRendererProps {
 
   // Props still needed for unified control bar:
   /** Show built-in toolbar controls (default: true, change to false) */
-  showControls?: boolean;  // TO BE IMPLEMENTED
+  showControls?: boolean; // TO BE IMPLEMENTED
   /** Show built-in progress bar (default: true, change to false) */
-  showProgressBar?: boolean;  // TO BE IMPLEMENTED
+  showProgressBar?: boolean; // TO BE IMPLEMENTED
   /** Callback when playback state changes */
-  onStateChange?: (state: AlphaTabState) => void;  // TO BE IMPLEMENTED
+  onStateChange?: (state: AlphaTabState) => void; // TO BE IMPLEMENTED
   /** Callback for position updates (throttled to ~10 FPS) */
-  onPositionChange?: (current: number, total: number) => void;  // TO BE IMPLEMENTED
+  onPositionChange?: (current: number, total: number) => void; // TO BE IMPLEMENTED
   /** Callback when tracks are loaded from score */
-  onTracksLoaded?: (tracks: TrackInfo[]) => void;  // TO BE IMPLEMENTED
+  onTracksLoaded?: (tracks: TrackInfo[]) => void; // TO BE IMPLEMENTED
   /** Callback when an error occurs */
-  onError?: (error: string) => void;  // TO BE IMPLEMENTED
+  onError?: (error: string) => void; // TO BE IMPLEMENTED
 
   // Legacy props for backwards compatibility - ✅ EXIST
   isPlaying?: boolean;
@@ -345,9 +349,9 @@ interface PracticeControlBarProps {
   // Volume controls (for GP charts) - ✅ API IMPLEMENTED
   // All volumes use 0-1 range (0% to 100%)
   volumeState?: {
-    masterVolume: number;      // 0-1
-    metronomeVolume: number;   // 0-1 (>0 enables metronome)
-    countInVolume: number;     // 0-1 (>0 enables count-in)
+    masterVolume: number; // 0-1
+    metronomeVolume: number; // 0-1 (>0 enables metronome)
+    countInVolume: number; // 0-1 (>0 enables count-in)
   };
   onSetMasterVolume?: (volume: number) => void;
   onSetMetronomeVolume?: (volume: number) => void;
@@ -396,9 +400,7 @@ interface PracticeControlBarProps {
   </div>
 
   {/* Progress bar row - only for GP, ~40px */}
-  {isGuitarPro && playbackState && (
-    <ProgressBar />
-  )}
+  {isGuitarPro && playbackState && <ProgressBar />}
 </header>
 ```
 
@@ -1214,6 +1216,7 @@ No new dependencies. New components will add ~5-10KB gzipped.
 ### Phase 1: AlphaTab API Extraction
 
 **Scope:**
+
 - Add `AlphaTabHandle` interface
 - Implement `useImperativeHandle` in AlphaTabRenderer
 - Add callback props (`onReady`, `onStateChange`, `onPositionChange`, `onTracksLoaded`, `onError`)
@@ -1221,13 +1224,16 @@ No new dependencies. New components will add ~5-10KB gzipped.
 - Write comprehensive tests
 
 **Files Modified:**
+
 - `src/components/AlphaTabRenderer.tsx`
 - `src/components/AlphaTabRenderer.test.tsx`
 
 **Files Created:**
+
 - `src/components/practice/types.ts`
 
 **Acceptance Criteria:**
+
 - [ ] `AlphaTabHandle` interface exported with all 10 methods documented
 - [ ] `onReady` fires with functional handle when player initializes
 - [ ] All handle methods correctly invoke AlphaTab API
@@ -1242,11 +1248,13 @@ No new dependencies. New components will add ~5-10KB gzipped.
 ### Phase 2: Unified Control Bar Component
 
 **Scope:**
+
 - Create `PracticeControlBar` and sub-components
 - Implement all layout sections
 - Apply design system patterns
 
 **Files Created:**
+
 - `src/components/practice/index.ts`
 - `src/components/practice/PracticeControlBar.tsx`
 - `src/components/practice/PlaybackControls.tsx`
@@ -1258,6 +1266,7 @@ No new dependencies. New components will add ~5-10KB gzipped.
 - All corresponding test files
 
 **Acceptance Criteria:**
+
 - [ ] PracticeControlBar renders all sections (left/center/right)
 - [ ] Song list toggle shows correct icon state
 - [ ] Song title uses `font-serif`, BPM uses `font-mono tabular-nums`
@@ -1272,15 +1281,18 @@ No new dependencies. New components will add ~5-10KB gzipped.
 ### Phase 3: PracticeRoom Integration
 
 **Scope:**
+
 - Replace old header with PracticeControlBar
 - Lift AlphaTab state to PracticeRoom
 - Wire control bar callbacks to AlphaTab handle
 - Remove duplicate UI code
 
 **Files Modified:**
+
 - `src/components/PracticeRoom.tsx`
 
 **Acceptance Criteria:**
+
 - [ ] PracticeControlBar replaces old header
 - [ ] Old chart selector row removed
 - [ ] AlphaTabRenderer uses `showControls={false}`
@@ -1295,16 +1307,19 @@ No new dependencies. New components will add ~5-10KB gzipped.
 ### Phase 4: Design System Alignment
 
 **Scope:**
+
 - Apply typography patterns (Brawler, JetBrains Mono)
 - Use shadcn/ui Button, Tooltip, DropdownMenu
 - Implement status colors and animations
 - Add focus states and transitions
 
 **Files Modified:**
+
 - All Phase 2 components
 - `src/components/AlphaTabRenderer.tsx` (loading/error states)
 
 **Acceptance Criteria:**
+
 - [ ] Song title uses `font-serif`
 - [ ] BPM/time displays use `font-mono tabular-nums`
 - [ ] All buttons use shadcn/ui Button
@@ -1317,18 +1332,22 @@ No new dependencies. New components will add ~5-10KB gzipped.
 ### Phase 5: Responsive Behavior
 
 **Scope:**
+
 - Implement breakpoint-specific layouts
 - Add mobile overflow menu
 - Ensure 320px minimum width works
 
 **Files Modified:**
+
 - All Phase 2 components
 - `src/components/PracticeRoom.tsx`
 
 **Files Created (if needed):**
+
 - `src/components/practice/MobileControlSheet.tsx`
 
 **Acceptance Criteria:**
+
 - [ ] Desktop (≥1024px): Full labels visible
 - [ ] Tablet (768-1023px): Icon buttons with tooltips
 - [ ] Mobile (<768px): Overflow menu for secondary controls
@@ -1338,16 +1357,19 @@ No new dependencies. New components will add ~5-10KB gzipped.
 ### Phase 6: Testing & Polish
 
 **Scope:**
+
 - Ensure test coverage ≥ 80%
 - Add keyboard navigation
 - Add loading/error transitions
 - Fix any accessibility issues
 
 **Files Modified:**
+
 - All test files
 - Component files as needed for polish
 
 **Acceptance Criteria:**
+
 - [ ] All Phase 1-5 tests pass
 - [ ] Test coverage ≥ 80% for new components
 - [ ] No console errors during normal usage
@@ -1364,16 +1386,16 @@ No new dependencies. New components will add ~5-10KB gzipped.
 ## 13. Open Questions
 
 1. **Mobile Sheet vs Overflow Menu**: Should secondary controls (BPM, track selector) go in a bottom sheet or dropdown overflow menu on mobile?
-   - *Recommendation*: Start with dropdown, iterate based on user feedback
+   - _Recommendation_: Start with dropdown, iterate based on user feedback
 
 2. **Progress Bar Position**: Should progress bar be integrated into the main control row or remain as a separate row?
-   - *Recommendation*: Separate row for click accuracy, but could revisit
+   - _Recommendation_: Separate row for click accuracy, but could revisit
 
 3. ~~**AlphaTab Version**: Current version is 1.6.3. Should we pin to this version or allow updates?~~
    - ✅ **RESOLVED**: Kept `^1.6.3` semver range for patch updates (see `infra-alphatab-modernization-tasks.md`)
 
 4. **Keyboard Shortcuts**: Should we add global shortcuts (Space = play/pause) or keep them scoped to focused elements?
-   - *Recommendation*: Scoped to control bar focus to avoid conflicts with text editing
+   - _Recommendation_: Scoped to control bar focus to avoid conflicts with text editing
 
 5. ~~**Volume Controls in Mixer**: Should the TrackSelector include per-track volume sliders, or just mute/solo?~~
    - ✅ **RESOLVED**: Volume API implemented - `setTrackVolume`, `setMasterVolume`, `setMetronomeVolume`, `setCountInVolume`
@@ -1406,19 +1428,20 @@ No new dependencies. New components will add ~5-10KB gzipped.
 
 ## 15. Success Criteria Summary
 
-| Metric | Target | Current |
-|--------|--------|---------|
-| Vertical overhead | ≤100px | ~192px |
-| Layout shift on toggle | 0px | Variable |
-| Design system compliance | 100% | ~40% |
-| Minimum viewport width | 320px | Overflows |
-| Test coverage (new code) | ≥80% | N/A |
-| Accessibility violations | 0 | Unknown |
+| Metric                   | Target | Current   |
+| ------------------------ | ------ | --------- |
+| Vertical overhead        | ≤100px | ~192px    |
+| Layout shift on toggle   | 0px    | Variable  |
+| Design system compliance | 100%   | ~40%      |
+| Minimum viewport width   | 320px  | Overflows |
+| Test coverage (new code) | ≥80%   | N/A       |
+| Accessibility violations | 0      | Unknown   |
 
 ---
 
-*Document version: 1.2*
-*Last updated: 2025-11-27*
-*Changes:*
-- *v1.1: Added dependency on infra-alphatab-modernization.md, added volume control interfaces*
-- *v1.2: Updated to reflect completed infra-alphatab-modernization - ESM imports, volume API (0-1 range), onReady callback pattern*
+_Document version: 1.2_
+_Last updated: 2025-11-27_
+_Changes:_
+
+- _v1.1: Added dependency on infra-alphatab-modernization.md, added volume control interfaces_
+- _v1.2: Updated to reflect completed infra-alphatab-modernization - ESM imports, volume API (0-1 range), onReady callback pattern_

@@ -116,9 +116,7 @@ describe('PasswordReset', () => {
   describe('loading state', () => {
     it('disables input during submission', async () => {
       mockResetPasswordForEmail.mockImplementation(
-        () => new Promise(resolve =>
-          setTimeout(() => resolve({ error: null }), 100)
-        )
+        () => new Promise(resolve => setTimeout(() => resolve({ error: null }), 100))
       );
 
       const user = userEvent.setup();
@@ -134,9 +132,7 @@ describe('PasswordReset', () => {
 
     it('shows loading text during submission', async () => {
       mockResetPasswordForEmail.mockImplementation(
-        () => new Promise(resolve =>
-          setTimeout(() => resolve({ error: null }), 100)
-        )
+        () => new Promise(resolve => setTimeout(() => resolve({ error: null }), 100))
       );
 
       const user = userEvent.setup();

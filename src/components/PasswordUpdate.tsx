@@ -11,7 +11,9 @@ interface PasswordUpdateProps {
   onNavigate: (view: string) => void;
 }
 
-export const PasswordUpdate: React.FC<PasswordUpdateProps> = memo(function PasswordUpdate({ onSuccess }) {
+export const PasswordUpdate: React.FC<PasswordUpdateProps> = memo(function PasswordUpdate({
+  onSuccess,
+}) {
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
@@ -49,55 +51,63 @@ export const PasswordUpdate: React.FC<PasswordUpdateProps> = memo(function Passw
     checkSession();
   }, []);
 
-  const handleSubmit = useCallback(async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setErrorField(null);
-    setIsLoading(true);
+  const handleSubmit = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault();
+      setError('');
+      setErrorField(null);
+      setIsLoading(true);
 
-    const passwordValidation = validatePassword(password);
-    if (!passwordValidation.isValid) {
-      setError(passwordValidation.error || 'Invalid password');
-      setErrorField('password');
-      setIsLoading(false);
-      return;
-    }
+      const passwordValidation = validatePassword(password);
+      if (!passwordValidation.isValid) {
+        setError(passwordValidation.error || 'Invalid password');
+        setErrorField('password');
+        setIsLoading(false);
+        return;
+      }
 
-    if (password !== confirmPassword) {
-      setError('Passwords do not match.');
-      setErrorField('confirmPassword');
-      setIsLoading(false);
-      return;
-    }
+      if (password !== confirmPassword) {
+        setError('Passwords do not match.');
+        setErrorField('confirmPassword');
+        setIsLoading(false);
+        return;
+      }
 
-    const supabase = getSupabaseClient();
-    if (!supabase) {
-      setError('Supabase is not configured.');
-      setIsLoading(false);
-      return;
-    }
+      const supabase = getSupabaseClient();
+      if (!supabase) {
+        setError('Supabase is not configured.');
+        setIsLoading(false);
+        return;
+      }
 
-    try {
-      const { error: updateError } = await supabase.auth.updateUser({
-        password: password,
-      });
+      try {
+        const { error: updateError } = await supabase.auth.updateUser({
+          password: password,
+        });
 
-      if (updateError) throw updateError;
+        if (updateError) throw updateError;
 
-      onSuccess();
-    } catch (err) {
-      console.error('Password update error:', err);
-      setError(err instanceof Error ? err.message : 'Failed to update password. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
-  }, [password, confirmPassword, onSuccess]);
+        onSuccess();
+      } catch (err) {
+        console.error('Password update error:', err);
+        setError(
+          err instanceof Error ? err.message : 'Failed to update password. Please try again.'
+        );
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [password, confirmPassword, onSuccess]
+  );
 
   return (
     <AuthLayout title="Band Assist" subtitle="Set your new password">
       {!isValidSession ? (
         <div className="space-y-4">
-          <div className="bg-destructive/10 border border-destructive/30 rounded-md p-4" role="alert">
+          <div
+            className="bg-destructive/10 border border-destructive/30 rounded-md p-4"
+            role="alert"
+          >
             <p className="text-sm text-destructive">{error}</p>
           </div>
           <Button onClick={onSuccess} className="w-full">
@@ -145,7 +155,10 @@ export const PasswordUpdate: React.FC<PasswordUpdateProps> = memo(function Passw
           </div>
 
           {error && (
-            <div className="bg-destructive/10 border border-destructive/30 rounded-md p-3" role="alert">
+            <div
+              className="bg-destructive/10 border border-destructive/30 rounded-md p-3"
+              role="alert"
+            >
               <p id="form-error" className="text-sm text-destructive">
                 {error}
               </p>

@@ -55,7 +55,7 @@ describe('MetronomeIndicator', () => {
         screen.getByTestId('beat-3'),
         screen.getByTestId('beat-4'),
       ];
-      beats.forEach((beat) => {
+      beats.forEach(beat => {
         expect(beat).not.toHaveClass('bg-primary');
         expect(beat).not.toHaveClass('scale-150');
       });

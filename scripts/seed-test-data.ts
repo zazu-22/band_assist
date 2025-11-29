@@ -60,7 +60,12 @@ const testMembers = [
   { id: randomUUID(), name: 'Alex', roles: ['Lead Guitar', 'Vocals'], avatar_color: 'bg-red-500' },
   { id: randomUUID(), name: 'Sam', roles: ['Bass'], avatar_color: 'bg-blue-500' },
   { id: randomUUID(), name: 'Jordan', roles: ['Drums'], avatar_color: 'bg-green-500' },
-  { id: randomUUID(), name: 'Taylor', roles: ['Rhythm Guitar', 'Vocals'], avatar_color: 'bg-purple-500' },
+  {
+    id: randomUUID(),
+    name: 'Taylor',
+    roles: ['Rhythm Guitar', 'Vocals'],
+    avatar_color: 'bg-purple-500',
+  },
 ];
 
 const testSongs = [
@@ -138,9 +143,7 @@ Em  |  C  |  D  |  D`,
         ],
       },
     ],
-    assignments: [
-      { id: randomUUID(), memberId: testMembers[0].id, role: 'Lead Guitar' },
-    ],
+    assignments: [{ id: randomUUID(), memberId: testMembers[0].id, role: 'Lead Guitar' }],
     parts: [],
   },
   {
@@ -232,7 +235,7 @@ async function clearTestData() {
 async function seedMembers() {
   console.log('Seeding members...');
 
-  const membersToInsert = testMembers.map((m) => ({
+  const membersToInsert = testMembers.map(m => ({
     ...m,
     band_id: TEST_BAND_ID,
   }));
@@ -246,7 +249,7 @@ async function seedMembers() {
 async function seedSongs() {
   console.log('Seeding songs...');
 
-  const songsToInsert = testSongs.map((s) => ({
+  const songsToInsert = testSongs.map(s => ({
     ...s,
     band_id: TEST_BAND_ID,
   }));
@@ -260,7 +263,7 @@ async function seedSongs() {
 async function seedEvents() {
   console.log('Seeding events...');
 
-  const eventsToInsert = testEvents.map((e) => ({
+  const eventsToInsert = testEvents.map(e => ({
     ...e,
     band_id: TEST_BAND_ID,
   }));

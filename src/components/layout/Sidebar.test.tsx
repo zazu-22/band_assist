@@ -156,7 +156,7 @@ describe('Sidebar', () => {
     it('all nav buttons have aria-labels', () => {
       renderSidebar();
       const buttons = screen.getAllByRole('button');
-      buttons.forEach((button) => {
+      buttons.forEach(button => {
         expect(button).toHaveAttribute('aria-label');
       });
     });

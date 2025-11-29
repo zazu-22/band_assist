@@ -4,10 +4,7 @@ import * as React from 'react';
  * VisuallyHidden component for accessibility.
  * Content is hidden visually but remains accessible to screen readers.
  */
-export function VisuallyHidden({
-  children,
-  ...props
-}: React.HTMLAttributes<HTMLSpanElement>) {
+export function VisuallyHidden({ children, ...props }: React.HTMLAttributes<HTMLSpanElement>) {
   return (
     <span
       {...props}

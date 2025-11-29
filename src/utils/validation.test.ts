@@ -1,10 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import {
-  validateEmail,
-  normalizeEmail,
-  validatePassword,
-  PASSWORD_HINT,
-} from './validation';
+import { validateEmail, normalizeEmail, validatePassword, PASSWORD_HINT } from './validation';
 
 describe('validateEmail', () => {
   describe('valid emails', () => {
@@ -55,9 +50,7 @@ describe('validateEmail', () => {
     it('rejects email without domain TLD', () => {
       const result = validateEmail('test@localhost');
       expect(result.isValid).toBe(false);
-      expect(result.error).toBe(
-        'Email domain must include a top-level domain (e.g., .com, .org)'
-      );
+      expect(result.error).toBe('Email domain must include a top-level domain (e.g., .com, .org)');
     });
   });
 
@@ -221,9 +214,7 @@ describe('validatePassword', () => {
       it(`rejects common pattern in "${password}"`, () => {
         const result = validatePassword(password);
         expect(result.isValid).toBe(false);
-        expect(result.error).toBe(
-          'Password contains common patterns and is too easy to guess'
-        );
+        expect(result.error).toBe('Password contains common patterns and is too easy to guess');
       });
     });
   });

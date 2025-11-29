@@ -40,16 +40,22 @@ export const BandSelector: React.FC<BandSelectorProps> = memo(function BandSelec
 
   const showDropdown = bands.length > 1;
 
-  const handleBandClick = useCallback((bandId: string) => {
-    onSelectBand(bandId);
-    setIsOpen(false);
-  }, [onSelectBand]);
+  const handleBandClick = useCallback(
+    (bandId: string) => {
+      onSelectBand(bandId);
+      setIsOpen(false);
+    },
+    [onSelectBand]
+  );
 
-  const handleOpenChange = useCallback((open: boolean) => {
-    if (showDropdown) {
-      setIsOpen(open);
-    }
-  }, [showDropdown]);
+  const handleOpenChange = useCallback(
+    (open: boolean) => {
+      if (showDropdown) {
+        setIsOpen(open);
+      }
+    },
+    [showDropdown]
+  );
 
   // Single band - no dropdown needed
   if (!showDropdown) {
@@ -81,7 +87,9 @@ export const BandSelector: React.FC<BandSelectorProps> = memo(function BandSelec
             </AvatarFallback>
           </Avatar>
           <div className="flex-1 min-w-0 text-left">
-            <p className="text-sm font-medium text-sidebar-foreground truncate">{currentBandName}</p>
+            <p className="text-sm font-medium text-sidebar-foreground truncate">
+              {currentBandName}
+            </p>
             <p className="text-xs text-sidebar-foreground/60">{bands.length} bands</p>
           </div>
           <ChevronDown

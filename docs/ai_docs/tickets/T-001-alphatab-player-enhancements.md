@@ -1101,6 +1101,7 @@ Consider creating follow-up tickets for high-value items.
 For future implementation of volume control, AlphaTab provides the following API:
 
 **Master Volume**:
+
 ```typescript
 // Get current master volume (0.0 to 1.0)
 const currentVolume = api.masterVolume;
@@ -1110,6 +1111,7 @@ api.masterVolume = 0.75; // 75% volume
 ```
 
 **Track Volume** (per-track):
+
 ```typescript
 // Get track volume (0.0 to 16.0, where 1.0 is default)
 const trackVolume = api.score.tracks[index].playbackInfo.volume;
@@ -1127,6 +1129,7 @@ const handleVolumeChange = (trackIndex: number, volume: number) => {
 ```
 
 **Metronome Volume**:
+
 ```typescript
 // Get metronome volume
 const metronomeVolume = api.metronomeVolume;
@@ -1136,6 +1139,7 @@ api.metronomeVolume = 0.5; // 50% volume
 ```
 
 **Count-In Volume**:
+
 ```typescript
 // Get count-in volume
 const countInVolume = api.countInVolume;
@@ -1145,6 +1149,7 @@ api.countInVolume = 0.8; // 80% volume
 ```
 
 **Implementation Notes**:
+
 - Volume values are normalized (0.0 to 1.0) for master, metronome, and count-in
 - Track volume ranges from 0.0 to 16.0 (1.0 is the default/normal level)
 - Always check `if (apiRef.current)` before accessing volume properties

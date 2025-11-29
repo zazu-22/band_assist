@@ -27,11 +27,7 @@ export function clearAuthTokensFromUrl(): boolean {
 
   // Use replaceState to avoid navigation event
   if (window.history.replaceState) {
-    window.history.replaceState(
-      null,
-      '',
-      window.location.pathname + window.location.search
-    );
+    window.history.replaceState(null, '', window.location.pathname + window.location.search);
     return true;
   }
 

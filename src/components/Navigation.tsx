@@ -129,9 +129,11 @@ export const Navigation: React.FC<NavigationProps> = ({
             className={`
               w-full flex items-center gap-3 px-3 py-3 rounded-xl transition-all duration-200 group
               ${sidebarCollapsed ? 'justify-center' : ''}
-              ${isActive(ROUTES.PERFORMANCE)
-                ? 'bg-red-900/20 text-red-500 shadow-inner border border-red-900/50'
-                : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-red-400'}
+              ${
+                isActive(ROUTES.PERFORMANCE)
+                  ? 'bg-red-900/20 text-red-500 shadow-inner border border-red-900/50'
+                  : 'text-zinc-400 hover:bg-zinc-800/50 hover:text-red-400'
+              }
             `}
             title="Performance Mode"
             aria-label="Performance Mode"
@@ -183,9 +185,7 @@ export const Navigation: React.FC<NavigationProps> = ({
           aria-current={isActive(ROUTES.SETTINGS) ? 'page' : undefined}
         >
           <Settings className="w-5 h-5 shrink-0" />
-          {!sidebarCollapsed && (
-            <span className="hidden lg:block text-sm font-medium">Config</span>
-          )}
+          {!sidebarCollapsed && <span className="hidden lg:block text-sm font-medium">Config</span>}
         </button>
 
         {/* Logout Button (only shown when authenticated with Supabase) */}

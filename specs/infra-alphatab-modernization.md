@@ -2,14 +2,14 @@
 
 ## Metadata
 
-| Field | Value |
-|-------|-------|
-| **Status** | Ready |
-| **Authors** | AI Assistant |
-| **Date** | 2025-11-27 |
-| **Related Issues** | N/A |
-| **Depends On** | None |
-| **Blocks** | `feat-practice-room-unified-control-bar.md` (optional dependency) |
+| Field              | Value                                                             |
+| ------------------ | ----------------------------------------------------------------- |
+| **Status**         | Ready                                                             |
+| **Authors**        | AI Assistant                                                      |
+| **Date**           | 2025-11-27                                                        |
+| **Related Issues** | N/A                                                               |
+| **Depends On**     | None                                                              |
+| **Blocks**         | `feat-practice-room-unified-control-bar.md` (optional dependency) |
 
 ---
 
@@ -567,12 +567,14 @@ After deployment, check:
 ### AlphaTab Integration
 
 AlphaTab is bundled via the Vite plugin (`@coderline/alphatab/vite`):
+
 - ESM imports: `import { AlphaTabApi } from '@coderline/alphatab'`
 - Fonts: Automatically copied to `/font` during build
 - SoundFont: Automatically copied to `/soundfont` during build
 - Workers: Configured automatically by plugin
 
 **Volume Controls (all use 0-1 range):**
+
 - `setTrackVolume(index, volume)` - Per-track volume (0-1, default 1)
 - `setMasterVolume(volume)` - Overall volume (0-1, default 1)
 - `setMetronomeVolume(volume)` - Metronome level (0-1, default 0; >0 enables metronome)
@@ -584,13 +586,13 @@ AlphaTab is bundled via the Vite plugin (`@coderline/alphatab/vite`):
 ## 12. Open Questions
 
 1. **Keep manual fonts in public/?** The Vite plugin copies fonts, but we already have them. Could remove manual copy to avoid duplication.
-   - *Recommendation:* Remove manual fonts after verifying plugin copies work
+   - _Recommendation:_ Remove manual fonts after verifying plugin copies work
 
 2. **CDN soundfont vs local?** Local soundfont adds ~1.5MB to build. CDN version works but adds network dependency.
-   - *Recommendation:* Use local for reliability; file is cached after first load
+   - _Recommendation:_ Use local for reliability; file is cached after first load
 
 3. ~~**Count-in default volume?** What's a reasonable default for count-in?~~
-   - *Resolved:* Count-in is disabled by default (volume=0). Setting `countInVolume > 0` enables it at that volume level. UI should expose a slider starting at 0 (off).
+   - _Resolved:_ Count-in is disabled by default (volume=0). Setting `countInVolume > 0` enables it at that volume level. UI should expose a slider starting at 0 (off).
 
 ---
 
@@ -625,13 +627,13 @@ This allows the UI work to begin on a solid foundation while volume controls are
 
 ## 14. Success Criteria
 
-| Metric | Target |
-|--------|--------|
-| CDN dependencies | 0 (for AlphaTab runtime) |
-| Build succeeds | Yes |
-| All existing tests pass | Yes |
-| Worker initialization | < 500ms |
-| Volume control latency | < 50ms |
+| Metric                  | Target                   |
+| ----------------------- | ------------------------ |
+| CDN dependencies        | 0 (for AlphaTab runtime) |
+| Build succeeds          | Yes                      |
+| All existing tests pass | Yes                      |
+| Worker initialization   | < 500ms                  |
+| Volume control latency  | < 50ms                   |
 
 ---
 
@@ -654,8 +656,9 @@ This allows the UI work to begin on a solid foundation while volume controls are
 
 ---
 
-*Document version: 1.1*
-*Last updated: 2025-11-27*
+_Document version: 1.1_
+_Last updated: 2025-11-27_
 
 **Changelog:**
+
 - v1.1: Fixed volume range from 0-2 to 0-1 per AlphaTab API docs; added ESM test mocking strategy; clarified count-in/metronome enable behavior; added volume clamping to implementation

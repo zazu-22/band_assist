@@ -117,9 +117,10 @@ describe('Login', () => {
   describe('loading state', () => {
     it('disables inputs during submission', async () => {
       mockSignInWithPassword.mockImplementation(
-        () => new Promise(resolve =>
-          setTimeout(() => resolve({ data: { session: {} }, error: null }), 100)
-        )
+        () =>
+          new Promise(resolve =>
+            setTimeout(() => resolve({ data: { session: {} }, error: null }), 100)
+          )
       );
 
       const user = userEvent.setup();
@@ -137,9 +138,10 @@ describe('Login', () => {
 
     it('shows loading text during submission', async () => {
       mockSignInWithPassword.mockImplementation(
-        () => new Promise(resolve =>
-          setTimeout(() => resolve({ data: { session: {} }, error: null }), 100)
-        )
+        () =>
+          new Promise(resolve =>
+            setTimeout(() => resolve({ data: { session: {} }, error: null }), 100)
+          )
       );
 
       const user = userEvent.setup();

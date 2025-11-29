@@ -45,11 +45,7 @@ export const PlaybackControls = memo(function PlaybackControls({
               )}
               aria-label={isPlaying ? 'Pause' : 'Play'}
             >
-              {isPlaying ? (
-                <Pause size={18} />
-              ) : (
-                <Play size={18} className="ml-0.5" />
-              )}
+              {isPlaying ? <Pause size={18} /> : <Play size={18} className="ml-0.5" />}
             </Button>
           </TooltipTrigger>
           <TooltipContent>

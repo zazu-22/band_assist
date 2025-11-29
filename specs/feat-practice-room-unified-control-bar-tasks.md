@@ -9,6 +9,7 @@ Source: `specs/feat-practice-room-unified-control-bar.md`
 This task breakdown decomposes the Practice Room Unified Control Bar specification into actionable implementation tasks. The refactoring transforms AlphaTabRenderer from a self-contained component into a pure renderer controllable via an imperative API, enabling the parent PracticeRoom component to provide unified controls for all chart types.
 
 **Key Goals:**
+
 - Reduce vertical overhead from ~192px to ≤100px
 - Eliminate layout shift when toggling song list
 - Apply design system patterns consistently
@@ -16,6 +17,7 @@ This task breakdown decomposes the Practice Room Unified Control Bar specificati
 - Maintain backwards compatibility
 
 **Prerequisites Completed:**
+
 - ✅ AlphaTab ESM imports (via Vite plugin)
 - ✅ Volume control API (`setTrackVolume`, `setMasterVolume`, `setMetronomeVolume`, `setCountInVolume`)
 - ✅ `onReady` callback with `AlphaTabHandle`
@@ -38,15 +40,18 @@ This task breakdown decomposes the Practice Room Unified Control Bar specificati
 **Can run parallel with**: None (foundation task)
 
 **What's Already Done:**
+
 - `AlphaTabHandle` interface - ✅ exported from `AlphaTabRenderer.tsx`
 - `TrackInfo` interface - ✅ exported from `AlphaTabRenderer.tsx`
 - Volume methods (0-1 range) - ✅ all 4 implemented
 
 **What's Still Needed:**
+
 - `AlphaTabState` interface for `onStateChange` callback
 - Optionally create `src/components/practice/types.ts` and re-export from `AlphaTabRenderer`
 
 **Technical Requirements**:
+
 - Create new file: `src/components/practice/types.ts` (optional - can re-export)
 - ~~Define `AlphaTabHandle` interface with all 13 methods~~ ✅ DONE
 - Define `AlphaTabState` interface for playback state
@@ -118,6 +123,7 @@ export interface AlphaTabRendererProps {
 ```
 
 **Acceptance Criteria**:
+
 - [ ] `AlphaTabHandle` interface exported with all 13 methods documented
 - [ ] `AlphaTabState` interface includes all playback state fields
 - [ ] `TrackInfo` interface includes volume field
@@ -136,6 +142,7 @@ export interface AlphaTabRendererProps {
 **Can run parallel with**: None
 
 **Technical Requirements**:
+
 - Add `showControls?: boolean` prop (default: `true` for backwards compat during transition)
 - Add `showProgressBar?: boolean` prop (default: `true` for backwards compat during transition)
 - Wrap existing toolbar JSX in conditional render
@@ -207,6 +214,7 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
 ```
 
 **Acceptance Criteria**:
+
 - [ ] `showControls={true}` renders toolbar (backwards compatible)
 - [ ] `showControls={false}` hides toolbar, mixer, and loop hint
 - [ ] `showProgressBar={true}` renders progress bar (backwards compatible)
@@ -309,6 +317,7 @@ describe('showProgressBar prop', () => {
 **Can run parallel with**: None
 
 **What's Already Done:**
+
 - ✅ `onReady` prop exists on AlphaTabRenderer
 - ✅ Handle object created with all control methods
 - ✅ `onReady(handle)` called when `playerReady` becomes true
@@ -316,6 +325,7 @@ describe('showProgressBar prop', () => {
 - ✅ 17 tests covering volume controls
 
 **Technical Requirements** (all complete):
+
 - ~~Import `AlphaTabHandle` type from `practice/types.ts`~~ ✅ Types in AlphaTabRenderer.tsx
 - ~~Add `onReady` prop to component~~ ✅ DONE
 - ~~Create handle object with all control methods~~ ✅ DONE
@@ -340,80 +350,83 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
   // ... existing state ...
 
   // Create stable handle object
-  const createHandle = useCallback((): AlphaTabHandle => ({
-    play: () => {
-      if (!apiRef.current || !playerReady) return;
-      pendingPlaybackActionRef.current = 'play';
-      runPlaybackAction('play');
-    },
-    pause: () => {
-      if (!apiRef.current || !playerReady) return;
-      pendingPlaybackActionRef.current = 'pause';
-      runPlaybackAction('pause');
-    },
-    stop: () => {
-      stopPlayback();
-    },
-    seekTo: (percentage: number) => {
-      seekTo(percentage);
-    },
-    setPlaybackSpeed: (speed: number) => {
-      if (apiRef.current) {
-        const clampedSpeed = Math.max(0.25, Math.min(2.0, speed));
-        apiRef.current.playbackSpeed = clampedSpeed;
-        setCurrentSpeed(clampedSpeed);
-        if (originalTempo) {
-          setCurrentBPM(Math.round(originalTempo * clampedSpeed));
+  const createHandle = useCallback(
+    (): AlphaTabHandle => ({
+      play: () => {
+        if (!apiRef.current || !playerReady) return;
+        pendingPlaybackActionRef.current = 'play';
+        runPlaybackAction('play');
+      },
+      pause: () => {
+        if (!apiRef.current || !playerReady) return;
+        pendingPlaybackActionRef.current = 'pause';
+        runPlaybackAction('pause');
+      },
+      stop: () => {
+        stopPlayback();
+      },
+      seekTo: (percentage: number) => {
+        seekTo(percentage);
+      },
+      setPlaybackSpeed: (speed: number) => {
+        if (apiRef.current) {
+          const clampedSpeed = Math.max(0.25, Math.min(2.0, speed));
+          apiRef.current.playbackSpeed = clampedSpeed;
+          setCurrentSpeed(clampedSpeed);
+          if (originalTempo) {
+            setCurrentBPM(Math.round(originalTempo * clampedSpeed));
+          }
         }
-      }
-    },
-    setLoop: (enabled: boolean) => {
-      if (apiRef.current) {
-        apiRef.current.isLooping = enabled;
-        setIsLooping(enabled);
-      }
-    },
-    setLoopRange: (range) => {
-      if (apiRef.current) {
-        apiRef.current.playbackRange = range;
-        setLoopRange(range ? { start: range.startTick, end: range.endTick } : null);
-        if (!range) {
-          setSelectionStart(null);
+      },
+      setLoop: (enabled: boolean) => {
+        if (apiRef.current) {
+          apiRef.current.isLooping = enabled;
+          setIsLooping(enabled);
         }
-      }
-    },
-    renderTrack: (index: number) => {
-      renderTrack(index);
-    },
-    toggleTrackMute: (index: number) => {
-      toggleTrackMute(index);
-    },
-    toggleTrackSolo: (index: number) => {
-      toggleTrackSolo(index);
-    },
-    setTrackVolume: (index: number, volume: number) => {
-      // Note: AlphaTab track volume API - may need adjustment based on actual API
-      if (apiRef.current?.score?.tracks?.[index]) {
-        const track = apiRef.current.score.tracks[index];
-        const clampedVolume = Math.max(0, Math.min(2, volume));
-        // AlphaTab uses playbackInfo for track settings
-        // This may need API verification
-        (track as any).playbackInfo.volume = clampedVolume;
-      }
-    },
-    setMasterVolume: (volume: number) => {
-      if (apiRef.current) {
-        const clampedVolume = Math.max(0, Math.min(1, volume));
-        (apiRef.current as any).masterVolume = clampedVolume;
-      }
-    },
-    setMetronomeVolume: (volume: number) => {
-      if (apiRef.current) {
-        const clampedVolume = Math.max(0, Math.min(1, volume));
-        (apiRef.current as any).metronomeVolume = clampedVolume;
-      }
-    },
-  }), [playerReady, runPlaybackAction, originalTempo]);
+      },
+      setLoopRange: range => {
+        if (apiRef.current) {
+          apiRef.current.playbackRange = range;
+          setLoopRange(range ? { start: range.startTick, end: range.endTick } : null);
+          if (!range) {
+            setSelectionStart(null);
+          }
+        }
+      },
+      renderTrack: (index: number) => {
+        renderTrack(index);
+      },
+      toggleTrackMute: (index: number) => {
+        toggleTrackMute(index);
+      },
+      toggleTrackSolo: (index: number) => {
+        toggleTrackSolo(index);
+      },
+      setTrackVolume: (index: number, volume: number) => {
+        // Note: AlphaTab track volume API - may need adjustment based on actual API
+        if (apiRef.current?.score?.tracks?.[index]) {
+          const track = apiRef.current.score.tracks[index];
+          const clampedVolume = Math.max(0, Math.min(2, volume));
+          // AlphaTab uses playbackInfo for track settings
+          // This may need API verification
+          (track as any).playbackInfo.volume = clampedVolume;
+        }
+      },
+      setMasterVolume: (volume: number) => {
+        if (apiRef.current) {
+          const clampedVolume = Math.max(0, Math.min(1, volume));
+          (apiRef.current as any).masterVolume = clampedVolume;
+        }
+      },
+      setMetronomeVolume: (volume: number) => {
+        if (apiRef.current) {
+          const clampedVolume = Math.max(0, Math.min(1, volume));
+          (apiRef.current as any).metronomeVolume = clampedVolume;
+        }
+      },
+    }),
+    [playerReady, runPlaybackAction, originalTempo]
+  );
 
   // Call onReady when player is ready
   useEffect(() => {
@@ -427,6 +440,7 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
 ```
 
 **Acceptance Criteria**:
+
 - [ ] `onReady` fires when player initializes with functional handle
 - [ ] `handle.play()` starts playback
 - [ ] `handle.pause()` pauses playback
@@ -543,6 +557,7 @@ describe('onReady callback', () => {
 **Can run parallel with**: None
 
 **Technical Requirements**:
+
 - Add `onStateChange` callback prop - fires on any playback state change
 - Add `onPositionChange` callback prop - fires on position update (throttled)
 - Add `onTracksLoaded` callback prop - fires when score loads with track array
@@ -599,13 +614,15 @@ const handleScoreLoaded = (score: AlphaTabScore) => {
 
   // NEW: Emit tracks to parent
   if (onTracksLoaded) {
-    onTracksLoaded(score.tracks.map((t, i) => ({
-      index: i,
-      name: t.name,
-      isMute: t.playbackInfo.isMute,
-      isSolo: t.playbackInfo.isSolo,
-      volume: 1.0, // Default volume
-    })));
+    onTracksLoaded(
+      score.tracks.map((t, i) => ({
+        index: i,
+        name: t.name,
+        isMute: t.playbackInfo.isMute,
+        isSolo: t.playbackInfo.isSolo,
+        volume: 1.0, // Default volume
+      }))
+    );
   }
 
   setLoading(false);
@@ -624,7 +641,8 @@ const handleError = (e: AlphaTabErrorEvent) => {
   if (e?.inner) {
     errorMsg += ` Details: ${e.inner}`;
   }
-  errorMsg += ' The file may be corrupted, an unsupported version, or incompatible with this environment.';
+  errorMsg +=
+    ' The file may be corrupted, an unsupported version, or incompatible with this environment.';
 
   setError(errorMsg);
   setLoading(false);
@@ -637,6 +655,7 @@ const handleError = (e: AlphaTabErrorEvent) => {
 ```
 
 **Acceptance Criteria**:
+
 - [ ] `onStateChange` fires on every playback state change
 - [ ] `onStateChange` includes all state fields (isPlaying, isLooping, currentSpeed, etc.)
 - [ ] `onPositionChange` fires with throttled position updates (~10 FPS)
@@ -748,12 +767,7 @@ describe('state change callbacks', () => {
 // src/components/practice/index.ts
 
 // Types
-export type {
-  AlphaTabHandle,
-  AlphaTabState,
-  TrackInfo,
-  AlphaTabRendererProps,
-} from './types';
+export type { AlphaTabHandle, AlphaTabState, TrackInfo, AlphaTabRendererProps } from './types';
 
 // Components (to be added in Phase 2)
 // export { PracticeControlBar } from './PracticeControlBar';
@@ -766,6 +780,7 @@ export type {
 ```
 
 **Acceptance Criteria**:
+
 - [ ] `src/components/practice/index.ts` exports all types
 - [ ] Types can be imported from `@/components/practice`
 - [ ] No circular dependencies
@@ -785,6 +800,7 @@ export type {
 **Can run parallel with**: Task 2.2, 2.3, 2.4, 2.5, 2.6
 
 **Technical Requirements**:
+
 - Use shadcn/ui Button component from primitives
 - Use Tooltip for all icon buttons
 - Visual state for playing (amber bg), looping (amber bg)
@@ -904,6 +920,7 @@ PlaybackControls.displayName = 'PlaybackControls';
 ```
 
 **Acceptance Criteria**:
+
 - [ ] Play button shows Play icon when stopped, Pause when playing
 - [ ] Playing state highlighted with primary color
 - [ ] Loop button highlighted when looping enabled
@@ -995,6 +1012,7 @@ describe('PlaybackControls', () => {
 **Can run parallel with**: Task 2.1, 2.3, 2.4, 2.5, 2.6
 
 **Technical Requirements**:
+
 - Display tabs for each chart in the song
 - Show appropriate icon per chart type (GP, TEXT, PDF, IMAGE)
 - Highlight active chart
@@ -1089,6 +1107,7 @@ ChartTabs.displayName = 'ChartTabs';
 ```
 
 **Acceptance Criteria**:
+
 - [ ] Renders tab for each chart in array
 - [ ] Shows correct icon per chart type (GP, TEXT, PDF, IMAGE)
 - [ ] Active chart has highlighted styling (bg-primary/20)
@@ -1174,6 +1193,7 @@ describe('ChartTabs', () => {
 **Can run parallel with**: Task 2.1, 2.2, 2.4, 2.5, 2.6
 
 **Technical Requirements**:
+
 - Dropdown showing all tracks
 - Current track name visible in trigger
 - Mute/Solo buttons per track
@@ -1325,6 +1345,7 @@ TrackSelector.displayName = 'TrackSelector';
 ```
 
 **Acceptance Criteria**:
+
 - [ ] Shows current track name in trigger button
 - [ ] Dropdown lists all tracks
 - [ ] Current track highlighted in dropdown
@@ -1345,6 +1366,7 @@ TrackSelector.displayName = 'TrackSelector';
 **Can run parallel with**: Task 2.1, 2.2, 2.3, 2.5, 2.6
 
 **Technical Requirements**:
+
 - Display current BPM with JetBrains Mono font
 - Slider for tempo adjustment (0.25x to 2x of original)
 - Reset button appears when not at original tempo
@@ -1504,6 +1526,7 @@ TempoControl.displayName = 'TempoControl';
 ```
 
 **Acceptance Criteria**:
+
 - [ ] Displays current BPM with font-mono tabular-nums
 - [ ] Slider adjusts BPM within 0.25x-2.0x range
 - [ ] Reset button only shows when tempo modified
@@ -1523,6 +1546,7 @@ TempoControl.displayName = 'TempoControl';
 **Can run parallel with**: Task 2.1, 2.2, 2.3, 2.4, 2.6
 
 **Technical Requirements**:
+
 - Four beat indicators (dots)
 - Current beat highlighted with scale animation
 - Amber color for active beat
@@ -1571,6 +1595,7 @@ MetronomeIndicator.displayName = 'MetronomeIndicator';
 ```
 
 **Acceptance Criteria**:
+
 - [ ] Four beat indicator dots rendered
 - [ ] Current beat (1-4) highlighted with amber and scale
 - [ ] Beat 0 shows all dots as inactive
@@ -1588,6 +1613,7 @@ MetronomeIndicator.displayName = 'MetronomeIndicator';
 **Can run parallel with**: Task 2.1, 2.2, 2.3, 2.4, 2.5
 
 **Technical Requirements**:
+
 - Shows current time and total time in m:ss format
 - Progress fill shows current position
 - Clicking anywhere seeks to that position
@@ -1683,6 +1709,7 @@ ProgressBar.displayName = 'ProgressBar';
 ```
 
 **Acceptance Criteria**:
+
 - [ ] Current and total time formatted as m:ss
 - [ ] Progress bar fills to correct percentage
 - [ ] Clicking bar calls onSeek with correct percentage
@@ -1701,6 +1728,7 @@ ProgressBar.displayName = 'ProgressBar';
 **Can run parallel with**: None
 
 **Technical Requirements**:
+
 - Three-section layout (left, center, right)
 - Left: Song list toggle + song info
 - Center: Playback controls + Chart tabs (center-justified)
@@ -1969,6 +1997,7 @@ PracticeControlBar.displayName = 'PracticeControlBar';
 ```
 
 **Acceptance Criteria**:
+
 - [ ] Three-section layout renders correctly
 - [ ] Song title uses font-serif
 - [ ] BPM uses font-mono tabular-nums
@@ -1995,6 +2024,7 @@ PracticeControlBar.displayName = 'PracticeControlBar';
 **Can run parallel with**: None
 
 **Technical Requirements**:
+
 - Add alphaTabRef to hold handle
 - Add state for gpState (AlphaTabState)
 - Add state for gpTracks (TrackInfo[])
@@ -2053,12 +2083,15 @@ const handleToggleLoop = useCallback(() => {
   }
 }, [gpState]);
 
-const handleSetBPM = useCallback((bpm: number) => {
-  if (alphaTabRef.current && gpState) {
-    const speed = bpm / gpState.originalTempo;
-    alphaTabRef.current.setPlaybackSpeed(speed);
-  }
-}, [gpState]);
+const handleSetBPM = useCallback(
+  (bpm: number) => {
+    if (alphaTabRef.current && gpState) {
+      const speed = bpm / gpState.originalTempo;
+      alphaTabRef.current.setPlaybackSpeed(speed);
+    }
+  },
+  [gpState]
+);
 
 const handleResetTempo = useCallback(() => {
   alphaTabRef.current?.setPlaybackSpeed(1.0);
@@ -2088,6 +2121,7 @@ useEffect(() => {
 ```
 
 **Acceptance Criteria**:
+
 - [ ] AlphaTab handle captured via onReady
 - [ ] GP state updates from AlphaTab callbacks
 - [ ] State cleared when switching away from GP chart
@@ -2105,6 +2139,7 @@ useEffect(() => {
 **Can run parallel with**: None
 
 **Technical Requirements**:
+
 - Remove existing header element
 - Remove separate chart selector row
 - Add PracticeControlBar with all props
@@ -2196,6 +2231,7 @@ return (
 ```
 
 **Acceptance Criteria**:
+
 - [ ] Old header completely removed
 - [ ] Old chart selector row removed
 - [ ] PracticeControlBar renders at top
@@ -2217,11 +2253,13 @@ return (
 **Can run parallel with**: None
 
 **Technical Requirements**:
+
 - Chart tabs must be center-justified
 - Toggle button on left shouldn't affect center position
 - Song list panel appearance/disappearance shouldn't shift tabs
 
 **Verification Steps**:
+
 1. Open Practice Room with song list visible
 2. Note position of chart tabs
 3. Toggle song list closed
@@ -2257,6 +2295,7 @@ describe('layout stability', () => {
 ```
 
 **Acceptance Criteria**:
+
 - [ ] Chart tabs remain centered when song list toggles
 - [ ] No visible layout shift animation
 - [ ] Toggle button position doesn't affect center content
@@ -2276,12 +2315,14 @@ describe('layout stability', () => {
 **Can run parallel with**: Task 4.2, 4.3
 
 **Requirements**:
+
 - Song title: `font-serif` (Brawler)
 - BPM/time displays: `font-mono tabular-nums` (JetBrains Mono)
 - Labels: `font-sans` (Barlow)
 - All numeric values should use `tabular-nums` for stable widths
 
 **Verification Checklist**:
+
 - [ ] Song title has `font-serif`
 - [ ] BPM display has `font-mono tabular-nums`
 - [ ] Current time has `font-mono tabular-nums`
@@ -2300,6 +2341,7 @@ describe('layout stability', () => {
 **Can run parallel with**: Task 4.1, 4.3
 
 **Requirements**:
+
 - All icon buttons use Button component
 - All buttons have Tooltip with TooltipProvider
 - Active states use `--primary` color
@@ -2307,6 +2349,7 @@ describe('layout stability', () => {
 - Focus rings visible for keyboard navigation
 
 **Verification Checklist**:
+
 - [ ] Play/Pause uses Button
 - [ ] Stop uses Button
 - [ ] Loop uses Button
@@ -2325,6 +2368,7 @@ describe('layout stability', () => {
 **Can run parallel with**: Task 4.1, 4.2
 
 **Requirements**:
+
 - Progress bar fill animates
 - Metronome beats use scale transition
 - All transitions have `motion-reduce:transition-none`
@@ -2335,8 +2379,12 @@ describe('layout stability', () => {
 ```css
 /* Progress bar fill animation */
 @keyframes progress-fill {
-  from { transform: scaleX(0); }
-  to { transform: scaleX(1); }
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
 }
 
 .animate-progress-fill {
@@ -2367,6 +2415,7 @@ describe('layout stability', () => {
 **Can run parallel with**: None
 
 **Breakpoint Definitions**:
+
 - Desktop (≥1024px): Full controls with labels
 - Tablet (768-1023px): Icon buttons, tooltips essential
 - Mobile (<768px): Overflow menu for secondary controls
@@ -2429,6 +2478,7 @@ describe('layout stability', () => {
 **Can run parallel with**: None
 
 **Technical Requirements**:
+
 - DropdownMenu containing secondary controls
 - Track selector in menu
 - Tempo slider in menu
@@ -2447,11 +2497,13 @@ describe('layout stability', () => {
 **Can run parallel with**: Task 5.1
 
 **Requirements**:
+
 - All buttons min height 44px on mobile
 - Progress bar clickable area at least 44px tall
 - Slider thumb at least 44px
 
 **Test manually at 320px width**:
+
 - [ ] Can tap play/pause easily
 - [ ] Can tap stop easily
 - [ ] Can tap loop easily
@@ -2474,6 +2526,7 @@ describe('layout stability', () => {
 **Can run parallel with**: Task 6.2, 6.3
 
 **Test Files to Create**:
+
 - `src/components/practice/PlaybackControls.test.tsx`
 - `src/components/practice/ChartTabs.test.tsx`
 - `src/components/practice/TrackSelector.test.tsx`
@@ -2483,6 +2536,7 @@ describe('layout stability', () => {
 - `src/components/practice/PracticeControlBar.test.tsx`
 
 **Coverage Goals**:
+
 - All components: ≥80% statement coverage
 - All callbacks tested
 - Edge cases (empty data, disabled states) tested
@@ -2498,6 +2552,7 @@ describe('layout stability', () => {
 **Can run parallel with**: Task 6.1, 6.3
 
 **Tests to Update/Add**:
+
 - PracticeControlBar renders at top
 - Old header elements no longer present
 - AlphaTab controls work via control bar
@@ -2515,6 +2570,7 @@ describe('layout stability', () => {
 **Can run parallel with**: Task 6.1, 6.2
 
 **Checklist**:
+
 - [ ] Tab navigation through all controls
 - [ ] Space/Enter activates buttons
 - [ ] Escape closes dropdowns
@@ -2570,6 +2626,7 @@ describe('accessibility', () => {
 **Can run parallel with**: None
 
 **Tasks**:
+
 - [ ] Fix any console errors
 - [ ] Fix any TypeScript errors
 - [ ] Verify ESLint passes
@@ -2583,18 +2640,19 @@ describe('accessibility', () => {
 
 ### Total Tasks: 24
 
-| Phase | Tasks | Status | Description |
-|-------|-------|--------|-------------|
-| Phase 1 | 5 | ✅ Complete | AlphaTab API Extraction |
-| Phase 2 | 7 | ✅ Complete | Unified Control Bar Components |
-| Phase 3 | 3 | ✅ Complete | PracticeRoom Integration |
-| Phase 4 | 3 | ✅ Complete | Design System Alignment |
-| Phase 5 | 3 | ⏳ Deferred | Responsive Behavior (mobile overflow menu deferred) |
-| Phase 6 | 4 | ⏳ Partial | Testing & Polish |
+| Phase   | Tasks | Status      | Description                                         |
+| ------- | ----- | ----------- | --------------------------------------------------- |
+| Phase 1 | 5     | ✅ Complete | AlphaTab API Extraction                             |
+| Phase 2 | 7     | ✅ Complete | Unified Control Bar Components                      |
+| Phase 3 | 3     | ✅ Complete | PracticeRoom Integration                            |
+| Phase 4 | 3     | ✅ Complete | Design System Alignment                             |
+| Phase 5 | 3     | ⏳ Deferred | Responsive Behavior (mobile overflow menu deferred) |
+| Phase 6 | 4     | ⏳ Partial  | Testing & Polish                                    |
 
 ### Implementation Status (2025-11-27)
 
 **Phase 1: AlphaTab API Extraction** ✅
+
 - ✅ Task 1.1: Created `AlphaTabState` interface in `src/components/practice/types.ts`
 - ✅ Task 1.2: Added `showControls` and `showProgressBar` props to AlphaTabRenderer
 - ✅ Task 1.3: `onReady` callback with `AlphaTabHandle` (from prior work)
@@ -2602,6 +2660,7 @@ describe('accessibility', () => {
 - ✅ Task 1.5: Created barrel export at `src/components/practice/index.ts`
 
 **Phase 2: Unified Control Bar Components** ✅
+
 - ✅ Task 2.1: `PlaybackControls.tsx` - Play/Pause/Stop/Loop buttons
 - ✅ Task 2.2: `ChartTabs.tsx` - Chart type selector tabs
 - ✅ Task 2.3: `TrackSelector.tsx` - Track dropdown with mute/solo
@@ -2611,21 +2670,25 @@ describe('accessibility', () => {
 - ✅ Task 2.7: `PracticeControlBar.tsx` - Main unified control bar
 
 **Phase 3: PracticeRoom Integration** ✅
+
 - ✅ Task 3.1: Added AlphaTab state management to PracticeRoom
 - ✅ Task 3.2: Replaced old header with PracticeControlBar
 - ✅ Task 3.3: Verified layout stability (center-justified chart tabs)
 
 **Phase 4: Design System Alignment** ✅
+
 - ✅ Task 4.1: Typography audit - font-serif for titles, font-mono tabular-nums for BPM/time
 - ✅ Task 4.2: Button/tooltip consistency - using shadcn/ui Button with TooltipProvider
 - ✅ Task 4.3: Animation with motion-reduce support
 
 **Phase 5: Responsive Behavior** ⏳
+
 - ✅ Task 5.1: Basic responsive layout works on tablet+
 - ⏳ Task 5.2: Mobile overflow menu deferred (inline layout acceptable)
 - ✅ Task 5.3: Touch targets use Button component (44px targets)
 
 **Phase 6: Testing & Polish** ⏳
+
 - ⏳ Task 6.1: Unit tests for new practice components (deferred)
 - ⏳ Task 6.2: Integration test updates (deferred)
 - ⏳ Task 6.3: Accessibility audit (deferred)
@@ -2634,6 +2697,7 @@ describe('accessibility', () => {
 ### Files Created/Modified
 
 **New Files:**
+
 - `src/components/practice/types.ts`
 - `src/components/practice/index.ts`
 - `src/components/practice/PlaybackControls.tsx`
@@ -2645,6 +2709,7 @@ describe('accessibility', () => {
 - `src/components/practice/PracticeControlBar.tsx`
 
 **Modified Files:**
+
 - `src/components/AlphaTabRenderer.tsx` - Added showControls, showProgressBar props and state callbacks
 - `src/components/PracticeRoom.tsx` - Integrated PracticeControlBar, removed old header/chart selector
 
@@ -2656,6 +2721,6 @@ describe('accessibility', () => {
 
 ---
 
-*Document generated: 2025-11-27*
-*Updated: 2025-11-27 (Phase 1-4 complete, Phase 5-6 partial)*
-*Source: specs/feat-practice-room-unified-control-bar.md*
+_Document generated: 2025-11-27_
+_Updated: 2025-11-27 (Phase 1-4 complete, Phase 5-6 partial)_
+_Source: specs/feat-practice-room-unified-control-bar.md_

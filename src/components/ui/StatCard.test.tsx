@@ -46,9 +46,7 @@ describe('StatCard', () => {
     });
 
     it('applies custom className', () => {
-      const { container } = render(
-        <StatCard title="Test" value={0} className="custom-class" />
-      );
+      const { container } = render(<StatCard title="Test" value={0} className="custom-class" />);
       expect(container.firstChild).toHaveClass('custom-class');
     });
   });

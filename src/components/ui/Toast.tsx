@@ -13,15 +13,14 @@ export function ToastProvider() {
           color: 'var(--popover-foreground)',
         },
         classNames: {
-          // Using semantic theme variables for consistency
-          success: 'border-success',
-          error: 'border-destructive',
-          warning: 'border-warning',
-          info: 'border-info',
+          // Using semantic theme variables for consistency with design system
+          success: 'border-l-4 border-l-success',
+          error: 'bg-destructive border-destructive text-destructive-foreground',
+          warning: 'border-l-4 border-l-warning',
+          info: 'border-l-4 border-l-info',
         },
       }}
       closeButton
-      richColors
     />
   );
 }

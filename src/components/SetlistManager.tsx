@@ -127,9 +127,7 @@ export const SetlistManager: React.FC<SetlistManagerProps> = memo(function Setli
 
     const gigDate = new Date(next.date);
     gigDate.setHours(0, 0, 0, 0);
-    const days = Math.ceil(
-      (gigDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
-    );
+    const days = Math.ceil((gigDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
 
     return { nextGig: next, daysUntilNextGig: days };
   }, [events]);
@@ -187,15 +185,12 @@ export const SetlistManager: React.FC<SetlistManagerProps> = memo(function Setli
 
   // --- Drag and Drop Handlers ---
 
-  const handleDragStart = useCallback(
-    (e: React.DragEvent<HTMLLIElement>, index: number) => {
-      e.dataTransfer.effectAllowed = 'move';
-      setTimeout(() => {
-        setDraggedIndex(index);
-      }, 0);
-    },
-    []
-  );
+  const handleDragStart = useCallback((e: React.DragEvent<HTMLLIElement>, index: number) => {
+    e.dataTransfer.effectAllowed = 'move';
+    setTimeout(() => {
+      setDraggedIndex(index);
+    }, 0);
+  }, []);
 
   const handleDragOver = useCallback(
     (e: React.DragEvent<HTMLElement>, index: number) => {
@@ -255,10 +250,7 @@ export const SetlistManager: React.FC<SetlistManagerProps> = memo(function Setli
   return (
     <div className="relative p-4 sm:p-6 lg:p-10 max-w-5xl mx-auto space-y-8">
       {/* Ambient background glow (same as Dashboard) */}
-      <div
-        className="absolute inset-0 pointer-events-none overflow-hidden"
-        aria-hidden="true"
-      >
+      <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
         <div
           className="absolute -top-1/4 -left-1/4 w-1/2 h-1/2 rounded-full opacity-[0.03]"
           style={{
@@ -292,9 +284,7 @@ export const SetlistManager: React.FC<SetlistManagerProps> = memo(function Setli
       </div>
 
       {/* Add Song Form (conditional) */}
-      {isAdding && (
-        <AddSongForm onSubmit={handleAddSong} onCancel={handleCancelAdding} />
-      )}
+      {isAdding && <AddSongForm onSubmit={handleAddSong} onCancel={handleCancelAdding} />}
 
       {/* Song List */}
       <div className="space-y-0">
@@ -314,20 +304,14 @@ export const SetlistManager: React.FC<SetlistManagerProps> = memo(function Setli
               const isDragged = draggedIndex === index;
               const isOver = dragOverIndex === index;
 
-              const showPlaceholderBefore =
-                isOver && draggedIndex !== null && draggedIndex > index;
-              const showPlaceholderAfter =
-                isOver && draggedIndex !== null && draggedIndex < index;
+              const showPlaceholderBefore = isOver && draggedIndex !== null && draggedIndex > index;
+              const showPlaceholderAfter = isOver && draggedIndex !== null && draggedIndex < index;
 
               return (
                 <React.Fragment key={song.id}>
                   {/* Conditional Placeholder Above */}
                   {showPlaceholderBefore && (
-                    <DropIndicator
-                      index={index}
-                      onDragOver={handleDragOver}
-                      onDrop={handleDrop}
-                    />
+                    <DropIndicator index={index} onDragOver={handleDragOver} onDrop={handleDrop} />
                   )}
 
                   <SetlistItem
@@ -344,11 +328,7 @@ export const SetlistManager: React.FC<SetlistManagerProps> = memo(function Setli
 
                   {/* Conditional Placeholder Below */}
                   {showPlaceholderAfter && (
-                    <DropIndicator
-                      index={index}
-                      onDragOver={handleDragOver}
-                      onDrop={handleDrop}
-                    />
+                    <DropIndicator index={index} onDragOver={handleDragOver} onDrop={handleDrop} />
                   )}
                 </React.Fragment>
               );

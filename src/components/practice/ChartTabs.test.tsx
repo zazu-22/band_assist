@@ -53,9 +53,7 @@ describe('ChartTabs', () => {
     });
 
     it('renders null when charts array is empty', () => {
-      const { container } = render(
-        <ChartTabs {...defaultProps} charts={[]} />
-      );
+      const { container } = render(<ChartTabs {...defaultProps} charts={[]} />);
       expect(container.firstChild).toBeNull();
     });
   });
@@ -78,7 +76,7 @@ describe('ChartTabs', () => {
     it('handles null activeChartId', () => {
       render(<ChartTabs {...defaultProps} activeChartId={null} />);
       const tabs = screen.getAllByRole('tab');
-      tabs.forEach((tab) => {
+      tabs.forEach(tab => {
         expect(tab).toHaveAttribute('aria-selected', 'false');
       });
     });
@@ -118,10 +116,7 @@ describe('ChartTabs', () => {
 
     it('has aria-label on tablist', () => {
       render(<ChartTabs {...defaultProps} />);
-      expect(screen.getByRole('tablist')).toHaveAttribute(
-        'aria-label',
-        'Chart type selector'
-      );
+      expect(screen.getByRole('tablist')).toHaveAttribute('aria-label', 'Chart type selector');
     });
 
     it('sets aria-selected correctly for active tab', () => {
@@ -175,13 +170,7 @@ describe('ChartTabs', () => {
 
   describe('single chart', () => {
     it('renders single chart correctly', () => {
-      render(
-        <ChartTabs
-          {...defaultProps}
-          charts={[createMockChart()]}
-          activeChartId="chart-1"
-        />
-      );
+      render(<ChartTabs {...defaultProps} charts={[createMockChart()]} activeChartId="chart-1" />);
       expect(screen.getByText('Lead Sheet')).toBeInTheDocument();
     });
   });

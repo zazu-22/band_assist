@@ -14,15 +14,13 @@ export const MetronomeIndicator = memo(function MetronomeIndicator({
       aria-label={`Metronome beat ${currentBeat > 0 ? currentBeat : 'inactive'}`}
       data-testid="metronome-indicator"
     >
-      {[1, 2, 3, 4].map((beat) => (
+      {[1, 2, 3, 4].map(beat => (
         <div
           key={beat}
           className={cn(
             'w-2 h-2 rounded-full transition-all duration-75',
             'motion-reduce:transition-none',
-            currentBeat === beat
-              ? 'bg-primary scale-150'
-              : 'bg-muted-foreground/30'
+            currentBeat === beat ? 'bg-primary scale-150' : 'bg-muted-foreground/30'
           )}
           data-testid={`beat-${beat}`}
           aria-hidden="true"

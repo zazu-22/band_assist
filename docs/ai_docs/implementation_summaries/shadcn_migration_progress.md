@@ -9,6 +9,7 @@
 ## Summary
 
 This document tracks progress on migrating Band Assist to shadcn/ui with a complete UI/UX overhaul including:
+
 - Custom theme from tweakcn.com (amber/gold primary, light+dark modes)
 - Improved mobile responsiveness
 - Standardized component library
@@ -21,12 +22,14 @@ This document tracks progress on migrating Band Assist to shadcn/ui with a compl
 ### Phase 5.1: Foundation ✅
 
 **Files Created:**
+
 - `components.json` - shadcn configuration
 - `src/lib/utils.ts` - `cn()` class merge utility
 - `src/index.css` - Complete theme with CSS variables (light/dark), animations
 - `index.html` - Updated with theme fonts (Barlow, Brawler, JetBrains Mono), dark class
 
 **Primitive Components (`src/components/primitives/`):**
+
 - `button.tsx` - Button with variants (default, destructive, outline, secondary, ghost, link)
 - `card.tsx` - Card, CardHeader, CardTitle, CardDescription, CardContent, CardFooter
 - `badge.tsx` - Badge with custom variants (success, info, warning for song status)
@@ -47,6 +50,7 @@ This document tracks progress on migrating Band Assist to shadcn/ui with a compl
 - `index.ts` - Barrel export
 
 **Dependencies Installed:**
+
 - `clsx`, `tailwind-merge`, `class-variance-authority`
 - All `@radix-ui/react-*` primitives
 - `next-themes`
@@ -54,6 +58,7 @@ This document tracks progress on migrating Band Assist to shadcn/ui with a compl
 ### Phase 5.2: Layout System ✅
 
 **Files Created:**
+
 - `src/components/ui/ThemeProvider.tsx` - Theme context with light/dark/system support
 - `src/components/ui/ThemeToggle.tsx` - Theme switcher dropdown
 - `src/components/ui/VisuallyHidden.tsx` - Accessibility helper
@@ -65,11 +70,13 @@ This document tracks progress on migrating Band Assist to shadcn/ui with a compl
 - `src/hooks/useMediaQuery.ts` - Responsive breakpoint hooks
 
 **Files Modified:**
+
 - `src/App.tsx` - Wrapped with ThemeProvider + SidebarProvider, removed old sidebar state
 - `src/components/Navigation.tsx` - Updated to use `useSidebar()` instead of `useAppContext()`
 - `src/hooks/useLayoutShortcuts.ts` - Updated to use `useSidebar()` hook
 
 **Key Changes:**
+
 - Sidebar state moved from AppContext to dedicated SidebarProvider
 - AppContext simplified (removed sidebarCollapsed, mobileNavOpen)
 - Mobile navigation uses Sheet primitive (better focus trap, animations)
@@ -78,6 +85,7 @@ This document tracks progress on migrating Band Assist to shadcn/ui with a compl
 ### Phase 5.3: UI Components ✅
 
 **Files Modified:**
+
 - `src/components/ui/ConfirmDialog.tsx` - Migrated to use AlertDialog primitive
   - Now uses AlertDialog, AlertDialogContent, AlertDialogHeader, AlertDialogFooter, etc.
   - Removed manual focus trap code (Radix handles it)
@@ -98,6 +106,7 @@ This document tracks progress on migrating Band Assist to shadcn/ui with a compl
 - `src/components/primitives/badge.tsx` - Added displayName for React DevTools
 
 **Files Created:**
+
 - `src/components/ui/StatusBadge.tsx` - Song status badge component
   - Maps song status to Badge variants: Performance Ready → success, In Progress → info, To Learn → warning
   - STATUS_VARIANT_MAP as const satisfies Record<...> at module level
@@ -115,12 +124,14 @@ This document tracks progress on migrating Band Assist to shadcn/ui with a compl
   - Added exports for ThemeProvider, useTheme, ThemeToggle, VisuallyHidden
 
 **Theme Extensions (src/index.css):**
+
 - Added `--success`, `--warning`, `--info` semantic color variables
 - Both light and dark mode variants defined
 - Tailwind theme mappings via `@theme inline` block
 - Classes like `bg-success`, `text-warning`, `border-info` now available
 
 **Testing Results:**
+
 - TypeScript compilation: PASS
 - Production build: PASS (~591 kB bundle)
 - Dev server: PASS (starts on port 3000)
@@ -168,6 +179,7 @@ This document tracks progress on migrating Band Assist to shadcn/ui with a compl
    - Added `displayName` for React DevTools
 
 **Key Improvements:**
+
 - All colors now use semantic theme variables (works in light/dark mode)
 - Proper accessibility with Radix primitives (focus trap, keyboard nav, ARIA)
 - Consistent component usage across Dashboard and Settings
@@ -175,6 +187,7 @@ This document tracks progress on migrating Band Assist to shadcn/ui with a compl
 - Performance optimized with memo and useCallback
 
 **Testing Results:**
+
 - TypeScript compilation: PASS
 - Production build: PASS (~588 kB bundle, slightly smaller than before)
 - Dev server: PASS
@@ -302,6 +315,7 @@ This document tracks progress on migrating Band Assist to shadcn/ui with a compl
 **Accessibility Audit Results:**
 
 All migrated components verified for:
+
 - ✅ ARIA labels (`aria-label`, `aria-describedby`, `aria-invalid`)
 - ✅ Role attributes (`role="alert"`, `role="button"`, `role="status"`)
 - ✅ Keyboard navigation (tabIndex, onKeyDown handlers)
@@ -309,6 +323,7 @@ All migrated components verified for:
 - ✅ Focus management (autoFocus on primary inputs)
 
 **Testing Results:**
+
 - TypeScript compilation: PASS
 - Production build: PASS
 - Dev server: PASS
@@ -335,11 +350,13 @@ All migrated components verified for:
 ### Phase 6: Quality Review ✅
 
 **Code Review with Parallel Agents:**
+
 - Simplicity/DRY check: Identified 16 categories of potential improvements across 12 files
 - Bug/functional correctness check: Found and fixed 6 issues (1 CRITICAL, 2 HIGH, 2 MEDIUM, 1 LOW)
 - Convention adherence check: Found and fixed 15 convention violations (2 HIGH, 11 MEDIUM, 2 LOW)
 
 **Bug Fixes Applied:**
+
 1. **SetlistManager.tsx** (CRITICAL) - Added try/catch/finally error handling to `askAiForSuggestions` async function to prevent UI stuck in loading state on error
 2. **BandDashboard.tsx** (HIGH) - Fixed React key anti-pattern, changed from `key={idx}` to `key={${song.id}-${r.role}}` for roles list
 3. **ThemeToggle.tsx** (HIGH) - Added `React.memo` wrapper and `displayName` for performance and React DevTools
@@ -348,10 +365,12 @@ All migrated components verified for:
 6. **Select primitive** (MEDIUM) - Changed `focus:` to `focus-visible:` for consistent keyboard navigation feedback
 
 **Convention Fixes Applied:**
+
 1. **Login.tsx, Signup.tsx, PasswordReset.tsx, PasswordUpdate.tsx** - Fixed import ordering (components before services/utils) and changed relative imports to @/ path aliases
 2. **ThemeToggle.tsx** - Fixed imports to use barrel exports and @/ path aliases
 
 **Performance Improvements:**
+
 1. **Code splitting** - Implemented React.lazy() for heavy components:
    - SongDetail (24.18 kB separate chunk)
    - PracticeRoom (13.49 kB separate chunk)
@@ -360,16 +379,19 @@ All migrated components verified for:
 2. **Suspense fallbacks** - Added LoadingScreen fallbacks for lazy-loaded routes
 
 **Accessibility Improvements:**
+
 1. **BandDashboard Cards** - Added focus-visible ring styles and aria-labels
 2. **SelectTrigger** - Standardized on focus-visible for keyboard navigation
 
 **PR #50 Review Feedback Addressed:**
+
 - ✅ Custom animation classes verified in Tailwind configuration (src/index.css lines 256-278)
 - ✅ ResizablePanel stale closures already handled correctly with refs
 - ✅ Avatar component color duplication simplified in BandDashboard
 - ✅ focus-visible styles added for keyboard navigation feedback
 
 **Testing Results:**
+
 - TypeScript compilation: PASS
 - ESLint: PASS (0 warnings)
 - Production build: PASS (~600 kB total, with code splitting)
@@ -379,6 +401,7 @@ All migrated components verified for:
 ### Phase 7: Summary & Documentation ✅
 
 **Documentation Updates:**
+
 1. **CLAUDE.md** - Updated with comprehensive shadcn/ui patterns:
    - Updated project structure to reflect new component organization (primitives/, ui/, layout/)
    - Added new "shadcn/ui Component Library" section with:
@@ -408,6 +431,7 @@ All migrated components verified for:
    - Total new test files: 9 (from 2 to 11 test files)
 
 **Test Coverage Summary:**
+
 - UI Components: StatusBadge, StatCard, EmptyState, ConfirmDialog
 - Auth Components: Login, Signup, PasswordReset
 - Feature Components: Dashboard
@@ -431,6 +455,7 @@ All migrated components verified for:
 ## Architecture Reference
 
 ### Folder Structure (Clean Architecture)
+
 ```
 src/
 ├── components/
@@ -448,6 +473,7 @@ src/
 ### Theme Variables
 
 Located in `src/index.css`. Key semantic colors:
+
 - `--primary` - Amber/gold (oklch(0.7686 0.1647 70.0804))
 - `--background` - Page background
 - `--card` - Card backgrounds
@@ -462,6 +488,7 @@ to extend the base shadcn/ui theme. These support the status indicator variants
 used in Badge, StatCard, and ConfirmDialog components.
 
 ### Provider Hierarchy
+
 ```tsx
 <ThemeProvider defaultTheme="dark">
   <SidebarProvider>
@@ -475,6 +502,7 @@ used in Badge, StatCard, and ConfirmDialog components.
 ### Coding Standards
 
 **Import Ordering:**
+
 1. React (`import React, { ... } from 'react'`)
 2. Third-party libraries (`lucide-react`, etc.)
 3. Local components (`@/components/*`)
@@ -482,6 +510,7 @@ used in Badge, StatCard, and ConfirmDialog components.
 5. Utils (`@/lib/utils`)
 
 **Component Patterns:**
+
 - Use `React.memo` for components that receive stable props
 - Add explicit `displayName` to all `memo()` wrapped components
 - Use `SCREAMING_SNAKE_CASE` for module-level config objects with `as const`
@@ -489,6 +518,7 @@ used in Badge, StatCard, and ConfirmDialog components.
 - Use `useCallback` for event handlers passed to child components
 
 **Callback Stability:**
+
 - Parent components should wrap callbacks passed to dialogs in `useCallback`
 - This prevents unnecessary re-renders when dialog state changes
 
@@ -530,17 +560,20 @@ npm run dev        # Start dev server on port 3000
 ### PR #55 Reviewer Feedback ✅
 
 **Performance Improvements:**
+
 1. **Sidebar.tsx** - Wrapped `isActive` function in `useCallback` with `location.pathname` dependency
 2. **Sidebar.tsx** - Wrapped component with `React.memo` and added `displayName`
 3. **Sidebar.tsx** - Pre-computed `performanceActive` and `settingsActive` to avoid repeated function calls in render
 
 **Accessibility Improvements:**
+
 1. **AppShell.tsx** - Added skip-to-main-content link for keyboard users
    - Hidden by default (`sr-only`)
    - Becomes visible on focus (`focus:not-sr-only`)
    - Links to `#main-content` target with `tabIndex={-1}` on main element
 
 **Code Quality Improvements:**
+
 1. **ConditionalTooltip.tsx** - New component extracted to reduce tooltip wrapping duplication
    - Conditionally wraps children based on `showTooltip` prop
    - Used in Sidebar for collapsed state tooltips
@@ -548,11 +581,13 @@ npm run dev        # Start dev server on port 3000
 2. **Sidebar.tsx** - Replaced 5 instances of manual tooltip wrapping with `ConditionalTooltip`
 
 **Documentation Updates:**
+
 1. **CLAUDE.md** - Added "Primitives Modification Policy" section clarifying:
    - What modifications to avoid (business logic, styling defaults)
    - What modifications are acceptable (displayName, type exports, touch targets, focus styles)
 
 **New Tests Added:**
+
 1. `src/hooks/useMediaQuery.test.ts` - Tests for all three hooks (useMediaQuery, useIsMobile, useIsDesktop)
 2. `src/components/layout/Sidebar.test.tsx` - Navigation, logout, band selector, accessibility, collapse
 3. `src/components/layout/AppShell.test.tsx` - Skip link, main content, responsive layout, props passing
@@ -560,6 +595,7 @@ npm run dev        # Start dev server on port 3000
 5. `src/components/ui/ThemeToggle.test.tsx` - Rendering, dropdown menu, theme switching
 
 **Test Results:**
+
 - 48 new tests passing across 4 new test files
 - TypeScript compilation: PASS
 - ESLint: PASS (new files only; pre-existing Login.test.tsx warning unrelated)
@@ -580,6 +616,7 @@ The shadcn/ui migration is now complete. All phases have been finished:
 - ✅ PR #55 Reviewer Feedback (performance, accessibility, code quality, tests)
 
 **Future Work (Optional):**
+
 - Add unit tests for Settings component
 - Screen reader testing for full accessibility compliance
 - Further code splitting optimizations

@@ -213,10 +213,9 @@ describe('useDerivedStateLazy', () => {
   describe('lazy evaluation', () => {
     it('does not call initializer on re-render with same key', () => {
       const initializer = vi.fn(() => 120);
-      const { rerender } = renderHook(
-        ({ init, key }) => useDerivedStateLazy(init, key),
-        { initialProps: { init: initializer, key: 'song-1' } }
-      );
+      const { rerender } = renderHook(({ init, key }) => useDerivedStateLazy(init, key), {
+        initialProps: { init: initializer, key: 'song-1' },
+      });
 
       // Reset mock to track only subsequent calls
       initializer.mockClear();
@@ -229,10 +228,9 @@ describe('useDerivedStateLazy', () => {
 
     it('calls initializer when key changes', () => {
       const initializer = vi.fn(() => 120);
-      const { rerender } = renderHook(
-        ({ init, key }) => useDerivedStateLazy(init, key),
-        { initialProps: { init: initializer, key: 'song-1' } }
-      );
+      const { rerender } = renderHook(({ init, key }) => useDerivedStateLazy(init, key), {
+        initialProps: { init: initializer, key: 'song-1' },
+      });
 
       initializer.mockClear();
 
@@ -244,10 +242,9 @@ describe('useDerivedStateLazy', () => {
     it('uses latest initializer function when key changes', () => {
       const makeInitializer = (value: number) => () => value;
 
-      const { result, rerender } = renderHook(
-        ({ init, key }) => useDerivedStateLazy(init, key),
-        { initialProps: { init: makeInitializer(100), key: 'song-1' } }
-      );
+      const { result, rerender } = renderHook(({ init, key }) => useDerivedStateLazy(init, key), {
+        initialProps: { init: makeInitializer(100), key: 'song-1' },
+      });
 
       expect(result.current[0]).toBe(100);
 
@@ -263,9 +260,7 @@ describe('useDerivedStateLazy', () => {
 
   describe('state updates', () => {
     it('allows state updates independent of initializer', () => {
-      const { result } = renderHook(() =>
-        useDerivedStateLazy(() => 120, 'song-1')
-      );
+      const { result } = renderHook(() => useDerivedStateLazy(() => 120, 'song-1'));
 
       act(() => {
         result.current[1](140);
@@ -275,10 +270,9 @@ describe('useDerivedStateLazy', () => {
     });
 
     it('resets to initializer result when key changes', () => {
-      const { result, rerender } = renderHook(
-        ({ init, key }) => useDerivedStateLazy(init, key),
-        { initialProps: { init: () => 120, key: 'song-1' } }
-      );
+      const { result, rerender } = renderHook(({ init, key }) => useDerivedStateLazy(init, key), {
+        initialProps: { init: () => 120, key: 'song-1' },
+      });
 
       act(() => {
         result.current[1](999);
@@ -301,10 +295,9 @@ describe('usePrevious', () => {
 
   describe('value tracking', () => {
     it('tracks previous values across renders', () => {
-      const { result, rerender } = renderHook(
-        ({ value }) => usePrevious(value),
-        { initialProps: { value: 100 } }
-      );
+      const { result, rerender } = renderHook(({ value }) => usePrevious(value), {
+        initialProps: { value: 100 },
+      });
 
       expect(result.current).toBeUndefined();
 
@@ -319,10 +312,9 @@ describe('usePrevious', () => {
       const obj1 = { id: 1 };
       const obj2 = { id: 2 };
 
-      const { result, rerender } = renderHook(
-        ({ value }) => usePrevious(value),
-        { initialProps: { value: obj1 } }
-      );
+      const { result, rerender } = renderHook(({ value }) => usePrevious(value), {
+        initialProps: { value: obj1 },
+      });
 
       expect(result.current).toBeUndefined();
 
@@ -331,10 +323,9 @@ describe('usePrevious', () => {
     });
 
     it('tracks boolean transitions', () => {
-      const { result, rerender } = renderHook(
-        ({ value }) => usePrevious(value),
-        { initialProps: { value: false } }
-      );
+      const { result, rerender } = renderHook(({ value }) => usePrevious(value), {
+        initialProps: { value: false },
+      });
 
       expect(result.current).toBeUndefined();
 
@@ -346,10 +337,9 @@ describe('usePrevious', () => {
     });
 
     it('tracks null/undefined transitions', () => {
-      const { result, rerender } = renderHook(
-        ({ value }) => usePrevious(value),
-        { initialProps: { value: null as string | null } }
-      );
+      const { result, rerender } = renderHook(({ value }) => usePrevious(value), {
+        initialProps: { value: null as string | null },
+      });
 
       expect(result.current).toBeUndefined();
 
@@ -363,10 +353,9 @@ describe('usePrevious', () => {
 
   describe('same value re-renders', () => {
     it('maintains previous value when current value unchanged', () => {
-      const { result, rerender } = renderHook(
-        ({ value }) => usePrevious(value),
-        { initialProps: { value: 100 } }
-      );
+      const { result, rerender } = renderHook(({ value }) => usePrevious(value), {
+        initialProps: { value: 100 },
+      });
 
       rerender({ value: 200 });
       expect(result.current).toBe(100);

@@ -82,9 +82,21 @@ describe('Dashboard', () => {
   describe('stat calculations', () => {
     it('shows correct total count', () => {
       const songs = [
-        createMockSong({ id: '1', status: 'Performance Ready', assignments: [{ memberId: '1', role: 'Guitar' }] }),
-        createMockSong({ id: '2', status: 'Performance Ready', assignments: [{ memberId: '1', role: 'Guitar' }] }),
-        createMockSong({ id: '3', status: 'Performance Ready', assignments: [{ memberId: '1', role: 'Guitar' }] }),
+        createMockSong({
+          id: '1',
+          status: 'Performance Ready',
+          assignments: [{ memberId: '1', role: 'Guitar' }],
+        }),
+        createMockSong({
+          id: '2',
+          status: 'Performance Ready',
+          assignments: [{ memberId: '1', role: 'Guitar' }],
+        }),
+        createMockSong({
+          id: '3',
+          status: 'Performance Ready',
+          assignments: [{ memberId: '1', role: 'Guitar' }],
+        }),
       ];
       renderWithRouter(<Dashboard {...defaultProps} songs={songs} />);
       // Band Readiness card shows "3 songs in setlist"
@@ -105,9 +117,21 @@ describe('Dashboard', () => {
 
     it('shows readiness legend counts', () => {
       const songs = [
-        createMockSong({ id: '1', status: 'Performance Ready', assignments: [{ memberId: '1', role: 'Guitar' }] }),
-        createMockSong({ id: '2', status: 'In Progress', assignments: [{ memberId: '1', role: 'Guitar' }] }),
-        createMockSong({ id: '3', status: 'To Learn', assignments: [{ memberId: '1', role: 'Guitar' }] }),
+        createMockSong({
+          id: '1',
+          status: 'Performance Ready',
+          assignments: [{ memberId: '1', role: 'Guitar' }],
+        }),
+        createMockSong({
+          id: '2',
+          status: 'In Progress',
+          assignments: [{ memberId: '1', role: 'Guitar' }],
+        }),
+        createMockSong({
+          id: '3',
+          status: 'To Learn',
+          assignments: [{ memberId: '1', role: 'Guitar' }],
+        }),
       ];
       renderWithRouter(<Dashboard {...defaultProps} songs={songs} />);
       // The Band Readiness card shows percentage and "gig ready" text
@@ -372,7 +396,16 @@ describe('calculateSongUrgency', () => {
     status: 'In Progress',
     assignments: [{ memberId: '1', role: 'Guitar' }],
     parts: [],
-    charts: [{ id: 'c1', name: 'Main', instrument: 'All', type: 'TEXT', content: 'chords here', annotations: [] }],
+    charts: [
+      {
+        id: 'c1',
+        name: 'Main',
+        instrument: 'All',
+        type: 'TEXT',
+        content: 'chords here',
+        annotations: [],
+      },
+    ],
     ...overrides,
   });
 
@@ -418,7 +451,10 @@ describe('calculateSongUrgency', () => {
 
   describe('missing backing track', () => {
     it('adds NO_BACKING_TRACK weight when no backing track', () => {
-      const song = createTestSong({ backingTrackUrl: undefined, backingTrackStoragePath: undefined });
+      const song = createTestSong({
+        backingTrackUrl: undefined,
+        backingTrackStoragePath: undefined,
+      });
       const result = calculateSongUrgency(song, today);
 
       expect(result.score).toBeGreaterThanOrEqual(URGENCY_WEIGHTS.NO_BACKING_TRACK);
@@ -429,14 +465,18 @@ describe('calculateSongUrgency', () => {
       const song = createTestSong({ backingTrackUrl: 'data:audio/mp3;base64,abc' });
       const result = calculateSongUrgency(song, today);
 
-      expect(result.issues).not.toContainEqual(expect.objectContaining({ label: 'No backing track' }));
+      expect(result.issues).not.toContainEqual(
+        expect.objectContaining({ label: 'No backing track' })
+      );
     });
 
     it('does not add weight when backingTrackStoragePath exists', () => {
       const song = createTestSong({ backingTrackStoragePath: 'songs/123/track.mp3' });
       const result = calculateSongUrgency(song, today);
 
-      expect(result.issues).not.toContainEqual(expect.objectContaining({ label: 'No backing track' }));
+      expect(result.issues).not.toContainEqual(
+        expect.objectContaining({ label: 'No backing track' })
+      );
     });
   });
 
@@ -502,7 +542,9 @@ describe('calculateSongUrgency', () => {
       const song = createTestSong({ targetDate: '2025-01-23' }); // 8 days from now
       const result = calculateSongUrgency(song, today);
 
-      expect(result.issues).not.toContainEqual(expect.objectContaining({ label: expect.stringContaining('Due') }));
+      expect(result.issues).not.toContainEqual(
+        expect.objectContaining({ label: expect.stringContaining('Due') })
+      );
       expect(result.issues).not.toContainEqual(expect.objectContaining({ label: 'Overdue' }));
     });
 
@@ -510,7 +552,9 @@ describe('calculateSongUrgency', () => {
       const song = createTestSong({ targetDate: undefined });
       const result = calculateSongUrgency(song, today);
 
-      expect(result.issues).not.toContainEqual(expect.objectContaining({ label: expect.stringContaining('Due') }));
+      expect(result.issues).not.toContainEqual(
+        expect.objectContaining({ label: expect.stringContaining('Due') })
+      );
       expect(result.issues).not.toContainEqual(expect.objectContaining({ label: 'Overdue' }));
     });
   });
@@ -564,7 +608,16 @@ describe('calculateSongUrgency', () => {
       const lowUrgencySong = createTestSong({
         id: 'low',
         status: 'In Progress',
-        charts: [{ id: 'c1', name: 'Main', instrument: 'All', type: 'TEXT', content: 'chords', annotations: [] }],
+        charts: [
+          {
+            id: 'c1',
+            name: 'Main',
+            instrument: 'All',
+            type: 'TEXT',
+            content: 'chords',
+            annotations: [],
+          },
+        ],
         assignments: [{ memberId: '1', role: 'Guitar' }],
       });
 

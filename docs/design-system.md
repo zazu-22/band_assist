@@ -20,11 +20,11 @@ This document captures the design philosophy, patterns, and guidelines establish
 
 ### Font Families
 
-| Font | CSS Class | Usage |
-|------|-----------|-------|
-| **Brawler** (Serif) | `font-serif` | Headlines, section titles, emotional emphasis |
-| **Barlow** (Sans-serif) | `font-sans` (default) | Body text, labels, UI elements |
-| **JetBrains Mono** | `font-mono` | Numbers, countdowns, technical data |
+| Font                    | CSS Class             | Usage                                         |
+| ----------------------- | --------------------- | --------------------------------------------- |
+| **Brawler** (Serif)     | `font-serif`          | Headlines, section titles, emotional emphasis |
+| **Barlow** (Sans-serif) | `font-sans` (default) | Body text, labels, UI elements                |
+| **JetBrains Mono**      | `font-mono`           | Numbers, countdowns, technical data           |
 
 ### Typography Patterns
 
@@ -51,19 +51,19 @@ This document captures the design philosophy, patterns, and guidelines establish
 
 These colors communicate song learning status consistently across the app:
 
-| Status | CSS Variable | Background | Usage |
-|--------|--------------|------------|-------|
-| **Stage Ready** | `--success` | `bg-success` | Green - mastered songs ready to perform |
-| **In Progress** | `--info` | `bg-info` | Blue - songs currently being learned |
-| **To Learn** | `--warning` | `bg-warning` | Amber/Gold - songs not yet started |
+| Status          | CSS Variable | Background   | Usage                                   |
+| --------------- | ------------ | ------------ | --------------------------------------- |
+| **Stage Ready** | `--success`  | `bg-success` | Green - mastered songs ready to perform |
+| **In Progress** | `--info`     | `bg-info`    | Blue - songs currently being learned    |
+| **To Learn**    | `--warning`  | `bg-warning` | Amber/Gold - songs not yet started      |
 
 ### Semantic Colors
 
-| Purpose | CSS Variable | Usage |
-|---------|--------------|-------|
-| Primary | `--primary` | Brand color (amber/gold), primary buttons, active states |
-| Destructive | `--destructive` | Errors, overdue items, critical warnings |
-| Muted | `--muted-foreground` | Secondary text, disabled states, subtle UI |
+| Purpose     | CSS Variable         | Usage                                                    |
+| ----------- | -------------------- | -------------------------------------------------------- |
+| Primary     | `--primary`          | Brand color (amber/gold), primary buttons, active states |
+| Destructive | `--destructive`      | Errors, overdue items, critical warnings                 |
+| Muted       | `--muted-foreground` | Secondary text, disabled states, subtle UI               |
 
 ### Color Application Examples
 
@@ -108,8 +108,12 @@ Use staggered reveals for groups of elements appearing together:
 ```css
 /* Progress bar fill */
 @keyframes progress-fill {
-  from { transform: scaleX(0); }
-  to { transform: scaleX(1); }
+  from {
+    transform: scaleX(0);
+  }
+  to {
+    transform: scaleX(1);
+  }
 }
 
 .animate-progress-fill {
@@ -123,7 +127,8 @@ Use staggered reveals for groups of elements appearing together:
 ```css
 /* Pulse glow for countdown badges */
 @keyframes pulse-glow {
-  0%, 100% {
+  0%,
+  100% {
     box-shadow: 0 0 15px oklch(0.7686 0.1647 70.0804 / 0.3);
   }
   50% {
@@ -180,9 +185,7 @@ Pattern for actionable list rows:
 <div className="flex items-center gap-4 px-4 py-2.5 border-l-[3px] border-l-primary/60 hover:bg-muted/30 transition-colors">
   {/* Left: Primary content + secondary action */}
   <div className="flex-1 min-w-0 flex items-center gap-2">
-    <p className="font-semibold text-foreground truncate text-sm">
-      Item Title
-    </p>
+    <p className="font-semibold text-foreground truncate text-sm">Item Title</p>
     <button className="text-[11px] text-muted-foreground/60 hover:text-primary">
       Edit <ArrowRight size={10} />
     </button>
@@ -274,7 +277,7 @@ className="text-muted-foreground/60 hover:text-primary transition-colors"
 Rely on the theme's ring utilities for focus indication:
 
 ```tsx
-className="focus-visible:ring-2 focus-visible:ring-ring"
+className = 'focus-visible:ring-2 focus-visible:ring-ring';
 ```
 
 ## Accessibility
@@ -284,6 +287,213 @@ className="focus-visible:ring-2 focus-visible:ring-ring"
 - Use `aria-hidden="true"` for decorative elements
 - Ensure color is not the only indicator of status (use icons/text alongside)
 - Support `prefers-reduced-motion` media query (defined in `index.css`)
+
+## Song Editor Patterns
+
+The Song Detail page (`/songs/:songId`) uses specific patterns for editing song metadata, managing charts, and handling audio.
+
+### Tab Navigation
+
+Horizontal tabs with primary underline indicator:
+
+```tsx
+<div className="flex gap-1 border-b border-border">
+  {['OVERVIEW', 'CHARTS', 'ASSIGNMENTS', 'AUDIO'].map(tab => (
+    <button
+      key={tab}
+      onClick={() => setActiveTab(tab)}
+      className={cn(
+        'relative px-4 py-2 text-sm font-bold transition-colors',
+        activeTab === tab
+          ? 'text-foreground'
+          : 'text-muted-foreground hover:text-foreground'
+      )}
+    >
+      {tab}
+      {activeTab === tab && (
+        <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full" />
+      )}
+    </button>
+  ))}
+</div>
+```
+
+### Metadata Display Cards
+
+Grid-based metadata display with labeled values:
+
+```tsx
+<div className="grid grid-cols-2 gap-4">
+  <div className="bg-muted/30 p-3 rounded-lg border border-border">
+    <span className="text-xs text-muted-foreground uppercase tracking-wide">
+      BPM
+    </span>
+    <p className="text-xl font-mono tabular-nums text-foreground">
+      {song.bpm}
+    </p>
+  </div>
+</div>
+```
+
+## Chart Upload/Management
+
+### Chart Selector Bar
+
+Horizontal scrolling chart selector with active state:
+
+```tsx
+<div className="flex items-center gap-2 overflow-x-auto scrollbar-hide">
+  {charts.map(chart => (
+    <button
+      key={chart.id}
+      onClick={() => setActiveChartId(chart.id)}
+      className={cn(
+        'flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm whitespace-nowrap transition-colors',
+        activeChartId === chart.id
+          ? 'bg-primary text-primary-foreground'
+          : 'bg-card text-muted-foreground hover:text-foreground hover:bg-muted/30 border border-border'
+      )}
+    >
+      <ChartIcon size={14} />
+      {chart.name}
+    </button>
+  ))}
+</div>
+```
+
+### Chart Type Icons
+
+Consistent icon mapping for chart types:
+
+| Chart Type | Icon         | Import from `lucide-react` |
+| ---------- | ------------ | -------------------------- |
+| GP         | `Guitar`     | Guitar Pro files           |
+| PDF        | `FileText`   | PDF documents              |
+| IMAGE      | `File`       | Image files                |
+| TEXT       | `Music2`     | Text-based chord charts    |
+
+### Download/External Link Buttons
+
+File action buttons use ghost variant:
+
+```tsx
+<Button
+  variant="ghost"
+  size="icon"
+  className="bg-card/80 backdrop-blur-sm hover:bg-muted"
+  title="Download Original"
+>
+  <Download size={16} />
+</Button>
+
+<Button
+  variant="ghost"
+  size="icon"
+  asChild
+  className="bg-card/80 backdrop-blur-sm hover:bg-muted"
+  title="Open in New Tab"
+>
+  <a href={url} target="_blank" rel="noreferrer">
+    <ExternalLink size={16} />
+  </a>
+</Button>
+```
+
+## Part Assignment Section
+
+### Member Assignment Cards
+
+Cards showing band member assignments with role badges:
+
+```tsx
+<Card>
+  <div className="p-3 bg-muted/30 flex items-center gap-3">
+    <Avatar>
+      <AvatarFallback className={member.avatarColor}>
+        {member.name.charAt(0)}
+      </AvatarFallback>
+    </Avatar>
+    <span className="font-medium text-foreground">{member.name}</span>
+  </div>
+  <CardContent className="pt-3">
+    <span className="text-xs text-muted-foreground uppercase tracking-wide">
+      Roles
+    </span>
+    <div className="flex flex-wrap gap-1.5 mt-1.5">
+      {memberRoles.map(role => (
+        <Badge key={role} variant="secondary" className="group">
+          {role}
+          <button className="ml-1 opacity-0 group-hover:opacity-100">
+            <X size={12} />
+          </button>
+        </Badge>
+      ))}
+    </div>
+  </CardContent>
+</Card>
+```
+
+### Assignment Grid Layout
+
+Responsive grid for member cards:
+
+```tsx
+<div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+  {members.map(member => (
+    <MemberCard key={member.id} member={member} />
+  ))}
+</div>
+```
+
+## Audio Upload Section
+
+### Upload Zone
+
+Dashed border drop zone pattern:
+
+```tsx
+<div
+  className={cn(
+    'border-2 border-dashed rounded-xl p-8 text-center transition-colors',
+    isDragging
+      ? 'border-primary/50 bg-primary/5'
+      : 'border-border hover:border-primary/30'
+  )}
+  onDragOver={handleDragOver}
+  onDrop={handleDrop}
+>
+  <UploadCloud className="mx-auto h-12 w-12 text-muted-foreground mb-4" />
+  <p className="text-muted-foreground mb-2">
+    Drag and drop your audio file here
+  </p>
+  <Button variant="outline">Select Audio File</Button>
+</div>
+```
+
+### Audio Player Card
+
+When track is present, display player in Card:
+
+```tsx
+<Card>
+  <CardContent className="p-4">
+    <audio
+      ref={audioRef}
+      src={trackUrl}
+      controls
+      className="w-full"
+    />
+    <div className="flex gap-2 mt-3">
+      <Button variant="ghost" size="sm">
+        <Download size={12} /> Download Track
+      </Button>
+      <Button variant="ghost" size="sm" className="text-destructive">
+        <Trash2 size={12} /> Remove Track
+      </Button>
+    </div>
+  </CardContent>
+</Card>
+```
 
 ## Future Considerations
 
@@ -296,5 +506,5 @@ When extending this design system to other pages:
 
 ---
 
-*Last updated: November 2024*
-*Reference implementation: `src/components/Dashboard.tsx`*
+_Last updated: November 2024_
+_Reference implementation: `src/components/Dashboard.tsx`, `src/components/SongDetail.tsx`_

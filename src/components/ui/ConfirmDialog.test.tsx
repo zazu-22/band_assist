@@ -36,11 +36,7 @@ describe('ConfirmDialog', () => {
 
     it('renders with custom button labels', () => {
       render(
-        <ConfirmDialog
-          {...defaultProps}
-          confirmLabel="Delete Forever"
-          cancelLabel="Keep It"
-        />
+        <ConfirmDialog {...defaultProps} confirmLabel="Delete Forever" cancelLabel="Keep It" />
       );
       expect(screen.getByRole('button', { name: 'Delete Forever' })).toBeInTheDocument();
       expect(screen.getByRole('button', { name: 'Keep It' })).toBeInTheDocument();
@@ -105,12 +101,7 @@ describe('ConfirmDialog', () => {
     });
 
     it('displays message correctly', () => {
-      render(
-        <ConfirmDialog
-          {...defaultProps}
-          message="This action cannot be undone."
-        />
-      );
+      render(<ConfirmDialog {...defaultProps} message="This action cannot be undone." />);
       expect(screen.getByText('This action cannot be undone.')).toBeInTheDocument();
     });
 

@@ -104,7 +104,7 @@ export const Sidebar = memo(function Sidebar({
       {/* Navigation */}
       <ScrollArea className="flex-1">
         <nav className="px-3 py-6 space-y-2" aria-label="Main navigation">
-          {NAV_ITEMS.map((item) => {
+          {NAV_ITEMS.map(item => {
             const Icon = iconMap[item.id] ?? LayoutDashboard;
             const active = isActive(item.path);
 
@@ -129,17 +129,8 @@ export const Sidebar = memo(function Sidebar({
                   aria-label={item.label}
                   aria-current={active ? 'page' : undefined}
                 >
-                  <Icon
-                    className={cn(
-                      'w-5 h-5 shrink-0',
-                      active && 'text-sidebar-primary'
-                    )}
-                  />
-                  {!collapsed && (
-                    <span className="hidden lg:block font-medium">
-                      {item.label}
-                    </span>
-                  )}
+                  <Icon className={cn('w-5 h-5 shrink-0', active && 'text-sidebar-primary')} />
+                  {!collapsed && <span className="hidden lg:block font-medium">{item.label}</span>}
                 </Button>
               </ConditionalTooltip>
             );
@@ -148,11 +139,7 @@ export const Sidebar = memo(function Sidebar({
           {/* Performance Mode - Special styling */}
           <div className={cn('pt-4 pb-2', collapsed ? 'px-0' : 'px-0')}>
             <Separator className="mb-4 bg-sidebar-border" />
-            <ConditionalTooltip
-              showTooltip={collapsed}
-              content="Performance Mode"
-              side="right"
-            >
+            <ConditionalTooltip showTooltip={collapsed} content="Performance Mode" side="right">
               <Button
                 variant="ghost"
                 onClick={() => navigate(ROUTES.PERFORMANCE)}
@@ -171,9 +158,7 @@ export const Sidebar = memo(function Sidebar({
               >
                 <Radio className="w-5 h-5 shrink-0" />
                 {!collapsed && (
-                  <span className="hidden lg:block font-bold tracking-wide">
-                    Performance Mode
-                  </span>
+                  <span className="hidden lg:block font-bold tracking-wide">Performance Mode</span>
                 )}
               </Button>
             </ConditionalTooltip>
@@ -208,11 +193,7 @@ export const Sidebar = memo(function Sidebar({
         <ThemeToggle collapsed={collapsed} />
 
         {/* Settings */}
-        <ConditionalTooltip
-          showTooltip={collapsed}
-          content="Settings"
-          side="right"
-        >
+        <ConditionalTooltip showTooltip={collapsed} content="Settings" side="right">
           <Button
             variant="ghost"
             onClick={() => navigate(ROUTES.SETTINGS)}
@@ -226,19 +207,13 @@ export const Sidebar = memo(function Sidebar({
             aria-current={settingsActive ? 'page' : undefined}
           >
             <Settings className="w-5 h-5 shrink-0" />
-            {!collapsed && (
-              <span className="hidden lg:block text-sm font-medium">Config</span>
-            )}
+            {!collapsed && <span className="hidden lg:block text-sm font-medium">Config</span>}
           </Button>
         </ConditionalTooltip>
 
         {/* Logout Button (only shown when authenticated with Supabase) */}
         {showLogout && onLogout && (
-          <ConditionalTooltip
-            showTooltip={collapsed}
-            content="Log out"
-            side="right"
-          >
+          <ConditionalTooltip showTooltip={collapsed} content="Log out" side="right">
             <Button
               variant="ghost"
               onClick={onLogout}
@@ -250,11 +225,7 @@ export const Sidebar = memo(function Sidebar({
               aria-label="Log out"
             >
               <LogOut className="w-5 h-5 shrink-0" />
-              {!collapsed && (
-                <span className="hidden lg:block text-sm font-medium">
-                  Logout
-                </span>
-              )}
+              {!collapsed && <span className="hidden lg:block text-sm font-medium">Logout</span>}
             </Button>
           </ConditionalTooltip>
         )}

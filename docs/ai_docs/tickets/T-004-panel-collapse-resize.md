@@ -10,11 +10,13 @@
 All four phases have been implemented:
 
 ### Files Created
+
 - `src/hooks/useBreakpoint.ts` - Responsive breakpoint detection hook
 - `src/hooks/useLayoutShortcuts.ts` - Keyboard shortcuts hook (Cmd/Ctrl+B)
 - `src/components/ui/ResizablePanel.tsx` - Reusable resizable panel component
 
 ### Files Modified
+
 - `src/App.tsx` - Added layout state (sidebarCollapsed, mobileNavOpen), mobile drawer in AppLayout
 - `src/components/Navigation.tsx` - Added collapse toggle, animated transitions
 - `src/components/PracticeRoom.tsx` - Integrated ResizablePanel for song list
@@ -31,21 +33,25 @@ Implement collapsible and resizable panels throughout the application to improve
 The codebase now uses **React Router v6** with layout routes and has basic responsive patterns:
 
 **Navigation Component** (`components/Navigation.tsx`):
+
 - Already responsive: `w-20` on mobile, `lg:w-64` on desktop
 - Icon-only on small screens, labels shown on `lg` breakpoint
 - Uses `useNavigate()` for explicit path navigation
 
 **PracticeRoom** (`components/PracticeRoom.tsx`):
+
 - Has `showSongList` state for toggling song list visibility
 - Uses `hidden md:block` pattern for responsive sidebar
 - Fixed width of `w-64` when visible
 
 **SongDetail** (`components/SongDetail.tsx`):
+
 - Responsive AI sidebar: `flex-col` on mobile, `lg:flex-row` on desktop
 - Sidebar takes `h-1/2` on mobile, `lg:w-96` on desktop
 - Full-screen route (no Navigation sidebar)
 
 **App Layout** (`App.tsx`):
+
 - Layout route pattern with `<Outlet />` for sidebar pages
 - Flex container with Navigation + main content
 - Full-screen routes (song detail, performance) render without sidebar
@@ -131,32 +137,35 @@ useEffect(() => {
 
 // Add to context value (inside useMemo)
 // Note: State setters from useState are stable and don't need to be in deps
-const contextValue = useMemo(() => ({
-  // Existing data fields
-  songs,
-  members,
-  events,
-  availableRoles,
-  // Existing callbacks (stable references from useState)
-  setSongs,
-  setMembers,
-  setEvents,
-  setAvailableRoles,
-  onUpdateSong,
-  // New layout state
-  sidebarCollapsed,
-  setSidebarCollapsed,
-}), [
-  // All data values that trigger re-renders when changed
-  songs,
-  members,
-  events,
-  availableRoles,
-  sidebarCollapsed,
-  // Note: onUpdateSong should be wrapped in useCallback if not already
-  onUpdateSong,
-  // State setters (setSongs, setMembers, etc.) are stable - no need to include
-]);
+const contextValue = useMemo(
+  () => ({
+    // Existing data fields
+    songs,
+    members,
+    events,
+    availableRoles,
+    // Existing callbacks (stable references from useState)
+    setSongs,
+    setMembers,
+    setEvents,
+    setAvailableRoles,
+    onUpdateSong,
+    // New layout state
+    sidebarCollapsed,
+    setSidebarCollapsed,
+  }),
+  [
+    // All data values that trigger re-renders when changed
+    songs,
+    members,
+    events,
+    availableRoles,
+    sidebarCollapsed,
+    // Note: onUpdateSong should be wrapped in useCallback if not already
+    onUpdateSong,
+    // State setters (setSongs, setMembers, etc.) are stable - no need to include
+  ]
+);
 ```
 
 #### 1.2 Update Navigation Component

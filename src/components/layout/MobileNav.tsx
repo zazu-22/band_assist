@@ -3,12 +3,7 @@ import { useLocation } from 'react-router-dom';
 import { Menu } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { Button } from '@/components/primitives/button';
-import {
-  Sheet,
-  SheetContent,
-  SheetTitle,
-  SheetTrigger,
-} from '@/components/primitives/sheet';
+import { Sheet, SheetContent, SheetTitle, SheetTrigger } from '@/components/primitives/sheet';
 import { useSidebar } from './SidebarProvider';
 import { Sidebar } from './Sidebar';
 import { VisuallyHidden } from '@/components/ui/VisuallyHidden';
@@ -49,19 +44,11 @@ export function MobileNav({
       >
         <Sheet open={mobileOpen} onOpenChange={setMobileOpen}>
           <SheetTrigger asChild>
-            <Button
-              variant="ghost"
-              size="icon"
-              aria-label="Open navigation menu"
-            >
+            <Button variant="ghost" size="icon" aria-label="Open navigation menu">
               <Menu className="h-5 w-5" />
             </Button>
           </SheetTrigger>
-          <SheetContent
-            side="left"
-            className="p-0 w-64 bg-sidebar"
-            hideCloseButton
-          >
+          <SheetContent side="left" className="p-0 w-64 bg-sidebar" hideCloseButton>
             <VisuallyHidden>
               <SheetTitle>Navigation Menu</SheetTitle>
             </VisuallyHidden>

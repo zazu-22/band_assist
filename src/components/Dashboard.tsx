@@ -133,9 +133,7 @@ export function calculateSongUrgency(song: Song, today: Date): SongWithUrgency {
   // Target date urgency
   if (song.targetDate) {
     const targetDate = new Date(song.targetDate);
-    const daysUntil = Math.ceil(
-      (targetDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24)
-    );
+    const daysUntil = Math.ceil((targetDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
 
     if (daysUntil < 0) {
       issues.push({ label: 'Overdue', severity: 'high' });
@@ -317,10 +315,7 @@ export const Dashboard: React.FC<DashboardProps> = memo(function Dashboard({
   return (
     <div className="relative p-4 sm:p-6 lg:p-10 space-y-8">
       {/* Ambient background glow */}
-      <div
-        className="absolute inset-0 pointer-events-none overflow-hidden"
-        aria-hidden="true"
-      >
+      <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
         <div
           className="absolute -top-1/4 -left-1/4 w-1/2 h-1/2 rounded-full opacity-[0.03]"
           style={{
@@ -353,8 +348,7 @@ export const Dashboard: React.FC<DashboardProps> = memo(function Dashboard({
                 <span>{daysUntilNextGig === 1 ? 'day' : 'days'}</span>
               </span>
               <span className="text-muted-foreground">
-                until{' '}
-                <span className="text-foreground font-medium">{nextGig.title}</span>
+                until <span className="text-foreground font-medium">{nextGig.title}</span>
               </span>
             </div>
           ) : (
@@ -383,9 +377,7 @@ export const Dashboard: React.FC<DashboardProps> = memo(function Dashboard({
             {/* Header row */}
             <div className="flex items-start justify-between mb-4">
               <div>
-                <h3 className="text-lg font-serif text-foreground">
-                  Band Readiness
-                </h3>
+                <h3 className="text-lg font-serif text-foreground">Band Readiness</h3>
                 <p className="text-sm text-muted-foreground flex items-center gap-2">
                   {readinessStats.total} {readinessStats.total === 1 ? 'song' : 'songs'} in setlist
                   <button
@@ -540,7 +532,12 @@ export const Dashboard: React.FC<DashboardProps> = memo(function Dashboard({
           <CardHeader className="py-2.5 px-4">
             <div className="flex items-center justify-between">
               <h3 className="text-lg font-serif text-foreground">Coming Up</h3>
-              <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={handleNavigateToSchedule}>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 text-xs"
+                onClick={handleNavigateToSchedule}
+              >
                 View Schedule
               </Button>
             </div>
@@ -615,7 +612,12 @@ export const Dashboard: React.FC<DashboardProps> = memo(function Dashboard({
           <div className="flex items-center justify-between">
             <h3 className="text-lg font-serif text-foreground">Practice Queue</h3>
             {songs.length > 0 && (
-              <Button variant="ghost" size="sm" className="h-7 text-xs" onClick={handleNavigateToSetlist}>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="h-7 text-xs"
+                onClick={handleNavigateToSetlist}
+              >
                 View All
               </Button>
             )}
@@ -647,7 +649,7 @@ export const Dashboard: React.FC<DashboardProps> = memo(function Dashboard({
               {songsNeedingAttention.map(({ song, issues }) => {
                 // Separate due date from other issues
                 const dueIssue = issues.find(i => i.label.includes('Due') || i.label === 'Overdue');
-                
+
                 return (
                   <div
                     key={song.id}
@@ -659,9 +661,7 @@ export const Dashboard: React.FC<DashboardProps> = memo(function Dashboard({
                   >
                     {/* Left: Song title + Edit link */}
                     <div className="flex-1 min-w-0 flex items-center gap-2">
-                      <p className="font-semibold text-foreground truncate text-sm">
-                        {song.title}
-                      </p>
+                      <p className="font-semibold text-foreground truncate text-sm">{song.title}</p>
                       <button
                         type="button"
                         onClick={() => onNavigateToSong(song.id)}
@@ -678,9 +678,7 @@ export const Dashboard: React.FC<DashboardProps> = memo(function Dashboard({
                         <span
                           className={cn(
                             'text-[11px] font-medium',
-                            dueIssue.severity === 'high'
-                              ? 'text-destructive'
-                              : 'text-warning'
+                            dueIssue.severity === 'high' ? 'text-destructive' : 'text-warning'
                           )}
                         >
                           {dueIssue.label}

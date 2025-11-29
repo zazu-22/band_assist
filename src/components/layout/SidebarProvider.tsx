@@ -1,11 +1,4 @@
-import {
-  createContext,
-  useContext,
-  useState,
-  useCallback,
-  useMemo,
-  type ReactNode,
-} from 'react';
+import { createContext, useContext, useState, useCallback, useMemo, type ReactNode } from 'react';
 
 interface SidebarContextValue {
   /** Whether the desktop sidebar is collapsed to icon-only mode */
@@ -31,10 +24,7 @@ interface SidebarProviderProps {
   defaultCollapsed?: boolean;
 }
 
-export function SidebarProvider({
-  children,
-  defaultCollapsed = false,
-}: SidebarProviderProps) {
+export function SidebarProvider({ children, defaultCollapsed = false }: SidebarProviderProps) {
   // Initialize from localStorage or default
   const [collapsed, setCollapsedState] = useState<boolean>(() => {
     try {
@@ -64,7 +54,7 @@ export function SidebarProvider({
   }, [collapsed, setCollapsed]);
 
   const toggleMobile = useCallback(() => {
-    setMobileOpen((prev) => !prev);
+    setMobileOpen(prev => !prev);
   }, []);
 
   const value = useMemo<SidebarContextValue>(
@@ -79,9 +69,7 @@ export function SidebarProvider({
     [collapsed, setCollapsed, mobileOpen, toggle, toggleMobile]
   );
 
-  return (
-    <SidebarContext.Provider value={value}>{children}</SidebarContext.Provider>
-  );
+  return <SidebarContext.Provider value={value}>{children}</SidebarContext.Provider>;
 }
 
 export function useSidebar() {

@@ -17,11 +17,13 @@ describe('useMediaQuery', () => {
           listeners.push(callback);
         }
       }),
-      removeEventListener: vi.fn((event: string, callback: (event: MediaQueryListEvent) => void) => {
-        if (event === 'change') {
-          listeners = listeners.filter((l) => l !== callback);
+      removeEventListener: vi.fn(
+        (event: string, callback: (event: MediaQueryListEvent) => void) => {
+          if (event === 'change') {
+            listeners = listeners.filter(l => l !== callback);
+          }
         }
-      }),
+      ),
       dispatchEvent: vi.fn(),
       addListener: vi.fn(),
       removeListener: vi.fn(),
@@ -61,7 +63,7 @@ describe('useMediaQuery', () => {
         // Update the mock to return new value
         window.matchMedia = mockMatchMedia(true);
         // Trigger change event
-        listeners.forEach((callback) => {
+        listeners.forEach(callback => {
           callback({ matches: true } as MediaQueryListEvent);
         });
       });

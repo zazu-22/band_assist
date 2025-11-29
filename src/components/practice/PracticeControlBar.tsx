@@ -85,10 +85,7 @@ export const PracticeControlBar = memo(function PracticeControlBar({
   onMetronomeToggle,
 }: PracticeControlBarProps) {
   return (
-    <header
-      className="border-b border-border bg-card shrink-0"
-      data-testid="practice-control-bar"
-    >
+    <header className="border-b border-border bg-card shrink-0" data-testid="practice-control-bar">
       {/* Main control row */}
       <div className="flex items-center gap-4 px-4 py-2 h-14">
         {/* Left: Toggle + Song info */}
@@ -104,11 +101,7 @@ export const PracticeControlBar = memo(function PracticeControlBar({
                   aria-label={showSongList ? 'Hide song list' : 'Show song list'}
                   data-testid="toggle-button"
                 >
-                  {showSongList ? (
-                    <PanelLeftClose size={18} />
-                  ) : (
-                    <PanelLeftOpen size={18} />
-                  )}
+                  {showSongList ? <PanelLeftClose size={18} /> : <PanelLeftOpen size={18} />}
                 </Button>
               </TooltipTrigger>
               <TooltipContent>
@@ -185,7 +178,9 @@ export const PracticeControlBar = memo(function PracticeControlBar({
             </>
           ) : (
             // Non-GP metronome controls
-            metronomeState && onMetronomeBpmChange && onMetronomeToggle && (
+            metronomeState &&
+            onMetronomeBpmChange &&
+            onMetronomeToggle && (
               <div className="flex items-center gap-2 bg-muted rounded-lg p-1 border border-border">
                 <TooltipProvider delayDuration={100}>
                   <Tooltip>
@@ -214,7 +209,7 @@ export const PracticeControlBar = memo(function PracticeControlBar({
                   min="40"
                   max="220"
                   value={metronomeState.bpm}
-                  onChange={(e) => onMetronomeBpmChange(parseInt(e.target.value))}
+                  onChange={e => onMetronomeBpmChange(parseInt(e.target.value))}
                   className="w-20 h-1 bg-border rounded-lg appearance-none cursor-pointer accent-primary"
                   aria-label="Metronome BPM"
                 />

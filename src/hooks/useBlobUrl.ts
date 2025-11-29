@@ -59,6 +59,17 @@ export function useBlobUrl(
   // This is safe because URL.createObjectURL is a pure function for the same input
   const blobUrl = useMemo(() => {
     if (!dataUri) return undefined;
+
+    // Pass through URLs that are already playable (Supabase signed URLs, blob URLs)
+    if (
+      dataUri.startsWith('https://') ||
+      dataUri.startsWith('http://') ||
+      dataUri.startsWith('blob:')
+    ) {
+      return dataUri;
+    }
+
+    // Convert base64 data URIs to blob URLs
     const result = dataUriToBlobUrl(dataUri, prefix);
     // Log conversion failures to help debug backing track issues
     if (!result && dataUri) {
@@ -73,8 +84,9 @@ export function useBlobUrl(
   // Cleanup effect: revoke URL when it changes or component unmounts
   useEffect(() => {
     // Return cleanup function that revokes the current URL
+    // Only revoke blob: URLs we created, not passed-through URLs
     return () => {
-      if (blobUrl) {
+      if (blobUrl && blobUrl.startsWith('blob:')) {
         URL.revokeObjectURL(blobUrl);
       }
     };

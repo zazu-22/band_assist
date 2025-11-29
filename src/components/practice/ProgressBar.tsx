@@ -21,43 +21,51 @@ export const ProgressBar = memo(function ProgressBar({
   totalTime,
   onSeek,
 }: ProgressBarProps) {
-  const percentage = useMemo(() =>
-    totalTime > 0 ? (currentTime / totalTime) * 100 : 0,
+  const percentage = useMemo(
+    () => (totalTime > 0 ? (currentTime / totalTime) * 100 : 0),
     [currentTime, totalTime]
   );
 
   const formattedCurrent = useMemo(() => formatTime(currentTime), [currentTime]);
   const formattedTotal = useMemo(() => formatTime(totalTime), [totalTime]);
 
-  const handleClick = useCallback((e: React.MouseEvent<HTMLDivElement>) => {
-    const rect = e.currentTarget.getBoundingClientRect();
-    const x = e.clientX - rect.left;
-    const clickPercentage = Math.max(0, Math.min(1, x / rect.width));
-    onSeek(clickPercentage);
-  }, [onSeek]);
+  const handleClick = useCallback(
+    (e: React.MouseEvent<HTMLDivElement>) => {
+      const rect = e.currentTarget.getBoundingClientRect();
+      const x = e.clientX - rect.left;
+      const clickPercentage = Math.max(0, Math.min(1, x / rect.width));
+      onSeek(clickPercentage);
+    },
+    [onSeek]
+  );
 
-  const handleKeyDown = useCallback((e: React.KeyboardEvent<HTMLDivElement>) => {
-    let seekDelta = 0;
-    if (e.key === 'ArrowLeft') seekDelta = -0.05; // Seek back 5%
-    else if (e.key === 'ArrowRight') seekDelta = 0.05; // Seek forward 5%
-    else if (e.key === 'Home') {
-      e.preventDefault();
-      onSeek(0);
-      return;
-    } else if (e.key === 'End') {
-      e.preventDefault();
-      onSeek(1);
-      return;
-    }
+  const handleKeyDown = useCallback(
+    (e: React.KeyboardEvent<HTMLDivElement>) => {
+      let seekDelta = 0;
+      if (e.key === 'ArrowLeft')
+        seekDelta = -0.05; // Seek back 5%
+      else if (e.key === 'ArrowRight')
+        seekDelta = 0.05; // Seek forward 5%
+      else if (e.key === 'Home') {
+        e.preventDefault();
+        onSeek(0);
+        return;
+      } else if (e.key === 'End') {
+        e.preventDefault();
+        onSeek(1);
+        return;
+      }
 
-    if (seekDelta !== 0) {
-      e.preventDefault();
-      // Calculate directly from currentTime/totalTime to avoid precision loss
-      const currentPercentage = totalTime > 0 ? currentTime / totalTime : 0;
-      const newPercentage = Math.max(0, Math.min(1, currentPercentage + seekDelta));
-      onSeek(newPercentage);
-    }
-  }, [currentTime, totalTime, onSeek]);
+      if (seekDelta !== 0) {
+        e.preventDefault();
+        // Calculate directly from currentTime/totalTime to avoid precision loss
+        const currentPercentage = totalTime > 0 ? currentTime / totalTime : 0;
+        const newPercentage = Math.max(0, Math.min(1, currentPercentage + seekDelta));
+        onSeek(newPercentage);
+      }
+    },
+    [currentTime, totalTime, onSeek]
+  );
 
   return (
     <div

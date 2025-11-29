@@ -184,13 +184,13 @@
 
   /* Global cursor styles for interactive elements */
   button,
-  [role="button"],
-  [type="button"],
-  [type="submit"],
-  [type="reset"],
+  [role='button'],
+  [type='button'],
+  [type='submit'],
+  [type='reset'],
   select,
   summary,
-  [tabindex]:not([tabindex="-1"]) {
+  [tabindex]:not([tabindex='-1']) {
     cursor: pointer;
   }
 
@@ -207,49 +207,87 @@
 @layer utilities {
   /* Fade in */
   @keyframes fade-in {
-    from { opacity: 0; }
-    to { opacity: 1; }
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
   }
 
   /* Slide in from bottom */
   @keyframes slide-in-from-bottom {
-    from { transform: translateY(16px); opacity: 0; }
-    to { transform: translateY(0); opacity: 1; }
+    from {
+      transform: translateY(16px);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
   }
 
   /* Slide in from top */
   @keyframes slide-in-from-top {
-    from { transform: translateY(-16px); opacity: 0; }
-    to { transform: translateY(0); opacity: 1; }
+    from {
+      transform: translateY(-16px);
+      opacity: 0;
+    }
+    to {
+      transform: translateY(0);
+      opacity: 1;
+    }
   }
 
   /* Slide in from left */
   @keyframes slide-in-from-left {
-    from { transform: translateX(-100%); }
-    to { transform: translateX(0); }
+    from {
+      transform: translateX(-100%);
+    }
+    to {
+      transform: translateX(0);
+    }
   }
 
   /* Slide in from right */
   @keyframes slide-in-from-right {
-    from { transform: translateX(100%); }
-    to { transform: translateX(0); }
+    from {
+      transform: translateX(100%);
+    }
+    to {
+      transform: translateX(0);
+    }
   }
 
   /* Scale in */
   @keyframes scale-in {
-    from { transform: scale(0.95); opacity: 0; }
-    to { transform: scale(1); opacity: 1; }
+    from {
+      transform: scale(0.95);
+      opacity: 0;
+    }
+    to {
+      transform: scale(1);
+      opacity: 1;
+    }
   }
 
   /* Accordion animations */
   @keyframes accordion-down {
-    from { height: 0; }
-    to { height: var(--radix-accordion-content-height); }
+    from {
+      height: 0;
+    }
+    to {
+      height: var(--radix-accordion-content-height);
+    }
   }
 
   @keyframes accordion-up {
-    from { height: var(--radix-accordion-content-height); }
-    to { height: 0; }
+    from {
+      height: var(--radix-accordion-content-height);
+    }
+    to {
+      height: 0;
+    }
   }
 
   /* Utility animation classes */
@@ -285,11 +323,21 @@
      Dashboard-specific animations
      ============================================ */
   /* Stagger delays for orchestrated reveals */
-  .stagger-1 { animation-delay: 50ms; }
-  .stagger-2 { animation-delay: 100ms; }
-  .stagger-3 { animation-delay: 150ms; }
-  .stagger-4 { animation-delay: 200ms; }
-  .stagger-5 { animation-delay: 250ms; }
+  .stagger-1 {
+    animation-delay: 50ms;
+  }
+  .stagger-2 {
+    animation-delay: 100ms;
+  }
+  .stagger-3 {
+    animation-delay: 150ms;
+  }
+  .stagger-4 {
+    animation-delay: 200ms;
+  }
+  .stagger-5 {
+    animation-delay: 250ms;
+  }
 
   /* Animation fill mode utility - maintains final state after animation */
   .animation-forwards {
@@ -298,13 +346,16 @@
 
   /* Pulse glow animation for countdown */
   @keyframes pulse-glow {
-    0%, 100% { 
-      box-shadow: 0 0 15px oklch(0.7686 0.1647 70.0804 / 0.3),
-                  0 4px 6px -1px oklch(0 0 0 / 0.1);
+    0%,
+    100% {
+      box-shadow:
+        0 0 15px oklch(0.7686 0.1647 70.0804 / 0.3),
+        0 4px 6px -1px oklch(0 0 0 / 0.1);
     }
-    50% { 
-      box-shadow: 0 0 25px oklch(0.7686 0.1647 70.0804 / 0.5),
-                  0 4px 6px -1px oklch(0 0 0 / 0.1);
+    50% {
+      box-shadow:
+        0 0 25px oklch(0.7686 0.1647 70.0804 / 0.5),
+        0 4px 6px -1px oklch(0 0 0 / 0.1);
     }
   }
 
@@ -314,13 +365,13 @@
 
   /* Count-in animation with bounce */
   @keyframes count-in {
-    from { 
-      transform: scale(0.8); 
-      opacity: 0; 
+    from {
+      transform: scale(0.8);
+      opacity: 0;
     }
-    to { 
-      transform: scale(1); 
-      opacity: 1; 
+    to {
+      transform: scale(1);
+      opacity: 1;
     }
   }
 
@@ -330,8 +381,12 @@
 
   /* Progress bar fill animation */
   @keyframes progress-fill {
-    from { transform: scaleX(0); }
-    to { transform: scaleX(1); }
+    from {
+      transform: scaleX(0);
+    }
+    to {
+      transform: scaleX(1);
+    }
   }
 
   .animate-progress-fill {
@@ -368,11 +423,11 @@
 
   /* Scrollbar hide utility - enables scrolling without visible scrollbar */
   .scrollbar-hide {
-    -ms-overflow-style: none;  /* IE and Edge */
-    scrollbar-width: none;  /* Firefox */
+    -ms-overflow-style: none; /* IE and Edge */
+    scrollbar-width: none; /* Firefox */
   }
 
   .scrollbar-hide::-webkit-scrollbar {
-    display: none;  /* Chrome, Safari, Opera */
+    display: none; /* Chrome, Safari, Opera */
   }
 }

@@ -41,10 +41,7 @@ export const SetlistActionBar = memo(function SetlistActionBar({
           disabled={isLoadingSuggestions}
           className="gap-2"
         >
-          <Sparkles
-            size={16}
-            className={isLoadingSuggestions ? 'animate-spin' : ''}
-          />
+          <Sparkles size={16} className={isLoadingSuggestions ? 'animate-spin' : ''} />
           {isLoadingSuggestions ? 'Thinking...' : 'AI Suggestions'}
         </Button>
         <Button onClick={onAddSong} className="gap-2">

@@ -3,12 +3,7 @@ import { ArrowLeft, Loader2 } from 'lucide-react';
 import { Button, Input, Label } from '@/components/primitives';
 import { AuthLayout } from '@/components/AuthLayout';
 import { getSupabaseClient } from '@/services/supabaseClient';
-import {
-  validateEmail,
-  validatePassword,
-  normalizeEmail,
-  PASSWORD_HINT,
-} from '@/utils/validation';
+import { validateEmail, validatePassword, normalizeEmail, PASSWORD_HINT } from '@/utils/validation';
 
 interface SignupProps {
   onSignupSuccess: () => void;
@@ -20,72 +15,79 @@ export const Signup: React.FC<SignupProps> = memo(function Signup({ onSignupSucc
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [error, setError] = useState('');
-  const [errorField, setErrorField] = useState<'email' | 'password' | 'confirmPassword' | null>(null);
+  const [errorField, setErrorField] = useState<'email' | 'password' | 'confirmPassword' | null>(
+    null
+  );
   const [success, setSuccess] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = useCallback(async (e: React.FormEvent) => {
-    e.preventDefault();
-    setError('');
-    setErrorField(null);
-    setSuccess(false);
-    setIsLoading(true);
+  const handleSubmit = useCallback(
+    async (e: React.FormEvent) => {
+      e.preventDefault();
+      setError('');
+      setErrorField(null);
+      setSuccess(false);
+      setIsLoading(true);
 
-    const emailValidation = validateEmail(email);
-    if (!emailValidation.isValid) {
-      setError(emailValidation.error || 'Invalid email address');
-      setErrorField('email');
-      setIsLoading(false);
-      return;
-    }
-
-    const passwordValidation = validatePassword(password);
-    if (!passwordValidation.isValid) {
-      setError(passwordValidation.error || 'Invalid password');
-      setErrorField('password');
-      setIsLoading(false);
-      return;
-    }
-
-    if (password !== confirmPassword) {
-      setError('Passwords do not match.');
-      setErrorField('confirmPassword');
-      setIsLoading(false);
-      return;
-    }
-
-    const supabase = getSupabaseClient();
-    if (!supabase) {
-      setError('Supabase is not configured. Check environment variables.');
-      setIsLoading(false);
-      return;
-    }
-
-    try {
-      const normalizedEmail = normalizeEmail(email);
-      const { data, error: authError } = await supabase.auth.signUp({
-        email: normalizedEmail,
-        password,
-      });
-
-      if (authError) {
-        throw authError;
+      const emailValidation = validateEmail(email);
+      if (!emailValidation.isValid) {
+        setError(emailValidation.error || 'Invalid email address');
+        setErrorField('email');
+        setIsLoading(false);
+        return;
       }
 
-      if (data.user) {
-        if (data.session) {
-          onSignupSuccess();
-        } else {
-          setSuccess(true);
+      const passwordValidation = validatePassword(password);
+      if (!passwordValidation.isValid) {
+        setError(passwordValidation.error || 'Invalid password');
+        setErrorField('password');
+        setIsLoading(false);
+        return;
+      }
+
+      if (password !== confirmPassword) {
+        setError('Passwords do not match.');
+        setErrorField('confirmPassword');
+        setIsLoading(false);
+        return;
+      }
+
+      const supabase = getSupabaseClient();
+      if (!supabase) {
+        setError('Supabase is not configured. Check environment variables.');
+        setIsLoading(false);
+        return;
+      }
+
+      try {
+        const normalizedEmail = normalizeEmail(email);
+        const { data, error: authError } = await supabase.auth.signUp({
+          email: normalizedEmail,
+          password,
+        });
+
+        if (authError) {
+          throw authError;
         }
+
+        if (data.user) {
+          if (data.session) {
+            onSignupSuccess();
+          } else {
+            setSuccess(true);
+          }
+        }
+      } catch (err) {
+        console.error('Signup error:', err);
+        setError(
+          err instanceof Error ? err.message : 'Failed to create account. Please try again.'
+        );
+      } finally {
+        setIsLoading(false);
       }
-    } catch (err) {
-      console.error('Signup error:', err);
-      setError(err instanceof Error ? err.message : 'Failed to create account. Please try again.');
-    } finally {
-      setIsLoading(false);
-    }
-  }, [email, password, confirmPassword, onSignupSuccess]);
+    },
+    [email, password, confirmPassword, onSignupSuccess]
+  );
 
   const handleNavigateToLogin = useCallback(() => {
     onNavigate('LOGIN');
@@ -170,7 +172,10 @@ export const Signup: React.FC<SignupProps> = memo(function Signup({ onSignupSucc
 
           {/* Error Message */}
           {error && (
-            <div className="bg-destructive/10 border border-destructive/30 rounded-md p-3" role="alert">
+            <div
+              className="bg-destructive/10 border border-destructive/30 rounded-md p-3"
+              role="alert"
+            >
               <p id="form-error" className="text-sm text-destructive">
                 {error}
               </p>
@@ -194,7 +199,11 @@ export const Signup: React.FC<SignupProps> = memo(function Signup({ onSignupSucc
       {/* Back to Login */}
       {!success && (
         <div className="mt-6 text-center">
-          <Button variant="link" onClick={handleNavigateToLogin} className="text-sm text-muted-foreground">
+          <Button
+            variant="link"
+            onClick={handleNavigateToLogin}
+            className="text-sm text-muted-foreground"
+          >
             <ArrowLeft className="w-4 h-4" />
             Back to Sign In
           </Button>
