@@ -1,5 +1,5 @@
 import { memo, useRef, useState, useCallback, useLayoutEffect } from 'react';
-import { PanelLeftClose, PanelLeftOpen, Clock, ChevronLeft, ChevronRight } from 'lucide-react';
+import { PanelLeftClose, PanelLeftOpen, ChevronLeft, ChevronRight } from 'lucide-react';
 import {
   Button,
   Tooltip,
@@ -14,9 +14,21 @@ import { ChartTabs } from './ChartTabs';
 import { TrackSelector } from './TrackSelector';
 import { TempoControl } from './TempoControl';
 import { MetronomeIndicator } from './MetronomeIndicator';
+import { MetronomeControls } from './MetronomeControls';
 import { ProgressBar } from './ProgressBar';
 import type { Song, SongChart } from '@/types';
 import type { TrackInfo, PlaybackState, MetronomeState } from './types';
+
+// =============================================================================
+// CONSTANTS
+// =============================================================================
+
+/**
+ * Minimum scroll distance (in pixels) before showing fade indicators.
+ * This threshold prevents flickering when content is at the edge of the
+ * scrollable area with minor floating-point variations.
+ */
+const SCROLL_FADE_THRESHOLD_PX = 4;
 
 // =============================================================================
 // SCROLLABLE CONTAINER WITH FADE INDICATORS
@@ -50,8 +62,8 @@ const ScrollableContainer = memo(function ScrollableContainer({
     const { scrollLeft, scrollWidth, clientWidth } = el;
     const hasOverflow = scrollWidth > clientWidth;
 
-    setShowLeftFade(hasOverflow && scrollLeft > 4);
-    setShowRightFade(hasOverflow && scrollLeft < scrollWidth - clientWidth - 4);
+    setShowLeftFade(hasOverflow && scrollLeft > SCROLL_FADE_THRESHOLD_PX);
+    setShowRightFade(hasOverflow && scrollLeft < scrollWidth - clientWidth - SCROLL_FADE_THRESHOLD_PX);
   }, []);
 
   useLayoutEffect(() => {
@@ -62,9 +74,11 @@ const ScrollableContainer = memo(function ScrollableContainer({
     const handleScroll = () => checkScroll();
     el.addEventListener('scroll', handleScroll, { passive: true });
 
-    // Set up resize observer to detect content/container size changes
+    // Set up resize observer to detect content/container size changes.
+    // The ResizeObserver callback invokes checkScroll() which updates state.
+    // This is intentional: ResizeObserver fires asynchronously after layout
+    // changes, similar to event handlers, and is safe to call setState from.
     const resizeObserver = new ResizeObserver(() => {
-      // eslint-disable-next-line react-hooks/set-state-in-effect -- Intentional: resize observer callback is async external system update
       checkScroll();
     });
     resizeObserver.observe(el);
@@ -318,42 +332,12 @@ export const PracticeControlBar = memo(function PracticeControlBar({
             metronomeState &&
             onMetronomeBpmChange &&
             onMetronomeToggle && (
-              <div className="flex items-center gap-2 bg-muted rounded-lg p-1 border border-border">
-                <TooltipProvider delayDuration={100}>
-                  <Tooltip>
-                    <TooltipTrigger asChild>
-                      <button
-                        type="button"
-                        onClick={onMetronomeToggle}
-                        className={cn(
-                          'p-2 rounded-md transition-colors',
-                          metronomeState.isActive
-                            ? 'bg-primary text-primary-foreground shadow-lg'
-                            : 'text-muted-foreground hover:bg-background hover:text-foreground'
-                        )}
-                        aria-label={metronomeState.isActive ? 'Stop metronome' : 'Start metronome'}
-                      >
-                        <Clock size={18} />
-                      </button>
-                    </TooltipTrigger>
-                    <TooltipContent>
-                      <p>{metronomeState.isActive ? 'Stop metronome' : 'Start metronome'}</p>
-                    </TooltipContent>
-                  </Tooltip>
-                </TooltipProvider>
-                <input
-                  type="range"
-                  min="40"
-                  max="220"
-                  value={metronomeState.bpm}
-                  onChange={e => onMetronomeBpmChange(parseInt(e.target.value))}
-                  className="w-20 h-1 bg-border rounded-lg appearance-none cursor-pointer accent-primary"
-                  aria-label="Metronome BPM"
-                />
-                <span className="text-xs font-mono w-8 text-center tabular-nums text-foreground">
-                  {metronomeState.bpm}
-                </span>
-              </div>
+              <MetronomeControls
+                metronomeState={metronomeState}
+                onBpmChange={onMetronomeBpmChange}
+                onToggle={onMetronomeToggle}
+                variant="compact"
+              />
             )}
         </ScrollableContainer>
       </div>
@@ -410,42 +394,12 @@ export const PracticeControlBar = memo(function PracticeControlBar({
         onMetronomeBpmChange &&
         onMetronomeToggle && (
           <div className="flex items-center justify-center gap-2 px-3 py-2 border-t border-border/50 bg-card/80">
-            <div className="flex items-center gap-2 bg-muted rounded-lg p-1 border border-border">
-              <TooltipProvider delayDuration={100}>
-                <Tooltip>
-                  <TooltipTrigger asChild>
-                    <button
-                      type="button"
-                      onClick={onMetronomeToggle}
-                      className={cn(
-                        'p-2 rounded-md transition-colors',
-                        metronomeState.isActive
-                          ? 'bg-primary text-primary-foreground shadow-lg'
-                          : 'text-muted-foreground hover:bg-background hover:text-foreground'
-                      )}
-                      aria-label={metronomeState.isActive ? 'Stop metronome' : 'Start metronome'}
-                    >
-                      <Clock size={18} />
-                    </button>
-                  </TooltipTrigger>
-                  <TooltipContent>
-                    <p>{metronomeState.isActive ? 'Stop metronome' : 'Start metronome'}</p>
-                  </TooltipContent>
-                </Tooltip>
-              </TooltipProvider>
-              <input
-                type="range"
-                min="40"
-                max="220"
-                value={metronomeState.bpm}
-                onChange={e => onMetronomeBpmChange(parseInt(e.target.value))}
-                className="w-24 h-1 bg-border rounded-lg appearance-none cursor-pointer accent-primary"
-                aria-label="Metronome BPM"
-              />
-              <span className="text-xs font-mono w-10 text-center tabular-nums text-foreground">
-                {metronomeState.bpm}
-              </span>
-            </div>
+            <MetronomeControls
+              metronomeState={metronomeState}
+              onBpmChange={onMetronomeBpmChange}
+              onToggle={onMetronomeToggle}
+              variant="expanded"
+            />
           </div>
         )}
 
