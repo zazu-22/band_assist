@@ -17,6 +17,7 @@ import {
 import { ConfirmDialog, EmptyState } from '@/components/ui';
 import type { BandEvent, Song } from '@/types';
 import { cn } from '@/lib/utils';
+import { parseLocalDate } from '@/lib/dateUtils';
 
 interface ScheduleManagerProps {
   events: BandEvent[];
@@ -141,7 +142,7 @@ export const ScheduleManager: React.FC<ScheduleManagerProps> = memo(function Sch
       }));
 
     return [...events.map(e => ({ ...e, isEvent: true as const })), ...songTargets].sort(
-      (a, b) => new Date(a.date).getTime() - new Date(b.date).getTime()
+      (a, b) => parseLocalDate(a.date).getTime() - parseLocalDate(b.date).getTime()
     );
   }, [events, songs]);
 
@@ -292,6 +293,9 @@ export const ScheduleManager: React.FC<ScheduleManagerProps> = memo(function Sch
               const location = item.isEvent ? item.location : undefined;
               const notes = item.isEvent ? item.notes : undefined;
 
+              // Note: Using `new Date(date + "T" + time)` is correct here because we're
+              // creating a full ISO 8601 datetime string, which parses as local time.
+              // The timezone bug only affects date-only strings like "2025-01-15".
               const dateObj = new Date(item.date + (time ? `T${time}` : 'T00:00'));
               const isPast = dateObj < new Date();
 

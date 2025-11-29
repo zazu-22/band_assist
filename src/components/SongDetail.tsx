@@ -19,6 +19,7 @@ import {
   SelectValue,
 } from '@/components/primitives/select';
 import { cn } from '@/lib/utils';
+import { parseLocalDate } from '@/lib/dateUtils';
 import {
   Music2,
   Users,
@@ -565,7 +566,7 @@ export const SongDetail: React.FC<SongDetailProps> = ({
                               <Calendar size={14} className="text-muted-foreground" /> Target Date
                             </span>
                             <p className="text-xl font-mono tabular-nums text-foreground">
-                              {new Date(song.targetDate).toLocaleDateString()}
+                              {parseLocalDate(song.targetDate).toLocaleDateString()}
                             </p>
                           </div>
                         )}
