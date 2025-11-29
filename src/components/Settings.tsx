@@ -33,6 +33,7 @@ import { StorageService } from '@/services/storageService';
 import { InvitationManager } from '@/components/InvitationManager';
 import { isSupabaseConfigured } from '@/services/supabaseClient';
 import { getAvatarColor, getNextAvatarColor } from '@/lib/avatar';
+import { cn } from '@/lib/utils';
 import type { BandMember, Song, BandEvent } from '@/types';
 
 type SettingsTab = 'ROSTER' | 'ROLES' | 'TEAM' | 'DATA';
@@ -223,7 +224,7 @@ export const Settings: React.FC<SettingsProps> = memo(function Settings({
       <Tabs value={activeTab} onValueChange={handleTabChange}>
         <header className="mb-8 border-b border-border pb-6 flex flex-col md:flex-row md:items-center justify-between gap-4">
           <div>
-            <h2 className="text-3xl font-bold text-foreground">Configuration</h2>
+            <h2 className="text-4xl font-bold font-serif text-foreground tracking-tight">Configuration</h2>
             <p className="text-muted-foreground mt-1">Band roster, roles, and data backup</p>
           </div>
 
@@ -250,10 +251,10 @@ export const Settings: React.FC<SettingsProps> = memo(function Settings({
         </header>
 
         {/* Roster Tab */}
-        <TabsContent value="ROSTER" className="space-y-6 animate-fade-in">
+        <TabsContent value="ROSTER" className="space-y-6 animate-slide-in-from-bottom animation-forwards">
           <Card>
             <CardHeader>
-              <CardTitle>Members</CardTitle>
+              <CardTitle className="font-serif">Members</CardTitle>
               <CardDescription>
                 Add everyone in the band. You will assign specific roles (Guitar, Bass, etc.) to
                 them inside each song.
@@ -264,7 +265,10 @@ export const Settings: React.FC<SettingsProps> = memo(function Settings({
                 {members.map(member => (
                   <div
                     key={member.id}
-                    className="bg-muted/50 p-4 rounded-lg border border-border flex items-center justify-between"
+                    className={cn(
+                      'p-4 rounded-lg border border-border flex items-center justify-between',
+                      'border-l-[3px] border-l-primary/60 hover:bg-muted/30 transition-colors'
+                    )}
                   >
                     {editingId === member.id ? (
                       <div className="flex items-center gap-4 w-full">
@@ -354,10 +358,10 @@ export const Settings: React.FC<SettingsProps> = memo(function Settings({
         </TabsContent>
 
         {/* Roles Tab */}
-        <TabsContent value="ROLES" className="space-y-6 animate-fade-in">
+        <TabsContent value="ROLES" className="space-y-6 animate-slide-in-from-bottom animation-forwards">
           <Card>
             <CardHeader>
-              <CardTitle>Available Roles &amp; Instruments</CardTitle>
+              <CardTitle className="font-serif">Available Roles &amp; Instruments</CardTitle>
               <CardDescription>
                 Define the list of instruments or roles that can be assigned in songs (e.g.,
                 &quot;Lead Guitar&quot;, &quot;Cowbell&quot;, &quot;Manager&quot;).
@@ -398,7 +402,7 @@ export const Settings: React.FC<SettingsProps> = memo(function Settings({
 
         {/* Team Tab - Only rendered when Supabase is configured */}
         {showInvitations && currentBandId && currentUserId && (
-          <TabsContent value="TEAM" className="space-y-6 animate-fade-in">
+          <TabsContent value="TEAM" className="space-y-6 animate-slide-in-from-bottom animation-forwards">
             <Card>
               <CardContent className="p-6">
                 <InvitationManager
@@ -412,10 +416,10 @@ export const Settings: React.FC<SettingsProps> = memo(function Settings({
         )}
 
         {/* Data Tab */}
-        <TabsContent value="DATA" className="space-y-6 animate-fade-in">
+        <TabsContent value="DATA" className="space-y-6 animate-slide-in-from-bottom animation-forwards">
           <Card>
             <CardHeader>
-              <CardTitle>Backup &amp; Restore</CardTitle>
+              <CardTitle className="font-serif">Backup &amp; Restore</CardTitle>
               <CardDescription>
                 Export your band&apos;s data to a JSON file. You can email this file to your
                 brothers so they can load it on their devices. This is the safest way to ensure
@@ -431,7 +435,7 @@ export const Settings: React.FC<SettingsProps> = memo(function Settings({
                       <Download className="h-8 w-8 text-info" />
                     </div>
                     <div>
-                      <h4 className="font-bold text-foreground">Export Project</h4>
+                      <h4 className="font-bold font-serif text-foreground">Export Project</h4>
                       <p className="text-xs text-muted-foreground mt-1">
                         Save current songs, members, assignments, and schedule.
                       </p>
@@ -452,7 +456,7 @@ export const Settings: React.FC<SettingsProps> = memo(function Settings({
                       <Upload className="h-8 w-8 text-warning" />
                     </div>
                     <div>
-                      <h4 className="font-bold text-foreground">Import Project</h4>
+                      <h4 className="font-bold font-serif text-foreground">Import Project</h4>
                       <p className="text-xs text-muted-foreground mt-1">
                         Restore from a backup file.{' '}
                         <span className="text-destructive font-bold">Overwrites current data.</span>
@@ -481,7 +485,7 @@ export const Settings: React.FC<SettingsProps> = memo(function Settings({
             <CardContent className="p-6 flex items-start gap-4">
               <AlertTriangle className="h-6 w-6 text-destructive shrink-0 mt-0.5" />
               <div>
-                <h4 className="font-bold text-destructive">Local Storage Warning</h4>
+                <h4 className="font-bold font-serif text-destructive">Local Storage Warning</h4>
                 <p className="text-sm text-muted-foreground mt-1">
                   Browser storage is limited (usually around 5MB). If you upload too many large PDFs
                   or Audio files, the app may stop saving automatically. We recommend using the

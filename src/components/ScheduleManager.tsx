@@ -16,6 +16,7 @@ import {
 } from '@/components/primitives';
 import { ConfirmDialog, EmptyState } from '@/components/ui';
 import type { BandEvent, Song } from '@/types';
+import { cn } from '@/lib/utils';
 
 interface ScheduleManagerProps {
   events: BandEvent[];
@@ -171,10 +172,18 @@ export const ScheduleManager: React.FC<ScheduleManagerProps> = memo(function Sch
   }, []);
 
   return (
-    <div className="p-4 sm:p-6 lg:p-10 max-w-5xl mx-auto">
+    <div className="relative p-4 sm:p-6 lg:p-10 max-w-5xl mx-auto">
+      {/* Ambient background glow */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
+        <div
+          className="absolute -top-1/4 -right-1/4 w-1/2 h-1/2 rounded-full opacity-[0.03]"
+          style={{ background: 'radial-gradient(circle, var(--primary) 0%, transparent 70%)' }}
+        />
+      </div>
+
       <div className="flex flex-col sm:flex-row sm:items-center justify-between mb-8 gap-4">
         <div>
-          <h2 className="text-3xl font-bold text-foreground">Band Schedule</h2>
+          <h2 className="text-4xl font-bold font-serif text-foreground tracking-tight">Band Schedule</h2>
           <p className="text-muted-foreground mt-1">Manage practices, gigs, and song goals</p>
         </div>
         <Button onClick={handleStartAdding}>
@@ -186,7 +195,7 @@ export const ScheduleManager: React.FC<ScheduleManagerProps> = memo(function Sch
       {isAdding && (
         <Card className="mb-8 animate-slide-in-from-top shadow-lg">
           <CardHeader>
-            <CardTitle>{editingId ? 'Edit Event' : 'New Event'}</CardTitle>
+            <CardTitle className="font-serif">{editingId ? 'Edit Event' : 'New Event'}</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
@@ -278,7 +287,7 @@ export const ScheduleManager: React.FC<ScheduleManagerProps> = memo(function Sch
           />
         ) : (
           <div className="relative pl-4 md:pl-8 border-l-2 border-border space-y-8 py-4">
-            {timelineItems.map(item => {
+            {timelineItems.map((item, index) => {
               const time = item.isEvent ? item.time : undefined;
               const location = item.isEvent ? item.location : undefined;
               const notes = item.isEvent ? item.notes : undefined;
@@ -294,7 +303,15 @@ export const ScheduleManager: React.FC<ScheduleManagerProps> = memo(function Sch
                     : 'bg-info';
 
               return (
-                <div key={item.id} className={`relative ${isPast ? 'opacity-50 grayscale' : ''}`}>
+                <div
+                  key={item.id}
+                  className={cn(
+                    'relative',
+                    'animate-slide-in-from-bottom animation-forwards opacity-0',
+                    isPast && 'grayscale'
+                  )}
+                  style={{ animationDelay: `${index * 75}ms` }}
+                >
                   {/* Timeline Dot */}
                   <div
                     className={`absolute -left-[25px] md:-left-[41px] top-4 w-5 h-5 rounded-full border-4 border-background ${dotColor}`}
@@ -338,14 +355,14 @@ export const ScheduleManager: React.FC<ScheduleManagerProps> = memo(function Sch
 
                       <div className="flex flex-row md:flex-col items-center md:items-end justify-between gap-2 md:gap-0 border-t md:border-t-0 md:border-l border-border/50 pt-3 md:pt-0 md:pl-6 shrink-0 min-w-[120px]">
                         <div className="text-right">
-                          <div className="text-2xl font-bold text-foreground leading-none">
+                          <div className="text-2xl font-bold font-mono tabular-nums text-foreground leading-none">
                             {dateObj.getDate()}
                           </div>
                           <div className="text-sm text-muted-foreground uppercase font-bold">
                             {dateObj.toLocaleDateString('en-US', { month: 'short' })}
                           </div>
                           {time && (
-                            <div className="text-xs text-muted-foreground font-mono mt-1">
+                            <div className="text-xs text-muted-foreground font-mono tabular-nums mt-1">
                               {time}
                             </div>
                           )}
