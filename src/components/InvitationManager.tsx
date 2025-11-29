@@ -35,7 +35,14 @@ function isPostgresError(error: unknown): error is PostgresError {
   return 'code' in error || 'message' in error;
 }
 
-/** Format date for display */
+/**
+ * Format date for display.
+ *
+ * Note: This uses standard Date parsing because `invited_at` from Supabase
+ * is a full ISO 8601 timestamp (e.g., "2025-01-15T14:30:00Z"), not a date-only
+ * string. Full timestamps parse correctly; only date-only strings like
+ * "2025-01-15" have UTC parsing issues (see dateUtils.ts for that fix).
+ */
 function formatDate(dateString: string): string {
   const date = new Date(dateString);
   return date.toLocaleDateString('en-US', {

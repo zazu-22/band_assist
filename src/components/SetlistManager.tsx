@@ -2,6 +2,7 @@ import React, { memo, useState, useCallback, useMemo } from 'react';
 import { Music } from 'lucide-react';
 import { toast, EmptyState } from '@/components/ui';
 import { getMusicAnalysis } from '@/services/geminiService';
+import { parseLocalDate, getLocalToday, daysBetween } from '@/lib/dateUtils';
 import {
   SetlistHeader,
   SetlistStats,
@@ -113,21 +114,18 @@ export const SetlistManager: React.FC<SetlistManagerProps> = memo(function Setli
 
   // Compute next gig from events
   const { nextGig, daysUntilNextGig } = useMemo(() => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
+    const today = getLocalToday();
 
     const upcoming = events
-      .filter(e => e.type === 'GIG' && new Date(e.date) >= today)
-      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime());
+      .filter(e => e.type === 'GIG' && parseLocalDate(e.date) >= today)
+      .sort((a, b) => parseLocalDate(a.date).getTime() - parseLocalDate(b.date).getTime());
 
     const next = upcoming[0];
     if (!next) {
       return { nextGig: undefined, daysUntilNextGig: undefined };
     }
 
-    const gigDate = new Date(next.date);
-    gigDate.setHours(0, 0, 0, 0);
-    const days = Math.ceil((gigDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    const days = daysBetween(today, parseLocalDate(next.date));
 
     return { nextGig: next, daysUntilNextGig: days };
   }, [events]);

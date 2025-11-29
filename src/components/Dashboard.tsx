@@ -24,6 +24,12 @@ import {
 } from '@/components/primitives';
 import { EmptyState, StatusBadge } from '@/components/ui';
 import { cn } from '@/lib/utils';
+import {
+  parseLocalDate,
+  getLocalToday,
+  daysBetween,
+  formatDaysUntil,
+} from '@/lib/dateUtils';
 import { ROUTES } from '@/routes';
 import type { Song, BandEvent, BandMember } from '@/types';
 
@@ -132,8 +138,8 @@ export function calculateSongUrgency(song: Song, today: Date): SongWithUrgency {
 
   // Target date urgency
   if (song.targetDate) {
-    const targetDate = new Date(song.targetDate);
-    const daysUntil = Math.ceil((targetDate.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
+    const targetDate = parseLocalDate(song.targetDate);
+    const daysUntil = daysBetween(today, targetDate);
 
     if (daysUntil < 0) {
       issues.push({ label: 'Overdue', severity: 'high' });
@@ -157,21 +163,6 @@ export function calculateSongUrgency(song: Song, today: Date): SongWithUrgency {
   return { song, score, issues };
 }
 
-/**
- * Format days until a date as human-readable string
- */
-function formatDaysUntil(dateStr: string): string {
-  const today = new Date();
-  today.setHours(0, 0, 0, 0);
-  const target = new Date(dateStr);
-  const days = Math.ceil((target.getTime() - today.getTime()) / (1000 * 60 * 60 * 24));
-
-  if (days === 0) return 'Today';
-  if (days === 1) return 'Tomorrow';
-  if (days < 0) return `${Math.abs(days)}d ago`;
-  return `in ${days}d`;
-}
-
 // =============================================================================
 // COMPONENT
 // =============================================================================
@@ -189,24 +180,19 @@ export const Dashboard: React.FC<DashboardProps> = memo(function Dashboard({
   // ---------------------------------------------------------------------------
 
   // Shared normalized date (midnight today) to prevent inconsistencies across memos
-  const normalizedToday = useMemo(() => {
-    const today = new Date();
-    today.setHours(0, 0, 0, 0);
-    return today;
-  }, []);
+  const normalizedToday = useMemo(() => getLocalToday(), []);
 
   // Next upcoming gig
   const nextGig = useMemo(() => {
     return events
-      .filter(e => e.type === 'GIG' && new Date(e.date) >= normalizedToday)
-      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())[0];
+      .filter(e => e.type === 'GIG' && parseLocalDate(e.date) >= normalizedToday)
+      .sort((a, b) => parseLocalDate(a.date).getTime() - parseLocalDate(b.date).getTime())[0];
   }, [events, normalizedToday]);
 
   // Days until next gig
   const daysUntilNextGig = useMemo(() => {
     if (!nextGig) return null;
-    const gigDate = new Date(nextGig.date);
-    return Math.ceil((gigDate.getTime() - normalizedToday.getTime()) / (1000 * 60 * 60 * 24));
+    return daysBetween(normalizedToday, parseLocalDate(nextGig.date));
   }, [nextGig, normalizedToday]);
 
   // Readiness statistics
@@ -235,7 +221,7 @@ export const Dashboard: React.FC<DashboardProps> = memo(function Dashboard({
     // Map events
     const eventItems: TimelineItem[] = events
       .filter(e => {
-        const d = new Date(e.date);
+        const d = parseLocalDate(e.date);
         return d >= normalizedToday && d <= twoWeeksOut;
       })
       .map(e => ({
@@ -251,7 +237,7 @@ export const Dashboard: React.FC<DashboardProps> = memo(function Dashboard({
     const deadlineItems: TimelineItem[] = songs
       .filter(s => s.targetDate && s.status !== 'Performance Ready')
       .filter(s => {
-        const d = new Date(s.targetDate!);
+        const d = parseLocalDate(s.targetDate!);
         return d >= normalizedToday && d <= twoWeeksOut;
       })
       .map(s => ({
@@ -264,7 +250,7 @@ export const Dashboard: React.FC<DashboardProps> = memo(function Dashboard({
       }));
 
     return [...eventItems, ...deadlineItems]
-      .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+      .sort((a, b) => parseLocalDate(a.date).getTime() - parseLocalDate(b.date).getTime())
       .slice(0, 3);
   }, [events, songs, normalizedToday]);
 
@@ -561,10 +547,10 @@ export const Dashboard: React.FC<DashboardProps> = memo(function Dashboard({
                     )}
                   >
                     <span className="text-sm font-bold font-mono leading-none tabular-nums">
-                      {new Date(item.date).getDate()}
+                      {parseLocalDate(item.date).getDate()}
                     </span>
                     <span className="text-[8px] font-bold uppercase text-muted-foreground">
-                      {new Date(item.date).toLocaleDateString('en-US', { month: 'short' })}
+                      {parseLocalDate(item.date).toLocaleDateString('en-US', { month: 'short' })}
                     </span>
                   </div>
 
