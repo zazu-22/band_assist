@@ -4,6 +4,7 @@ export { LoadingSpinner } from './LoadingSpinner';
 export { LoadingScreen } from './LoadingScreen';
 export { EmptyState } from './EmptyState';
 export { ConfirmDialog } from './ConfirmDialog';
+export { DangerousActionDialog } from './DangerousActionDialog';
 export { ErrorBoundary } from './ErrorBoundary';
 export { ResizablePanel } from './ResizablePanel';
 
