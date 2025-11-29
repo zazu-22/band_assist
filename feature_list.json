@@ -1,0 +1,652 @@
+[
+  {
+    "category": "functional",
+    "description": "ScheduleManager - Page loads without errors and displays existing events",
+    "steps": [
+      "Step 1: Navigate to /schedule page",
+      "Step 2: Wait for page to fully load",
+      "Step 3: Verify page renders without console errors",
+      "Step 4: Verify events timeline is visible if events exist"
+    ],
+    "passes": true,
+    "requires_manual_testing": false
+  },
+  {
+    "category": "functional",
+    "description": "ScheduleManager - Create new event functionality works",
+    "steps": [
+      "Step 1: Navigate to /schedule page",
+      "Step 2: Click 'Add Event' button",
+      "Step 3: Fill in event title 'Test Practice'",
+      "Step 4: Select event type 'PRACTICE'",
+      "Step 5: Set date to tomorrow",
+      "Step 6: Set time to '19:00'",
+      "Step 7: Fill in location 'Test Location'",
+      "Step 8: Click 'Save Event' button",
+      "Step 9: Verify new event appears in timeline",
+      "Step 10: Verify event displays correct title, date, time, and location"
+    ],
+    "passes": true,
+    "requires_manual_testing": false
+  },
+  {
+    "category": "functional",
+    "description": "ScheduleManager - Edit event functionality works",
+    "steps": [
+      "Step 1: Navigate to /schedule page with existing events",
+      "Step 2: Hover over an event card to reveal edit button",
+      "Step 3: Click edit button on an event",
+      "Step 4: Verify form populates with existing event data",
+      "Step 5: Change event title to 'Updated Event'",
+      "Step 6: Click 'Update Event' button",
+      "Step 7: Verify event displays updated title"
+    ],
+    "passes": true,
+    "requires_manual_testing": false
+  },
+  {
+    "category": "functional",
+    "description": "ScheduleManager - Delete event functionality works",
+    "steps": [
+      "Step 1: Navigate to /schedule page with existing events",
+      "Step 2: Note the number of events displayed",
+      "Step 3: Click delete button on an event",
+      "Step 4: Verify confirmation dialog appears",
+      "Step 5: Click 'Delete' to confirm",
+      "Step 6: Verify event is removed from timeline",
+      "Step 7: Verify event count decreased by one"
+    ],
+    "passes": true,
+    "requires_manual_testing": false
+  },
+  {
+    "category": "functional",
+    "description": "BandDashboard - Page loads and displays band members",
+    "steps": [
+      "Step 1: Navigate to /band page",
+      "Step 2: Wait for page to fully load",
+      "Step 3: Verify page renders without console errors",
+      "Step 4: Verify member cards grid is visible",
+      "Step 5: Verify each member shows avatar, name, and role count"
+    ],
+    "passes": true,
+    "requires_manual_testing": false
+  },
+  {
+    "category": "functional",
+    "description": "BandDashboard - Member selection shows gig sheet",
+    "steps": [
+      "Step 1: Navigate to /band page with existing members",
+      "Step 2: Click on a member card",
+      "Step 3: Verify member card shows selected state (ring-2 ring-primary)",
+      "Step 4: Verify gig sheet panel appears below",
+      "Step 5: Verify gig sheet shows member name and song count",
+      "Step 6: Verify assigned songs are displayed in grid"
+    ],
+    "passes": true,
+    "requires_manual_testing": false
+  },
+  {
+    "category": "functional",
+    "description": "BandDashboard - Close member details functionality",
+    "steps": [
+      "Step 1: Navigate to /band page and select a member",
+      "Step 2: Verify gig sheet is visible",
+      "Step 3: Click the X button to close member details",
+      "Step 4: Verify gig sheet is replaced with placeholder",
+      "Step 5: Verify no member card shows selected state"
+    ],
+    "passes": true,
+    "requires_manual_testing": false
+  },
+  {
+    "category": "functional",
+    "description": "BandDashboard - Navigate to song from gig sheet",
+    "steps": [
+      "Step 1: Navigate to /band page",
+      "Step 2: Select a member with assigned songs",
+      "Step 3: Click arrow button on a song card in gig sheet",
+      "Step 4: Verify navigation to song detail page",
+      "Step 5: Verify correct song is displayed"
+    ],
+    "passes": true,
+    "requires_manual_testing": false
+  },
+  {
+    "category": "functional",
+    "description": "Settings - Page loads with all tabs visible",
+    "steps": [
+      "Step 1: Navigate to /settings page",
+      "Step 2: Wait for page to fully load",
+      "Step 3: Verify page renders without console errors",
+      "Step 4: Verify 'Roster' tab is visible",
+      "Step 5: Verify 'Roles' tab is visible",
+      "Step 6: Verify 'Data' tab is visible"
+    ],
+    "passes": true,
+    "requires_manual_testing": false
+  },
+  {
+    "category": "functional",
+    "description": "Settings - Add new member functionality",
+    "steps": [
+      "Step 1: Navigate to /settings page",
+      "Step 2: Ensure 'Roster' tab is active",
+      "Step 3: Enter 'Test Member' in new member input",
+      "Step 4: Click 'Add Person' button",
+      "Step 5: Verify new member appears in list",
+      "Step 6: Verify member has avatar and name displayed"
+    ],
+    "passes": true,
+    "requires_manual_testing": false
+  },
+  {
+    "category": "functional",
+    "description": "Settings - Edit member name functionality",
+    "steps": [
+      "Step 1: Navigate to /settings page with existing members",
+      "Step 2: Click edit button on a member",
+      "Step 3: Verify input field appears with current name",
+      "Step 4: Change name to 'Updated Member Name'",
+      "Step 5: Click checkmark to save",
+      "Step 6: Verify member name is updated in list"
+    ],
+    "passes": false,
+    "requires_manual_testing": false
+  },
+  {
+    "category": "functional",
+    "description": "Settings - Delete member functionality",
+    "steps": [
+      "Step 1: Navigate to /settings page with existing members",
+      "Step 2: Note the number of members",
+      "Step 3: Click delete button on a member",
+      "Step 4: Verify confirmation dialog appears",
+      "Step 5: Click 'Confirm' to proceed",
+      "Step 6: Verify member is removed from list"
+    ],
+    "passes": false,
+    "requires_manual_testing": false
+  },
+  {
+    "category": "functional",
+    "description": "Settings - Add new role functionality",
+    "steps": [
+      "Step 1: Navigate to /settings page",
+      "Step 2: Click on 'Roles' tab",
+      "Step 3: Enter 'Test Role' in new role input",
+      "Step 4: Click 'Add Role' button",
+      "Step 5: Verify new role badge appears in list"
+    ],
+    "passes": true,
+    "requires_manual_testing": false
+  },
+  {
+    "category": "functional",
+    "description": "Settings - Delete role functionality",
+    "steps": [
+      "Step 1: Navigate to /settings page",
+      "Step 2: Click on 'Roles' tab",
+      "Step 3: Hover over a role badge",
+      "Step 4: Click X button on role badge",
+      "Step 5: Verify confirmation dialog appears",
+      "Step 6: Click 'Confirm' to proceed",
+      "Step 7: Verify role is removed from list"
+    ],
+    "passes": false,
+    "requires_manual_testing": false
+  },
+  {
+    "category": "functional",
+    "description": "Settings - Export data functionality",
+    "steps": [
+      "Step 1: Navigate to /settings page",
+      "Step 2: Click on 'Data' tab",
+      "Step 3: Click 'Download Backup' button",
+      "Step 4: Verify file download is triggered"
+    ],
+    "passes": false,
+    "requires_manual_testing": true
+  },
+  {
+    "category": "functional",
+    "description": "Settings - Tab switching works correctly",
+    "steps": [
+      "Step 1: Navigate to /settings page",
+      "Step 2: Click 'Roles' tab",
+      "Step 3: Verify Roles content is displayed",
+      "Step 4: Click 'Data' tab",
+      "Step 5: Verify Data content is displayed",
+      "Step 6: Click 'Roster' tab",
+      "Step 7: Verify Roster content is displayed"
+    ],
+    "passes": true,
+    "requires_manual_testing": false
+  },
+  {
+    "category": "style",
+    "description": "ScheduleManager - Page headline uses serif font with correct styling",
+    "steps": [
+      "Step 1: Navigate to /schedule page",
+      "Step 2: Inspect 'Band Schedule' headline",
+      "Step 3: Verify headline has classes 'text-4xl font-bold font-serif tracking-tight'",
+      "Step 4: Verify headline renders with Brawler serif font"
+    ],
+    "passes": true,
+    "requires_manual_testing": false
+  },
+  {
+    "category": "style",
+    "description": "ScheduleManager - Ambient glow effect is present",
+    "steps": [
+      "Step 1: Navigate to /schedule page",
+      "Step 2: Inspect page for ambient glow div",
+      "Step 3: Verify ambient glow container has 'absolute inset-0 pointer-events-none overflow-hidden'",
+      "Step 4: Verify inner glow div has radial-gradient with primary color",
+      "Step 5: Verify opacity is approximately 3% (opacity-[0.03])"
+    ],
+    "passes": true,
+    "requires_manual_testing": false
+  },
+  {
+    "category": "style",
+    "description": "ScheduleManager - Timeline items have staggered animation",
+    "steps": [
+      "Step 1: Navigate to /schedule page with multiple events",
+      "Step 2: Observe timeline items appearing",
+      "Step 3: Verify items animate in with slide-in-from-bottom animation",
+      "Step 4: Verify staggered delay (each item delayed 75ms more than previous)",
+      "Step 5: Verify animation-forwards class maintains final state"
+    ],
+    "passes": true,
+    "requires_manual_testing": false
+  },
+  {
+    "category": "style",
+    "description": "ScheduleManager - Date display uses monospace font with tabular-nums",
+    "steps": [
+      "Step 1: Navigate to /schedule page with events",
+      "Step 2: Inspect date number display on event cards",
+      "Step 3: Verify date has 'font-mono tabular-nums' classes",
+      "Step 4: Verify numbers align properly (tabular spacing)"
+    ],
+    "passes": true,
+    "requires_manual_testing": false
+  },
+  {
+    "category": "style",
+    "description": "ScheduleManager - Time display uses monospace font with tabular-nums",
+    "steps": [
+      "Step 1: Navigate to /schedule page with events that have times",
+      "Step 2: Inspect time display on event cards",
+      "Step 3: Verify time has 'font-mono tabular-nums' classes"
+    ],
+    "passes": true,
+    "requires_manual_testing": false
+  },
+  {
+    "category": "style",
+    "description": "ScheduleManager - Form card title uses serif font",
+    "steps": [
+      "Step 1: Navigate to /schedule page",
+      "Step 2: Click 'Add Event' button to show form",
+      "Step 3: Inspect card title 'New Event'",
+      "Step 4: Verify CardTitle has 'font-serif' class"
+    ],
+    "passes": true,
+    "requires_manual_testing": false
+  },
+  {
+    "category": "style",
+    "description": "ScheduleManager - Parent container has relative class for ambient glow",
+    "steps": [
+      "Step 1: Navigate to /schedule page",
+      "Step 2: Inspect main container div",
+      "Step 3: Verify container has 'relative' class"
+    ],
+    "passes": true,
+    "requires_manual_testing": false
+  },
+  {
+    "category": "style",
+    "description": "BandDashboard - Page headline uses serif font with correct styling",
+    "steps": [
+      "Step 1: Navigate to /band page",
+      "Step 2: Inspect 'Band Lineup' headline",
+      "Step 3: Verify headline has classes 'text-4xl font-bold font-serif tracking-tight'",
+      "Step 4: Verify headline renders with Brawler serif font"
+    ],
+    "passes": true,
+    "requires_manual_testing": false
+  },
+  {
+    "category": "style",
+    "description": "BandDashboard - Ambient glow effect is present",
+    "steps": [
+      "Step 1: Navigate to /band page",
+      "Step 2: Inspect page for ambient glow div",
+      "Step 3: Verify ambient glow container has 'absolute inset-0 pointer-events-none overflow-hidden'",
+      "Step 4: Verify inner glow div has radial-gradient with primary color",
+      "Step 5: Verify glow is positioned top-left (-top-1/4 -left-1/4)"
+    ],
+    "passes": true,
+    "requires_manual_testing": false
+  },
+  {
+    "category": "style",
+    "description": "BandDashboard - Member cards have staggered animation",
+    "steps": [
+      "Step 1: Navigate to /band page with multiple members",
+      "Step 2: Observe member cards appearing",
+      "Step 3: Verify cards animate in with slide-in-from-bottom animation",
+      "Step 4: Verify staggered delay (each card delayed 75ms more than previous)",
+      "Step 5: Verify animation-forwards class maintains final state"
+    ],
+    "passes": true,
+    "requires_manual_testing": false
+  },
+  {
+    "category": "style",
+    "description": "BandDashboard - Selected member card has left-border accent",
+    "steps": [
+      "Step 1: Navigate to /band page",
+      "Step 2: Click on a member card",
+      "Step 3: Inspect selected card classes",
+      "Step 4: Verify card has 'border-l-[3px] border-l-primary' classes"
+    ],
+    "passes": true,
+    "requires_manual_testing": false
+  },
+  {
+    "category": "style",
+    "description": "BandDashboard - Role count uses monospace font with tabular-nums",
+    "steps": [
+      "Step 1: Navigate to /band page with members",
+      "Step 2: Inspect role count text on member cards",
+      "Step 3: Verify role count number is wrapped in span with 'font-mono tabular-nums'"
+    ],
+    "passes": false,
+    "requires_manual_testing": false
+  },
+  {
+    "category": "style",
+    "description": "BandDashboard - Gig sheet card title uses serif font",
+    "steps": [
+      "Step 1: Navigate to /band page",
+      "Step 2: Click on a member to show gig sheet",
+      "Step 3: Inspect gig sheet CardTitle",
+      "Step 4: Verify CardTitle has 'font-serif' class"
+    ],
+    "passes": true,
+    "requires_manual_testing": false
+  },
+  {
+    "category": "style",
+    "description": "BandDashboard - Song BPM uses monospace font",
+    "steps": [
+      "Step 1: Navigate to /band page",
+      "Step 2: Select a member with assigned songs",
+      "Step 3: Inspect BPM display on song cards",
+      "Step 4: Verify BPM number is wrapped in span with 'font-mono tabular-nums'"
+    ],
+    "passes": false,
+    "requires_manual_testing": false
+  },
+  {
+    "category": "style",
+    "description": "BandDashboard - Parent container has relative class",
+    "steps": [
+      "Step 1: Navigate to /band page",
+      "Step 2: Inspect main container div",
+      "Step 3: Verify container has 'relative' class for ambient glow positioning"
+    ],
+    "passes": true,
+    "requires_manual_testing": false
+  },
+  {
+    "category": "style",
+    "description": "Settings - Page headline uses serif font with correct styling",
+    "steps": [
+      "Step 1: Navigate to /settings page",
+      "Step 2: Inspect 'Configuration' headline",
+      "Step 3: Verify headline has classes 'text-4xl font-bold font-serif tracking-tight'",
+      "Step 4: Verify headline renders with Brawler serif font"
+    ],
+    "passes": true,
+    "requires_manual_testing": false
+  },
+  {
+    "category": "style",
+    "description": "Settings - Tab content uses slide-in animation",
+    "steps": [
+      "Step 1: Navigate to /settings page",
+      "Step 2: Click on different tabs",
+      "Step 3: Verify TabsContent has 'animate-slide-in-from-bottom animation-forwards'",
+      "Step 4: Observe smooth transition between tabs"
+    ],
+    "passes": true,
+    "requires_manual_testing": false
+  },
+  {
+    "category": "style",
+    "description": "Settings - Card titles use serif font",
+    "steps": [
+      "Step 1: Navigate to /settings page",
+      "Step 2: Inspect 'Members' CardTitle",
+      "Step 3: Verify CardTitle has 'font-serif' class",
+      "Step 4: Navigate to Data tab and verify 'Backup & Restore' CardTitle has 'font-serif'"
+    ],
+    "passes": true,
+    "requires_manual_testing": false
+  },
+  {
+    "category": "style",
+    "description": "Settings - Member list items have left-border accent",
+    "steps": [
+      "Step 1: Navigate to /settings page",
+      "Step 2: Inspect member list item containers",
+      "Step 3: Verify items have 'border-l-[3px] border-l-primary/60' classes",
+      "Step 4: Verify items have 'hover:bg-muted/30 transition-colors' for hover state"
+    ],
+    "passes": true,
+    "requires_manual_testing": false
+  },
+  {
+    "category": "style",
+    "description": "Settings - Export/Import card titles use serif font",
+    "steps": [
+      "Step 1: Navigate to /settings page",
+      "Step 2: Click on 'Data' tab",
+      "Step 3: Inspect 'Export Project' h4",
+      "Step 4: Verify h4 has 'font-serif' class",
+      "Step 5: Inspect 'Import Project' h4",
+      "Step 6: Verify h4 has 'font-serif' class"
+    ],
+    "passes": true,
+    "requires_manual_testing": false
+  },
+  {
+    "category": "style",
+    "description": "Settings - Warning card title uses serif font",
+    "steps": [
+      "Step 1: Navigate to /settings page",
+      "Step 2: Click on 'Data' tab",
+      "Step 3: Inspect 'Local Storage Warning' h4",
+      "Step 4: Verify h4 has 'font-serif' class"
+    ],
+    "passes": true,
+    "requires_manual_testing": false
+  },
+  {
+    "category": "style",
+    "description": "All pages - Reduced motion preference is respected",
+    "steps": [
+      "Step 1: Enable 'prefers-reduced-motion: reduce' in OS settings",
+      "Step 2: Navigate to /schedule page",
+      "Step 3: Verify animations are disabled or minimized",
+      "Step 4: Navigate to /band page",
+      "Step 5: Verify animations are disabled or minimized",
+      "Step 6: Navigate to /settings page",
+      "Step 7: Verify animations are disabled or minimized"
+    ],
+    "passes": false,
+    "requires_manual_testing": true
+  },
+  {
+    "category": "style",
+    "description": "ScheduleManager - Mobile responsive layout (375px)",
+    "steps": [
+      "Step 1: Set viewport to 375px width",
+      "Step 2: Navigate to /schedule page",
+      "Step 3: Verify header stacks vertically on small screens",
+      "Step 4: Verify event cards are readable and touch-friendly",
+      "Step 5: Verify timeline is visible and accessible",
+      "Step 6: Verify 'Add Event' button is accessible"
+    ],
+    "passes": false,
+    "requires_manual_testing": false
+  },
+  {
+    "category": "style",
+    "description": "BandDashboard - Mobile responsive layout (375px)",
+    "steps": [
+      "Step 1: Set viewport to 375px width",
+      "Step 2: Navigate to /band page",
+      "Step 3: Verify member cards display in 2-column grid",
+      "Step 4: Verify cards have adequate touch target sizes",
+      "Step 5: Verify gig sheet is readable below member cards"
+    ],
+    "passes": false,
+    "requires_manual_testing": false
+  },
+  {
+    "category": "style",
+    "description": "Settings - Mobile responsive layout (375px)",
+    "steps": [
+      "Step 1: Set viewport to 375px width",
+      "Step 2: Navigate to /settings page",
+      "Step 3: Verify tabs are accessible and functional",
+      "Step 4: Verify member list items are touch-friendly",
+      "Step 5: Verify export/import cards stack vertically"
+    ],
+    "passes": false,
+    "requires_manual_testing": false
+  },
+  {
+    "category": "style",
+    "description": "ScheduleManager - Tablet responsive layout (768px)",
+    "steps": [
+      "Step 1: Set viewport to 768px width",
+      "Step 2: Navigate to /schedule page",
+      "Step 3: Verify header layout adjusts appropriately",
+      "Step 4: Verify event form uses multi-column layout",
+      "Step 5: Verify timeline uses appropriate spacing"
+    ],
+    "passes": false,
+    "requires_manual_testing": false
+  },
+  {
+    "category": "style",
+    "description": "BandDashboard - Tablet responsive layout (768px)",
+    "steps": [
+      "Step 1: Set viewport to 768px width",
+      "Step 2: Navigate to /band page",
+      "Step 3: Verify member cards display in 4-column grid",
+      "Step 4: Verify gig sheet song cards use appropriate columns"
+    ],
+    "passes": false,
+    "requires_manual_testing": false
+  },
+  {
+    "category": "style",
+    "description": "Settings - Tablet responsive layout (768px)",
+    "steps": [
+      "Step 1: Set viewport to 768px width",
+      "Step 2: Navigate to /settings page",
+      "Step 3: Verify tabs display horizontally with labels",
+      "Step 4: Verify export/import cards display side-by-side"
+    ],
+    "passes": false,
+    "requires_manual_testing": false
+  },
+  {
+    "category": "style",
+    "description": "All pages - Desktop layout (1440px)",
+    "steps": [
+      "Step 1: Set viewport to 1440px width",
+      "Step 2: Navigate to /schedule page and verify proper max-width constraint",
+      "Step 3: Navigate to /band page and verify full-width usage",
+      "Step 4: Navigate to /settings page and verify proper max-width constraint",
+      "Step 5: Verify adequate whitespace on all pages"
+    ],
+    "passes": false,
+    "requires_manual_testing": false
+  },
+  {
+    "category": "style",
+    "description": "All pages - Dark mode styling consistency",
+    "steps": [
+      "Step 1: Enable dark mode via theme toggle",
+      "Step 2: Navigate to /schedule page",
+      "Step 3: Verify ambient glow is visible but subtle",
+      "Step 4: Verify text contrast is adequate",
+      "Step 5: Navigate to /band page and verify styling",
+      "Step 6: Navigate to /settings page and verify styling"
+    ],
+    "passes": false,
+    "requires_manual_testing": false
+  },
+  {
+    "category": "functional",
+    "description": "ScheduleManager - Empty state displays correctly when no events",
+    "steps": [
+      "Step 1: Navigate to /schedule with no events",
+      "Step 2: Verify EmptyState component is displayed",
+      "Step 3: Verify empty state has Calendar icon",
+      "Step 4: Verify 'No upcoming events' title is shown",
+      "Step 5: Verify 'Add Event' action button is present"
+    ],
+    "passes": false,
+    "requires_manual_testing": false
+  },
+  {
+    "category": "functional",
+    "description": "BandDashboard - Empty state displays when no members",
+    "steps": [
+      "Step 1: Navigate to /band with no members",
+      "Step 2: Verify EmptyState component is displayed",
+      "Step 3: Verify Users icon is shown",
+      "Step 4: Verify 'No band members' title is shown",
+      "Step 5: Verify 'Go to Settings' action button is present"
+    ],
+    "passes": false,
+    "requires_manual_testing": false
+  },
+  {
+    "category": "functional",
+    "description": "BandDashboard - Keyboard navigation for member selection",
+    "steps": [
+      "Step 1: Navigate to /band page",
+      "Step 2: Tab to first member card",
+      "Step 3: Press Enter to select member",
+      "Step 4: Verify gig sheet opens",
+      "Step 5: Tab to next member",
+      "Step 6: Press Space to select member",
+      "Step 7: Verify gig sheet updates"
+    ],
+    "passes": false,
+    "requires_manual_testing": false
+  },
+  {
+    "category": "style",
+    "description": "ScheduleManager - Past events show reduced opacity",
+    "steps": [
+      "Step 1: Navigate to /schedule with past events",
+      "Step 2: Inspect past event cards",
+      "Step 3: Verify past events have grayscale filter applied",
+      "Step 4: Verify past events are still visible but dimmed"
+    ],
+    "passes": false,
+    "requires_manual_testing": false
+  }
+]
