@@ -308,7 +308,7 @@ export const ScheduleManager: React.FC<ScheduleManagerProps> = memo(function Sch
                   className={cn(
                     'relative',
                     'animate-slide-in-from-bottom animation-forwards opacity-0',
-                    isPast && 'grayscale'
+                    isPast && 'opacity-60 grayscale'
                   )}
                   style={{ animationDelay: `${index * 75}ms` }}
                 >
