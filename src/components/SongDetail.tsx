@@ -38,6 +38,9 @@ import {
   Calendar,
   File,
   Guitar,
+  Gauge,
+  Clock,
+  Music,
 } from 'lucide-react';
 import { AlphaTabRenderer } from './AlphaTabRenderer';
 
@@ -535,31 +538,31 @@ export const SongDetail: React.FC<SongDetailProps> = ({
                     ) : (
                       <div className="grid grid-cols-2 gap-4">
                         <div className="bg-muted/30 p-3 rounded-lg border border-border">
-                          <span className="text-xs text-muted-foreground uppercase tracking-wide">
-                            BPM
+                          <span className="text-xs text-muted-foreground uppercase tracking-wide flex items-center gap-1">
+                            <Gauge size={14} className="text-muted-foreground" /> BPM
                           </span>
-                          <p className="text-xl font-mono tabular-nums text-foreground">
+                          <p className="text-xl font-mono tabular-nums font-medium text-foreground">
                             {song.bpm}
                           </p>
                         </div>
                         <div className="bg-muted/30 p-3 rounded-lg border border-border">
-                          <span className="text-xs text-muted-foreground uppercase tracking-wide">
-                            Duration
+                          <span className="text-xs text-muted-foreground uppercase tracking-wide flex items-center gap-1">
+                            <Clock size={14} className="text-muted-foreground" /> Duration
                           </span>
-                          <p className="text-xl font-mono tabular-nums text-foreground">
+                          <p className="text-xl font-mono tabular-nums font-medium text-foreground">
                             {song.duration}
                           </p>
                         </div>
                         <div className="bg-muted/30 p-3 rounded-lg border border-border">
-                          <span className="text-xs text-muted-foreground uppercase tracking-wide">
-                            Key
+                          <span className="text-xs text-muted-foreground uppercase tracking-wide flex items-center gap-1">
+                            <Music size={14} className="text-muted-foreground" /> Key
                           </span>
                           <p className="text-xl font-medium text-foreground">{song.key}</p>
                         </div>
                         {song.targetDate && (
                           <div className="bg-muted/30 p-3 rounded-lg border border-border border-l-[3px] border-l-primary">
                             <span className="text-xs text-muted-foreground uppercase tracking-wide flex items-center gap-1">
-                              <Calendar size={12} /> Target Date
+                              <Calendar size={14} className="text-muted-foreground" /> Target Date
                             </span>
                             <p className="text-xl font-mono tabular-nums text-foreground">
                               {new Date(song.targetDate).toLocaleDateString()}

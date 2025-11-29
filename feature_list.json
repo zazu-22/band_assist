@@ -1436,7 +1436,7 @@
       "Step 4: Verify label uses text-muted-foreground",
       "Step 5: Verify value uses text-foreground font-medium"
     ],
-    "passes": false
+    "passes": true
   },
   {
     "category": "style",
