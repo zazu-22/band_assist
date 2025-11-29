@@ -51,12 +51,20 @@ export function getLocalToday(): Date {
 /**
  * Calculate whole days between two dates (ignoring time component).
  *
+ * Uses Math.floor since both dates are normalized to midnight, ensuring
+ * the result is always a whole number. This is semantically correct and
+ * avoids any floating-point rounding edge cases.
+ *
  * @returns Positive if `to` is in the future, negative if in the past, 0 if same day.
  */
 export function daysBetween(from: Date, to: Date): number {
   const fromMidnight = new Date(from.getFullYear(), from.getMonth(), from.getDate());
   const toMidnight = new Date(to.getFullYear(), to.getMonth(), to.getDate());
-  return Math.round((toMidnight.getTime() - fromMidnight.getTime()) / (1000 * 60 * 60 * 24));
+  const diffMs = toMidnight.getTime() - fromMidnight.getTime();
+  // Use Math.floor for positive, Math.ceil for negative to always round toward zero
+  return diffMs >= 0
+    ? Math.floor(diffMs / (1000 * 60 * 60 * 24))
+    : Math.ceil(diffMs / (1000 * 60 * 60 * 24));
 }
 
 /**

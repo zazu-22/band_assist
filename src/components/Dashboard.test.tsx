@@ -2,7 +2,18 @@ import { describe, it, expect, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import { Dashboard, calculateSongUrgency, URGENCY_WEIGHTS } from './Dashboard';
+import { getLocalToday } from '@/lib/dateUtils';
 import type { Song, BandEvent, BandMember } from '@/types';
+
+/**
+ * Helper to get a date string N days from today.
+ * Uses getLocalToday() for consistency with the app's date handling.
+ */
+function getDateFromToday(daysOffset: number): string {
+  const date = getLocalToday();
+  date.setDate(date.getDate() + daysOffset);
+  return date.toISOString().split('T')[0];
+}
 
 // Wrap component with Router for useNavigate
 const renderWithRouter = (ui: React.ReactElement) => {
@@ -27,7 +38,7 @@ const createMockSong = (overrides: Partial<Song> = {}): Song => ({
 const createMockGig = (overrides: Partial<BandEvent> = {}): BandEvent => ({
   id: '1',
   title: 'Test Gig',
-  date: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 7 days from now
+  date: getDateFromToday(7), // 7 days from now
   type: 'GIG',
   ...overrides,
 });
@@ -172,12 +183,12 @@ describe('Dashboard', () => {
       const nearGig = createMockGig({
         id: '1',
         title: 'Near Gig',
-        date: new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        date: getDateFromToday(3),
       });
       const farGig = createMockGig({
         id: '2',
         title: 'Far Gig',
-        date: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        date: getDateFromToday(30),
       });
       renderWithRouter(<Dashboard {...defaultProps} events={[farGig, nearGig]} />);
       // Near Gig should appear (may appear multiple times in countdown + timeline)
@@ -215,7 +226,7 @@ describe('Dashboard', () => {
         id: '1',
         title: 'Deadline Song',
         status: 'In Progress',
-        targetDate: new Date(Date.now() + 5 * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
+        targetDate: getDateFromToday(5),
       });
       renderWithRouter(<Dashboard {...defaultProps} songs={[songWithDeadline]} />);
       expect(screen.getByText(/Deadline Song due/)).toBeInTheDocument();
@@ -383,7 +394,8 @@ describe('Dashboard', () => {
 // =============================================================================
 
 describe('calculateSongUrgency', () => {
-  const today = new Date('2025-01-15');
+  // Use explicit Date constructor to avoid UTC parsing issues
+  const today = new Date(2025, 0, 15); // Jan 15, 2025
 
   const createTestSong = (overrides: Partial<Song> = {}): Song => ({
     id: '1',
