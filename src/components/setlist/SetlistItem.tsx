@@ -34,6 +34,8 @@ export interface SetlistItemProps {
   onDrop: (e: React.DragEvent<HTMLElement>) => void;
   /** Callback when drag ends */
   onDragEnd: () => void;
+  /** Whether the current user is a band admin (controls delete button visibility) */
+  isAdmin?: boolean;
 }
 
 // =============================================================================
@@ -60,6 +62,7 @@ export const SetlistItem = memo(function SetlistItem({
   onDragOver,
   onDrop,
   onDragEnd,
+  isAdmin = false,
 }: SetlistItemProps) {
   return (
     <li
@@ -125,27 +128,29 @@ export const SetlistItem = memo(function SetlistItem({
       {/* Status + Actions */}
       <div className="flex items-center gap-2 shrink-0">
         <StatusBadge status={song.status} />
-        <TooltipProvider delayDuration={100}>
-          <Tooltip>
-            <TooltipTrigger asChild>
-              <Button
-                variant="ghost"
-                size="sm"
-                onClick={e => {
-                  e.stopPropagation();
-                  onDelete(song.id);
-                }}
-                className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
-                aria-label={`Delete ${song.title}`}
-              >
-                <Trash2 size={16} />
-              </Button>
-            </TooltipTrigger>
-            <TooltipContent>
-              <p>Remove from setlist</p>
-            </TooltipContent>
-          </Tooltip>
-        </TooltipProvider>
+        {isAdmin && (
+          <TooltipProvider delayDuration={100}>
+            <Tooltip>
+              <TooltipTrigger asChild>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={e => {
+                    e.stopPropagation();
+                    onDelete(song.id);
+                  }}
+                  className="h-8 w-8 p-0 text-muted-foreground hover:text-destructive opacity-0 group-hover:opacity-100 transition-opacity"
+                  aria-label={`Delete ${song.title}`}
+                >
+                  <Trash2 size={16} />
+                </Button>
+              </TooltipTrigger>
+              <TooltipContent>
+                <p>Delete Song</p>
+              </TooltipContent>
+            </Tooltip>
+          </TooltipProvider>
+        )}
       </div>
     </li>
   );

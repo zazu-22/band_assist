@@ -1,6 +1,6 @@
 import React, { memo, useState, useCallback, useMemo } from 'react';
 import { Music } from 'lucide-react';
-import { toast, EmptyState } from '@/components/ui';
+import { toast, EmptyState, ConfirmDialog } from '@/components/ui';
 import { getMusicAnalysis } from '@/services/geminiService';
 import { parseLocalDate, getLocalToday, daysBetween } from '@/lib/dateUtils';
 import {
@@ -22,6 +22,8 @@ interface SetlistManagerProps {
   onSelectSong: (songId: string) => void;
   /** Optional events for gig countdown context */
   events?: BandEvent[];
+  /** Whether the current user is a band admin */
+  isAdmin?: boolean;
 }
 
 // =============================================================================
@@ -101,6 +103,7 @@ export const SetlistManager: React.FC<SetlistManagerProps> = memo(function Setli
   setSongs,
   onSelectSong,
   events = [],
+  isAdmin = false,
 }) {
   const [isAdding, setIsAdding] = useState(false);
   const [loadingSuggestion, setLoadingSuggestion] = useState(false);
@@ -108,6 +111,12 @@ export const SetlistManager: React.FC<SetlistManagerProps> = memo(function Setli
   // DnD State
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
   const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
+
+  // Delete confirmation dialog state
+  const [confirmDialog, setConfirmDialog] = useState<{
+    isOpen: boolean;
+    songId: string;
+  }>({ isOpen: false, songId: '' });
 
   // Memoize total duration calculation
   const totalDurationSeconds = useMemo(() => calculateTotalDuration(songs), [songs]);
@@ -234,12 +243,22 @@ export const SetlistManager: React.FC<SetlistManagerProps> = memo(function Setli
     [draggedIndex, dragOverIndex, songs, setSongs, handleDragEnd]
   );
 
-  const handleDeleteSong = useCallback(
-    (songId: string) => {
-      setSongs(prev => prev.filter(s => s.id !== songId));
-    },
-    [setSongs]
-  );
+  const handleDeleteSong = useCallback((songId: string) => {
+    setConfirmDialog({ isOpen: true, songId });
+  }, []);
+
+  // Derive song title from current songs array to avoid stale closures
+  const songToDelete = songs.find(s => s.id === confirmDialog.songId);
+  const songTitleToDelete = songToDelete?.title || 'this song';
+
+  const confirmDeleteSong = useCallback(() => {
+    setSongs(prev => prev.filter(s => s.id !== confirmDialog.songId));
+    setConfirmDialog({ isOpen: false, songId: '' });
+  }, [confirmDialog.songId, setSongs]);
+
+  const closeConfirmDialog = useCallback(() => {
+    setConfirmDialog({ isOpen: false, songId: '' });
+  }, []);
 
   // ==========================================================================
   // RENDER
@@ -322,6 +341,7 @@ export const SetlistManager: React.FC<SetlistManagerProps> = memo(function Setli
                     onDragOver={handleDragOver}
                     onDrop={handleDrop}
                     onDragEnd={handleDragEnd}
+                    isAdmin={isAdmin}
                   />
 
                   {/* Conditional Placeholder Below */}
@@ -334,6 +354,18 @@ export const SetlistManager: React.FC<SetlistManagerProps> = memo(function Setli
           </ul>
         )}
       </div>
+
+      {/* Delete Song Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={confirmDialog.isOpen}
+        title="Delete Song"
+        message={`Are you sure you want to delete "${songTitleToDelete}"? This will permanently remove the song along with all its charts, assignments, and backing tracks.`}
+        variant="danger"
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        onConfirm={confirmDeleteSong}
+        onCancel={closeConfirmDialog}
+      />
     </div>
   );
 });
