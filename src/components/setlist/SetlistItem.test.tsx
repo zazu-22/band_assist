@@ -74,10 +74,15 @@ describe('SetlistItem', () => {
       expect(screen.getByText('Performance Ready')).toBeInTheDocument();
     });
 
-    it('renders delete button with correct aria-label', () => {
-      render(<SetlistItem {...createDefaultProps()} />);
+    it('renders delete button with correct aria-label when isAdmin', () => {
+      render(<SetlistItem {...createDefaultProps({ isAdmin: true })} />);
       const deleteBtn = screen.getByLabelText('Delete Sharp Dressed Man');
       expect(deleteBtn).toBeInTheDocument();
+    });
+
+    it('does not render delete button when not isAdmin', () => {
+      render(<SetlistItem {...createDefaultProps({ isAdmin: false })} />);
+      expect(screen.queryByLabelText('Delete Sharp Dressed Man')).not.toBeInTheDocument();
     });
 
     it('renders drag handle with aria-label', () => {
@@ -112,7 +117,7 @@ describe('SetlistItem', () => {
     });
 
     it('has opacity-0 and group-hover:opacity-100 on delete button', () => {
-      render(<SetlistItem {...createDefaultProps()} />);
+      render(<SetlistItem {...createDefaultProps({ isAdmin: true })} />);
       const deleteBtn = screen.getByLabelText('Delete Sharp Dressed Man');
       expect(deleteBtn).toHaveClass('opacity-0', 'group-hover:opacity-100');
     });
@@ -157,7 +162,7 @@ describe('SetlistItem', () => {
 
     it('calls onDelete when delete button is clicked', () => {
       const onDelete = vi.fn();
-      render(<SetlistItem {...createDefaultProps({ onDelete })} />);
+      render(<SetlistItem {...createDefaultProps({ onDelete, isAdmin: true })} />);
 
       const deleteBtn = screen.getByLabelText('Delete Sharp Dressed Man');
       fireEvent.click(deleteBtn);
