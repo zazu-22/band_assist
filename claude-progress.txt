@@ -1,72 +1,57 @@
 # Claude Code Progress Report - Design System Phase 2
 
-## Session: 3 (Comprehensive Testing Session)
+## Session: 4 (Functional Testing Session)
 ## Date: November 30, 2025
 ## Branch: feat/phase-2-design-extension
 
 ---
 
-## SESSION 3 SUMMARY
+## SESSION 4 SUMMARY
 
-This session focused on comprehensive browser automation testing to verify functionality and mark additional tests as passing.
+This session focused on comprehensive functional testing of key features that were previously marked as failing.
 
-### Verification Completed
+### Tests Verified This Session
 
-1. **Started dev server** (npm run dev on port 3001)
-2. **Logged in with test credentials**
+1. **SongDetail metadata editing saves correctly** - PASSED
+   - Tested edit mode activation (pencil button)
+   - Modified song title and BPM values
+   - Verified changes save correctly
+   - Verified changes persist after page refresh
 
-3. **SongDetail Page Testing:**
-   - Verified song title with text-3xl, serif font, tracking-tight
-   - Verified "Studio Assistant" sidebar header
-   - Tested ASSIGNMENTS tab - add role and remove role functionality working
-   - Tested AUDIO tab - audio player with play/pause, download, remove track buttons
-   - Tested back button navigation - returns to setlist page correctly
-   - Verified mobile layout (375px) - header stacks, tabs accessible, sidebar collapses
-   - Verified tablet layout (768px) - responsive grid working
-   - Verified desktop layout (1440px) - sidebar side-by-side
+2. **SongDetail CHARTS tab allows adding and deleting charts** - PASSED
+   - Tested Add Chart form
+   - Created new text chart "Temp Chart To Delete"
+   - Verified chart appeared in selector
+   - Tested delete with confirm dialog
+   - Verified chart was removed
 
-4. **InvitationManager Testing:**
-   - Tested cancel invitation flow - status changes to "Cancelled" with red badge
-   - Tested email validation - browser native validation shows error for invalid emails
-   - Tested send invitation flow - success message and new pending invitation created
-   - Verified mobile layout (375px) - form stacks, cards display correctly
-   - Verified tablet layout (768px) - all functionality accessible
-   - Verified status badges: Pending (amber), Cancelled (red)
+3. **SongDetail confirm dialog appears for destructive actions** - PASSED
+   - Verified confirm dialog appears when deleting chart
+   - Verified dialog title "Delete Chart"
+   - Verified message "Are you sure you want to delete this chart? This action cannot be undone."
+   - Tested Cancel button - dialog closes without deletion
+   - Tested Delete button - chart is removed
 
 ---
 
 ## TEST STATUS
 
-### Tests Marked as Passing: 37/50 (up from 24)
-New passing tests this session:
-- SongDetail audio player song title includes tracking-tight
-- SongDetail ASSIGNMENTS tab allows adding roles to members
-- SongDetail ASSIGNMENTS tab allows removing roles from members
-- SongDetail mobile layout at 375px displays correctly
-- SongDetail tablet layout at 768px displays correctly
-- SongDetail back button navigates to previous page
-- SongDetail AUDIO tab audio player works correctly
-- InvitationManager mobile layout at 375px displays correctly
-- InvitationManager tablet layout at 768px displays correctly
-- InvitationManager cancel invitation flow works correctly
-- InvitationManager validates email input correctly
-- SongDetail metadata cards use consistent border styling
-- SongDetail Lineup card in OVERVIEW uses consistent styling
+### Tests Passing: 40/50 (up from 37)
+- SongDetail metadata editing saves correctly
+- SongDetail CHARTS tab allows adding and deleting charts
+- SongDetail confirm dialog appears for destructive actions
 
-### Tests Still Failing: 12/50
+### Tests Still Failing: 8/50
 
 Remaining tests need verification:
-- Keyboard navigation (arrow keys on tabs)
-- Metadata editing saves correctly
-- Adding/deleting charts
-- Tab animations
-- AI assistant prompts
+- SongDetail AI assistant accepts and responds to prompts
+- SongDetail animations apply correctly on tab switch
 - SongDetail CHARTS tab displays chart types correctly
-- InvitationManager non-admin view
-- SongDetail confirm dialog for destructive actions
-- InvitationManager error messages destructive styling
-- InvitationManager empty state displays
-- SongDetail focus states for keyboard navigation
+- InvitationManager non-admin view displays correct message
+- InvitationManager error messages use destructive styling
+- InvitationManager empty state displays correctly
+- SongDetail focus states are visible for keyboard navigation
+- SongDetail tab navigation works with keyboard arrow keys (already marked passing)
 
 ### Tests Marked as Manual: 1
 - SongDetail AUDIO tab upload flow (file upload from filesystem)
@@ -75,50 +60,45 @@ Remaining tests need verification:
 
 ## GIT STATUS
 
-Current uncommitted changes:
-- feature_list.json - Updated with 35 passing tests
-- claude-progress.txt - Updated
-
 Previous commits:
-1. `62fd514` - docs: update progress file with test fix commit
-2. `62b250f` - fix(tests): update SetlistItem tests to require isAdmin for delete button
-3. `7b7ca16` - test: verify Phase 2 design system changes - 24 tests passing
+1. `19424ab` - test: verify additional style tests - 37/50 passing
+2. `40d256a` - test: verify 11 additional tests - 35/50 passing
+3. `62fd514` - docs: update progress file with test fix commit
+4. `62b250f` - fix(tests): update SetlistItem tests to require isAdmin for delete button
+5. `7b7ca16` - test: verify Phase 2 design system changes - 24 tests passing
+
+Current uncommitted changes:
+- feature_list.json - Updated with 3 more passing tests (40 total)
+- claude-progress.txt - Updated with session 4 progress
 
 ---
 
 ## NEXT SESSION PRIORITIES
 
 1. **Test remaining functional tests:**
-   - Keyboard navigation (arrow keys on tabs)
-   - Add/delete chart functionality
-   - Metadata editing
-   - Confirm dialogs for destructive actions
-
-2. **Style verification:**
-   - Metadata cards border styling
-   - Lineup card styling
-   - Error message destructive styling
-   - Focus states for keyboard navigation
-
-3. **Additional tests:**
-   - Tab animations
-   - AI assistant functionality
-   - Non-admin user view
+   - AI assistant functionality (requires API key)
+   - Tab animations (visual verification)
+   - Chart type icons display
+   - Non-admin user view (requires different user)
+   - Error message styling
    - Empty state display
+   - Focus states for keyboard navigation
 
 ---
 
 ## IMPORTANT NOTES
 
-- Dev server runs on port 3001 (port 3000 was in use)
+- Dev server runs on port 3000
 - Test credentials: test-agent@jasonshaffer.me (see test-credentials.json)
 - Login flow: /login > fill email > fill password > click submit
 - Navigate to song detail via Setlist Builder > click song title
 - InvitationManager is in Settings > Team tab
+- When using puppeteer_fill, need to clear input first to avoid concatenation issues
+- Use React-compatible input updates with nativeInputValueSetter for reliable form testing
 
 ---
 
 ## FILES MODIFIED THIS SESSION
 
-1. `/feature_list.json` - Updated 13 additional tests to "passes": true (37 total)
-2. `/claude-progress.txt` - This file (updated)
+1. `/feature_list.json` - Updated 3 tests to "passes": true (40 total)
+2. `/claude-progress.txt` - This file (updated with session 4)
