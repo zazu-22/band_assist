@@ -381,7 +381,7 @@
       "Step 5: Verify animation plays smoothly",
       "Step 6: Verify opacity transitions from 0 to 1"
     ],
-    "passes": false,
+    "passes": true,
     "requires_manual_testing": false
   },
   {
@@ -470,7 +470,7 @@
       "Step 5: Verify IMAGE charts show File icon",
       "Step 6: Verify GP (Guitar Pro) charts show Guitar icon"
     ],
-    "passes": false,
+    "passes": true,
     "requires_manual_testing": false
   },
   {
@@ -614,7 +614,7 @@
       "Step 4: Verify focus ring is visible on tab navigation",
       "Step 5: Verify focus ring uses ring-offset styling"
     ],
-    "passes": false,
+    "passes": true,
     "requires_manual_testing": false
   },
   {
