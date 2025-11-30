@@ -456,7 +456,7 @@
       "Step 4: Verify all cards have border-border class",
       "Step 5: Verify target date card (if present) has primary left border accent"
     ],
-    "passes": false,
+    "passes": true,
     "requires_manual_testing": false
   },
   {
@@ -524,7 +524,7 @@
       "Step 4: Verify assignments use bg-muted/30 background",
       "Step 5: Verify instrument icons display correctly"
     ],
-    "passes": false,
+    "passes": true,
     "requires_manual_testing": false
   },
   {

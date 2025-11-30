@@ -37,7 +37,7 @@ This session focused on comprehensive browser automation testing to verify funct
 
 ## TEST STATUS
 
-### Tests Marked as Passing: 35/50 (up from 24)
+### Tests Marked as Passing: 37/50 (up from 24)
 New passing tests this session:
 - SongDetail audio player song title includes tracking-tight
 - SongDetail ASSIGNMENTS tab allows adding roles to members
@@ -50,8 +50,10 @@ New passing tests this session:
 - InvitationManager tablet layout at 768px displays correctly
 - InvitationManager cancel invitation flow works correctly
 - InvitationManager validates email input correctly
+- SongDetail metadata cards use consistent border styling
+- SongDetail Lineup card in OVERVIEW uses consistent styling
 
-### Tests Still Failing: 14/50
+### Tests Still Failing: 12/50
 
 Remaining tests need verification:
 - Keyboard navigation (arrow keys on tabs)
@@ -59,9 +61,7 @@ Remaining tests need verification:
 - Adding/deleting charts
 - Tab animations
 - AI assistant prompts
-- SongDetail metadata cards border styling
 - SongDetail CHARTS tab displays chart types correctly
-- SongDetail Lineup card styling
 - InvitationManager non-admin view
 - SongDetail confirm dialog for destructive actions
 - InvitationManager error messages destructive styling
@@ -120,5 +120,5 @@ Previous commits:
 
 ## FILES MODIFIED THIS SESSION
 
-1. `/feature_list.json` - Updated 11 additional tests to "passes": true (35 total)
+1. `/feature_list.json` - Updated 13 additional tests to "passes": true (37 total)
 2. `/claude-progress.txt` - This file (updated)
