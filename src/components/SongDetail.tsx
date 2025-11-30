@@ -398,7 +398,7 @@ export const SongDetail: React.FC<SongDetailProps> = ({
                 </div>
               ) : (
                 <div>
-                  <h2 className="text-2xl font-bold font-serif text-foreground flex items-center gap-3">
+                  <h2 className="text-3xl font-bold font-serif text-foreground tracking-tight flex items-center gap-3">
                     {song.title}
                     <StatusBadge status={song.status} />
                   </h2>
@@ -854,7 +854,7 @@ export const SongDetail: React.FC<SongDetailProps> = ({
             <div className="max-w-4xl mx-auto animate-slide-in-from-bottom animation-forwards opacity-0 stagger-1">
               <Card>
                 <CardHeader>
-                  <h3 className="text-xl font-serif text-foreground">Band Assignments</h3>
+                  <h3 className="text-xl font-bold font-serif text-foreground">Band Assignments</h3>
                 </CardHeader>
                 <CardContent>
                   <div className="grid md:grid-cols-2 gap-6">
@@ -871,7 +871,7 @@ export const SongDetail: React.FC<SongDetailProps> = ({
                       return (
                         <div
                           key={member.id}
-                          className="bg-muted/30 border border-border rounded-xl p-5 flex flex-col h-full"
+                          className="bg-muted/30 border border-border rounded-xl p-5 flex flex-col h-full border-l-[3px] border-l-primary/60"
                         >
                           <div className="flex items-center gap-4 mb-4 pb-4 border-b border-border">
                             <div
@@ -985,7 +985,7 @@ export const SongDetail: React.FC<SongDetailProps> = ({
                       </div>
 
                       <div className="text-center mb-8">
-                        <h3 className="text-2xl font-bold font-serif text-foreground">
+                        <h3 className="text-2xl font-bold font-serif text-foreground tracking-tight">
                           {song.title}
                         </h3>
                         <p className="text-muted-foreground">Backing Track</p>
@@ -1028,7 +1028,7 @@ export const SongDetail: React.FC<SongDetailProps> = ({
                           <UploadCloud size={32} className="text-muted-foreground" />
                         </div>
                       </div>
-                      <h3 className="text-xl font-bold font-serif text-foreground mb-2">
+                      <h3 className="text-xl font-bold font-serif text-foreground tracking-tight mb-2">
                         Upload Backing Track
                       </h3>
                       <p className="text-muted-foreground text-sm mb-6 max-w-xs mx-auto">
@@ -1056,7 +1056,7 @@ export const SongDetail: React.FC<SongDetailProps> = ({
       {/* Right Sidebar: AI Assistant */}
       <div className="w-full lg:w-96 bg-card border-l border-border flex flex-col shrink-0 h-1/2 lg:h-full">
         <div className="p-4 border-b border-border bg-card z-10">
-          <h3 className="font-bold text-foreground flex items-center gap-2">
+          <h3 className="text-lg font-bold font-serif text-foreground flex items-center gap-2">
             <Sparkles size={16} className="text-primary" />
             Studio Assistant
           </h3>

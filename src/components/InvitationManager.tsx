@@ -259,7 +259,7 @@ export const InvitationManager: React.FC<InvitationManagerProps> = memo(function
     <div className="space-y-6">
       <div className="flex items-center gap-2">
         <UserPlus className="w-5 h-5 text-primary" />
-        <h3 className="text-lg font-semibold text-foreground">Team Invitations</h3>
+        <h3 className="text-lg font-semibold font-serif text-foreground">Team Invitations</h3>
       </div>
 
       {/* Invitation Form */}
@@ -337,7 +337,7 @@ export const InvitationManager: React.FC<InvitationManagerProps> = memo(function
           <h4 className="text-sm font-medium text-muted-foreground">Invitation History</h4>
           <div className="space-y-2">
             {invitations.map(invitation => (
-              <Card key={invitation.id} className="bg-muted/30">
+              <Card key={invitation.id} className="bg-muted/30 hover:bg-muted/40 transition-colors">
                 <CardContent className="p-3 flex items-center justify-between">
                   <div className="flex-1 min-w-0">
                     <p className="text-sm font-medium text-foreground truncate">

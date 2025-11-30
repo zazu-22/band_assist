@@ -33,7 +33,7 @@ This document captures the design philosophy, patterns, and guidelines establish
 <h2 className="text-4xl font-bold font-serif text-foreground tracking-tight">
 
 // Section title (e.g., "Band Readiness", "Practice Queue")
-<h3 className="text-lg font-serif text-foreground">
+<h3 className="text-lg font-bold font-serif text-foreground">
 
 // Stat/metric display
 <span className="text-3xl font-bold font-mono text-foreground tabular-nums">
@@ -174,7 +174,7 @@ Consistent header pattern for cards with actions:
 ```tsx
 <CardHeader className="py-2.5 px-4">
   <div className="flex items-center justify-between">
-    <h3 className="text-lg font-serif text-foreground">Section Title</h3>
+    <h3 className="text-lg font-bold font-serif text-foreground">Section Title</h3>
     <Button variant="ghost" size="sm" className="h-7 text-xs">
       Action
     </Button>
@@ -189,7 +189,7 @@ Pattern for displaying metrics with context:
 ```tsx
 <div className="flex items-start justify-between">
   <div>
-    <h3 className="text-lg font-serif text-foreground">Metric Name</h3>
+    <h3 className="text-lg font-bold font-serif text-foreground">Metric Name</h3>
     <p className="text-sm text-muted-foreground">Supporting context</p>
   </div>
   <div className="text-right">
@@ -530,5 +530,5 @@ When extending this design system to other pages:
 
 ---
 
-_Last updated: November 2024_
+_Last updated: November 2024 (Phase 2 updates)_
 _Reference implementation: `src/components/Dashboard.tsx`, `src/components/SongDetail.tsx`_
