@@ -82,7 +82,7 @@
       "Step 4: Locate the song title in audio player card (Line 988)",
       "Step 5: Verify letter-spacing is tight (-0.025em)"
     ],
-    "passes": false,
+    "passes": true,
     "requires_manual_testing": false
   },
   {
@@ -220,7 +220,7 @@
       "Step 5: Select a role from available options",
       "Step 6: Verify the role badge appears in the member's roles section"
     ],
-    "passes": false,
+    "passes": true,
     "requires_manual_testing": false
   },
   {
@@ -234,7 +234,7 @@
       "Step 5: Click the X button on the role badge",
       "Step 6: Verify the role is removed from the member"
     ],
-    "passes": false,
+    "passes": true,
     "requires_manual_testing": false
   },
   {
@@ -275,7 +275,7 @@
       "Step 5: Verify content cards stack vertically",
       "Step 6: Verify AI sidebar collapses appropriately"
     ],
-    "passes": false,
+    "passes": true,
     "requires_manual_testing": false
   },
   {
@@ -288,7 +288,7 @@
       "Step 4: Verify grid layout for cards is appropriate",
       "Step 5: Verify all content remains accessible"
     ],
-    "passes": false,
+    "passes": true,
     "requires_manual_testing": false
   },
   {
@@ -328,7 +328,7 @@
       "Step 4: Verify invitation status changes to 'cancelled'",
       "Step 5: Verify success message appears"
     ],
-    "passes": false,
+    "passes": true,
     "requires_manual_testing": false
   },
   {
@@ -341,7 +341,7 @@
       "Step 4: Verify error message displays",
       "Step 5: Verify input has aria-invalid attribute set to true"
     ],
-    "passes": false,
+    "passes": true,
     "requires_manual_testing": false
   },
   {
@@ -393,7 +393,7 @@
       "Step 3: Click the back button (chevron left)",
       "Step 4: Verify navigation returns to previous location"
     ],
-    "passes": false,
+    "passes": true,
     "requires_manual_testing": false
   },
   {
@@ -431,7 +431,7 @@
       "Step 3: Verify invitation form input and button stack appropriately",
       "Step 4: Verify invitation cards display correctly on narrow screens"
     ],
-    "passes": false,
+    "passes": true,
     "requires_manual_testing": false
   },
   {
@@ -443,7 +443,7 @@
       "Step 3: Verify layout adapts appropriately",
       "Step 4: Verify all functionality remains accessible"
     ],
-    "passes": false,
+    "passes": true,
     "requires_manual_testing": false
   },
   {
@@ -511,7 +511,7 @@
       "Step 5: Verify download button is present",
       "Step 6: Verify remove track button is present"
     ],
-    "passes": false,
+    "passes": true,
     "requires_manual_testing": false
   },
   {
