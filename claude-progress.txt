@@ -46,6 +46,8 @@ All changes verified with npm run typecheck and npm run lint:
 
 1. `eba0065` - feat(phase2): add feature list and init script for design system phase 2
 2. `dc041c3` - style(design-system): apply Phase 2 typography and card patterns to SongDetail and InvitationManager
+3. `e369dd9` - docs: add claude-progress.txt for session tracking
+4. `58622a4` - docs: update design system with font-bold pattern for section titles
 
 ---
 
@@ -102,7 +104,8 @@ After testing, update feature_list.json:
 2. `/init.sh` - Created setup script
 3. `/src/components/SongDetail.tsx` - 6 CSS class updates
 4. `/src/components/InvitationManager.tsx` - 2 CSS class updates
-5. `/claude-progress.txt` - This file
+5. `/docs/design-system.md` - Updated section title patterns to include font-bold
+6. `/claude-progress.txt` - This file
 
 ---
 
