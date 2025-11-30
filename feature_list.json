@@ -367,7 +367,7 @@
       "Step 5: Verify loading spinner displays",
       "Step 6: Verify AI response appears in the chat area"
     ],
-    "passes": false,
+    "passes": true,
     "requires_manual_testing": false
   },
   {
@@ -537,7 +537,7 @@
       "Step 4: Verify the invitation form is NOT displayed"
     ],
     "passes": false,
-    "requires_manual_testing": false
+    "requires_manual_testing": true
   },
   {
     "category": "style",
@@ -575,7 +575,7 @@
       "Step 4: Verify error message container has border-destructive/30 border",
       "Step 5: Verify error text uses text-destructive color"
     ],
-    "passes": false,
+    "passes": true,
     "requires_manual_testing": false
   },
   {
@@ -602,7 +602,7 @@
       "Step 5: Verify UserPlus icon is displayed"
     ],
     "passes": false,
-    "requires_manual_testing": false
+    "requires_manual_testing": true
   },
   {
     "category": "style",
