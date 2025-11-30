@@ -143,5 +143,13 @@ Previous commits:
 
 1. `/feature_list.json` - Updated 24 tests to "passes": true
 2. `/claude-progress.txt` - This file (updated)
+3. `/src/components/setlist/SetlistItem.test.tsx` - Fixed 3 tests requiring isAdmin prop
 
 ---
+
+## ADDITIONAL COMMITS
+
+- `62b250f` - fix(tests): update SetlistItem tests to require isAdmin for delete button
+  - Fixed 3 failing tests by adding isAdmin: true prop
+  - Added new test to verify delete button hidden when not isAdmin
+  - All 635 tests now passing
