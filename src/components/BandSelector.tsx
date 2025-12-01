@@ -1,13 +1,12 @@
 import React, { memo, useState, useCallback, useMemo } from 'react';
 import { Users, ChevronDown, Check } from 'lucide-react';
+import { Avatar, AvatarFallback } from '@/components/primitives';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-  Avatar,
-  AvatarFallback,
-} from '@/components/primitives';
+} from '@/components/ui/dropdown-menu';
 
 interface Band {
   id: string;
@@ -106,7 +105,7 @@ export const BandSelector: React.FC<BandSelectorProps> = memo(function BandSelec
           <DropdownMenuItem
             key={band.id}
             onClick={() => handleBandClick(band.id)}
-            className="flex items-center gap-3 cursor-pointer"
+            className="flex items-center gap-3"
           >
             <Avatar className="w-6 h-6 bg-primary">
               <AvatarFallback className="bg-primary text-primary-foreground text-xs">

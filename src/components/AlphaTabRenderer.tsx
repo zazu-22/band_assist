@@ -1410,7 +1410,7 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
   );
 
   return (
-    <div className="flex flex-col max-h-full bg-white text-black rounded-xl relative border border-zinc-200 overflow-hidden">
+    <div className="flex flex-col max-h-full bg-white text-black rounded-xl relative border border-zinc-200 overflow-hidden isolate z-0">
       {/* Toolbar - conditionally rendered */}
       {showControls && (
         <div className="bg-zinc-100 border-b border-zinc-300 p-2 flex items-center justify-between shrink-0">

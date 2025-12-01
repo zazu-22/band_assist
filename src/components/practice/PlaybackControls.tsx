@@ -41,9 +41,7 @@ export const PlaybackControls = memo(function PlaybackControls({
               disabled={disabled}
               className={cn(
                 'h-11 w-11 sm:h-10 sm:w-10 rounded-full p-0 shrink-0',
-                isPlaying
-                  ? 'bg-primary text-primary-foreground hover:bg-primary/90 shadow-md'
-                  : 'hover:bg-muted'
+                isPlaying && 'bg-primary text-primary-foreground hover:bg-primary/90 shadow-md'
               )}
               aria-label={isPlaying ? 'Pause' : 'Play'}
             >
