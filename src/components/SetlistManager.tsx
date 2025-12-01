@@ -2,6 +2,7 @@ import React, { memo, useState, useCallback, useMemo } from 'react';
 import { Music } from 'lucide-react';
 import { toast, EmptyState, ConfirmDialog } from '@/components/ui';
 import { getMusicAnalysis } from '@/services/geminiService';
+import { StorageService } from '@/services/storageService';
 import { parseLocalDate, getLocalToday, daysBetween } from '@/lib/dateUtils';
 import {
   SetlistHeader,
@@ -251,9 +252,20 @@ export const SetlistManager: React.FC<SetlistManagerProps> = memo(function Setli
   const songToDelete = songs.find(s => s.id === confirmDialog.songId);
   const songTitleToDelete = songToDelete?.title || 'this song';
 
-  const confirmDeleteSong = useCallback(() => {
-    setSongs(prev => prev.filter(s => s.id !== confirmDialog.songId));
+  const confirmDeleteSong = useCallback(async () => {
+    const songId = confirmDialog.songId;
     setConfirmDialog({ isOpen: false, songId: '' });
+
+    try {
+      // Delete from Supabase first
+      await StorageService.deleteSong(songId);
+      // Then update local state
+      setSongs(prev => prev.filter(s => s.id !== songId));
+      toast.success('Song deleted successfully');
+    } catch (error) {
+      console.error('Error deleting song:', error);
+      toast.error('Failed to delete song. Please try again.');
+    }
   }, [confirmDialog.songId, setSongs]);
 
   const closeConfirmDialog = useCallback(() => {

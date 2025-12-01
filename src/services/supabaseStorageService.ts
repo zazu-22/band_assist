@@ -173,6 +173,136 @@ export class SupabaseStorageService implements IStorageService {
   }
 
   /**
+   * Delete a song from Supabase
+   * Also cleans up associated files in Storage
+   */
+  async deleteSong(songId: string): Promise<void> {
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      throw new Error('Supabase is not configured. Check environment variables.');
+    }
+
+    if (!this.currentBandId) {
+      throw new Error('No band selected. Call setCurrentBand() first.');
+    }
+
+    try {
+      // First, fetch the song to get any storage paths for cleanup
+      const { data: song, error: fetchError } = await supabase
+        .from('songs')
+        .select('charts, backing_track_storage_path')
+        .eq('id', songId)
+        .eq('band_id', this.currentBandId)
+        .single();
+
+      if (fetchError && fetchError.code !== 'PGRST116') {
+        // PGRST116 = no rows returned (song already deleted)
+        throw fetchError;
+      }
+
+      // Clean up storage files if they exist
+      if (song) {
+        // Delete backing track if exists
+        if (song.backing_track_storage_path) {
+          try {
+            await supabase.storage
+              .from('band-files')
+              .remove([song.backing_track_storage_path]);
+          } catch (e) {
+            console.warn('Failed to delete backing track:', e);
+          }
+        }
+
+        // Delete chart files if they have storage paths
+        const charts = (song.charts as unknown as SongChart[]) || [];
+        const chartPaths = charts
+          .filter(c => c.storagePath)
+          .map(c => c.storagePath as string);
+
+        if (chartPaths.length > 0) {
+          try {
+            await supabase.storage.from('band-files').remove(chartPaths);
+          } catch (e) {
+            console.warn('Failed to delete chart files:', e);
+          }
+        }
+      }
+
+      // Delete the song record
+      const { error: deleteError } = await supabase
+        .from('songs')
+        .delete()
+        .eq('id', songId)
+        .eq('band_id', this.currentBandId);
+
+      if (deleteError) throw deleteError;
+    } catch (error) {
+      console.error('Error deleting song:', error);
+      throw new Error(
+        `Failed to delete song: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  /**
+   * Delete a member from Supabase
+   */
+  async deleteMember(memberId: string): Promise<void> {
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      throw new Error('Supabase is not configured. Check environment variables.');
+    }
+
+    if (!this.currentBandId) {
+      throw new Error('No band selected. Call setCurrentBand() first.');
+    }
+
+    try {
+      const { error: deleteError } = await supabase
+        .from('band_members')
+        .delete()
+        .eq('id', memberId)
+        .eq('band_id', this.currentBandId);
+
+      if (deleteError) throw deleteError;
+    } catch (error) {
+      console.error('Error deleting member:', error);
+      throw new Error(
+        `Failed to delete member: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  /**
+   * Delete an event from Supabase
+   */
+  async deleteEvent(eventId: string): Promise<void> {
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      throw new Error('Supabase is not configured. Check environment variables.');
+    }
+
+    if (!this.currentBandId) {
+      throw new Error('No band selected. Call setCurrentBand() first.');
+    }
+
+    try {
+      const { error: deleteError } = await supabase
+        .from('band_events')
+        .delete()
+        .eq('id', eventId)
+        .eq('band_id', this.currentBandId);
+
+      if (deleteError) throw deleteError;
+    } catch (error) {
+      console.error('Error deleting event:', error);
+      throw new Error(
+        `Failed to delete event: ${error instanceof Error ? error.message : 'Unknown error'}`
+      );
+    }
+  }
+
+  /**
    * Load all application state from Supabase
    */
   async load(): Promise<LoadResult> {

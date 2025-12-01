@@ -147,9 +147,16 @@ export const Settings: React.FC<SettingsProps> = memo(function Settings({
         message:
           'Are you sure? Assignments for this member in songs will remain but might look orphaned.',
         variant: 'danger',
-        onConfirm: () => {
-          setMembers(prev => prev.filter(m => m.id !== id));
+        onConfirm: async () => {
           closeDialog();
+          try {
+            await StorageService.deleteMember(id);
+            setMembers(prev => prev.filter(m => m.id !== id));
+            toast.success('Member removed successfully');
+          } catch (error) {
+            console.error('Error removing member:', error);
+            toast.error('Failed to remove member. Please try again.');
+          }
         },
       });
     },

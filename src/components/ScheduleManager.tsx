@@ -14,7 +14,8 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/primitives';
-import { ConfirmDialog, EmptyState } from '@/components/ui';
+import { ConfirmDialog, EmptyState, toast } from '@/components/ui';
+import { StorageService } from '@/services/storageService';
 import type { BandEvent, Song } from '@/types';
 import { cn } from '@/lib/utils';
 import { parseLocalDate } from '@/lib/dateUtils';
@@ -96,11 +97,20 @@ export const ScheduleManager: React.FC<ScheduleManagerProps> = memo(function Sch
     setConfirmDialog({ isOpen: true, eventId: id });
   }, []);
 
-  const confirmDeleteEvent = useCallback(() => {
-    if (confirmDialog.eventId) {
-      setEvents(prev => prev.filter(e => e.id !== confirmDialog.eventId));
-    }
+  const confirmDeleteEvent = useCallback(async () => {
+    const eventId = confirmDialog.eventId;
     closeConfirmDialog();
+
+    if (eventId) {
+      try {
+        await StorageService.deleteEvent(eventId);
+        setEvents(prev => prev.filter(e => e.id !== eventId));
+        toast.success('Event deleted successfully');
+      } catch (error) {
+        console.error('Error deleting event:', error);
+        toast.error('Failed to delete event. Please try again.');
+      }
+    }
   }, [confirmDialog.eventId, setEvents, closeConfirmDialog]);
 
   const handleStartAdding = useCallback(() => {

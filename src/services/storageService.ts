@@ -100,6 +100,42 @@ class StorageServiceWrapper implements IStorageService {
     }
     return null;
   }
+
+  /**
+   * Delete a song from the database
+   */
+  async deleteSong(songId: string): Promise<void> {
+    if (
+      'deleteSong' in this.activeService &&
+      typeof this.activeService.deleteSong === 'function'
+    ) {
+      await this.activeService.deleteSong(songId);
+    }
+  }
+
+  /**
+   * Delete a member from the database
+   */
+  async deleteMember(memberId: string): Promise<void> {
+    if (
+      'deleteMember' in this.activeService &&
+      typeof this.activeService.deleteMember === 'function'
+    ) {
+      await this.activeService.deleteMember(memberId);
+    }
+  }
+
+  /**
+   * Delete an event from the database
+   */
+  async deleteEvent(eventId: string): Promise<void> {
+    if (
+      'deleteEvent' in this.activeService &&
+      typeof this.activeService.deleteEvent === 'function'
+    ) {
+      await this.activeService.deleteEvent(eventId);
+    }
+  }
 }
 
 // Export singleton instance (backwards compatible with existing code)
