@@ -102,7 +102,7 @@ const ScrollableContainer = memo(function ScrollableContainer({
       {/* Left fade indicator */}
       <div
         className={cn(
-          'pointer-events-none absolute left-0 top-0 bottom-0 w-6 z-10',
+          'pointer-events-none absolute left-0 top-0 bottom-0 w-8 z-10',
           'bg-gradient-to-r to-transparent transition-opacity duration-200',
           fadeClassName,
           showLeftFade ? 'opacity-100' : 'opacity-0'
@@ -110,11 +110,11 @@ const ScrollableContainer = memo(function ScrollableContainer({
         aria-hidden="true"
       >
         <ChevronLeft
-          size={14}
+          size={16}
           className={cn(
-            'absolute left-0.5 top-1/2 -translate-y-1/2 text-muted-foreground',
+            'absolute left-1 top-1/2 -translate-y-1/2 text-muted-foreground',
             'transition-opacity duration-200',
-            showLeftFade ? 'opacity-60' : 'opacity-0'
+            showLeftFade ? 'opacity-70' : 'opacity-0'
           )}
         />
       </div>
@@ -122,7 +122,7 @@ const ScrollableContainer = memo(function ScrollableContainer({
       {/* Scrollable content */}
       <div
         ref={scrollRef}
-        className={cn('overflow-x-auto scrollbar-hide', className)}
+        className={cn('overflow-x-auto scrollbar-hide touch-pan-x', className)}
       >
         {children}
       </div>
@@ -130,7 +130,7 @@ const ScrollableContainer = memo(function ScrollableContainer({
       {/* Right fade indicator */}
       <div
         className={cn(
-          'pointer-events-none absolute right-0 top-0 bottom-0 w-6 z-10',
+          'pointer-events-none absolute right-0 top-0 bottom-0 w-8 z-10',
           'bg-gradient-to-l to-transparent transition-opacity duration-200',
           fadeClassName,
           showRightFade ? 'opacity-100' : 'opacity-0'
@@ -138,11 +138,11 @@ const ScrollableContainer = memo(function ScrollableContainer({
         aria-hidden="true"
       >
         <ChevronRight
-          size={14}
+          size={16}
           className={cn(
-            'absolute right-0.5 top-1/2 -translate-y-1/2 text-muted-foreground',
+            'absolute right-1 top-1/2 -translate-y-1/2 text-muted-foreground',
             'transition-opacity duration-200',
-            showRightFade ? 'opacity-60' : 'opacity-0'
+            showRightFade ? 'opacity-70' : 'opacity-0'
           )}
         />
       </div>
@@ -280,7 +280,7 @@ export const PracticeControlBar = memo(function PracticeControlBar({
         </div>
 
         {/* Center/Right: Chart tabs (desktop also includes playback) */}
-        <ScrollableContainer className="flex items-center justify-center sm:justify-end gap-2 sm:gap-4">
+        <ScrollableContainer className="flex items-center gap-2 sm:gap-4">
           {/* Desktop only: inline playback controls */}
           {!isMobile && showGpControlsRow && (
             <PlaybackControls
