@@ -35,6 +35,7 @@ import {
   TooltipTrigger,
 } from '@/components/primitives';
 import { cn } from '@/lib/utils';
+import { getAudioContext, activateAudioContext } from '@/lib/audioContext';
 import { useIsMobile } from '@/hooks/useBreakpoint';
 import { useDerivedState, usePrevious } from '@/hooks/useDerivedState';
 import { useBlobUrl } from '@/hooks/useBlobUrl';
@@ -250,14 +251,14 @@ export const PracticeRoom: React.FC<PracticeRoomProps> = memo(function PracticeR
   // Metronome Logic
   useEffect(() => {
     if (metronomeActive) {
+      // Activate shared audio context on toggle (user gesture)
+      activateAudioContext();
+
       const ms = 60000 / metronomeBpm;
       metronomeInterval.current = setInterval(() => {
-        const AudioContextClass =
-          window.AudioContext ||
-          (window as typeof window & { webkitAudioContext?: typeof AudioContext })
-            .webkitAudioContext;
-        if (!AudioContextClass) return;
-        const ctx = new AudioContextClass();
+        const ctx = getAudioContext();
+        if (!ctx) return;
+
         const osc = ctx.createOscillator();
         const gain = ctx.createGain();
         osc.connect(gain);
