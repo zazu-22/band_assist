@@ -28,8 +28,8 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = memo(function ThemeToggle
           variant="ghost"
           size={collapsed ? 'icon' : 'sm'}
           className={cn(
-            'w-full text-muted-foreground hover:text-foreground',
-            collapsed ? 'justify-center' : 'justify-start gap-3',
+            'text-muted-foreground hover:text-foreground',
+            collapsed ? 'justify-center' : 'w-full justify-start gap-3',
             className
           )}
           aria-label="Toggle theme"
