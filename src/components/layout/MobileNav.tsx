@@ -86,7 +86,7 @@ export function MobileNav({
 
         {/* Theme toggle on right - icon only */}
         <div className="shrink-0">
-          <ThemeToggle collapsed />
+          <ThemeToggle iconOnly />
         </div>
       </div>
     </>

@@ -81,13 +81,17 @@ export const Sidebar = memo(function Sidebar({
       {/* Header */}
       <div
         className={cn(
-          'p-4 flex items-center',
-          isMobileDrawer ? 'justify-start' : 'justify-center lg:justify-start lg:p-6'
+          'flex items-center',
+          isMobileDrawer
+            ? 'p-4 justify-start'
+            : effectiveCollapsed
+              ? 'p-3 justify-center'
+              : 'p-4 justify-center lg:justify-start lg:p-6'
         )}
       >
         {!effectiveCollapsed && (
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 bg-sidebar-primary rounded-lg flex items-center justify-center shadow-lg">
+            <div className="w-10 h-10 shrink-0 bg-sidebar-primary rounded-lg flex items-center justify-center shadow-lg">
               <Music className="text-sidebar-primary-foreground w-6 h-6" />
             </div>
             <h1
@@ -104,7 +108,7 @@ export const Sidebar = memo(function Sidebar({
           </div>
         )}
         {effectiveCollapsed && (
-          <div className="w-10 h-10 bg-sidebar-primary rounded-lg flex items-center justify-center shadow-lg">
+          <div className="w-10 h-10 shrink-0 bg-sidebar-primary rounded-lg flex items-center justify-center shadow-lg">
             <Music className="text-sidebar-primary-foreground w-6 h-6" />
           </div>
         )}
@@ -199,15 +203,15 @@ export const Sidebar = memo(function Sidebar({
       </ScrollArea>
 
       {/* Footer */}
-      <div className="p-4 border-t border-sidebar-border space-y-2">
+      <div className="px-3 py-4 border-t border-sidebar-border space-y-2">
         {/* Collapse toggle - desktop only, hidden in mobile drawer */}
         {!isMobileDrawer && (
           <Button
             variant="ghost"
             onClick={() => setCollapsed(!contextCollapsed)}
             className={cn(
-              'hidden lg:flex w-full text-muted-foreground hover:text-foreground',
-              effectiveCollapsed ? 'justify-center' : 'justify-start gap-3'
+              'hidden lg:flex w-full gap-3 text-muted-foreground hover:text-foreground',
+              effectiveCollapsed ? 'justify-center px-2' : 'justify-start'
             )}
             title={effectiveCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
             aria-label={effectiveCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
@@ -232,8 +236,8 @@ export const Sidebar = memo(function Sidebar({
             variant="ghost"
             onClick={() => navigate(ROUTES.SETTINGS)}
             className={cn(
-              'w-full text-muted-foreground hover:text-foreground',
-              effectiveCollapsed ? 'justify-center' : 'justify-start gap-3',
+              'w-full gap-3 text-muted-foreground hover:text-foreground',
+              effectiveCollapsed ? 'justify-center px-2' : 'justify-start',
               settingsActive && 'bg-accent text-accent-foreground'
             )}
             title="Settings"
@@ -256,8 +260,8 @@ export const Sidebar = memo(function Sidebar({
               variant="ghost"
               onClick={onLogout}
               className={cn(
-                'w-full text-muted-foreground hover:bg-destructive/10 hover:text-destructive',
-                effectiveCollapsed ? 'justify-center' : 'justify-start gap-3'
+                'w-full gap-3 text-muted-foreground hover:bg-destructive/10 hover:text-destructive',
+                effectiveCollapsed ? 'justify-center px-2' : 'justify-start'
               )}
               title="Log out"
               aria-label="Log out"
