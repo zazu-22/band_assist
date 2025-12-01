@@ -229,13 +229,22 @@ const App: React.FC = () => {
         // Check for existing session
         const {
           data: { session: existingSession },
+          error: sessionError,
         } = await supabase.auth.getSession();
 
-        if (mounted) {
+        // Handle invalid/expired refresh tokens by signing out
+        // This clears stale tokens and redirects to login
+        if (sessionError) {
+          console.warn('Session error, signing out:', sessionError.message);
+          await supabase.auth.signOut();
+          if (mounted) {
+            setSession(null);
+          }
+        } else if (mounted) {
           setSession(existingSession);
         }
 
-        // Listen for auth changes
+        // Listen for auth changes (SIGNED_OUT on token refresh failure sets newSession to null)
         const {
           data: { subscription },
         } = supabase.auth.onAuthStateChange((_event, newSession) => {
