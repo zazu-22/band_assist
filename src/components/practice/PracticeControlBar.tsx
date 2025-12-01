@@ -103,7 +103,7 @@ const ScrollableContainer = memo(function ScrollableContainer({
       <div
         className={cn(
           'pointer-events-none absolute left-0 top-0 bottom-0 w-8 z-10',
-          'bg-gradient-to-r to-transparent transition-opacity duration-200',
+          'bg-gradient-to-r to-transparent transition-opacity duration-200 will-change-[opacity]',
           fadeClassName,
           showLeftFade ? 'opacity-100' : 'opacity-0'
         )}
@@ -131,7 +131,7 @@ const ScrollableContainer = memo(function ScrollableContainer({
       <div
         className={cn(
           'pointer-events-none absolute right-0 top-0 bottom-0 w-8 z-10',
-          'bg-gradient-to-l to-transparent transition-opacity duration-200',
+          'bg-gradient-to-l to-transparent transition-opacity duration-200 will-change-[opacity]',
           fadeClassName,
           showRightFade ? 'opacity-100' : 'opacity-0'
         )}

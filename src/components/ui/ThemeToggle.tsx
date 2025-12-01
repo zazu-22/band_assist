@@ -1,12 +1,12 @@
 import React, { memo } from 'react';
 import { Moon, Sun, Monitor } from 'lucide-react';
+import { Button } from '@/components/primitives';
 import {
-  Button,
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
-} from '@/components/primitives';
+} from '@/components/ui/dropdown-menu';
 import { useTheme } from '@/components/ui/ThemeProvider';
 import { cn } from '@/lib/utils';
 
@@ -29,15 +29,13 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = memo(function ThemeToggle
       <DropdownMenuTrigger asChild>
         <Button
           variant="ghost"
-          size={iconOnly ? 'icon' : undefined}
+          size={iconOnly || collapsed ? 'icon' : undefined}
           className={cn(
             'text-muted-foreground hover:text-foreground',
-            iconOnly
-              ? 'justify-center'
-              : cn(
-                  'w-full gap-3',
-                  collapsed ? 'justify-center px-2' : 'justify-start'
-                ),
+            iconOnly && 'justify-center',
+            !iconOnly && 'w-full gap-3',
+            !iconOnly && collapsed && 'justify-center px-2',
+            !iconOnly && !collapsed && 'justify-start',
             className
           )}
           aria-label="Toggle theme"
