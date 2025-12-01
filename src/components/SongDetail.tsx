@@ -278,9 +278,9 @@ export const SongDetail: React.FC<SongDetailProps> = ({
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 10 * 1024 * 1024) {
+    if (file.size > 15 * 1024 * 1024) {
       toast.error(
-        'Audio file is too large (Limit: 10MB). Please use a compressed MP3 or shorter clip.'
+        'Audio file is too large (Limit: 15MB). Please use a compressed MP3 or shorter clip.'
       );
       return;
     }
