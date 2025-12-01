@@ -10,6 +10,7 @@
 /* Currently playing bar - subtle amber highlight */
 .at-cursor-bar {
   background: rgba(245, 158, 11, 0.12) !important; /* Amber-500 at 12% opacity */
+  z-index: 10 !important; /* Below modal overlays (z-50) */
 }
 
 /* Beat cursor - vertical line showing exact playback position */
@@ -18,6 +19,7 @@
   width: 3px !important;
   border-radius: 1px;
   box-shadow: 0 0 4px rgba(245, 158, 11, 0.5);
+  z-index: 10 !important; /* Below modal overlays (z-50) */
 }
 
 /* Currently playing notes - highlighted in amber */
@@ -35,6 +37,7 @@
   background: rgba(245, 158, 11, 0.08) !important;
   border: 2px dashed rgba(245, 158, 11, 0.6) !important;
   border-radius: 4px;
+  z-index: 10 !important; /* Below modal overlays (z-50) */
 }
 
 /* Hover effect on beats (for loop selection) */
