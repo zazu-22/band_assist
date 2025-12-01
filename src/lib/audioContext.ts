@@ -35,7 +35,14 @@ export function getAudioContext(): AudioContext | null {
  */
 export async function activateAudioContext(): Promise<void> {
   const ctx = getAudioContext();
-  if (ctx?.state === 'suspended') {
-    await ctx.resume();
+  if (!ctx) return;
+
+  if (ctx.state === 'suspended') {
+    try {
+      await ctx.resume();
+    } catch (error) {
+      console.warn('[audioContext] Failed to resume AudioContext:', error);
+      // Don't throw - this is a best-effort activation
+    }
   }
 }
