@@ -8,6 +8,7 @@ import { useSidebar } from './SidebarProvider';
 import { Sidebar } from './Sidebar';
 import { VisuallyHidden } from '@/components/ui/VisuallyHidden';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
+import { getPageTitle } from '@/routes';
 
 interface MobileNavProps {
   onLogout?: () => void;
@@ -26,6 +27,9 @@ export function MobileNav({
 }: MobileNavProps) {
   const location = useLocation();
   const { mobileOpen, setMobileOpen } = useSidebar();
+
+  // Get current page title for header display
+  const pageTitle = getPageTitle(location.pathname);
 
   // Close mobile nav on route change
   useEffect(() => {
@@ -58,19 +62,32 @@ export function MobileNav({
               currentBandName={currentBandName}
               userBands={userBands}
               onSelectBand={onSelectBand}
+              isMobileDrawer
             />
           </SheetContent>
         </Sheet>
 
-        {/* Band name in center */}
-        {currentBandName && (
-          <span className="text-sm font-medium text-foreground truncate max-w-[50%]">
-            {currentBandName}
-          </span>
-        )}
+        {/* Band name and page indicator in center */}
+        <div className="flex-1 min-w-0 flex items-center justify-center gap-0 overflow-hidden">
+          {currentBandName && (
+            <span className="text-sm font-medium text-foreground truncate max-w-[45%]">
+              {currentBandName}
+            </span>
+          )}
+          {currentBandName && pageTitle && (
+            <span className="mx-1.5 shrink-0 text-muted-foreground">·</span>
+          )}
+          {pageTitle && (
+            <span className="text-sm font-medium text-muted-foreground truncate max-w-[45%]">
+              {pageTitle}
+            </span>
+          )}
+        </div>
 
-        {/* Theme toggle on right */}
-        <ThemeToggle />
+        {/* Theme toggle on right - icon only */}
+        <div className="shrink-0">
+          <ThemeToggle collapsed className="w-auto" />
+        </div>
       </div>
     </>
   );

@@ -76,3 +76,23 @@ export const matchRoute = (pathname: string, route: string): boolean => {
   // Prefix match with slash boundary
   return pathname.startsWith(`${route}/`);
 };
+
+/**
+ * Get display title for a route pathname.
+ * Used by mobile header to show current page name.
+ *
+ * @param pathname - The current URL pathname
+ * @returns The display name for the page, or empty string if unknown
+ */
+export const getPageTitle = (pathname: string): string => {
+  // Check NAV_ITEMS first
+  const navItem = NAV_ITEMS.find(item => matchRoute(pathname, item.path));
+  if (navItem) return navItem.label;
+
+  // Custom mappings for non-nav routes
+  if (pathname === '/settings') return 'Settings';
+  if (pathname === '/performance') return 'Performance';
+  if (pathname.startsWith('/songs/')) return 'Song Details';
+
+  return '';
+};
