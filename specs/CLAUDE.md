@@ -2,6 +2,28 @@
 
 Instructions for managing specifications in this directory.
 
+---
+
+## ⚠️ REQUIRED: Post-Implementation Checklist
+
+**Before marking ANY spec as complete, you MUST complete ALL of these steps:**
+
+- [ ] Move spec file: `mv specs/spec-name.md specs/done/spec-name.md`
+- [ ] Update spec metadata: Set `Status: Done`, add `Completed` date
+- [ ] Update `specs/STATUS.md` (single source of truth for status):
+  - Update counts in "Status Overview"
+  - Remove from "Active Spec" section (set next pending as active)
+  - Add to "Done" table with completion date
+  - Update "Pending Queue" sequence numbers
+  - Add entry to "Recent Activity"
+- [ ] Commit all documentation changes with the implementation PR
+
+**Note:** `specs/README.md` links to STATUS.md and does not contain duplicated tables.
+
+**Failure to complete these steps will result in documentation drift.**
+
+---
+
 ## Directory Structure
 
 ```
@@ -95,7 +117,6 @@ Always update:
 The pending queue has a `Seq` column indicating implementation order. When adding to pending:
 1. Assign next sequence number
 2. Update STATUS.md pending table
-3. Update README.md pending queue
 
 ## PR Checklist
 

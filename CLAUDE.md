@@ -24,6 +24,8 @@ Amber/gold theme with light+dark modes. See [docs/design-system.md](docs/design-
 
 See [specs/README.md](specs/README.md) for roadmap and [specs/CLAUDE.md](specs/CLAUDE.md) for spec workflow.
 
+**⚠️ Important:** When completing a spec, you MUST update both `specs/README.md` AND `specs/STATUS.md`. See [specs/CLAUDE.md](specs/CLAUDE.md) for the full checklist.
+
 ## Project-Specific Patterns
 
 ### Navigation
