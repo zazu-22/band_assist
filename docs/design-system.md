@@ -519,6 +519,94 @@ When track is present, display player in Card:
 </Card>
 ```
 
+## Component Compliance
+
+All major components have been audited for design system compliance:
+
+| Component       | Serif Headlines | Ambient Glow   | Animations | List Accents | Monospace Numbers |
+| --------------- | --------------- | -------------- | ---------- | ------------ | ----------------- |
+| Dashboard       | ✓               | ✓ (top-left)   | ✓          | ✓            | ✓                 |
+| PracticeRoom    | N/A (control bar) | N/A          | ✓          | ✓            | ✓                 |
+| SetlistManager  | ✓               | ✓ (top-left)   | ✓          | ✓            | ✓                 |
+| ScheduleManager | ✓               | ✓ (top-right)  | ✓          | Timeline     | ✓                 |
+| BandDashboard   | ✓               | ✓ (top-left)   | ✓          | ✓            | ✓                 |
+| Settings        | ✓               | N/A            | ✓          | ✓            | N/A               |
+| SongDetail      | ✓ (text-3xl)    | N/A            | ✓          | ✓            | ✓                 |
+| PerformanceMode | ✓               | N/A            | N/A        | N/A          | ✓                 |
+
+**Notes:**
+
+- **PracticeRoom**: Uses control bar pattern instead of traditional headline
+- **ScheduleManager**: Uses timeline pattern with vertical border (intentional variation)
+- **SongDetail**: Uses `text-3xl` headline due to layout constraints
+- **PerformanceMode**: No animations (intentional for instant render during live performance)
+
+## Ambient Glow Pattern
+
+Pages with ambient glow use this consistent pattern:
+
+```tsx
+<div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
+  <div
+    className="absolute -top-1/4 -{position}-1/4 w-1/2 h-1/2 rounded-full opacity-[0.03]"
+    style={{
+      background: 'radial-gradient(circle, var(--primary) 0%, transparent 70%)',
+    }}
+  />
+</div>
+```
+
+| Page            | Position    |
+| --------------- | ----------- |
+| Dashboard       | `-left-1/4` |
+| SetlistManager  | `-left-1/4` |
+| ScheduleManager | `-right-1/4`|
+| BandDashboard   | `-left-1/4` |
+
+## Numeric Display Pattern
+
+All numeric values use monospace tabular figures for consistent width and layout stability:
+
+```tsx
+<span className="font-mono tabular-nums">{count}</span>
+```
+
+This pattern is applied to:
+
+- Countdowns and timers
+- BPM displays
+- Statistics and percentages
+- Dates and time displays
+- Scroll speed indicators
+
+## List Item Accent Pattern
+
+List items use a left border accent for visual hierarchy:
+
+```tsx
+// Default state
+className="border-l-[3px] border-l-primary/60"
+
+// Selected state
+className={cn(
+  'border-l-[3px]',
+  isSelected ? 'border-l-primary' : 'border-l-primary/60'
+)}
+```
+
+**Exception**: ScheduleManager uses a vertical timeline pattern with dots instead of the standard left-border accent.
+
+## Animation Timing Reference
+
+| Animation Class               | Duration | Easing   |
+| ----------------------------- | -------- | -------- |
+| animate-fade-in               | 200ms    | ease-out |
+| animate-slide-in-from-bottom  | 300ms    | ease-out |
+| animate-slide-in-from-left    | 200ms    | ease-out |
+| animate-slide-in-from-top     | 300ms    | ease-out |
+| animate-scale-in              | 200ms    | ease-out |
+| transition-colors             | 150ms    | default  |
+
 ## Future Considerations
 
 When extending this design system to other pages:
@@ -530,5 +618,5 @@ When extending this design system to other pages:
 
 ---
 
-_Last updated: November 2024 (Phase 2 updates)_
+_Last updated: December 2024 (Phase 4 updates)_
 _Reference implementation: `src/components/Dashboard.tsx`, `src/components/SongDetail.tsx`_

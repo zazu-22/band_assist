@@ -117,9 +117,10 @@ export const BandDashboard: React.FC<BandDashboardProps> = memo(function BandDas
                   'relative overflow-hidden cursor-pointer transition-all duration-200 group',
                   'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2',
                   'animate-slide-in-from-bottom animation-forwards opacity-0',
+                  'border-l-[3px]',
                   isSelected
-                    ? 'bg-muted/50 border-l-[3px] border-l-primary/60'
-                    : 'hover:bg-muted/50 hover:border-border/80'
+                    ? 'bg-muted/50 border-l-primary'
+                    : 'hover:bg-muted/50 hover:border-border/80 border-l-primary/60'
                 )}
                 style={{ animationDelay: `${index * 75}ms` }}
                 onClick={() => handleSelectMember(member.id)}
