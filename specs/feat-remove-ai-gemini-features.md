@@ -2,11 +2,11 @@
 
 | Field       | Value                                       |
 | ----------- | ------------------------------------------- |
-| **Status**  | Pending                                     |
+| **Status**  | Active                                      |
 | **Authors** | Claude (AI Assistant)                       |
 | **Created** | 2025-12-01                                  |
-| **Updated** | 2025-12-01                                  |
-| **Priority**| Medium                                      |
+| **Updated** | 2025-12-02                                  |
+| **Priority**| High                                        |
 | **Type**    | Feature Removal / Cleanup                   |
 
 ---

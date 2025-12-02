@@ -6,25 +6,44 @@ This directory contains feature specifications, bug fixes, and infrastructure im
 
 ```
 specs/
-├── backlog/     # Pending work
-├── done/        # Completed specifications
-├── pending/     # In-progress work
-└── README.md    # This index
+├── *.md             # Active spec(s) currently being implemented
+├── pending/         # Queued specs in sequence order
+├── backlog/         # Planned but not yet prioritized
+├── done/            # Completed specifications
+├── STATUS.md        # Quick status tracker with sequencing
+└── README.md        # This index
 ```
+
+**Workflow:** Active spec at root -> Pending queue (sequenced) -> Backlog -> Done
 
 ---
 
-## Backlog Index
+## Current Focus
+
+### Active Spec
+
+| Spec | Type | Description |
+|------|------|-------------|
+| [feat-remove-ai-gemini-features](feat-remove-ai-gemini-features.md) | Cleanup | Remove unused AI/Gemini features to simplify codebase |
+
+### Pending Queue (In Sequence Order)
+
+| Seq | Spec | Type | Description |
+|-----|------|------|-------------|
+| 1 | [perf-auto-save-debouncing](pending/perf-auto-save-debouncing.md) | Performance | Debounce auto-save to reduce API calls |
+| 2 | [perf-context-splitting](pending/perf-context-splitting.md) | Performance | Split AppContext to reduce cascade re-renders |
+| 3 | [infra-automated-versioning](pending/infra-automated-versioning.md) | Infrastructure | Implement release-please for semantic versioning |
+| 4 | [feat-user-member-linking-phase-1](pending/feat-user-member-linking-phase-1.md) | Feature | Foundation for linking user accounts to band members |
+
+---
+
+## Backlog
 
 ### High Priority
 
 | Spec | Type | Description |
 |------|------|-------------|
-| [perf-auto-save-debouncing](pending/perf-auto-save-debouncing.md) | Performance | Debounce auto-save to reduce API calls (every keystroke triggers save) |
-| [feat-user-member-linking-phase-1](pending/feat-user-member-linking-phase-1.md) | Feature | Foundation for linking user accounts to band members |
-| [feat-remove-ai-gemini-features](pending/feat-remove-ai-gemini-features.md) | Cleanup | Remove unused AI/Gemini features to simplify codebase |
 | [infra-service-layer-testing](backlog/infra-service-layer-testing.md) | Testing | Add test coverage for critical service layer (0% currently) |
-| [infra-automated-versioning](backlog/infra-automated-versioning.md) | Infrastructure | Implement release-please for semantic versioning |
 
 ### Medium Priority
 
@@ -32,7 +51,6 @@ specs/
 |------|------|-------------|
 | [feat-user-member-linking-phase-2](backlog/feat-user-member-linking-phase-2.md) | Feature | Personal practice tracking and progress logging |
 | [feat-user-member-linking-phase-3](backlog/feat-user-member-linking-phase-3.md) | Feature | Personalized experience ("My Songs", preferences, notes) |
-| [perf-context-splitting](backlog/perf-context-splitting.md) | Performance | Split AppContext to reduce cascade re-renders |
 | [feat-collaborative-song-notes](backlog/feat-collaborative-song-notes.md) | Feature | Timestamped comments on song sections |
 | [feat-practice-mode-track-presets](backlog/feat-practice-mode-track-presets.md) | Feature | Save practice presets for AlphaTab track configurations |
 | [feat-setlist-analytics](backlog/feat-setlist-analytics.md) | Feature | Analyze setlist flow (tempo, energy, key changes) |
@@ -60,7 +78,7 @@ specs/
 The most requested feature direction. Enables personal features by linking Supabase auth users to band members.
 
 ```
-Phase 1: Foundation          ──► Phase 2: Practice Tracking  ──► Phase 3: Personalized UX
+Phase 1: Foundation          --> Phase 2: Practice Tracking  --> Phase 3: Personalized UX
 - user_id on band_members       - practice_sessions table        - "My Songs" dashboard
 - "Claim Member" UI             - Personal song status           - Auto-default tracks
 - User preferences table        - Practice history view          - Personal notes
@@ -73,12 +91,10 @@ Phase 1: Foundation          ──► Phase 2: Practice Tracking  ──► Pha
 Quick wins that improve user experience immediately.
 
 ```
-Auto-Save Debouncing (2h)  ──► AlphaTab Lazy Loading ✅  ──► Context Splitting (4h)
+Auto-Save Debouncing (2h)  --> AlphaTab Lazy Loading (done) --> Context Splitting (4h)
 - 70-90% fewer API calls       - 37% smaller bundle             - 80% fewer re-renders
 - Better typing responsiveness - 42% faster initial load        - Better edit performance
 ```
-
-*AlphaTab Lazy Loading completed Dec 2024 - see [done/perf-alphatab-lazy-loading.md](done/perf-alphatab-lazy-loading.md)*
 
 ---
 
@@ -106,7 +122,7 @@ Each spec should include:
 
 | Field | Value |
 | ----- | ----- |
-| **Status** | Backlog / In Progress / Done |
+| **Status** | Active / Pending / Backlog / Done |
 | **Priority** | High / Medium / Low |
 | **Type** | Feature / Bug Fix / Performance / Infrastructure |
 | **Created** | YYYY-MM-DD |
@@ -132,24 +148,16 @@ Each spec should include:
 
 ---
 
-## Quick Reference
+## Effort Estimates
 
-**To implement next (recommended order):**
-
-1. `perf-auto-save-debouncing` - Quick win, high impact
-2. `feat-remove-ai-gemini-features` - Cleanup, well-documented
-3. `infra-automated-versioning` - Better release process
-4. `feat-user-member-linking-phase-1` - Foundation for personalization
-5. `perf-context-splitting` - Reduce cascade re-renders
-
-**Estimated effort:**
-- Quick wins (1-3 hours): Auto-save debouncing, AI removal
-- Medium (1-2 days): Versioning, service tests, context splitting
-- Large (1+ week): User-member linking phases, collaborative features
-
-**Recently completed:**
-- ✅ `perf-alphatab-lazy-loading` - 37% smaller bundle, 42% faster initial load
+| Effort | Time Range |
+|--------|------------|
+| **Small** | 1-3 hours |
+| **Medium** | 1-2 days |
+| **Large** | 1+ week |
 
 ---
+
+*See [STATUS.md](STATUS.md) for detailed tracking and sequencing.*
 
 *Last updated: 2025-12-02*
