@@ -11,8 +11,8 @@
 | Status | Count | Description |
 |--------|-------|-------------|
 | 🔴 Active | 1 | Currently being implemented |
-| 🟢 Done | 14 | Completed and merged |
-| 🟡 Pending | 3 | Queued for implementation (in sequence order) |
+| 🟢 Done | 15 | Completed and merged |
+| 🟡 Pending | 2 | Queued for implementation (in sequence order) |
 | ⚪ Backlog | 12 | Planned but not yet prioritized |
 
 ---
@@ -23,7 +23,7 @@ The spec currently being implemented:
 
 | Spec | Type | Effort | Notes |
 |------|------|--------|-------|
-| [perf-auto-save-debouncing](pending/perf-auto-save-debouncing.md) | Performance | Small | 70-90% fewer API calls, add save indicator |
+| [perf-context-splitting](pending/perf-context-splitting.md) | Performance | Medium | 80% fewer re-renders during editing |
 
 ---
 
@@ -33,16 +33,16 @@ Specs queued for implementation **in priority order**. Work through these sequen
 
 | Seq | Spec | Type | Effort | Notes |
 |-----|------|------|--------|-------|
-| 1 | [perf-context-splitting](pending/perf-context-splitting.md) | Performance | Medium | 80% fewer re-renders during editing |
-| 2 | [infra-automated-versioning](pending/infra-automated-versioning.md) | Infrastructure | Medium | Release-please for semantic versioning |
-| 3 | [feat-user-member-linking-phase-1](pending/feat-user-member-linking-phase-1.md) | Feature | Large | Foundation for personalization features |
+| 1 | [infra-automated-versioning](pending/infra-automated-versioning.md) | Infrastructure | Medium | Release-please for semantic versioning |
+| 2 | [feat-user-member-linking-phase-1](pending/feat-user-member-linking-phase-1.md) | Feature | Large | Foundation for personalization features |
 
 ---
 
-## 🟢 Done (14)
+## 🟢 Done (15)
 
 | Spec | Type | Priority | Completed |
 |------|------|----------|-----------|
+| [perf-auto-save-debouncing](done/perf-auto-save-debouncing.md) | Performance | High | Dec 2024 |
 | [feat-remove-ai-gemini-features](done/feat-remove-ai-gemini-features.md) | Cleanup | High | Dec 2024 |
 | [perf-alphatab-lazy-loading](done/perf-alphatab-lazy-loading.md) | Performance | High | Dec 2024 |
 | [feat-design-system-phase4-polish-qa](done/feat-design-system-phase4-polish-qa.md) | Feature | High | Dec 2024 |
@@ -105,9 +105,9 @@ Specs queued for implementation **in priority order**. Work through these sequen
 
 | Date | Spec | Change |
 |------|------|--------|
+| Dec 2024 | perf-auto-save-debouncing | ✅ Completed |
+| Dec 2024 | perf-context-splitting | 🔴 Moved to Active |
 | Dec 2024 | feat-remove-ai-gemini-features | ✅ Completed |
-| Dec 2024 | perf-auto-save-debouncing | 🔴 Moved to Active |
-| Dec 2024 | perf-context-splitting | 🟡 Moved to Pending (seq #1) |
 | Dec 2024 | infra-automated-versioning | 🟡 Moved to Pending (seq #2) |
 | Dec 2024 | perf-alphatab-lazy-loading | ✅ Completed |
 | Dec 2024 | feat-alphatab-dark-mode-theming | ➕ Added to backlog |

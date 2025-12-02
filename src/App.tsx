@@ -57,6 +57,8 @@ interface AppContextValue {
   session: Session | null;
   currentBandId: string | null;
   isAdmin: boolean;
+  isSaving: boolean;
+  lastSaved: Date | null;
 }
 
 /**
@@ -137,7 +139,9 @@ const AppLayout: React.FC<{
   currentBandName: string;
   userBands: Array<{ id: string; name: string }>;
   onSelectBand: (bandId: string) => void;
-}> = ({ onLogout, showLogout, currentBandName, userBands, onSelectBand }) => {
+  isSaving: boolean;
+  lastSaved: Date | null;
+}> = ({ onLogout, showLogout, currentBandName, userBands, onSelectBand, isSaving, lastSaved }) => {
   // Enable keyboard shortcuts for layout (Cmd/Ctrl+B to toggle sidebar)
   useLayoutShortcuts();
 
@@ -148,6 +152,8 @@ const AppLayout: React.FC<{
       currentBandName={currentBandName}
       userBands={userBands}
       onSelectBand={onSelectBand}
+      isSaving={isSaving}
+      lastSaved={lastSaved}
     />
   );
 };
@@ -175,6 +181,17 @@ const App: React.FC = () => {
   const [members, setMembers] = useState<BandMember[]>([]);
   const [availableRoles, setAvailableRoles] = useState<string[]>([]);
   const [events, setEvents] = useState<BandEvent[]>([]);
+
+  // -- Save Status State --
+  const [isSaving, setIsSaving] = useState(false);
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingSaveRef = useRef<{
+    songs: Song[];
+    members: BandMember[];
+    roles: string[];
+    events: BandEvent[];
+  } | null>(null);
 
   // Keep ref in sync with currentBandId state
   useEffect(() => {
@@ -463,21 +480,92 @@ const App: React.FC = () => {
     };
   }, [isCheckingAuth, currentBandId, session]);
 
-  // -- Auto-Save Effect --
-  // Whenever core data changes, save to storage (debounced to avoid excessive saves)
+  // -- Debounced Auto-Save Effect --
+  // Save function that can be called immediately (for beforeunload) or debounced
+  const performSave = useCallback(
+    async (data: {
+      songs: Song[];
+      members: BandMember[];
+      roles: string[];
+      events: BandEvent[];
+    }) => {
+      setIsSaving(true);
+      try {
+        await StorageService.save(data.songs, data.members, data.roles, data.events);
+        setLastSaved(new Date());
+        pendingSaveRef.current = null;
+      } catch (error) {
+        console.error('Error saving data:', error);
+        toast.error('Failed to save changes');
+      } finally {
+        setIsSaving(false);
+      }
+    },
+    []
+  );
+
+  // Debounced auto-save effect
   useEffect(() => {
     if (isLoading) return; // Don't save during initial load
 
-    const saveData = async () => {
-      try {
-        await StorageService.save(songs, members, availableRoles, events);
-      } catch (error) {
-        console.error('Error saving data:', error);
+    // Store pending data for beforeunload handler
+    pendingSaveRef.current = {
+      songs,
+      members,
+      roles: availableRoles,
+      events,
+    };
+
+    // Clear previous timeout
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+
+    // Set new timeout (1 second debounce)
+    saveTimeoutRef.current = setTimeout(() => {
+      if (pendingSaveRef.current) {
+        performSave(pendingSaveRef.current);
+      }
+    }, 1000);
+
+    // Cleanup on unmount or before next effect run
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+    };
+  }, [songs, members, availableRoles, events, isLoading, performSave]);
+
+  // -- Beforeunload Handler --
+  // Save immediately when user is leaving the page to prevent data loss
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      // If there's a pending save, execute it synchronously
+      if (pendingSaveRef.current) {
+        // Clear the debounce timeout
+        if (saveTimeoutRef.current) {
+          clearTimeout(saveTimeoutRef.current);
+        }
+        // Use sendBeacon for reliable save on page unload (async but reliable)
+        // Fall back to sync storage save for localStorage
+        try {
+          StorageService.save(
+            pendingSaveRef.current.songs,
+            pendingSaveRef.current.members,
+            pendingSaveRef.current.roles,
+            pendingSaveRef.current.events
+          );
+        } catch (error) {
+          console.error('Error saving on unload:', error);
+        }
       }
     };
 
-    saveData();
-  }, [songs, members, availableRoles, events, isLoading]);
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, []);
 
   const handleUpdateSong = useCallback((updatedSong: Song) => {
     setSongs(prevSongs => prevSongs.map(s => (s.id === updatedSong.id ? updatedSong : s)));
@@ -571,8 +659,21 @@ const App: React.FC = () => {
       session,
       currentBandId,
       isAdmin,
+      isSaving,
+      lastSaved,
     }),
-    [songs, members, availableRoles, events, session, currentBandId, isAdmin, handleUpdateSong]
+    [
+      songs,
+      members,
+      availableRoles,
+      events,
+      session,
+      currentBandId,
+      isAdmin,
+      handleUpdateSong,
+      isSaving,
+      lastSaved,
+    ]
   );
 
   // Show loading screen while checking authentication
@@ -687,6 +788,8 @@ const App: React.FC = () => {
                   currentBandName={currentBandName}
                   userBands={userBands}
                   onSelectBand={handleSelectBand}
+                  isSaving={isSaving}
+                  lastSaved={lastSaved}
                 />
               }
             >

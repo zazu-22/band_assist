@@ -3,6 +3,7 @@ import { cn } from '@/lib/utils';
 import { useIsDesktop } from '@/hooks/useMediaQuery';
 import { TooltipProvider } from '@/components/primitives/tooltip';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
+import { SaveStatusIndicator } from '@/components/ui/SaveStatusIndicator';
 import { Sidebar } from './Sidebar';
 import { MobileNav } from './MobileNav';
 
@@ -12,6 +13,8 @@ interface AppShellProps {
   currentBandName?: string;
   userBands?: Array<{ id: string; name: string }>;
   onSelectBand?: (bandId: string) => void;
+  isSaving?: boolean;
+  lastSaved?: Date | null;
 }
 
 /**
@@ -42,6 +45,8 @@ export function AppShell({
   currentBandName,
   userBands = [],
   onSelectBand,
+  isSaving = false,
+  lastSaved = null,
 }: AppShellProps) {
   const isDesktop = useIsDesktop();
 
@@ -68,6 +73,8 @@ export function AppShell({
             currentBandName={currentBandName}
             userBands={userBands}
             onSelectBand={onSelectBand}
+            isSaving={isSaving}
+            lastSaved={lastSaved}
           />
         )}
 
@@ -81,6 +88,12 @@ export function AppShell({
             !isDesktop && 'pt-16'
           )}
         >
+          {/* Save Status Indicator - Desktop only (mobile shows in header) */}
+          {isDesktop && (
+            <div className="absolute top-4 right-4 z-10">
+              <SaveStatusIndicator isSaving={isSaving} lastSaved={lastSaved} />
+            </div>
+          )}
           <ErrorBoundary>
             <Outlet />
           </ErrorBoundary>
