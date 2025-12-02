@@ -27,6 +27,16 @@ const AlphaTabRenderer = lazy(() =>
  * - Use this component instead of direct AlphaTabRenderer import
  * - Displays loading spinner while AlphaTab bundle loads
  * - All props are passed through to the underlying AlphaTabRenderer
+ *
+ * Dark Mode Note:
+ * The fallback uses bg-white intentionally to match AlphaTabRenderer's current
+ * white background. AlphaTab does support theming via display.resources settings
+ * (see https://alphatab.net/docs/reference/settings/display/resources/), but
+ * implementing dark mode would require changes to AlphaTabRenderer.tsx to:
+ * 1. Accept theme colors as props or read from context
+ * 2. Apply colors via api.settings.display.resources
+ * 3. Call api.updateSettings() when theme changes
+ * This is tracked as a potential future enhancement.
  */
 export const LazyAlphaTab: React.FC<AlphaTabRendererProps> = props => {
   return (
