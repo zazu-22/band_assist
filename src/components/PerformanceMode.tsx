@@ -246,10 +246,10 @@ export const PerformanceMode: React.FC<PerformanceModeProps> = ({ songs, onExit 
             <X size={24} />
           </button>
           <div className="flex items-baseline gap-2">
-            <span className="text-zinc-500 text-sm font-mono uppercase">
+            <span className="text-zinc-500 text-sm font-mono tabular-nums uppercase">
               Song {currentIndex + 1}/{songs.length}
             </span>
-            <h1 className="text-xl font-bold text-white truncate max-w-[300px]">
+            <h1 className="text-xl font-bold font-serif text-white truncate max-w-[300px]">
               {currentSong.title}
             </h1>
           </div>
@@ -279,7 +279,7 @@ export const PerformanceMode: React.FC<PerformanceModeProps> = ({ songs, onExit 
                     className="w-20 h-1 bg-zinc-800 rounded-lg appearance-none cursor-pointer accent-amber-500"
                     title="Scroll speed"
                   />
-                  <span className="text-xs font-mono text-zinc-400 w-8">{scrollSpeed}x</span>
+                  <span className="text-xs font-mono tabular-nums text-zinc-400 w-8">{scrollSpeed}x</span>
                 </div>
               </div>
 
@@ -300,7 +300,7 @@ export const PerformanceMode: React.FC<PerformanceModeProps> = ({ songs, onExit 
           <div className="flex items-center gap-4 bg-zinc-950 px-4 py-2 rounded-lg border border-zinc-800">
             <Timer size={18} className={isPlaying ? 'text-green-500' : 'text-zinc-500'} />
             <span
-              className={`text-2xl font-mono font-bold ${isPlaying ? 'text-white' : 'text-zinc-500'}`}
+              className={`text-2xl font-mono tabular-nums font-bold ${isPlaying ? 'text-white' : 'text-zinc-500'}`}
             >
               {formatTime(elapsedTime)}
             </span>
