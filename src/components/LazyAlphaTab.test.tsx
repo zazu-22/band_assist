@@ -1,11 +1,26 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 
-// Mock component for testing
-const MockAlphaTabRenderer = ({ fileData }: { fileData: string }) => (
-  <div data-testid="alphatab-renderer">AlphaTab Loaded: {fileData.slice(0, 20)}</div>
-);
-MockAlphaTabRenderer.displayName = 'MockAlphaTabRenderer';
+// Track props passed to mock component using vi.fn()
+const mockRenderFn = vi.fn();
+
+// Mock component for testing - captures all props for verification
+function MockAlphaTabRendererImpl(props: Record<string, unknown>) {
+  mockRenderFn(props);
+  return (
+    <div data-testid="alphatab-renderer">
+      AlphaTab Loaded: {String(props.fileData).slice(0, 20)}
+      {props.readOnly !== undefined && (
+        <span data-testid="readonly-value">{String(props.readOnly)}</span>
+      )}
+      {props.showControls !== undefined && (
+        <span data-testid="showcontrols-value">{String(props.showControls)}</span>
+      )}
+    </div>
+  );
+}
+MockAlphaTabRendererImpl.displayName = 'MockAlphaTabRenderer';
+const MockAlphaTabRenderer = MockAlphaTabRendererImpl;
 
 // Mock the AlphaTabRenderer module
 vi.mock('./AlphaTabRenderer', () => ({
@@ -21,6 +36,7 @@ describe('LazyAlphaTab', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    mockRenderFn.mockClear();
   });
 
   describe('Loading State', () => {
@@ -71,6 +87,45 @@ describe('LazyAlphaTab', () => {
 
       // Verify fileData was passed (our mock displays part of it)
       expect(screen.getByText(/AlphaTab Loaded: data:application/)).toBeInTheDocument();
+    });
+
+    it('should pass readOnly prop correctly', async () => {
+      render(<LazyAlphaTab fileData={mockFileData} readOnly={true} />);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('alphatab-renderer')).toBeInTheDocument();
+      });
+
+      const lastProps = mockRenderFn.mock.calls[mockRenderFn.mock.calls.length - 1][0];
+      expect(lastProps.readOnly).toBe(true);
+    });
+
+    it('should pass showControls prop correctly', async () => {
+      render(<LazyAlphaTab fileData={mockFileData} showControls={false} />);
+
+      await waitFor(() => {
+        expect(screen.getByTestId('alphatab-renderer')).toBeInTheDocument();
+      });
+
+      const lastProps = mockRenderFn.mock.calls[mockRenderFn.mock.calls.length - 1][0];
+      expect(lastProps.showControls).toBe(false);
+    });
+
+    it('should pass callback props correctly', async () => {
+      const mockOnReady = vi.fn();
+      const mockOnError = vi.fn();
+
+      render(
+        <LazyAlphaTab fileData={mockFileData} onReady={mockOnReady} onError={mockOnError} />
+      );
+
+      await waitFor(() => {
+        expect(screen.getByTestId('alphatab-renderer')).toBeInTheDocument();
+      });
+
+      const lastProps = mockRenderFn.mock.calls[mockRenderFn.mock.calls.length - 1][0];
+      expect(lastProps.onReady).toBe(mockOnReady);
+      expect(lastProps.onError).toBe(mockOnError);
     });
   });
 

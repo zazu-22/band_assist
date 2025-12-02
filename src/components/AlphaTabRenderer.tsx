@@ -286,7 +286,7 @@ export interface AlphaTabHandle {
   getCountInVolume(): number;
 }
 
-interface AlphaTabRendererProps {
+export interface AlphaTabRendererProps {
   fileData: string; // Base64 Data URI
   isPlaying?: boolean;
   onPlaybackChange?: (isPlaying: boolean) => void;
