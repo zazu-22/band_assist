@@ -15,7 +15,7 @@ import {
   Gauge,
 } from 'lucide-react';
 import { SmartTabEditor } from './SmartTabEditor';
-import { AlphaTabRenderer } from './AlphaTabRenderer';
+import { LazyAlphaTab } from './LazyAlphaTab';
 import { ErrorBoundary } from './ui';
 
 interface PerformanceModeProps {
@@ -403,7 +403,7 @@ export const PerformanceMode: React.FC<PerformanceModeProps> = ({ songs, onExit 
                       </div>
                     }
                   >
-                    <AlphaTabRenderer
+                    <LazyAlphaTab
                       fileData={activeChart.storageBase64 || activeChart.url!}
                       readOnly={true}
                     />
