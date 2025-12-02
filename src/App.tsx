@@ -546,8 +546,7 @@ const App: React.FC = () => {
         if (saveTimeoutRef.current) {
           clearTimeout(saveTimeoutRef.current);
         }
-        // Use sendBeacon for reliable save on page unload (async but reliable)
-        // Fall back to sync storage save for localStorage
+        // Attempt sync save for localStorage; async saves may not complete
         try {
           StorageService.save(
             pendingSaveRef.current.songs,
@@ -566,6 +565,26 @@ const App: React.FC = () => {
       window.removeEventListener('beforeunload', handleBeforeUnload);
     };
   }, []);
+
+  // -- Visibility Change Handler --
+  // Save when tab becomes hidden (more reliable than beforeunload for async saves)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden' && pendingSaveRef.current) {
+        // Clear debounce and save immediately when tab becomes hidden
+        if (saveTimeoutRef.current) {
+          clearTimeout(saveTimeoutRef.current);
+        }
+        // Fire and forget - better chance of completing than beforeunload
+        performSave(pendingSaveRef.current);
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [performSave]);
 
   const handleUpdateSong = useCallback((updatedSong: Song) => {
     setSongs(prevSongs => prevSongs.map(s => (s.id === updatedSong.id ? updatedSong : s)));
