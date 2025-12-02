@@ -43,7 +43,7 @@ import {
   Clock,
   Music,
 } from 'lucide-react';
-import { AlphaTabRenderer } from './AlphaTabRenderer';
+import { LazyAlphaTab } from './LazyAlphaTab';
 
 interface SongDetailProps {
   song: Song;
@@ -775,7 +775,7 @@ export const SongDetail: React.FC<SongDetailProps> = ({
                       </div>
                     }
                   >
-                    <AlphaTabRenderer
+                    <LazyAlphaTab
                       fileData={activeChart.storageBase64 || activeChart.url!}
                       readOnly={true}
                     />

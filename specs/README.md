@@ -20,10 +20,9 @@ specs/
 
 | Spec | Type | Description |
 |------|------|-------------|
-| [perf-auto-save-debouncing](backlog/perf-auto-save-debouncing.md) | Performance | Debounce auto-save to reduce API calls (every keystroke triggers save) |
-| [perf-alphatab-lazy-loading](backlog/perf-alphatab-lazy-loading.md) | Performance | Lazy load AlphaTab (1MB bundle) only on routes that need it |
-| [feat-user-member-linking-phase-1](backlog/feat-user-member-linking-phase-1.md) | Feature | Foundation for linking user accounts to band members |
-| [feat-remove-ai-gemini-features](backlog/feat-remove-ai-gemini-features.md) | Cleanup | Remove unused AI/Gemini features to simplify codebase |
+| [perf-auto-save-debouncing](pending/perf-auto-save-debouncing.md) | Performance | Debounce auto-save to reduce API calls (every keystroke triggers save) |
+| [feat-user-member-linking-phase-1](pending/feat-user-member-linking-phase-1.md) | Feature | Foundation for linking user accounts to band members |
+| [feat-remove-ai-gemini-features](pending/feat-remove-ai-gemini-features.md) | Cleanup | Remove unused AI/Gemini features to simplify codebase |
 | [infra-service-layer-testing](backlog/infra-service-layer-testing.md) | Testing | Add test coverage for critical service layer (0% currently) |
 | [infra-automated-versioning](backlog/infra-automated-versioning.md) | Infrastructure | Implement release-please for semantic versioning |
 
@@ -44,6 +43,7 @@ specs/
 
 | Spec | Type | Description |
 |------|------|-------------|
+| [feat-alphatab-dark-mode-theming](backlog/feat-alphatab-dark-mode-theming.md) | Feature | Integrate AlphaTab theming with design system for dark mode support |
 | [feat-performance-mode-alphatab-metronome](backlog/feat-performance-mode-alphatab-metronome.md) | Feature | Enable metronome for AlphaTab charts in Performance Mode |
 | [feat-performance-mode-pdf-viewer-improvements](backlog/feat-performance-mode-pdf-viewer-improvements.md) | Feature | Improve PDF display in Performance Mode |
 | [fix-performance-mode-chart-switch-flicker](backlog/fix-performance-mode-chart-switch-flicker.md) | Bug Fix | Fix UI flicker when switching chart types |
@@ -73,10 +73,12 @@ Phase 1: Foundation          ──► Phase 2: Practice Tracking  ──► Pha
 Quick wins that improve user experience immediately.
 
 ```
-Auto-Save Debouncing (2h)  ──► AlphaTab Lazy Loading (1h)  ──► Context Splitting (4h)
+Auto-Save Debouncing (2h)  ──► AlphaTab Lazy Loading ✅  ──► Context Splitting (4h)
 - 70-90% fewer API calls       - 37% smaller bundle             - 80% fewer re-renders
 - Better typing responsiveness - 42% faster initial load        - Better edit performance
 ```
+
+*AlphaTab Lazy Loading completed Dec 2024 - see [done/perf-alphatab-lazy-loading.md](done/perf-alphatab-lazy-loading.md)*
 
 ---
 
@@ -86,6 +88,7 @@ See [done/](done/) for completed specifications. Recent completions:
 
 | Spec | Type | Completed |
 |------|------|-----------|
+| [AlphaTab Lazy Loading](done/perf-alphatab-lazy-loading.md) | Performance | Dec 2024 |
 | Design System Phase 4 | Feature | Dec 2024 |
 | Design System Phase 3 | Feature | Dec 2024 |
 | Practice Room Unified Control Bar | Feature | Dec 2024 |
@@ -135,14 +138,17 @@ Each spec should include:
 
 1. `perf-auto-save-debouncing` - Quick win, high impact
 2. `feat-remove-ai-gemini-features` - Cleanup, well-documented
-3. `perf-alphatab-lazy-loading` - Quick win, faster loads
-4. `infra-automated-versioning` - Better release process
-5. `feat-user-member-linking-phase-1` - Foundation for personalization
+3. `infra-automated-versioning` - Better release process
+4. `feat-user-member-linking-phase-1` - Foundation for personalization
+5. `perf-context-splitting` - Reduce cascade re-renders
 
 **Estimated effort:**
-- Quick wins (1-3 hours): Auto-save, AlphaTab lazy loading, AI removal
+- Quick wins (1-3 hours): Auto-save debouncing, AI removal
 - Medium (1-2 days): Versioning, service tests, context splitting
 - Large (1+ week): User-member linking phases, collaborative features
+
+**Recently completed:**
+- ✅ `perf-alphatab-lazy-loading` - 37% smaller bundle, 42% faster initial load
 
 ---
 

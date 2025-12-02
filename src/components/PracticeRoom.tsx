@@ -21,8 +21,8 @@ import {
   Guitar,
 } from 'lucide-react';
 import { SmartTabEditor } from './SmartTabEditor';
-import { AlphaTabRenderer } from './AlphaTabRenderer';
-import type { AlphaTabHandle } from './AlphaTabRenderer';
+import { LazyAlphaTab } from './LazyAlphaTab';
+import type { AlphaTabHandle } from './LazyAlphaTab';
 import { EmptyState, ResizablePanel, StatusBadge, ErrorBoundary } from './ui';
 import {
   Button,
@@ -607,7 +607,7 @@ export const PracticeRoom: React.FC<PracticeRoomProps> = memo(function PracticeR
                       </div>
                     }
                   >
-                    <AlphaTabRenderer
+                    <LazyAlphaTab
                       fileData={activeChart.storageBase64 || activeChart.url!}
                       readOnly={false}
                       showControls={false}
