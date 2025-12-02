@@ -23,10 +23,26 @@ export function getAudioContext(): AudioContext | null {
   if (sharedContext) return sharedContext;
 
   const AudioContextClass = window.AudioContext || window.webkitAudioContext;
-  if (!AudioContextClass) return null;
+  if (!AudioContextClass) {
+    console.warn('[audioContext] Web Audio API not available');
+    return null;
+  }
 
   sharedContext = new AudioContextClass();
+  // eslint-disable-next-line no-console -- Intentional debug logging for audio troubleshooting
+  console.debug('[audioContext] Created new AudioContext, state:', sharedContext.state);
   return sharedContext;
+}
+
+/**
+ * Close and dispose of the shared AudioContext.
+ * Call this during app cleanup if needed.
+ */
+export function closeAudioContext(): void {
+  if (sharedContext) {
+    sharedContext.close();
+    sharedContext = null;
+  }
 }
 
 /**
