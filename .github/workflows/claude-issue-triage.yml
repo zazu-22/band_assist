@@ -1,0 +1,64 @@
+name: Claude Issue Triage
+
+on:
+  issues:
+    types: [opened]
+
+jobs:
+  triage:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      issues: write        # Required for adding labels and comments
+      id-token: write      # Required for OIDC authentication with Anthropic
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+
+      - name: Triage Issue with Claude
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+
+          prompt: |
+            REPO: ${{ github.repository }}
+            ISSUE NUMBER: ${{ github.event.issue.number }}
+            ISSUE TITLE: ${{ github.event.issue.title }}
+            ISSUE BODY: ${{ github.event.issue.body }}
+
+            Analyze this newly opened issue and perform triage:
+
+            1. **Categorize** - Determine the type:
+               - `bug` - Something isn't working as expected
+               - `enhancement` - New feature or improvement request
+               - `documentation` - Documentation updates needed
+               - `question` - User needs help or clarification
+
+            2. **Assess Priority** (add label if clear):
+               - `priority: critical` - App is broken, security issue, data loss
+               - `priority: high` - Major feature broken, significant impact
+               - `priority: medium` - Important but not urgent
+               - `priority: low` - Nice to have, minor issues
+
+            3. **Add Component Labels** (if applicable):
+               - `area: auth` - Authentication/authorization
+               - `area: ui` - User interface issues
+               - `area: api` - Backend/API issues
+               - `area: alphatab` - Music rendering (AlphaTab)
+               - `area: supabase` - Database/Supabase issues
+
+            4. **Check for Duplicates** - Search existing issues for similar reports
+
+            5. **Comment** - Add a helpful comment:
+               - Thank the reporter
+               - If bug: ask for reproduction steps if missing
+               - If question: provide quick guidance or point to docs
+               - If duplicate: reference the existing issue
+
+            Use `gh issue edit` to add labels and `gh issue comment` to add your response.
+            Be friendly and helpful. Follow the project's CLAUDE.md for guidance.
+
+          claude_args: '--model claude-opus-4-5-20251101 --max-turns 15 --allowed-tools "Bash(gh issue:*),Bash(gh search:*)"'
