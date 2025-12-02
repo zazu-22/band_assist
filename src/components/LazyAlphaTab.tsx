@@ -1,12 +1,11 @@
 import React, { Suspense, lazy } from 'react';
 import { LoadingSpinner } from './ui';
 
-// Re-export types for convenience
-export type { AlphaTabHandle, TrackInfo } from './AlphaTabRenderer';
-
-// Import types for typing the component props
-import type { AlphaTabHandle } from './AlphaTabRenderer';
+// Import types for internal use and re-export for consumers
+import type { AlphaTabHandle, TrackInfo } from './AlphaTabRenderer';
 import type { AlphaTabState } from '@/components/practice/types';
+
+export type { AlphaTabHandle, TrackInfo };
 
 /**
  * Props for AlphaTabRenderer - matches the interface in AlphaTabRenderer.tsx
@@ -63,10 +62,10 @@ export const LazyAlphaTab: React.FC<AlphaTabRendererProps> = props => {
   return (
     <Suspense
       fallback={
-        <div className="flex h-full items-center justify-center bg-white dark:bg-zinc-900">
-          <div className="flex flex-col items-center gap-3">
+        <div className="flex h-full min-h-[200px] items-center justify-center bg-white px-4">
+          <div className="flex flex-col items-center gap-3 text-center">
             <LoadingSpinner size="lg" />
-            <p className="text-sm text-zinc-500 dark:text-zinc-400 font-medium">
+            <p className="text-sm text-zinc-500 font-medium">
               Loading guitar tab renderer...
             </p>
           </div>
