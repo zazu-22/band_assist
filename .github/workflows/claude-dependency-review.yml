@@ -1,0 +1,75 @@
+name: Claude Dependency Review
+
+on:
+  schedule:
+    # Run every Monday at 9 AM UTC
+    - cron: '0 9 * * MON'
+  workflow_dispatch:  # Allow manual trigger
+
+jobs:
+  dependency-review:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write      # Required to create branches
+      pull-requests: write # Required to create PRs
+      issues: write        # Required to create issues
+      id-token: write      # Required for OIDC authentication with Anthropic
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v6
+        with:
+          fetch-depth: 1
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Review Dependencies with Claude
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+
+          prompt: |
+            REPO: ${{ github.repository }}
+
+            Perform a comprehensive dependency review for this project:
+
+            ## 1. Security Audit
+            Run `npm audit` and analyze the results:
+            - List any vulnerabilities found (critical, high, medium, low)
+            - For each vulnerability, assess if it affects production code
+            - Suggest fixes or workarounds
+
+            ## 2. Outdated Dependencies
+            Run `npm outdated` and analyze:
+            - Identify major version updates (potential breaking changes)
+            - Identify minor/patch updates (usually safe)
+            - Check changelogs for important updates, especially:
+              - React, Vite, TypeScript
+              - Supabase client
+              - AlphaTab
+              - Tailwind CSS
+
+            ## 3. Recommendations
+            Based on your analysis:
+            - If there are critical/high security issues: Create an issue with `gh issue create` detailing the vulnerabilities and required actions
+            - If there are safe updates available: List them in the issue for the team to review
+            - Note any dependencies that are significantly behind
+
+            ## 4. Summary
+            Create a GitHub issue titled "Weekly Dependency Review - [DATE]" with:
+            - Security audit summary
+            - List of available updates (grouped by risk level)
+            - Recommended actions
+            - Any deprecation warnings
+
+            Use the `gh` CLI for all GitHub operations. Be thorough but concise.
+            Reference the project's package.json and CLAUDE.md for context.
+
+          claude_args: '--model claude-opus-4-5-20251101 --max-turns 20 --allowed-tools "Bash(gh issue:*),Bash(gh pr:*),Bash(gh search:*),Bash(npm:*)"'
