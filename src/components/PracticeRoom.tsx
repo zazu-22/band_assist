@@ -89,8 +89,9 @@ const SongListItem = memo(function SongListItem({ song, isSelected, onSelect }: 
       onClick={() => onSelect(song.id)}
       className={cn(
         'w-full text-left px-4 py-3 border-b border-border/30',
+        'border-l-[3px]',
         'hover:bg-muted/30 transition-colors motion-reduce:transition-none',
-        isSelected && 'bg-muted/50 border-l-[3px] border-l-primary'
+        isSelected ? 'bg-muted/50 border-l-primary' : 'border-l-primary/60'
       )}
     >
       <div className="flex items-center justify-between gap-2">
