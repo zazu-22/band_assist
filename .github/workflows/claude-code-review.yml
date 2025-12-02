@@ -55,13 +55,3 @@ jobs:
           # See https://github.com/anthropics/claude-code-action/blob/main/docs/usage.md
           # or https://docs.claude.com/en/docs/claude-code/cli-reference for available options
           claude_args: '--model claude-opus-4-5-20251101 --max-turns 25 --allowed-tools "Bash(gh issue:*),Bash(gh pr:*),Bash(gh search:*)"'
-
-          # Puppeteer for browser automation (requires TEST_EMAIL and TEST_PASSWORD secrets)
-          plugins: |
-            puppeteer
-
-          # Pass test credentials for app access
-          claude_env: |
-            TEST_EMAIL=${{ secrets.TEST_EMAIL }}
-            TEST_PASSWORD=${{ secrets.TEST_PASSWORD }}
-
