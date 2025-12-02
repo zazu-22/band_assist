@@ -31,6 +31,11 @@ interface MockApiInstance {
     tracks: MockTrack[];
     tempo: number;
   };
+  player: {
+    output: {
+      activate: Mock;
+    };
+  } | null;
   scoreLoaded: { on: Mock; off: Mock };
   error: { on: Mock; off: Mock };
   playerStateChanged: { on: Mock; off: Mock };
@@ -73,6 +78,7 @@ vi.mock('@coderline/alphatab', () => {
       tracks: [],
       tempo: 120,
     },
+    player: null, // Default to null, tests can set as needed
     scoreLoaded: { on: vi.fn(), off: vi.fn() },
     error: { on: vi.fn(), off: vi.fn() },
     playerStateChanged: { on: vi.fn(), off: vi.fn() },
@@ -1043,6 +1049,93 @@ describe('AlphaTabRenderer', () => {
         const tracks = capturedHandle!.getTracks();
         expect(tracks[0].volume).toBe(0.5);
       });
+    });
+  });
+
+  describe('iOS audio activation', () => {
+    beforeEach(async () => {
+      render(<AlphaTabRenderer fileData={mockFileData} />);
+
+      await waitFor(() => {
+        expect(mockApiInstance.scoreLoaded.on).toHaveBeenCalled();
+      });
+
+      // Trigger score loaded
+      const scoreLoadedHandler = mockApiInstance.scoreLoaded.on.mock.calls[0][0];
+      act(() => {
+        scoreLoadedHandler({ tracks: [] });
+      });
+
+      // Trigger playerReady to enable playback
+      const playerReadyHandler = mockApiInstance.playerReady.on.mock.calls[0][0];
+      act(() => {
+        playerReadyHandler();
+      });
+    });
+
+    it('calls activate before play for iOS audio unlock', async () => {
+      const mockActivate = vi.fn();
+
+      // Set up player.output.activate mock
+      mockApiInstance.player = {
+        output: {
+          activate: mockActivate,
+        },
+      };
+
+      // Find and click play button
+      const playButton = await screen.findByTitle('Play');
+      fireEvent.click(playButton);
+
+      // Verify activate was called before play (both called synchronously)
+      expect(mockActivate).toHaveBeenCalled();
+      expect(mockApiInstance.play).toHaveBeenCalled();
+
+      // Verify activate was called first (order matters for iOS audio unlock)
+      const activateOrder = mockActivate.mock.invocationCallOrder[0];
+      const playOrder = mockApiInstance.play.mock.invocationCallOrder[0];
+      expect(activateOrder).toBeLessThan(playOrder);
+    });
+
+    it('falls back to direct play when player.output is unavailable', async () => {
+      // Set player to null (no output available)
+      mockApiInstance.player = null;
+
+      const playButton = await screen.findByTitle('Play');
+      fireEvent.click(playButton);
+
+      // Play should be called directly
+      expect(mockApiInstance.play).toHaveBeenCalled();
+    });
+
+    it('attempts play in catch block when activation throws', async () => {
+      const mockActivate = vi.fn(() => {
+        throw new Error('Activation failed');
+      });
+
+      mockApiInstance.player = {
+        output: {
+          activate: mockActivate,
+        },
+      };
+
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+      const playButton = await screen.findByTitle('Play');
+
+      // Should not throw
+      fireEvent.click(playButton);
+
+      // Warning should be logged
+      expect(warnSpy).toHaveBeenCalledWith(
+        '[AlphaTab] Audio activation warning:',
+        expect.any(Error)
+      );
+
+      // Fallback play should be attempted
+      expect(mockApiInstance.play).toHaveBeenCalled();
+
+      warnSpy.mockRestore();
     });
   });
 });

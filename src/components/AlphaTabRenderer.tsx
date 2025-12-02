@@ -112,6 +112,12 @@ interface AlphaTabApi {
   metronomeVolume: number;
   countInVolume: number;
   score: AlphaTabScore | null;
+  // Player output for iOS Safari audio activation
+  player: {
+    output: {
+      activate(resumedCallback?: () => void): void;
+    };
+  } | null;
   scoreLoaded: {
     on(callback: (score: AlphaTabScore) => void): void;
     off(callback: (score: AlphaTabScore) => void): void;
@@ -895,6 +901,16 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
 
       try {
         if (action === 'play') {
+          // Activate audio context for iOS Safari before playing
+          // Note: activate() unlocks iOS AudioContext; callback fires when resumed.
+          // We call play() synchronously since callback may not fire if already running.
+          if (apiRef.current.player?.output) {
+            try {
+              apiRef.current.player.output.activate();
+            } catch (e) {
+              console.warn('[AlphaTab] Audio activation warning:', e);
+            }
+          }
           apiRef.current.play();
         } else {
           apiRef.current.pause();
