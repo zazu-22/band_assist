@@ -41,7 +41,6 @@ dist-ssr
 .claude_settings.json
 .cursor/worktrees.json
 spec-review.md
-specs/
 spec-workflow.json
 claude-progress.txt
 validation-history.json
