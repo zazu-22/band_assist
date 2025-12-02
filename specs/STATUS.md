@@ -10,15 +10,37 @@
 
 | Status | Count | Description |
 |--------|-------|-------------|
+| 🔴 Active | 1 | Currently being implemented |
 | 🟢 Done | 13 | Completed and merged |
-| 🟡 Pending | 3 | In progress or ready to start |
-| ⚪ Backlog | 14 | Planned but not started |
+| 🟡 Pending | 5 | Queued for implementation (in sequence order) |
+| ⚪ Backlog | 12 | Planned but not yet prioritized |
 
 ---
 
-## All Specs by Status
+## 🔴 Active Spec
 
-### 🟢 Done (13)
+The spec currently being implemented:
+
+| Spec | Type | Effort | Notes |
+|------|------|--------|-------|
+| [feat-remove-ai-gemini-features](feat-remove-ai-gemini-features.md) | Cleanup | Small | Remove unused AI/Gemini code, reclaim UI space |
+
+---
+
+## 🟡 Pending Queue (Sequenced)
+
+Specs queued for implementation **in priority order**. Work through these sequentially.
+
+| Seq | Spec | Type | Effort | Notes |
+|-----|------|------|--------|-------|
+| 1 | [perf-auto-save-debouncing](pending/perf-auto-save-debouncing.md) | Performance | Small | 70-90% fewer API calls, add save indicator |
+| 2 | [perf-context-splitting](pending/perf-context-splitting.md) | Performance | Medium | 80% fewer re-renders during editing |
+| 3 | [infra-automated-versioning](pending/infra-automated-versioning.md) | Infrastructure | Medium | Release-please for semantic versioning |
+| 4 | [feat-user-member-linking-phase-1](pending/feat-user-member-linking-phase-1.md) | Feature | Large | Foundation for personalization features |
+
+---
+
+## 🟢 Done (13)
 
 | Spec | Type | Priority | Completed |
 |------|------|----------|-----------|
@@ -33,35 +55,29 @@
 | [design-system-phase1-high-impact](done/design-system-phase1-high-impact.md) | Feature | High | Dec 2024 |
 | [extend-design-system-setlist-subpages](done/extend-design-system-setlist-subpages.md) | Feature | Medium | Dec 2024 |
 
-### 🟡 Pending (3)
+---
 
-| Spec | Type | Priority | Notes |
-|------|------|----------|-------|
-| [perf-auto-save-debouncing](pending/perf-auto-save-debouncing.md) | Performance | High | Quick win - 70-90% fewer API calls |
-| [feat-user-member-linking-phase-1](pending/feat-user-member-linking-phase-1.md) | Feature | High | Foundation for personalization |
-| [feat-remove-ai-gemini-features](pending/feat-remove-ai-gemini-features.md) | Cleanup | High | Remove unused code |
+## ⚪ Backlog
 
-### ⚪ Backlog - High Priority (2)
+### High Priority
 
 | Spec | Type | Effort | Notes |
 |------|------|--------|-------|
 | [infra-service-layer-testing](backlog/infra-service-layer-testing.md) | Testing | Medium | Critical path has 0% coverage |
-| [infra-automated-versioning](backlog/infra-automated-versioning.md) | Infrastructure | Medium | Release-please setup |
 
-### ⚪ Backlog - Medium Priority (6)
+### Medium Priority
 
 | Spec | Type | Effort | Notes |
 |------|------|--------|-------|
 | [feat-user-member-linking-phase-2](backlog/feat-user-member-linking-phase-2.md) | Feature | Large | Depends on Phase 1 |
 | [feat-user-member-linking-phase-3](backlog/feat-user-member-linking-phase-3.md) | Feature | Large | Depends on Phase 1 & 2 |
-| [perf-context-splitting](backlog/perf-context-splitting.md) | Performance | Medium | 80% fewer re-renders |
 | [feat-collaborative-song-notes](backlog/feat-collaborative-song-notes.md) | Feature | Medium | Timestamped comments |
 | [feat-practice-mode-track-presets](backlog/feat-practice-mode-track-presets.md) | Feature | Medium | Save practice configurations |
 | [feat-setlist-analytics](backlog/feat-setlist-analytics.md) | Feature | Medium | Analyze setlist flow |
 | [feat-pre-gig-checklist](backlog/feat-pre-gig-checklist.md) | Feature | Medium | Customizable checklists |
 | [feat-rehearsal-timer-mode](backlog/feat-rehearsal-timer-mode.md) | Feature | Medium | Time-boxed practice |
 
-### ⚪ Backlog - Lower Priority (7)
+### Lower Priority
 
 | Spec | Type | Effort | Notes |
 |------|------|--------|-------|
@@ -75,14 +91,6 @@
 
 ---
 
-## Priority Definitions
-
-| Priority | Criteria |
-|----------|----------|
-| **High** | Blocking issues, critical bugs, or high-impact quick wins |
-| **Medium** | Important features, performance improvements, foundational work |
-| **Lower** | Nice-to-have features, minor improvements, future enhancements |
-
 ## Effort Estimates
 
 | Effort | Time Range |
@@ -93,22 +101,13 @@
 
 ---
 
-## Recommended Next Actions
-
-Based on priority and dependencies:
-
-1. **perf-auto-save-debouncing** - Quick win, high impact, no dependencies
-2. **feat-remove-ai-gemini-features** - Cleanup, well-documented, no dependencies
-3. **infra-automated-versioning** - Better release process
-4. **feat-user-member-linking-phase-1** - Foundation for personalization features
-5. **perf-context-splitting** - Performance improvement for editing
-
----
-
 ## Recent Activity
 
 | Date | Spec | Change |
 |------|------|--------|
+| Dec 2024 | feat-remove-ai-gemini-features | 🔴 Moved to Active |
+| Dec 2024 | perf-context-splitting | 🟡 Moved to Pending (seq #2) |
+| Dec 2024 | infra-automated-versioning | 🟡 Moved to Pending (seq #3) |
 | Dec 2024 | perf-alphatab-lazy-loading | ✅ Completed |
 | Dec 2024 | feat-alphatab-dark-mode-theming | ➕ Added to backlog |
 
