@@ -1,7 +1,6 @@
 import React, { useState, useRef } from 'react';
 import { Song, BandMember, Annotation, SongChart } from '@/types';
 import { INSTRUMENT_ICONS } from '@/constants';
-import { getMusicAnalysis } from '@/services/geminiService';
 import { getAvatarColor } from '@/lib/avatar';
 import { useBlobUrl } from '@/hooks/useBlobUrl';
 import { SmartTabEditor } from './SmartTabEditor';
@@ -24,8 +23,6 @@ import {
   Music2,
   Users,
   FileText,
-  Sparkles,
-  Mic,
   UploadCloud,
   ChevronLeft,
   Trash2,
@@ -66,9 +63,6 @@ export const SongDetail: React.FC<SongDetailProps> = ({
   const [activeChartId, setActiveChartId] = useState<string | null>(
     song.charts.length > 0 ? song.charts[0].id : null
   );
-  const [aiChat, setAiChat] = useState('');
-  const [aiResponse, setAiResponse] = useState('');
-  const [loadingAi, setLoadingAi] = useState(false);
   // Convert backing track data URI to blob URL for audio playback
   const audioBlobUrl = useBlobUrl(song.backingTrackUrl);
   const [isEditingMetadata, setIsEditingMetadata] = useState(false);
@@ -120,27 +114,6 @@ export const SongDetail: React.FC<SongDetailProps> = ({
       a => !(a.memberId === memberId && a.role === role)
     );
     onUpdateSong({ ...song, assignments: newAssignments });
-  };
-
-  const handleAskAI = async (specificPrompt?: string) => {
-    const promptToUse = specificPrompt || aiChat;
-    if (!promptToUse.trim()) return;
-    setLoadingAi(true);
-    const context = `Song: ${song.title} by ${song.artist}. Key: ${song.key}, BPM: ${song.bpm}. Current status: ${song.status}.`;
-
-    // Grab current chart context if available
-    let mediaData = undefined;
-    if (activeChart && activeChart.url) {
-      const matches = activeChart.url.match(/^data:(.+);base64,(.+)$/);
-      if (matches && matches.length === 3) {
-        mediaData = { mimeType: matches[1], data: matches[2] };
-      }
-    }
-
-    const response = await getMusicAnalysis(promptToUse, context, mediaData);
-    setAiResponse(response || 'No response.');
-    setLoadingAi(false);
-    setAiChat('');
   };
 
   // --- Multi-Chart Handlers ---
@@ -365,9 +338,7 @@ export const SongDetail: React.FC<SongDetailProps> = ({
   };
 
   return (
-    <div className="h-screen flex flex-col lg:flex-row overflow-hidden bg-background">
-      {/* Main Content Area */}
-      <div className="flex-1 flex flex-col h-full overflow-hidden">
+    <div className="h-screen flex flex-col overflow-hidden bg-background">
         {/* Header */}
         <header className="bg-card border-b border-border p-4 sm:p-6 shrink-0">
           <div className="flex items-center justify-between mb-4">
@@ -572,22 +543,6 @@ export const SongDetail: React.FC<SongDetailProps> = ({
                         )}
                       </div>
                     )}
-                  </CardContent>
-                </Card>
-
-                {/* AI Analysis Card */}
-                <Card>
-                  <CardHeader className="pb-4">
-                    <h3 className="text-lg font-serif text-foreground flex items-center gap-2">
-                      <Sparkles size={18} className="text-primary" />
-                      AI Analysis
-                    </h3>
-                  </CardHeader>
-                  <CardContent>
-                    <p className="text-muted-foreground leading-relaxed">
-                      {song.aiAnalysis ||
-                        'No analysis generated yet. Upload sheet music or ask the assistant for insights on tone, structure, or specific performance tips.'}
-                    </p>
                   </CardContent>
                 </Card>
               </div>
@@ -1051,72 +1006,6 @@ export const SongDetail: React.FC<SongDetailProps> = ({
             </div>
           )}
         </div>
-      </div>
-
-      {/* Right Sidebar: AI Assistant */}
-      <div className="w-full lg:w-96 bg-card border-l border-border flex flex-col shrink-0 h-1/2 lg:h-full">
-        <div className="p-4 border-b border-border bg-card z-10">
-          <h3 className="text-lg font-bold font-serif text-foreground flex items-center gap-2">
-            <Sparkles size={16} className="text-primary" />
-            Studio Assistant
-          </h3>
-          <p className="text-xs text-muted-foreground">Ask about tone, gear, or tabs</p>
-        </div>
-
-        <div className="flex-1 overflow-y-auto p-4 space-y-4">
-          <div className="flex gap-3">
-            <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-xs shrink-0 text-primary font-bold">
-              AI
-            </div>
-            <div className="bg-muted p-3 rounded-r-xl rounded-bl-xl text-sm text-foreground border border-border">
-              Ready to rock? I can help you analyze tablature, suggest guitar tones for {song.title}
-              , or plan assignments.
-            </div>
-          </div>
-
-          {aiResponse && (
-            <div className="flex gap-3 animate-in fade-in slide-in-from-bottom-2">
-              <div className="w-8 h-8 rounded-full bg-primary/20 flex items-center justify-center text-xs shrink-0 text-primary font-bold">
-                AI
-              </div>
-              <div className="bg-muted p-3 rounded-r-xl rounded-bl-xl text-sm text-foreground border border-border prose prose-invert prose-sm max-w-none">
-                {aiResponse.split('\n').map((line, i) => (
-                  <p
-                    key={i}
-                    className={`mb-1 ${line.startsWith('#') ? 'font-bold text-foreground mt-2' : ''} ${line.startsWith('-') ? 'pl-4' : ''}`}
-                  >
-                    {line.replace(/^#+\s/, '').replace(/^-\s/, '• ')}
-                  </p>
-                ))}
-              </div>
-            </div>
-          )}
-        </div>
-
-        <div className="p-4 border-t border-border bg-card">
-          <div className="relative">
-            <Input
-              type="text"
-              value={aiChat}
-              onChange={e => setAiChat(e.target.value)}
-              onKeyDown={e => e.key === 'Enter' && handleAskAI()}
-              placeholder="Ask about this song..."
-              className="pr-10"
-            />
-            <button
-              onClick={() => handleAskAI()}
-              disabled={loadingAi}
-              className="absolute right-2 top-1/2 -translate-y-1/2 p-1.5 bg-primary hover:bg-primary/90 text-primary-foreground rounded-lg transition-colors disabled:opacity-50"
-            >
-              {loadingAi ? (
-                <div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" />
-              ) : (
-                <Mic size={16} />
-              )}
-            </button>
-          </div>
-        </div>
-      </div>
 
       {/* Confirm Dialog */}
       <ConfirmDialog

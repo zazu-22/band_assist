@@ -1,7 +1,6 @@
 import React, { memo, useState, useCallback, useMemo } from 'react';
 import { Music } from 'lucide-react';
 import { toast, EmptyState, ConfirmDialog } from '@/components/ui';
-import { getMusicAnalysis } from '@/services/geminiService';
 import { StorageService } from '@/services/storageService';
 import { parseLocalDate, getLocalToday, daysBetween } from '@/lib/dateUtils';
 import {
@@ -107,7 +106,6 @@ export const SetlistManager: React.FC<SetlistManagerProps> = memo(function Setli
   isAdmin = false,
 }) {
   const [isAdding, setIsAdding] = useState(false);
-  const [loadingSuggestion, setLoadingSuggestion] = useState(false);
 
   // DnD State
   const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
@@ -171,25 +169,6 @@ export const SetlistManager: React.FC<SetlistManagerProps> = memo(function Setli
   const handleCancelAdding = useCallback(() => {
     setIsAdding(false);
   }, []);
-
-  // --- AI Suggestions ---
-
-  const askAiForSuggestions = useCallback(async () => {
-    setLoadingSuggestion(true);
-    try {
-      const prompt = `Suggest 3 ZZ Top songs that would fit well in a setlist that already has: ${songs.map(s => s.title).join(', ')}. Just list the titles.`;
-      const suggestion = await getMusicAnalysis(prompt);
-      toast.info(suggestion, { duration: 10000 });
-    } catch (err) {
-      const errorMessage = err instanceof Error ? err.message : 'Unknown error';
-      console.error('[SetlistManager] AI suggestion error:', errorMessage, {
-        songCount: songs.length,
-      });
-      toast.error('Failed to get AI suggestions. Please try again.');
-    } finally {
-      setLoadingSuggestion(false);
-    }
-  }, [songs]);
 
   // --- Drag and Drop Handlers ---
 
@@ -305,11 +284,7 @@ export const SetlistManager: React.FC<SetlistManagerProps> = memo(function Setli
 
       {/* Action Bar */}
       <div className="animate-slide-in-from-bottom animation-forwards opacity-0 stagger-2">
-        <SetlistActionBar
-          onAddSong={handleStartAdding}
-          onAiSuggestions={askAiForSuggestions}
-          isLoadingSuggestions={loadingSuggestion}
-        />
+        <SetlistActionBar onAddSong={handleStartAdding} />
       </div>
 
       {/* Add Song Form (conditional) */}

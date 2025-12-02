@@ -104,8 +104,7 @@ Welcome to the Band Assist documentation! This is your complete guide to setting
 ```bash
 1. npm install
 2. cp .env.local.example .env.local
-3. Add GEMINI_API_KEY to .env.local
-4. npm run dev
+3. npm run dev
 ```
 
 **Result:** App runs locally with localStorage (data stays on your device)
@@ -192,7 +191,6 @@ band_assist/
 │   ├── supabaseStorageService.ts # Supabase implementation
 │   ├── supabaseClient.ts       # Supabase client singleton
 │   ├── migrationService.ts     # LocalStorage → Supabase migration
-│   ├── geminiService.ts        # Google Gemini AI integration
 │   └── IStorageService.ts      # Storage interface
 │
 ├── components/                  # React components
@@ -206,10 +204,6 @@ band_assist/
 ---
 
 ## 🔑 Environment Variables
-
-### Required
-
-- `GEMINI_API_KEY` - Google Gemini AI (for music analysis)
 
 ### Optional (for Backend)
 

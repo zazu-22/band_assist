@@ -24,16 +24,15 @@ specs/
 
 | Spec | Type | Description |
 |------|------|-------------|
-| [feat-remove-ai-gemini-features](feat-remove-ai-gemini-features.md) | Cleanup | Remove unused AI/Gemini features to simplify codebase |
+| [perf-auto-save-debouncing](pending/perf-auto-save-debouncing.md) | Performance | Debounce auto-save to reduce API calls |
 
 ### Pending Queue (In Sequence Order)
 
 | Seq | Spec | Type | Description |
 |-----|------|------|-------------|
-| 1 | [perf-auto-save-debouncing](pending/perf-auto-save-debouncing.md) | Performance | Debounce auto-save to reduce API calls |
-| 2 | [perf-context-splitting](pending/perf-context-splitting.md) | Performance | Split AppContext to reduce cascade re-renders |
-| 3 | [infra-automated-versioning](pending/infra-automated-versioning.md) | Infrastructure | Implement release-please for semantic versioning |
-| 4 | [feat-user-member-linking-phase-1](pending/feat-user-member-linking-phase-1.md) | Feature | Foundation for linking user accounts to band members |
+| 1 | [perf-context-splitting](pending/perf-context-splitting.md) | Performance | Split AppContext to reduce cascade re-renders |
+| 2 | [infra-automated-versioning](pending/infra-automated-versioning.md) | Infrastructure | Implement release-please for semantic versioning |
+| 3 | [feat-user-member-linking-phase-1](pending/feat-user-member-linking-phase-1.md) | Feature | Foundation for linking user accounts to band members |
 
 ---
 
@@ -104,6 +103,7 @@ See [done/](done/) for completed specifications. Recent completions:
 
 | Spec | Type | Completed |
 |------|------|-----------|
+| [Remove AI/Gemini Features](done/feat-remove-ai-gemini-features.md) | Cleanup | Dec 2024 |
 | [AlphaTab Lazy Loading](done/perf-alphatab-lazy-loading.md) | Performance | Dec 2024 |
 | Design System Phase 4 | Feature | Dec 2024 |
 | Design System Phase 3 | Feature | Dec 2024 |
