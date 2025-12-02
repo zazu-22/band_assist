@@ -115,7 +115,7 @@ interface AlphaTabApi {
   // Player output for iOS Safari audio activation
   player: {
     output: {
-      activate(): void;
+      activate(resumedCallback?: () => void): void;
     };
   } | null;
   scoreLoaded: {
@@ -902,6 +902,8 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
       try {
         if (action === 'play') {
           // Activate audio context for iOS Safari before playing
+          // Note: activate() unlocks iOS AudioContext; callback fires when resumed.
+          // We call play() synchronously since callback may not fire if already running.
           if (apiRef.current.player?.output) {
             try {
               apiRef.current.player.output.activate();

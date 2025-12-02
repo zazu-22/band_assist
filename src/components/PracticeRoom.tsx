@@ -252,7 +252,9 @@ export const PracticeRoom: React.FC<PracticeRoomProps> = memo(function PracticeR
   useEffect(() => {
     if (metronomeActive) {
       // Activate shared audio context on toggle (user gesture)
-      void activateAudioContext();
+      activateAudioContext().catch(err =>
+        console.warn('[PracticeRoom] Audio activation failed:', err)
+      );
 
       const ms = 60000 / metronomeBpm;
       metronomeInterval.current = setInterval(() => {
