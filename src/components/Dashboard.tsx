@@ -30,7 +30,7 @@ import {
   daysBetween,
   formatDaysUntil,
 } from '@/lib/dateUtils';
-import { ROUTES } from '@/routes';
+import { ROUTES, getPracticeRoute } from '@/routes';
 import type { Song, BandEvent, BandMember } from '@/types';
 
 // =============================================================================
@@ -672,7 +672,7 @@ export const Dashboard: React.FC<DashboardProps> = memo(function Dashboard({
                       )}
                       <Button
                         size="sm"
-                        onClick={() => navigate(ROUTES.PRACTICE)}
+                        onClick={() => navigate(getPracticeRoute(song.id))}
                         className="gap-1 h-7 px-2.5 text-xs"
                         aria-label={`Practice ${song.title}`}
                       >

@@ -42,6 +42,14 @@ export const ROUTES = {
 export const getSongDetailRoute = (songId: string): string => `${ROUTES.SONG_DETAIL}/${songId}`;
 
 /**
+ * Helper to build practice route with optional song preselection
+ * @param songId - Optional song ID to preselect in the practice room
+ * @returns The practice route, with query param if songId provided
+ */
+export const getPracticeRoute = (songId?: string): string =>
+  songId ? `${ROUTES.PRACTICE}?songId=${songId}` : ROUTES.PRACTICE;
+
+/**
  * Navigation items configuration for the sidebar.
  * Maps route identifiers to their display properties.
  */

@@ -48,6 +48,8 @@ import { PracticeControlBar, type AlphaTabState, type TrackInfo } from './practi
 interface PracticeRoomProps {
   songs: Song[];
   onNavigateToSong?: (id: string) => void;
+  /** Optional song ID to preselect when the practice room loads */
+  initialSongId?: string | null;
 }
 
 // =============================================================================
@@ -123,16 +125,23 @@ SongListItem.displayName = 'SongListItem';
 // MAIN COMPONENT
 // =============================================================================
 
-export const PracticeRoom: React.FC<PracticeRoomProps> = memo(function PracticeRoom({ songs }) {
+export const PracticeRoom: React.FC<PracticeRoomProps> = memo(function PracticeRoom({
+  songs,
+  initialSongId,
+}) {
   const isMobile = useIsMobile();
 
   // ---------------------------------------------------------------------------
   // STATE
   // ---------------------------------------------------------------------------
 
-  const [selectedSongId, setSelectedSongId] = useState<string | null>(
-    songs.length > 0 ? songs[0].id : null
-  );
+  const [selectedSongId, setSelectedSongId] = useState<string | null>(() => {
+    // If initialSongId provided and exists in songs, use it; otherwise default to first song
+    if (initialSongId && songs.some(s => s.id === initialSongId)) {
+      return initialSongId;
+    }
+    return songs.length > 0 ? songs[0].id : null;
+  });
   const [playbackRate, setPlaybackRate] = useState(1.0);
   const [volume, setVolume] = useState(0.8);
   const [isPlaying, setIsPlaying] = useState(false);

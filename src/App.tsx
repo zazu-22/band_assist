@@ -1,5 +1,13 @@
 import React, { useState, useEffect, useRef, useMemo, useCallback, lazy, Suspense } from 'react';
-import { Routes, Route, Navigate, useNavigate, useParams, useLocation } from 'react-router-dom';
+import {
+  Routes,
+  Route,
+  Navigate,
+  useNavigate,
+  useParams,
+  useLocation,
+  useSearchParams,
+} from 'react-router-dom';
 import { toast, LoadingScreen } from './components/ui';
 import { Session } from '@supabase/supabase-js';
 import {
@@ -91,14 +99,42 @@ const SongDetailRoute: React.FC = () => {
 };
 
 /**
- * Route wrapper component for PracticeRoom.
- * Provides song navigation callback using route constants.
+ * Route wrapper component for PracticeRoom with song-specific routing.
+ * Extracts songId from URL params (for /songs/:songId/practice route)
+ * and provides song navigation callback.
  */
 const PracticeRoomRoute: React.FC = () => {
   const navigate = useNavigate();
+  const { songId } = useParams<{ songId: string }>();
   const { songs } = useAppData();
 
-  return <PracticeRoom songs={songs} onNavigateToSong={id => navigate(getSongDetailRoute(id))} />;
+  return (
+    <PracticeRoom
+      songs={songs}
+      onNavigateToSong={id => navigate(getSongDetailRoute(id))}
+      initialSongId={songId}
+    />
+  );
+};
+
+/**
+ * Route wrapper component for PracticeRoom with query parameter support.
+ * Extracts songId from query params (for /practice?songId=xxx route)
+ * and provides song navigation callback.
+ */
+const PracticeRoomWithQueryParam: React.FC = () => {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const { songs } = useAppData();
+  const initialSongId = searchParams.get('songId');
+
+  return (
+    <PracticeRoom
+      songs={songs}
+      onNavigateToSong={id => navigate(getSongDetailRoute(id))}
+      initialSongId={initialSongId}
+    />
+  );
 };
 
 /**
@@ -856,10 +892,7 @@ const App: React.FC = () => {
                   path={ROUTES.PRACTICE}
                   element={
                     <Suspense fallback={<LoadingScreen message="Loading Practice Room..." />}>
-                      <PracticeRoom
-                        songs={songs}
-                        onNavigateToSong={id => navigate(getSongDetailRoute(id))}
-                      />
+                      <PracticeRoomWithQueryParam />
                     </Suspense>
                   }
                 />
