@@ -6,7 +6,7 @@ import { useBlobUrl } from '@/hooks/useBlobUrl';
 import { SmartTabEditor } from './SmartTabEditor';
 import { isSupabaseConfigured } from '@/services/supabaseClient';
 import { supabaseStorageService } from '@/services/supabaseStorageService';
-import { toast, ConfirmDialog, ErrorBoundary, StatusBadge } from './ui';
+import { toast, ConfirmDialog, ErrorBoundary, StatusBadge, ScrollableContainer } from './ui';
 import { Button } from '@/components/primitives/button';
 import { Card, CardContent, CardHeader } from '@/components/primitives/card';
 import { Input } from '@/components/primitives/input';
@@ -396,35 +396,37 @@ export const SongDetail: React.FC<SongDetailProps> = ({
             </div>
           </div>
 
-          {/* Tab Navigation with primary indicator */}
-          <div
-            className="flex items-center gap-1"
-            role="tablist"
-            aria-label="Song sections"
-            onKeyDown={handleTabKeyDown}
-          >
-            {tabs.map(tab => (
-              <button
-                key={tab}
-                role="tab"
-                aria-selected={activeTab === tab}
-                aria-controls={`tabpanel-${tab.toLowerCase()}`}
-                onClick={() => setActiveTab(tab)}
-                className={cn(
-                  'relative px-4 py-2 text-sm font-bold transition-colors',
-                  'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded-md',
-                  activeTab === tab
-                    ? 'text-foreground'
-                    : 'text-muted-foreground hover:text-foreground'
-                )}
-              >
-                {tab}
-                {activeTab === tab && (
-                  <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full" />
-                )}
-              </button>
-            ))}
-          </div>
+          {/* Tab Navigation with primary indicator - scrollable on mobile */}
+          <ScrollableContainer fadeClassName="from-card">
+            <div
+              className="flex items-center gap-1"
+              role="tablist"
+              aria-label="Song sections"
+              onKeyDown={handleTabKeyDown}
+            >
+              {tabs.map(tab => (
+                <button
+                  key={tab}
+                  role="tab"
+                  aria-selected={activeTab === tab}
+                  aria-controls={`tabpanel-${tab.toLowerCase()}`}
+                  onClick={() => setActiveTab(tab)}
+                  className={cn(
+                    'relative px-4 py-2 text-sm font-bold transition-colors whitespace-nowrap',
+                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background rounded-md',
+                    activeTab === tab
+                      ? 'text-foreground'
+                      : 'text-muted-foreground hover:text-foreground'
+                  )}
+                >
+                  {tab}
+                  {activeTab === tab && (
+                    <span className="absolute bottom-0 left-0 right-0 h-0.5 bg-primary rounded-full" />
+                  )}
+                </button>
+              ))}
+            </div>
+          </ScrollableContainer>
         </header>
 
         {/* Scrollable Content */}

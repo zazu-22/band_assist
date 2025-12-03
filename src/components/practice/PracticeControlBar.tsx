@@ -1,5 +1,5 @@
-import { memo, useRef, useState, useCallback, useLayoutEffect } from 'react';
-import { PanelLeftClose, PanelLeftOpen, ChevronLeft, ChevronRight } from 'lucide-react';
+import { memo } from 'react';
+import { PanelLeftClose, PanelLeftOpen } from 'lucide-react';
 import {
   Button,
   Tooltip,
@@ -7,6 +7,7 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/primitives';
+import { ScrollableContainer } from '@/components/ui';
 import { cn } from '@/lib/utils';
 import { useIsMobile } from '@/hooks/useBreakpoint';
 import { PlaybackControls } from './PlaybackControls';
@@ -18,139 +19,6 @@ import { MetronomeControls } from './MetronomeControls';
 import { ProgressBar } from './ProgressBar';
 import type { Song, SongChart } from '@/types';
 import type { TrackInfo, PlaybackState, MetronomeState } from './types';
-
-// =============================================================================
-// CONSTANTS
-// =============================================================================
-
-/**
- * Minimum scroll distance (in pixels) before showing fade indicators.
- * This threshold prevents flickering when content is at the edge of the
- * scrollable area with minor floating-point variations.
- */
-const SCROLL_FADE_THRESHOLD_PX = 4;
-
-// =============================================================================
-// SCROLLABLE CONTAINER WITH FADE INDICATORS
-// =============================================================================
-
-interface ScrollableContainerProps {
-  children: React.ReactNode;
-  className?: string;
-  fadeClassName?: string;
-}
-
-/**
- * A horizontally scrollable container with fade gradient overlays
- * that indicate when more content is available to scroll.
- */
-const ScrollableContainer = memo(function ScrollableContainer({
-  children,
-  className,
-  fadeClassName = 'from-card',
-}: ScrollableContainerProps) {
-  const scrollRef = useRef<HTMLDivElement>(null);
-  const [showLeftFade, setShowLeftFade] = useState(false);
-  const [showRightFade, setShowRightFade] = useState(false);
-  // Track if initial check has been done to avoid re-running on each render
-  const hasInitialized = useRef(false);
-
-  const checkScroll = useCallback(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-
-    const { scrollLeft, scrollWidth, clientWidth } = el;
-    const hasOverflow = scrollWidth > clientWidth;
-
-    setShowLeftFade(hasOverflow && scrollLeft > SCROLL_FADE_THRESHOLD_PX);
-    setShowRightFade(hasOverflow && scrollLeft < scrollWidth - clientWidth - SCROLL_FADE_THRESHOLD_PX);
-  }, []);
-
-  useLayoutEffect(() => {
-    const el = scrollRef.current;
-    if (!el) return;
-
-    // Set up scroll listener
-    const handleScroll = () => checkScroll();
-    el.addEventListener('scroll', handleScroll, { passive: true });
-
-    // Set up resize observer to detect content/container size changes.
-    // The ResizeObserver callback invokes checkScroll() which updates state.
-    // This is intentional: ResizeObserver fires asynchronously after layout
-    // changes, similar to event handlers, and is safe to call setState from.
-    const resizeObserver = new ResizeObserver(() => {
-      checkScroll();
-    });
-    resizeObserver.observe(el);
-
-    // Initial check after layout settles (deferred to avoid sync setState in effect body)
-    if (!hasInitialized.current) {
-      hasInitialized.current = true;
-      requestAnimationFrame(() => {
-        checkScroll();
-      });
-    }
-
-    return () => {
-      el.removeEventListener('scroll', handleScroll);
-      resizeObserver.disconnect();
-    };
-  }, [checkScroll]);
-
-  return (
-    <div className="relative min-w-0 flex-1">
-      {/* Left fade indicator */}
-      <div
-        className={cn(
-          'pointer-events-none absolute left-0 top-0 bottom-0 w-8 z-10',
-          'bg-gradient-to-r to-transparent transition-opacity duration-200 will-change-[opacity]',
-          fadeClassName,
-          showLeftFade ? 'opacity-100' : 'opacity-0'
-        )}
-        aria-hidden="true"
-      >
-        <ChevronLeft
-          size={16}
-          className={cn(
-            'absolute left-1 top-1/2 -translate-y-1/2 text-muted-foreground',
-            'transition-opacity duration-200',
-            showLeftFade ? 'opacity-70' : 'opacity-0'
-          )}
-        />
-      </div>
-
-      {/* Scrollable content */}
-      <div
-        ref={scrollRef}
-        className={cn('overflow-x-auto scrollbar-hide touch-pan-x', className)}
-      >
-        {children}
-      </div>
-
-      {/* Right fade indicator */}
-      <div
-        className={cn(
-          'pointer-events-none absolute right-0 top-0 bottom-0 w-8 z-10',
-          'bg-gradient-to-l to-transparent transition-opacity duration-200 will-change-[opacity]',
-          fadeClassName,
-          showRightFade ? 'opacity-100' : 'opacity-0'
-        )}
-        aria-hidden="true"
-      >
-        <ChevronRight
-          size={16}
-          className={cn(
-            'absolute right-1 top-1/2 -translate-y-1/2 text-muted-foreground',
-            'transition-opacity duration-200',
-            showRightFade ? 'opacity-70' : 'opacity-0'
-          )}
-        />
-      </div>
-    </div>
-  );
-});
-
-ScrollableContainer.displayName = 'ScrollableContainer';
 
 export interface PracticeControlBarProps {
   // Song info
