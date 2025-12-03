@@ -210,7 +210,7 @@ export const Sidebar = memo(function Sidebar({
             variant="ghost"
             onClick={() => setCollapsed(!contextCollapsed)}
             className={cn(
-              'hidden lg:flex w-full gap-3 text-muted-foreground hover:text-foreground',
+              'hidden lg:flex w-full gap-3 text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground',
               effectiveCollapsed ? 'justify-center px-2' : 'justify-start'
             )}
             title={effectiveCollapsed ? 'Expand sidebar' : 'Collapse sidebar'}
@@ -236,9 +236,9 @@ export const Sidebar = memo(function Sidebar({
             variant="ghost"
             onClick={() => navigate(ROUTES.SETTINGS)}
             className={cn(
-              'w-full gap-3 text-muted-foreground hover:text-foreground',
+              'w-full gap-3 text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground',
               effectiveCollapsed ? 'justify-center px-2' : 'justify-start',
-              settingsActive && 'bg-accent text-accent-foreground'
+              settingsActive && 'bg-sidebar-accent text-sidebar-accent-foreground'
             )}
             title="Settings"
             aria-label="Settings"

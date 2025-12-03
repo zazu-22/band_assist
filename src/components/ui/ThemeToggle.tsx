@@ -31,7 +31,10 @@ export const ThemeToggle: React.FC<ThemeToggleProps> = memo(function ThemeToggle
           variant="ghost"
           size={iconOnly || collapsed ? 'icon' : undefined}
           className={cn(
-            'text-muted-foreground hover:text-foreground',
+            // Use sidebar colors for sidebar context, regular for mobile header
+            iconOnly
+              ? 'text-muted-foreground hover:text-foreground'
+              : 'text-sidebar-foreground/70 hover:bg-sidebar-accent/50 hover:text-sidebar-foreground',
             iconOnly && 'justify-center',
             !iconOnly && 'w-full gap-3',
             !iconOnly && collapsed && 'justify-center px-2',

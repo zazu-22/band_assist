@@ -3,7 +3,6 @@ import { cn } from '@/lib/utils';
 import { useIsDesktop } from '@/hooks/useMediaQuery';
 import { TooltipProvider } from '@/components/primitives/tooltip';
 import { ErrorBoundary } from '@/components/ui/ErrorBoundary';
-import { SaveStatusIndicator } from '@/components/ui/SaveStatusIndicator';
 import { Sidebar } from './Sidebar';
 import { MobileNav } from './MobileNav';
 
@@ -13,8 +12,6 @@ interface AppShellProps {
   currentBandName?: string;
   userBands?: Array<{ id: string; name: string }>;
   onSelectBand?: (bandId: string) => void;
-  isSaving?: boolean;
-  lastSaved?: Date | null;
 }
 
 /**
@@ -45,8 +42,6 @@ export function AppShell({
   currentBandName,
   userBands = [],
   onSelectBand,
-  isSaving = false,
-  lastSaved = null,
 }: AppShellProps) {
   const isDesktop = useIsDesktop();
 
@@ -73,8 +68,6 @@ export function AppShell({
             currentBandName={currentBandName}
             userBands={userBands}
             onSelectBand={onSelectBand}
-            isSaving={isSaving}
-            lastSaved={lastSaved}
           />
         )}
 
@@ -84,16 +77,10 @@ export function AppShell({
           tabIndex={-1}
           className={cn(
             'flex-1 overflow-auto focus:outline-none',
-            // Add padding on mobile to account for the floating menu button
-            !isDesktop && 'pt-16'
+            // Add padding on mobile to account for the floating menu button (h-14 = 56px)
+            !isDesktop && 'pt-14'
           )}
         >
-          {/* Save Status Indicator - Desktop only (mobile shows in header) */}
-          {isDesktop && (
-            <div className="absolute top-4 right-4 z-10">
-              <SaveStatusIndicator isSaving={isSaving} lastSaved={lastSaved} />
-            </div>
-          )}
           <ErrorBoundary>
             <Outlet />
           </ErrorBoundary>
