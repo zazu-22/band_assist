@@ -549,27 +549,35 @@ const App: React.FC = () => {
     };
   }, [songs, members, availableRoles, events, isLoading, performSave]);
 
-  // -- Beforeunload Handler --
-  // Save immediately when user is leaving the page to prevent data loss
+  /**
+   * Beforeunload Handler - Last-resort save attempt
+   *
+   * LIMITATION: StorageService.save() is async (uses Supabase), so this save
+   * may not complete before page unload. This is a known browser limitation -
+   * async operations in beforeunload handlers are not guaranteed to finish.
+   *
+   * For reliable saves, we rely on:
+   * 1. visibilitychange handler (below) - fires when tab becomes hidden, more
+   *    reliable for async saves as the page isn't immediately destroyed
+   * 2. Effect cleanup (above) - fires on component unmount for in-app navigation
+   *
+   * This handler serves as a best-effort fallback for hard page closes/refreshes.
+   * navigator.sendBeacon() would be more reliable but requires a dedicated
+   * server endpoint to receive the data.
+   */
   useEffect(() => {
     const handleBeforeUnload = () => {
-      // If there's a pending save, execute it synchronously
       if (pendingSaveRef.current) {
-        // Clear the debounce timeout
         if (saveTimeoutRef.current) {
           clearTimeout(saveTimeoutRef.current);
         }
-        // Attempt sync save for localStorage; async saves may not complete
-        try {
-          StorageService.save(
-            pendingSaveRef.current.songs,
-            pendingSaveRef.current.members,
-            pendingSaveRef.current.roles,
-            pendingSaveRef.current.events
-          );
-        } catch (error) {
-          console.error('Error saving on unload:', error);
-        }
+        // Best-effort async save - may not complete before page unload
+        StorageService.save(
+          pendingSaveRef.current.songs,
+          pendingSaveRef.current.members,
+          pendingSaveRef.current.roles,
+          pendingSaveRef.current.events
+        ).catch(error => console.error('Error saving on unload:', error));
       }
     };
 
