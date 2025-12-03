@@ -182,16 +182,22 @@ const App: React.FC = () => {
   const [availableRoles, setAvailableRoles] = useState<string[]>([]);
   const [events, setEvents] = useState<BandEvent[]>([]);
 
-  // -- Save Status State --
-  const [isSaving, setIsSaving] = useState(false);
-  const [lastSaved, setLastSaved] = useState<Date | null>(null);
-  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const pendingSaveRef = useRef<{
+  // -- Auto-Save Configuration --
+  const AUTOSAVE_DEBOUNCE_MS = 1000;
+
+  /** Data structure for pending saves */
+  type SaveData = {
     songs: Song[];
     members: BandMember[];
     roles: string[];
     events: BandEvent[];
-  } | null>(null);
+  };
+
+  // -- Save Status State --
+  const [isSaving, setIsSaving] = useState(false);
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingSaveRef = useRef<SaveData | null>(null);
 
   // Keep ref in sync with currentBandId state
   useEffect(() => {
@@ -481,28 +487,25 @@ const App: React.FC = () => {
   }, [isCheckingAuth, currentBandId, session]);
 
   // -- Debounced Auto-Save Effect --
-  // Save function that can be called immediately (for beforeunload) or debounced
-  const performSave = useCallback(
-    async (data: {
-      songs: Song[];
-      members: BandMember[];
-      roles: string[];
-      events: BandEvent[];
-    }) => {
-      setIsSaving(true);
-      try {
-        await StorageService.save(data.songs, data.members, data.roles, data.events);
-        setLastSaved(new Date());
-        pendingSaveRef.current = null;
-      } catch (error) {
-        console.error('Error saving data:', error);
-        toast.error('Failed to save changes');
-      } finally {
-        setIsSaving(false);
-      }
-    },
-    []
-  );
+  /**
+   * Save function that can be called immediately (for beforeunload) or debounced.
+   * Empty dependency array is intentional: this callback only uses setState functions
+   * and refs which are stable across renders. StorageService.save and toast.error
+   * are module-level imports that don't change.
+   */
+  const performSave = useCallback(async (data: SaveData) => {
+    setIsSaving(true);
+    try {
+      await StorageService.save(data.songs, data.members, data.roles, data.events);
+      setLastSaved(new Date());
+      pendingSaveRef.current = null;
+    } catch (error) {
+      console.error('Error saving data:', error);
+      toast.error('Failed to save changes');
+    } finally {
+      setIsSaving(false);
+    }
+  }, []);
 
   // Debounced auto-save effect
   useEffect(() => {
@@ -521,17 +524,27 @@ const App: React.FC = () => {
       clearTimeout(saveTimeoutRef.current);
     }
 
-    // Set new timeout (1 second debounce)
+    // Set new timeout with configurable debounce
     saveTimeoutRef.current = setTimeout(() => {
       if (pendingSaveRef.current) {
         performSave(pendingSaveRef.current);
       }
-    }, 1000);
+    }, AUTOSAVE_DEBOUNCE_MS);
 
-    // Cleanup on unmount or before next effect run
+    // Cleanup: clear timeout and save pending data on unmount
     return () => {
       if (saveTimeoutRef.current) {
         clearTimeout(saveTimeoutRef.current);
+      }
+      // Save pending data immediately on cleanup (e.g., auth expiration, unmount)
+      if (pendingSaveRef.current) {
+        // Fire and forget - attempt to save before component unmounts
+        StorageService.save(
+          pendingSaveRef.current.songs,
+          pendingSaveRef.current.members,
+          pendingSaveRef.current.roles,
+          pendingSaveRef.current.events
+        ).catch(error => console.error('Error saving on cleanup:', error));
       }
     };
   }, [songs, members, availableRoles, events, isLoading, performSave]);

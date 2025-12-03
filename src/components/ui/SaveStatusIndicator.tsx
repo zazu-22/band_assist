@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { Loader2, Check } from 'lucide-react';
 import { cn, formatRelativeTime } from '@/lib/utils';
 
@@ -12,6 +12,7 @@ interface SaveStatusIndicatorProps {
  * Displays the current save status with visual feedback.
  * Shows "Saving..." during save operations and "Saved X ago" after successful saves.
  * Automatically updates the relative time every 5 seconds.
+ * Pauses updates when tab is hidden to save resources.
  */
 export function SaveStatusIndicator({
   isSaving,
@@ -19,8 +20,9 @@ export function SaveStatusIndicator({
   className,
 }: SaveStatusIndicatorProps) {
   const [relativeTime, setRelativeTime] = useState<string>('');
+  const intervalRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
-  // Update relative time every 5 seconds
+  // Update relative time every 5 seconds, pausing when tab is hidden
   useEffect(() => {
     if (!lastSaved) return;
 
@@ -28,10 +30,40 @@ export function SaveStatusIndicator({
       setRelativeTime(formatRelativeTime(lastSaved));
     };
 
-    updateTime(); // Initial update
-    const interval = setInterval(updateTime, 5000);
+    const startInterval = () => {
+      updateTime(); // Update immediately
+      intervalRef.current = setInterval(updateTime, 5000);
+    };
 
-    return () => clearInterval(interval);
+    const stopInterval = () => {
+      if (intervalRef.current) {
+        clearInterval(intervalRef.current);
+        intervalRef.current = null;
+      }
+    };
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        updateTime(); // Update immediately when tab becomes visible
+        startInterval();
+      } else {
+        stopInterval();
+      }
+    };
+
+    // Start interval if tab is visible
+    if (document.visibilityState === 'visible') {
+      startInterval();
+    } else {
+      updateTime(); // Still set initial value
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+
+    return () => {
+      stopInterval();
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
   }, [lastSaved]);
 
   // Single container for consistent aria-live region
