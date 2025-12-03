@@ -11,12 +11,26 @@
  */
 import { describe, it, expect } from 'vitest';
 import { renderHook, act } from '@testing-library/react';
-import React, { useState, useMemo, useCallback, useEffect } from 'react';
+import React, { useState, useMemo, useCallback, useEffect, useRef } from 'react';
 import * as fc from 'fast-check';
 import { AppActionsContext, type AppActionsContextValue } from './AppActionsContext';
 import { AppDataContext, type AppDataContextValue } from './AppDataContext';
 import { useAppActions, useAppData } from './hooks';
 import type { Song, BandMember, BandEvent } from '@/types';
+
+/**
+ * Type definition for test setters exposed via callback pattern.
+ * This replaces the global window object pattern for better test isolation.
+ */
+interface TestSetters {
+    setSongs: React.Dispatch<React.SetStateAction<Song[]>>;
+    setMembers: React.Dispatch<React.SetStateAction<BandMember[]>>;
+    setAvailableRoles: React.Dispatch<React.SetStateAction<string[]>>;
+    setEvents: React.Dispatch<React.SetStateAction<BandEvent[]>>;
+    setSession: React.Dispatch<React.SetStateAction<AppActionsContextValue['session']>>;
+    setCurrentBandId: React.Dispatch<React.SetStateAction<string | null>>;
+    setIsAdmin: React.Dispatch<React.SetStateAction<boolean>>;
+}
 
 // Arbitrary generators for domain types matching src/types.ts
 const songArbitrary: fc.Arbitrary<Song> = fc.record({
@@ -63,36 +77,37 @@ const dataChangeArbitrary = fc.oneof(
     fc.record({ type: fc.constant('events' as const), value: fc.array(eventArbitrary, { maxLength: 5 }) })
 );
 
-// Generator for actions state changes
+// Generator for actions state changes (isSaving and lastSaved moved to status context)
 const actionsChangeArbitrary = fc.oneof(
     fc.record({ type: fc.constant('session' as const), value: fc.constant(null) }),
     fc.record({ type: fc.constant('currentBandId' as const), value: fc.option(fc.uuid(), { nil: null }) }),
-    fc.record({ type: fc.constant('isAdmin' as const), value: fc.boolean() }),
-    fc.record({ type: fc.constant('isSaving' as const), value: fc.boolean() }),
-    fc.record({ type: fc.constant('lastSaved' as const), value: fc.option(fc.date(), { nil: null }) })
+    fc.record({ type: fc.constant('isAdmin' as const), value: fc.boolean() })
 );
 
 /**
  * Test provider that simulates the App.tsx context structure
  * with proper memoization as specified in the design document.
+ *
+ * Uses a callback pattern (onSettersReady) instead of global window object
+ * to expose state setters for testing. This provides better test isolation
+ * and prevents namespace pollution.
  */
 const TestContextProvider: React.FC<{
     children: React.ReactNode;
     onActionsRefChange?: (ref: AppActionsContextValue) => void;
     onDataRefChange?: (ref: AppDataContextValue) => void;
-}> = ({ children, onActionsRefChange, onDataRefChange }) => {
+    onSettersReady?: (setters: TestSetters) => void;
+}> = ({ children, onActionsRefChange, onDataRefChange, onSettersReady }) => {
     // Data state
     const [songs, setSongs] = useState<Song[]>([]);
     const [members, setMembers] = useState<BandMember[]>([]);
     const [availableRoles, setAvailableRoles] = useState<string[]>([]);
     const [events, setEvents] = useState<BandEvent[]>([]);
 
-    // Actions state
+    // Actions state (isSaving and lastSaved moved to AppStatusContext)
     const [session, setSession] = useState<AppActionsContextValue['session']>(null);
     const [currentBandId, setCurrentBandId] = useState<string | null>(null);
     const [isAdmin, setIsAdmin] = useState(false);
-    const [isSaving, setIsSaving] = useState(false);
-    const [lastSaved, setLastSaved] = useState<Date | null>(null);
 
     const handleUpdateSong = useCallback((song: Song) => {
         setSongs(prev => prev.map(s => (s.id === song.id ? song : s)));
@@ -105,10 +120,8 @@ const TestContextProvider: React.FC<{
             session,
             currentBandId,
             isAdmin,
-            isSaving,
-            lastSaved,
         }),
-        [handleUpdateSong, session, currentBandId, isAdmin, isSaving, lastSaved]
+        [handleUpdateSong, session, currentBandId, isAdmin]
     );
 
     const dataContextValue = useMemo<AppDataContextValue>(
@@ -134,20 +147,21 @@ const TestContextProvider: React.FC<{
         onDataRefChange?.(dataContextValue);
     }, [dataContextValue, onDataRefChange]);
 
-    // Expose state setters for testing
-    React.useEffect(() => {
-        (window as unknown as Record<string, unknown>).__testSetters = {
-            setSongs,
-            setMembers,
-            setAvailableRoles,
-            setEvents,
-            setSession,
-            setCurrentBandId,
-            setIsAdmin,
-            setIsSaving,
-            setLastSaved,
-        };
-    }, []);
+    // Expose state setters via callback pattern instead of window object
+    // Using ref to ensure stable callback reference
+    const settersRef = useRef<TestSetters>({
+        setSongs,
+        setMembers,
+        setAvailableRoles,
+        setEvents,
+        setSession,
+        setCurrentBandId,
+        setIsAdmin,
+    });
+
+    useEffect(() => {
+        onSettersReady?.(settersRef.current);
+    }, [onSettersReady]);
 
     return (
         <AppActionsContext.Provider value={actionsContextValue}>
@@ -171,6 +185,7 @@ describe('Context Isolation Property Tests', () => {
                 fc.array(dataChangeArbitrary, { minLength: 1, maxLength: 10 }),
                 (dataChanges) => {
                     const actionsRefs: AppActionsContextValue[] = [];
+                    let testSetters: TestSetters | null = null;
 
                     const { result } = renderHook(
                         () => ({
@@ -181,6 +196,7 @@ describe('Context Isolation Property Tests', () => {
                             wrapper: ({ children }) => (
                                 <TestContextProvider
                                     onActionsRefChange={(ref) => actionsRefs.push(ref)}
+                                    onSettersReady={(setters) => { testSetters = setters; }}
                                 >
                                     {children}
                                 </TestContextProvider>
@@ -191,23 +207,23 @@ describe('Context Isolation Property Tests', () => {
                     // Get initial actions reference
                     const initialActionsRef = result.current.actions;
 
-                    // Apply data changes
-                    const setters = (window as unknown as Record<string, Record<string, unknown>>).__testSetters;
+                    // Apply data changes using callback-provided setters
+                    if (!testSetters) throw new Error('Test setters not initialized');
 
                     for (const change of dataChanges) {
                         act(() => {
                             switch (change.type) {
                                 case 'songs':
-                                    (setters.setSongs as React.Dispatch<React.SetStateAction<Song[]>>)(change.value as Song[]);
+                                    testSetters!.setSongs(change.value as Song[]);
                                     break;
                                 case 'members':
-                                    (setters.setMembers as React.Dispatch<React.SetStateAction<BandMember[]>>)(change.value as BandMember[]);
+                                    testSetters!.setMembers(change.value as BandMember[]);
                                     break;
                                 case 'roles':
-                                    (setters.setAvailableRoles as React.Dispatch<React.SetStateAction<string[]>>)(change.value as string[]);
+                                    testSetters!.setAvailableRoles(change.value as string[]);
                                     break;
                                 case 'events':
-                                    (setters.setEvents as React.Dispatch<React.SetStateAction<BandEvent[]>>)(change.value as BandEvent[]);
+                                    testSetters!.setEvents(change.value as BandEvent[]);
                                     break;
                             }
                         });
@@ -225,7 +241,7 @@ describe('Context Isolation Property Tests', () => {
     /**
      * **Feature: perf-context-splitting, Property 2: Actions changes preserve data context reference**
      *
-     * *For any* sequence of actions state changes (session, currentBandId, isAdmin, isSaving, lastSaved),
+     * *For any* sequence of actions state changes (session, currentBandId, isAdmin),
      * the data context object reference SHALL remain unchanged.
      *
      * **Validates: Requirements 2.4**
@@ -236,6 +252,7 @@ describe('Context Isolation Property Tests', () => {
                 fc.array(actionsChangeArbitrary, { minLength: 1, maxLength: 10 }),
                 (actionsChanges) => {
                     const dataRefs: AppDataContextValue[] = [];
+                    let testSetters: TestSetters | null = null;
 
                     const { result } = renderHook(
                         () => ({
@@ -246,6 +263,7 @@ describe('Context Isolation Property Tests', () => {
                             wrapper: ({ children }) => (
                                 <TestContextProvider
                                     onDataRefChange={(ref) => dataRefs.push(ref)}
+                                    onSettersReady={(setters) => { testSetters = setters; }}
                                 >
                                     {children}
                                 </TestContextProvider>
@@ -256,26 +274,20 @@ describe('Context Isolation Property Tests', () => {
                     // Get initial data reference
                     const initialDataRef = result.current.data;
 
-                    // Apply actions changes
-                    const setters = (window as unknown as Record<string, Record<string, unknown>>).__testSetters;
+                    // Apply actions changes using callback-provided setters
+                    if (!testSetters) throw new Error('Test setters not initialized');
 
                     for (const change of actionsChanges) {
                         act(() => {
                             switch (change.type) {
                                 case 'session':
-                                    (setters.setSession as React.Dispatch<React.SetStateAction<AppActionsContextValue['session']>>)(change.value);
+                                    testSetters!.setSession(change.value);
                                     break;
                                 case 'currentBandId':
-                                    (setters.setCurrentBandId as React.Dispatch<React.SetStateAction<string | null>>)(change.value);
+                                    testSetters!.setCurrentBandId(change.value);
                                     break;
                                 case 'isAdmin':
-                                    (setters.setIsAdmin as React.Dispatch<React.SetStateAction<boolean>>)(change.value);
-                                    break;
-                                case 'isSaving':
-                                    (setters.setIsSaving as React.Dispatch<React.SetStateAction<boolean>>)(change.value);
-                                    break;
-                                case 'lastSaved':
-                                    (setters.setLastSaved as React.Dispatch<React.SetStateAction<Date | null>>)(change.value);
+                                    testSetters!.setIsAdmin(change.value);
                                     break;
                             }
                         });
@@ -359,6 +371,7 @@ describe('Context Isolation Property Tests', () => {
                     // Track render counts for components consuming only one context type
                     let actionsOnlyRenderCount = 0;
                     let dataOnlyRenderCount = 0;
+                    let testSetters: TestSetters | null = null;
 
                     // Component that only consumes actions context
                     const ActionsOnlyConsumer: React.FC = () => {
@@ -378,7 +391,9 @@ describe('Context Isolation Property Tests', () => {
                         () => null,
                         {
                             wrapper: ({ children }) => (
-                                <TestContextProvider>
+                                <TestContextProvider
+                                    onSettersReady={(setters) => { testSetters = setters; }}
+                                >
                                     <ActionsOnlyConsumer />
                                     <DataOnlyConsumer />
                                     {children}
@@ -391,23 +406,23 @@ describe('Context Isolation Property Tests', () => {
                     const initialActionsRenderCount = actionsOnlyRenderCount;
                     const initialDataRenderCount = dataOnlyRenderCount;
 
-                    const setters = (window as unknown as Record<string, Record<string, unknown>>).__testSetters;
+                    if (!testSetters) throw new Error('Test setters not initialized');
 
                     // Apply data changes - should NOT cause ActionsOnlyConsumer to re-render
                     for (const change of dataChanges) {
                         act(() => {
                             switch (change.type) {
                                 case 'songs':
-                                    (setters.setSongs as React.Dispatch<React.SetStateAction<Song[]>>)(change.value as Song[]);
+                                    testSetters!.setSongs(change.value as Song[]);
                                     break;
                                 case 'members':
-                                    (setters.setMembers as React.Dispatch<React.SetStateAction<BandMember[]>>)(change.value as BandMember[]);
+                                    testSetters!.setMembers(change.value as BandMember[]);
                                     break;
                                 case 'roles':
-                                    (setters.setAvailableRoles as React.Dispatch<React.SetStateAction<string[]>>)(change.value as string[]);
+                                    testSetters!.setAvailableRoles(change.value as string[]);
                                     break;
                                 case 'events':
-                                    (setters.setEvents as React.Dispatch<React.SetStateAction<BandEvent[]>>)(change.value as BandEvent[]);
+                                    testSetters!.setEvents(change.value as BandEvent[]);
                                     break;
                             }
                         });
@@ -429,19 +444,13 @@ describe('Context Isolation Property Tests', () => {
                         act(() => {
                             switch (change.type) {
                                 case 'session':
-                                    (setters.setSession as React.Dispatch<React.SetStateAction<AppActionsContextValue['session']>>)(change.value);
+                                    testSetters!.setSession(change.value);
                                     break;
                                 case 'currentBandId':
-                                    (setters.setCurrentBandId as React.Dispatch<React.SetStateAction<string | null>>)(change.value);
+                                    testSetters!.setCurrentBandId(change.value);
                                     break;
                                 case 'isAdmin':
-                                    (setters.setIsAdmin as React.Dispatch<React.SetStateAction<boolean>>)(change.value);
-                                    break;
-                                case 'isSaving':
-                                    (setters.setIsSaving as React.Dispatch<React.SetStateAction<boolean>>)(change.value);
-                                    break;
-                                case 'lastSaved':
-                                    (setters.setLastSaved as React.Dispatch<React.SetStateAction<Date | null>>)(change.value);
+                                    testSetters!.setIsAdmin(change.value);
                                     break;
                             }
                         });

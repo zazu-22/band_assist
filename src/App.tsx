@@ -5,8 +5,10 @@ import { Session } from '@supabase/supabase-js';
 import {
   AppActionsContext,
   AppDataContext,
+  AppStatusContext,
   type AppActionsContextValue,
   type AppDataContextValue,
+  type AppStatusContextValue,
 } from './contexts';
 
 // Eagerly loaded - small, frequently used components
@@ -670,10 +672,8 @@ const App: React.FC = () => {
       session,
       currentBandId,
       isAdmin,
-      isSaving,
-      lastSaved,
     }),
-    [handleUpdateSong, session, currentBandId, isAdmin, isSaving, lastSaved]
+    [handleUpdateSong, session, currentBandId, isAdmin]
   );
 
   // Memoize data context - only changes when data values change
@@ -690,6 +690,16 @@ const App: React.FC = () => {
       setEvents,
     }),
     [songs, members, availableRoles, events]
+  );
+
+  // Memoize status context - changes frequently on auto-save
+  // Separated from actions to prevent cascade re-renders of components that don't need save status
+  const statusContextValue = useMemo<AppStatusContextValue>(
+    () => ({
+      isSaving,
+      lastSaved,
+    }),
+    [isSaving, lastSaved]
   );
 
   // Show loading screen while checking authentication
@@ -765,7 +775,8 @@ const App: React.FC = () => {
       <SidebarProvider>
         <AppActionsContext.Provider value={actionsContextValue}>
           <AppDataContext.Provider value={dataContextValue}>
-            <Routes>
+            <AppStatusContext.Provider value={statusContextValue}>
+              <Routes>
               {/* Performance Mode - Full screen, no sidebar (lazy loaded) */}
               <Route
                 path={ROUTES.PERFORMANCE}
@@ -886,7 +897,8 @@ const App: React.FC = () => {
                 {/* Redirect any unknown routes to dashboard */}
                 <Route path="*" element={<Navigate to={ROUTES.DASHBOARD} replace />} />
               </Route>
-            </Routes>
+              </Routes>
+            </AppStatusContext.Provider>
           </AppDataContext.Provider>
         </AppActionsContext.Provider>
       </SidebarProvider>

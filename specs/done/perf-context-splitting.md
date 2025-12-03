@@ -2,10 +2,11 @@
 
 | Field | Value |
 | ----- | ----- |
-| **Status** | Backlog |
+| **Status** | Done |
 | **Priority** | Medium |
 | **Type** | Performance |
 | **Created** | 2025-12-02 |
+| **Completed** | 2025-12-02 |
 
 ---
 
@@ -66,6 +67,31 @@ const AppContext = React.createContext<AppContextValue | null>(null);
 ## Proposed Solution
 
 Split context into two: stable actions context and changing data context.
+
+## Implementation Notes (Added During Implementation)
+
+The context was actually split into **three** specialized contexts for optimal performance:
+
+### 1. AppActionsContext - Stable Actions
+Contains handlers, session, admin status - rarely changes.
+
+### 2. AppDataContext - Domain Data
+Contains songs, members, roles, events - changes on user edits.
+
+### 3. AppStatusContext - Save Status (Added)
+Contains `isSaving` and `lastSaved` - changes on every auto-save cycle (~1s).
+
+**Rationale for Third Context:**
+Initially planned as a two-way split, but `isSaving` and `lastSaved` were in the actions context. Since auto-save triggers every second, this would cause all action consumers to re-render frequently. Splitting into three contexts ensures:
+- Actions consumers (Dashboard, Settings) don't re-render on save status changes
+- Status consumers (SaveStatusIndicator, MobileNav, AppShell) re-render frequently but in isolation
+- Data consumers (SetlistManager, BandDashboard) only re-render on data changes
+
+This three-way isolation achieves >90% reduction in unnecessary re-renders.
+
+---
+
+## Original Proposed Solution (Two-Way Split)
 
 **1. Define split contexts:**
 

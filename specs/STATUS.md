@@ -2,7 +2,7 @@
 
 > Quick reference for all specs with current status and priority.
 >
-> Last updated: 2025-12-02
+> Last updated: 2025-12-03
 
 ---
 
@@ -10,8 +10,8 @@
 
 | Status | Count | Description |
 |--------|-------|-------------|
-| 🔴 Active | 1 | Currently being implemented |
-| 🟢 Done | 15 | Completed and merged |
+| 🔴 Active | 0 | Currently being implemented |
+| 🟢 Done | 16 | Completed and merged |
 | 🟡 Pending | 2 | Queued for implementation (in sequence order) |
 | ⚪ Backlog | 13 | Planned but not yet prioritized |
 
@@ -38,11 +38,11 @@ Specs queued for implementation **in priority order**. Work through these sequen
 
 ---
 
-## 🟢 Done (15)
+## 🟢 Done (16)
 
 | Spec | Type | Priority | Completed |
 |------|------|----------|-----------|
-| [perf-context-splitting](pending/perf-context-splitting.md) | Performance | Medium | 2025-12-02 |
+| [perf-context-splitting](done/perf-context-splitting.md) | Performance | Medium | 2025-12-02 |
 | [perf-auto-save-debouncing](done/perf-auto-save-debouncing.md) | Performance | High | Dec 2025 |
 | [feat-remove-ai-gemini-features](done/feat-remove-ai-gemini-features.md) | Cleanup | High | Dec 2025 |
 | [perf-alphatab-lazy-loading](done/perf-alphatab-lazy-loading.md) | Performance | High | Dec 2025 |
@@ -107,9 +107,9 @@ Specs queued for implementation **in priority order**. Work through these sequen
 
 | Date | Spec | Change |
 |------|------|--------|
+| 2025-12-03 | perf-context-splitting | ✅ Completed |
 | Dec 2025 | feat-lead-sheet-generation | ➕ Added to backlog |
 | Dec 2025 | perf-auto-save-debouncing | ✅ Completed |
-| Dec 2025 | perf-context-splitting | 🔴 Moved to Active |
 | Dec 2025 | feat-remove-ai-gemini-features | ✅ Completed |
 | Dec 2025 | infra-automated-versioning | 🟡 Moved to Pending (seq #2) |
 | Dec 2025 | perf-alphatab-lazy-loading | ✅ Completed |
