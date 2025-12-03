@@ -19,17 +19,28 @@ const createMockSong = (overrides: Partial<Song> = {}): Song => ({
   ...overrides,
 });
 
-// Default props
+// Default props for the new touch-sortable interface
 const createDefaultProps = (overrides = {}) => ({
   song: createMockSong(),
   index: 0,
-  isDragged: false,
+  isDragging: false,
+  isDropTarget: false,
+  transformStyle: {},
+  itemRef: vi.fn(),
+  dragHandleProps: {
+    onMouseDown: vi.fn(),
+    onTouchStart: vi.fn(),
+    'aria-label': 'Drag to reorder',
+  },
+  itemProps: {
+    onKeyDown: vi.fn(),
+    tabIndex: 0,
+    role: 'listitem',
+    'aria-grabbed': undefined as boolean | undefined,
+    'aria-dropeffect': 'none' as const,
+  },
   onSelect: vi.fn(),
   onDelete: vi.fn(),
-  onDragStart: vi.fn(),
-  onDragOver: vi.fn(),
-  onDrop: vi.fn(),
-  onDragEnd: vi.fn(),
   ...overrides,
 });
 
@@ -130,22 +141,41 @@ describe('SetlistItem', () => {
   });
 
   describe('Drag States', () => {
-    it('hides item when being dragged', () => {
-      const { container } = render(<SetlistItem {...createDefaultProps({ isDragged: true })} />);
+    it('shows cursor-grabbing when being dragged', () => {
+      const { container } = render(<SetlistItem {...createDefaultProps({ isDragging: true })} />);
       const item = container.querySelector('li');
-      expect(item).toHaveClass('opacity-0', 'h-0', 'overflow-hidden');
+      expect(item).toHaveClass('cursor-grabbing');
     });
 
-    it('is visible when not being dragged', () => {
-      const { container } = render(<SetlistItem {...createDefaultProps({ isDragged: false })} />);
+    it('does not have cursor-grabbing when not being dragged', () => {
+      const { container } = render(<SetlistItem {...createDefaultProps({ isDragging: false })} />);
       const item = container.querySelector('li');
-      expect(item).not.toHaveClass('h-0');
+      expect(item).not.toHaveClass('cursor-grabbing');
     });
 
-    it('drag handle has cursor-grab and touch-none classes', () => {
+    it('shows drop target ring when isDropTarget is true', () => {
+      const { container } = render(<SetlistItem {...createDefaultProps({ isDropTarget: true })} />);
+      const item = container.querySelector('li');
+      expect(item).toHaveClass('ring-2', 'ring-primary');
+    });
+
+    it('does not show drop target ring when isDropTarget is false', () => {
+      const { container } = render(<SetlistItem {...createDefaultProps({ isDropTarget: false })} />);
+      const item = container.querySelector('li');
+      expect(item).not.toHaveClass('ring-2');
+    });
+
+    it('drag handle has cursor-grab class', () => {
       render(<SetlistItem {...createDefaultProps()} />);
       const dragHandle = screen.getByLabelText('Drag to reorder');
-      expect(dragHandle).toHaveClass('cursor-grab', 'active:cursor-grabbing', 'touch-none');
+      expect(dragHandle).toHaveClass('cursor-grab', 'active:cursor-grabbing');
+    });
+
+    it('applies transformStyle to the item', () => {
+      const transformStyle = { transform: 'translateY(100px)', zIndex: 100 };
+      const { container } = render(<SetlistItem {...createDefaultProps({ transformStyle })} />);
+      const item = container.querySelector('li');
+      expect(item).toHaveStyle({ transform: 'translateY(100px)', zIndex: '100' });
     });
   });
 
@@ -170,44 +200,90 @@ describe('SetlistItem', () => {
       expect(onDelete).toHaveBeenCalledWith('1');
     });
 
-    it('calls onDragStart when dragging begins', () => {
-      const onDragStart = vi.fn();
-      const { container } = render(<SetlistItem {...createDefaultProps({ onDragStart })} />);
+    it('calls dragHandleProps.onMouseDown when mouse down on drag handle', () => {
+      const onMouseDown = vi.fn();
+      const dragHandleProps = {
+        onMouseDown,
+        onTouchStart: vi.fn(),
+        'aria-label': 'Drag to reorder',
+      };
+      render(<SetlistItem {...createDefaultProps({ dragHandleProps })} />);
 
-      const item = container.querySelector('li');
-      fireEvent.dragStart(item!);
+      const dragHandle = screen.getByLabelText('Drag to reorder');
+      fireEvent.mouseDown(dragHandle);
 
-      expect(onDragStart).toHaveBeenCalledWith(expect.any(Object), 0);
+      expect(onMouseDown).toHaveBeenCalled();
     });
 
-    it('calls onDragOver when dragging over item', () => {
-      const onDragOver = vi.fn();
-      const { container } = render(<SetlistItem {...createDefaultProps({ onDragOver })} />);
+    it('calls dragHandleProps.onTouchStart when touch starts on drag handle', () => {
+      const onTouchStart = vi.fn();
+      const dragHandleProps = {
+        onMouseDown: vi.fn(),
+        onTouchStart,
+        'aria-label': 'Drag to reorder',
+      };
+      render(<SetlistItem {...createDefaultProps({ dragHandleProps })} />);
 
-      const item = container.querySelector('li');
-      fireEvent.dragOver(item!);
+      const dragHandle = screen.getByLabelText('Drag to reorder');
+      fireEvent.touchStart(dragHandle);
 
-      expect(onDragOver).toHaveBeenCalled();
+      expect(onTouchStart).toHaveBeenCalled();
     });
 
-    it('calls onDrop when item is dropped', () => {
-      const onDrop = vi.fn();
-      const { container } = render(<SetlistItem {...createDefaultProps({ onDrop })} />);
+    it('calls itemProps.onKeyDown when key is pressed on item', () => {
+      const onKeyDown = vi.fn();
+      const itemProps = {
+        onKeyDown,
+        tabIndex: 0,
+        role: 'listitem',
+        'aria-grabbed': undefined as boolean | undefined,
+        'aria-dropeffect': 'none' as const,
+      };
+      const { container } = render(<SetlistItem {...createDefaultProps({ itemProps })} />);
 
       const item = container.querySelector('li');
-      fireEvent.drop(item!);
+      fireEvent.keyDown(item!, { key: 'Enter' });
 
-      expect(onDrop).toHaveBeenCalled();
+      expect(onKeyDown).toHaveBeenCalled();
+    });
+  });
+
+  describe('Accessibility', () => {
+    it('has correct ARIA role on list item', () => {
+      const { container } = render(<SetlistItem {...createDefaultProps()} />);
+      const item = container.querySelector('li');
+      expect(item).toHaveAttribute('role', 'listitem');
     });
 
-    it('calls onDragEnd when dragging ends', () => {
-      const onDragEnd = vi.fn();
-      const { container } = render(<SetlistItem {...createDefaultProps({ onDragEnd })} />);
-
+    it('has tabIndex for keyboard navigation', () => {
+      const { container } = render(<SetlistItem {...createDefaultProps()} />);
       const item = container.querySelector('li');
-      fireEvent.dragEnd(item!);
+      expect(item).toHaveAttribute('tabindex', '0');
+    });
 
-      expect(onDragEnd).toHaveBeenCalled();
+    it('has aria-grabbed when being dragged', () => {
+      const itemProps = {
+        onKeyDown: vi.fn(),
+        tabIndex: 0,
+        role: 'listitem',
+        'aria-grabbed': true as boolean | undefined,
+        'aria-dropeffect': 'move' as const,
+      };
+      const { container } = render(<SetlistItem {...createDefaultProps({ itemProps })} />);
+      const item = container.querySelector('li');
+      expect(item).toHaveAttribute('aria-grabbed', 'true');
+    });
+
+    it('has focus-visible ring for keyboard focus', () => {
+      const { container } = render(<SetlistItem {...createDefaultProps()} />);
+      const item = container.querySelector('li');
+      expect(item).toHaveClass('focus-visible:ring-2', 'focus-visible:ring-primary');
+    });
+
+    it('drag handle meets 44px minimum touch target', () => {
+      render(<SetlistItem {...createDefaultProps()} />);
+      const dragHandle = screen.getByLabelText('Drag to reorder');
+      expect(dragHandle).toHaveClass('min-h-[44px]', 'min-w-[44px]');
     });
   });
 
