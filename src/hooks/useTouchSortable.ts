@@ -5,11 +5,16 @@ import { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 // =============================================================================
 
 /**
- * Gap between sortable items in pixels.
- * Must match the space-y-3 utility (0.75rem = 12px) used in the consuming component.
- * If the CSS changes, this value must be updated accordingly.
+ * Default gap between sortable items in pixels.
+ * Matches the space-y-3 utility (0.75rem = 12px) commonly used in list layouts.
  */
-const ITEM_GAP_PX = 12;
+const DEFAULT_ITEM_GAP_PX = 12;
+
+/**
+ * Minimum distance (in pixels) to move before engaging drag mode.
+ * Helps differentiate between scroll intent and drag intent on touch devices.
+ */
+const DRAG_THRESHOLD_PX = 10;
 
 // =============================================================================
 // TYPES
@@ -23,9 +28,13 @@ interface DragState {
   startY: number;
 }
 
-interface UseTouchSortableOptions<T> {
+export interface UseTouchSortableOptions<T> {
+  /** Array of items to make sortable */
   items: T[];
+  /** Callback when items are reordered */
   onReorder: (fromIndex: number, toIndex: number) => void;
+  /** Gap between items in pixels (default: 12, matches space-y-3) */
+  itemGap?: number;
 }
 
 interface ItemProps {
@@ -43,7 +52,7 @@ interface DragHandleProps {
   'aria-label': string;
 }
 
-interface UseTouchSortableReturn {
+export interface UseTouchSortableReturn {
   dragState: DragState;
   getItemProps: (index: number) => ItemProps;
   getDragHandleProps: (index: number) => DragHandleProps;
@@ -74,6 +83,7 @@ interface UseTouchSortableReturn {
 export function useTouchSortable<T>({
   items,
   onReorder,
+  itemGap = DEFAULT_ITEM_GAP_PX,
 }: UseTouchSortableOptions<T>): UseTouchSortableReturn {
   // === State ===
   const [dragState, setDragState] = useState<DragState>({
@@ -93,11 +103,37 @@ export function useTouchSortable<T>({
   const itemRefs = useRef<Map<number, HTMLElement>>(new Map());
   const itemRectsRef = useRef<DOMRect[]>([]);
   const dragStateRef = useRef(dragState);
+  const itemGapRef = useRef(itemGap);
+
+  // Track pending drag start for threshold detection
+  const pendingDragRef = useRef<{
+    index: number;
+    startY: number;
+    engaged: boolean;
+  } | null>(null);
 
   // Sync state to ref for event handlers (avoids stale closures)
   useEffect(() => {
     dragStateRef.current = dragState;
   });
+
+  // Sync itemGap to ref
+  useEffect(() => {
+    itemGapRef.current = itemGap;
+  }, [itemGap]);
+
+  // Clean up stale itemRefs when items array shrinks
+  useEffect(() => {
+    const currentSize = items.length;
+    const refs = itemRefs.current;
+
+    // Remove refs for indices that no longer exist
+    refs.forEach((_, index) => {
+      if (index >= currentSize) {
+        refs.delete(index);
+      }
+    });
+  }, [items.length]);
 
   // === Helper: Calculate target index from Y position ===
   const calculateTargetIndex = useCallback((clientY: number): number => {
@@ -121,7 +157,7 @@ export function useTouchSortable<T>({
 
   // === Core drag handlers ===
 
-  const handleDragStart = useCallback(
+  const engageDrag = useCallback(
     (index: number, clientY: number) => {
       // Capture all item positions at start of drag
       const rects: DOMRect[] = [];
@@ -148,8 +184,29 @@ export function useTouchSortable<T>({
     [items.length]
   );
 
+  const handleDragStart = useCallback((index: number, clientY: number) => {
+    // Initialize pending drag for threshold detection
+    pendingDragRef.current = {
+      index,
+      startY: clientY,
+      engaged: false,
+    };
+  }, []);
+
   const handleDragMove = useCallback(
     (clientY: number) => {
+      // Check if we have a pending drag that hasn't engaged yet
+      const pending = pendingDragRef.current;
+      if (pending && !pending.engaged) {
+        const distance = Math.abs(clientY - pending.startY);
+        if (distance >= DRAG_THRESHOLD_PX) {
+          // Threshold met - engage the drag
+          pending.engaged = true;
+          engageDrag(pending.index, pending.startY);
+        }
+        return;
+      }
+
       const { isDragging, draggedIndex } = dragStateRef.current;
       if (!isDragging || draggedIndex === null) return;
 
@@ -161,10 +218,13 @@ export function useTouchSortable<T>({
         targetIndex: newTargetIndex,
       }));
     },
-    [calculateTargetIndex]
+    [calculateTargetIndex, engageDrag]
   );
 
   const handleDragEnd = useCallback(() => {
+    // Clear pending drag
+    pendingDragRef.current = null;
+
     const { draggedIndex, targetIndex } = dragStateRef.current;
 
     if (draggedIndex !== null && targetIndex !== null && draggedIndex !== targetIndex) {
@@ -184,6 +244,7 @@ export function useTouchSortable<T>({
   }, [onReorder]);
 
   const handleDragCancel = useCallback(() => {
+    pendingDragRef.current = null;
     setAnnouncement('Reorder cancelled.');
     setDragState({
       isDragging: false,
@@ -199,9 +260,10 @@ export function useTouchSortable<T>({
   const handleMouseDown = useCallback(
     (index: number, e: React.MouseEvent) => {
       e.preventDefault();
-      handleDragStart(index, e.clientY);
+      // For mouse, engage immediately (no threshold needed)
+      engageDrag(index, e.clientY);
     },
-    [handleDragStart]
+    [engageDrag]
   );
 
   // === Touch event handlers ===
@@ -209,7 +271,8 @@ export function useTouchSortable<T>({
   const handleTouchStart = useCallback(
     (index: number, e: React.TouchEvent) => {
       if (e.touches.length === 1) {
-        // Don't preventDefault here - let the browser decide if it's a scroll
+        // Don't preventDefault - let browser decide if it's a scroll
+        // Use threshold detection to differentiate scroll vs drag
         handleDragStart(index, e.touches[0].clientY);
       }
     },
@@ -227,9 +290,15 @@ export function useTouchSortable<T>({
           case 'ArrowLeft':
             e.preventDefault();
             if (index > 0) {
-              onReorder(index, index - 1);
-              setKeyboardGrabbed(index - 1);
+              const newIndex = index - 1;
+              onReorder(index, newIndex);
+              // Use functional update and requestAnimationFrame to avoid race condition
+              setKeyboardGrabbed(newIndex);
               setAnnouncement(`Moved item to position ${index}.`);
+              // Focus follows the moved item
+              requestAnimationFrame(() => {
+                itemRefs.current.get(newIndex)?.focus();
+              });
             }
             break;
 
@@ -237,9 +306,15 @@ export function useTouchSortable<T>({
           case 'ArrowRight':
             e.preventDefault();
             if (index < items.length - 1) {
-              onReorder(index, index + 1);
-              setKeyboardGrabbed(index + 1);
+              const newIndex = index + 1;
+              onReorder(index, newIndex);
+              // Use functional update and requestAnimationFrame to avoid race condition
+              setKeyboardGrabbed(newIndex);
               setAnnouncement(`Moved item to position ${index + 2}.`);
+              // Focus follows the moved item
+              requestAnimationFrame(() => {
+                itemRefs.current.get(newIndex)?.focus();
+              });
             }
             break;
 
@@ -270,10 +345,12 @@ export function useTouchSortable<T>({
     [keyboardGrabbed, items.length, onReorder]
   );
 
-  // === Global event listeners (active only while dragging) ===
+  // === Global event listeners (active only while dragging or pending) ===
 
   useEffect(() => {
-    if (!dragState.isDragging) return;
+    // Listen when dragging OR when we have a pending drag (for threshold detection)
+    const hasPendingDrag = pendingDragRef.current !== null;
+    if (!dragState.isDragging && !hasPendingDrag) return;
 
     const onMouseMove = (e: MouseEvent) => handleDragMove(e.clientY);
     const onMouseUp = () => handleDragEnd();
@@ -297,10 +374,12 @@ export function useTouchSortable<T>({
     document.addEventListener('touchcancel', onTouchEnd);
     document.addEventListener('keydown', onKeyDown);
 
-    // Visual feedback during drag
-    document.body.style.cursor = 'grabbing';
-    document.body.style.userSelect = 'none';
-    document.body.style.webkitUserSelect = 'none';
+    // Visual feedback during drag (only if actually dragging)
+    if (dragState.isDragging) {
+      document.body.style.cursor = 'grabbing';
+      document.body.style.userSelect = 'none';
+      document.body.style.webkitUserSelect = 'none';
+    }
 
     return () => {
       document.removeEventListener('mousemove', onMouseMove);
@@ -360,7 +439,7 @@ export function useTouchSortable<T>({
 
       // Get item height for shift calculations
       const itemHeight = itemRectsRef.current[0]?.height ?? 60;
-      const shiftAmount = itemHeight + ITEM_GAP_PX;
+      const shiftAmount = itemHeight + itemGapRef.current;
 
       // Dragged item follows cursor
       if (index === draggedIndex) {
