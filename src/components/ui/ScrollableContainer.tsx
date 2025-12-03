@@ -62,10 +62,8 @@ export const ScrollableContainer = memo(function ScrollableContainer({
   const scrollRef = useRef<HTMLDivElement>(null);
   const [showLeftFade, setShowLeftFade] = useState(false);
   const [showRightFade, setShowRightFade] = useState(false);
-  // Track if initial check has been done to avoid re-running on each render.
-  // Note: This ref intentionally persists across effect re-runs. If checkScroll
-  // were to change (currently stable due to empty deps), the initial check would
-  // not re-run. This is acceptable since checkScroll only reads from scrollRef.
+  // Track if initial check has been done to avoid re-running on each effect re-run.
+  // Reset on cleanup to ensure proper initialization on fast remounts.
   const hasInitialized = useRef(false);
 
   const checkScroll = useCallback(() => {
@@ -107,6 +105,7 @@ export const ScrollableContainer = memo(function ScrollableContainer({
     return () => {
       el.removeEventListener('scroll', handleScroll);
       resizeObserver.disconnect();
+      hasInitialized.current = false; // Reset for potential fast remount
     };
   }, [checkScroll]);
 

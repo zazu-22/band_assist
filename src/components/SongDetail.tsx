@@ -397,10 +397,7 @@ export const SongDetail: React.FC<SongDetailProps> = ({
           </div>
 
           {/* Tab Navigation with primary indicator - scrollable on mobile */}
-          <ScrollableContainer
-            className="flex items-center gap-1"
-            fadeClassName="from-card"
-          >
+          <ScrollableContainer fadeClassName="from-card">
             <div
               className="flex items-center gap-1"
               role="tablist"

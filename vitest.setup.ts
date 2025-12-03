@@ -2,6 +2,12 @@ import '@testing-library/jest-dom';
 
 // Mock ResizeObserver for jsdom environment
 class ResizeObserverMock {
+  callback: ResizeObserverCallback;
+
+  constructor(callback: ResizeObserverCallback) {
+    this.callback = callback;
+  }
+
   observe = vi.fn();
   unobserve = vi.fn();
   disconnect = vi.fn();
