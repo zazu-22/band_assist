@@ -1,9 +1,10 @@
 import { describe, it, expect, vi } from 'vitest';
 import { renderHook } from '@testing-library/react';
 import React from 'react';
-import { useAppActions, useAppData, useAppContext } from './hooks';
+import { useAppActions, useAppData, useAppStatus, useAppContext } from './hooks';
 import { AppActionsContext, type AppActionsContextValue } from './AppActionsContext';
 import { AppDataContext, type AppDataContextValue } from './AppDataContext';
+import { AppStatusContext, type AppStatusContextValue } from './AppStatusContext';
 
 // Mock data for testing
 const mockActionsValue: AppActionsContextValue = {
@@ -11,8 +12,6 @@ const mockActionsValue: AppActionsContextValue = {
     session: null,
     currentBandId: 'band-123',
     isAdmin: true,
-    isSaving: false,
-    lastSaved: new Date('2025-01-01'),
 };
 
 const mockDataValue: AppDataContextValue = {
@@ -26,6 +25,11 @@ const mockDataValue: AppDataContextValue = {
     setEvents: vi.fn(),
 };
 
+const mockStatusValue: AppStatusContextValue = {
+    isSaving: false,
+    lastSaved: new Date('2025-01-01'),
+};
+
 // Wrapper components for testing
 const ActionsProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => (
     <AppActionsContext.Provider value={mockActionsValue}>{children}</AppActionsContext.Provider>
@@ -35,9 +39,17 @@ const DataProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => 
     <AppDataContext.Provider value={mockDataValue}>{children}</AppDataContext.Provider>
 );
 
-const BothProviders: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+const StatusProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => (
+    <AppStatusContext.Provider value={mockStatusValue}>{children}</AppStatusContext.Provider>
+);
+
+const AllProviders: React.FC<{ children: React.ReactNode }> = ({ children }) => (
     <AppActionsContext.Provider value={mockActionsValue}>
-        <AppDataContext.Provider value={mockDataValue}>{children}</AppDataContext.Provider>
+        <AppDataContext.Provider value={mockDataValue}>
+            <AppStatusContext.Provider value={mockStatusValue}>
+                {children}
+            </AppStatusContext.Provider>
+        </AppDataContext.Provider>
     </AppActionsContext.Provider>
 );
 
@@ -52,8 +64,6 @@ describe('useAppActions', () => {
         expect(result.current.session).toBe(mockActionsValue.session);
         expect(result.current.currentBandId).toBe('band-123');
         expect(result.current.isAdmin).toBe(true);
-        expect(result.current.isSaving).toBe(false);
-        expect(result.current.lastSaved).toEqual(new Date('2025-01-01'));
     });
 
     it('throws descriptive error when used outside provider', () => {
@@ -87,10 +97,28 @@ describe('useAppData', () => {
     });
 });
 
+describe('useAppStatus', () => {
+    it('returns only status context values', () => {
+        const { result } = renderHook(() => useAppStatus(), {
+            wrapper: StatusProvider,
+        });
+
+        expect(result.current).toEqual(mockStatusValue);
+        expect(result.current.isSaving).toBe(false);
+        expect(result.current.lastSaved).toEqual(new Date('2025-01-01'));
+    });
+
+    it('throws descriptive error when used outside provider', () => {
+        expect(() => {
+            renderHook(() => useAppStatus());
+        }).toThrow('useAppStatus must be used within App component (inside AppStatusContext.Provider)');
+    });
+});
+
 describe('useAppContext', () => {
-    it('returns combined actions and data values', () => {
+    it('returns combined actions, data, and status values', () => {
         const { result } = renderHook(() => useAppContext(), {
-            wrapper: BothProviders,
+            wrapper: AllProviders,
         });
 
         // Actions values
@@ -98,8 +126,6 @@ describe('useAppContext', () => {
         expect(result.current.session).toBe(mockActionsValue.session);
         expect(result.current.currentBandId).toBe('band-123');
         expect(result.current.isAdmin).toBe(true);
-        expect(result.current.isSaving).toBe(false);
-        expect(result.current.lastSaved).toEqual(new Date('2025-01-01'));
 
         // Data values
         expect(result.current.songs).toEqual(mockDataValue.songs);
@@ -110,6 +136,10 @@ describe('useAppContext', () => {
         expect(result.current.setAvailableRoles).toBe(mockDataValue.setAvailableRoles);
         expect(result.current.events).toEqual([]);
         expect(result.current.setEvents).toBe(mockDataValue.setEvents);
+
+        // Status values
+        expect(result.current.isSaving).toBe(false);
+        expect(result.current.lastSaved).toEqual(new Date('2025-01-01'));
     });
 
     it('throws error when AppActionsContext is missing', () => {

@@ -1,6 +1,7 @@
 import React from 'react';
 import { AppActionsContext, type AppActionsContextValue } from './AppActionsContext';
 import { AppDataContext, type AppDataContextValue } from './AppDataContext';
+import { AppStatusContext, type AppStatusContextValue } from './AppStatusContext';
 
 /**
  * Hook for components that only need stable actions.
@@ -35,13 +36,31 @@ export const useAppData = (): AppDataContextValue => {
 };
 
 /**
- * Combined hook for backwards compatibility.
- * Prefer useAppActions or useAppData for new code to benefit from render optimization.
+ * Hook for components that need access to save status.
+ * Use this for components that display saving indicators (e.g., "Saving...", "Last saved at...").
+ * This context changes frequently (on every auto-save), so only use it where needed.
  * @throws Error if used outside of the App component tree
- * @returns Combined actions and data context values
+ * @returns The status context value
  */
-export const useAppContext = (): AppActionsContextValue & AppDataContextValue => {
+export const useAppStatus = (): AppStatusContextValue => {
+    const context = React.useContext(AppStatusContext);
+    if (!context) {
+        throw new Error(
+            'useAppStatus must be used within App component (inside AppStatusContext.Provider)'
+        );
+    }
+    return context;
+};
+
+/**
+ * Combined hook for backwards compatibility.
+ * Prefer useAppActions, useAppData, or useAppStatus for new code to benefit from render optimization.
+ * @throws Error if used outside of the App component tree
+ * @returns Combined actions, data, and status context values
+ */
+export const useAppContext = (): AppActionsContextValue & AppDataContextValue & AppStatusContextValue => {
     const actions = useAppActions();
     const data = useAppData();
-    return { ...actions, ...data };
+    const status = useAppStatus();
+    return { ...actions, ...data, ...status };
 };
