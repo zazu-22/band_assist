@@ -324,6 +324,90 @@ describe('Dashboard', () => {
     });
   });
 
+  describe('Practice Queue expand/collapse', () => {
+    it('shows expand button when more than 5 songs need attention', () => {
+      const songs = Array.from({ length: 8 }, (_, i) =>
+        createMockSong({
+          id: `${i}`,
+          title: `Song ${i + 1}`,
+          status: 'In Progress',
+          charts: [], // Makes them need attention
+        })
+      );
+      renderWithRouter(<Dashboard {...defaultProps} songs={songs} />);
+      expect(screen.getByRole('button', { name: /3 more songs/i })).toBeInTheDocument();
+    });
+
+    it('hides expand button when 5 or fewer songs need attention', () => {
+      const songs = Array.from({ length: 5 }, (_, i) =>
+        createMockSong({
+          id: `${i}`,
+          title: `Song ${i + 1}`,
+          status: 'In Progress',
+          charts: [],
+        })
+      );
+      renderWithRouter(<Dashboard {...defaultProps} songs={songs} />);
+      expect(screen.queryByRole('button', { name: /more/i })).not.toBeInTheDocument();
+    });
+
+    it('expands to show all songs when button is clicked', () => {
+      const songs = Array.from({ length: 8 }, (_, i) =>
+        createMockSong({
+          id: `${i}`,
+          title: `Song ${i + 1}`,
+          status: 'In Progress',
+          charts: [],
+        })
+      );
+      renderWithRouter(<Dashboard {...defaultProps} songs={songs} />);
+
+      // Initially Song 6 should not be visible
+      expect(screen.queryByText('Song 6')).not.toBeInTheDocument();
+
+      // Click expand button
+      fireEvent.click(screen.getByRole('button', { name: /3 more songs/i }));
+
+      // Now all songs should be visible
+      expect(screen.getByText('Song 6')).toBeInTheDocument();
+      expect(screen.getByText('Song 8')).toBeInTheDocument();
+      expect(screen.getByText('Show less')).toBeInTheDocument();
+    });
+
+    it('collapses back to 5 songs when button is clicked again', () => {
+      const songs = Array.from({ length: 8 }, (_, i) =>
+        createMockSong({
+          id: `${i}`,
+          title: `Song ${i + 1}`,
+          status: 'In Progress',
+          charts: [],
+        })
+      );
+      renderWithRouter(<Dashboard {...defaultProps} songs={songs} />);
+
+      // Expand
+      fireEvent.click(screen.getByRole('button', { name: /3 more songs/i }));
+      expect(screen.getByText('Song 6')).toBeInTheDocument();
+
+      // Collapse
+      fireEvent.click(screen.getByRole('button', { name: /show fewer/i }));
+      expect(screen.queryByText('Song 6')).not.toBeInTheDocument();
+    });
+
+    it('shows correct count of hidden songs', () => {
+      const songs = Array.from({ length: 12 }, (_, i) =>
+        createMockSong({
+          id: `${i}`,
+          title: `Song ${i + 1}`,
+          status: 'In Progress',
+          charts: [],
+        })
+      );
+      renderWithRouter(<Dashboard {...defaultProps} songs={songs} />);
+      expect(screen.getByText('7 more')).toBeInTheDocument();
+    });
+  });
+
   describe('assignment warnings', () => {
     it('shows unassigned count when songs have no assignments', () => {
       const songs = [

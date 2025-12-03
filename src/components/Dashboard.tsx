@@ -1,10 +1,11 @@
-import React, { memo, useMemo, useCallback } from 'react';
+import React, { memo, useMemo, useCallback, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import {
   AlertTriangle,
   ArrowRight,
   Calendar,
   CheckCircle2,
+  ChevronDown,
   Guitar,
   Music,
   Play,
@@ -210,9 +211,13 @@ export const Dashboard: React.FC<DashboardProps> = memo(function Dashboard({
     return songs
       .map(song => calculateSongUrgency(song, normalizedToday))
       .filter(item => item.score > 0)
-      .sort((a, b) => b.score - a.score)
-      .slice(0, 5);
+      .sort((a, b) => b.score - a.score);
   }, [songs, normalizedToday]);
+
+  // Practice Queue expand/collapse state
+  const [isPracticeQueueExpanded, setIsPracticeQueueExpanded] = useState(false);
+  const hasMoreSongs = songsNeedingAttention.length > 5;
+  const hiddenCount = songsNeedingAttention.length - 5;
 
   // Upcoming timeline (events + song deadlines, next 2 weeks)
   const upcomingTimeline = useMemo<TimelineItem[]>(() => {
@@ -293,6 +298,60 @@ export const Dashboard: React.FC<DashboardProps> = memo(function Dashboard({
     const Icon = config.icon;
     return <Icon size={16} className={config.className} />;
   };
+
+  const renderPracticeQueueRow = useCallback(
+    ({ song, issues }: SongWithUrgency) => {
+      const dueIssue = issues.find(i => i.label.includes('Due') || i.label === 'Overdue');
+
+      return (
+        <div
+          key={song.id}
+          className={cn(
+            'relative flex items-center gap-4 px-4 py-2.5',
+            'border-l-[3px] border-l-primary/60',
+            'hover:bg-muted/30 transition-colors'
+          )}
+        >
+          {/* Left: Song title + Edit link */}
+          <div className="flex-1 min-w-0 flex items-center gap-2">
+            <p className="font-semibold text-foreground truncate text-sm">{song.title}</p>
+            <button
+              type="button"
+              onClick={() => onNavigateToSong(song.id)}
+              className="text-[11px] text-muted-foreground/60 hover:text-primary inline-flex items-center gap-0.5 shrink-0"
+            >
+              Edit <ArrowRight size={10} />
+            </button>
+          </div>
+
+          {/* Right: Status + Due + Practice */}
+          <div className="flex items-center gap-2 shrink-0">
+            <StatusBadge status={song.status} />
+            {dueIssue && (
+              <span
+                className={cn(
+                  'text-[11px] font-medium',
+                  dueIssue.severity === 'high' ? 'text-destructive' : 'text-warning'
+                )}
+              >
+                {dueIssue.label}
+              </span>
+            )}
+            <Button
+              size="sm"
+              onClick={() => navigate(getPracticeRoute(song.id))}
+              className="gap-1 h-7 px-2.5 text-xs"
+              aria-label={`Practice ${song.title}`}
+            >
+              <Play size={12} />
+              Practice
+            </Button>
+          </div>
+        </div>
+      );
+    },
+    [onNavigateToSong, navigate]
+  );
 
   // ---------------------------------------------------------------------------
   // RENDER
@@ -632,57 +691,41 @@ export const Dashboard: React.FC<DashboardProps> = memo(function Dashboard({
             </div>
           ) : (
             <div className="divide-y divide-border/30">
-              {songsNeedingAttention.map(({ song, issues }) => {
-                // Separate due date from other issues
-                const dueIssue = issues.find(i => i.label.includes('Due') || i.label === 'Overdue');
+              {/* Always show first 5 songs */}
+              {songsNeedingAttention.slice(0, 5).map(renderPracticeQueueRow)}
 
-                return (
-                  <div
-                    key={song.id}
+              {/* Additional songs shown when expanded */}
+              {hasMoreSongs &&
+                isPracticeQueueExpanded &&
+                songsNeedingAttention.slice(5).map(renderPracticeQueueRow)}
+
+              {/* Expand/Collapse button */}
+              {hasMoreSongs && (
+                <button
+                  type="button"
+                  onClick={() => setIsPracticeQueueExpanded(prev => !prev)}
+                  className={cn(
+                    'w-full flex items-center justify-center gap-2 py-3 mt-1',
+                    'text-sm text-muted-foreground hover:text-foreground',
+                    'hover:bg-muted/30 transition-colors',
+                    'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2'
+                  )}
+                  aria-expanded={isPracticeQueueExpanded}
+                  aria-label={
+                    isPracticeQueueExpanded ? 'Show fewer songs' : `Show ${hiddenCount} more songs`
+                  }
+                >
+                  <span className="text-xs font-medium">
+                    {isPracticeQueueExpanded ? 'Show less' : `${hiddenCount} more`}
+                  </span>
+                  <ChevronDown
                     className={cn(
-                      'relative flex items-center gap-4 px-4 py-2.5',
-                      'border-l-[3px] border-l-primary/60',
-                      'hover:bg-muted/30 transition-colors'
+                      'h-4 w-4 transition-transform duration-200',
+                      isPracticeQueueExpanded && 'rotate-180'
                     )}
-                  >
-                    {/* Left: Song title + Edit link */}
-                    <div className="flex-1 min-w-0 flex items-center gap-2">
-                      <p className="font-semibold text-foreground truncate text-sm">{song.title}</p>
-                      <button
-                        type="button"
-                        onClick={() => onNavigateToSong(song.id)}
-                        className="text-[11px] text-muted-foreground/60 hover:text-primary inline-flex items-center gap-0.5 shrink-0"
-                      >
-                        Edit <ArrowRight size={10} />
-                      </button>
-                    </div>
-
-                    {/* Right: Status + Due + Practice */}
-                    <div className="flex items-center gap-2 shrink-0">
-                      <StatusBadge status={song.status} />
-                      {dueIssue && (
-                        <span
-                          className={cn(
-                            'text-[11px] font-medium',
-                            dueIssue.severity === 'high' ? 'text-destructive' : 'text-warning'
-                          )}
-                        >
-                          {dueIssue.label}
-                        </span>
-                      )}
-                      <Button
-                        size="sm"
-                        onClick={() => navigate(getPracticeRoute(song.id))}
-                        className="gap-1 h-7 px-2.5 text-xs"
-                        aria-label={`Practice ${song.title}`}
-                      >
-                        <Play size={12} />
-                        Practice
-                      </Button>
-                    </div>
-                  </div>
-                );
-              })}
+                  />
+                </button>
+              )}
             </div>
           )}
         </CardContent>
