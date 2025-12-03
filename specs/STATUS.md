@@ -13,7 +13,7 @@
 | 🔴 Active | 1 | Currently being implemented |
 | 🟢 Done | 15 | Completed and merged |
 | 🟡 Pending | 2 | Queued for implementation (in sequence order) |
-| ⚪ Backlog | 12 | Planned but not yet prioritized |
+| ⚪ Backlog | 13 | Planned but not yet prioritized |
 
 ---
 
@@ -69,6 +69,7 @@ Specs queued for implementation **in priority order**. Work through these sequen
 
 | Spec | Type | Effort | Notes |
 |------|------|--------|-------|
+| [feat-lead-sheet-generation](backlog/feat-lead-sheet-generation.md) | Feature | Large | Auto-generate from GP files |
 | [feat-user-member-linking-phase-2](backlog/feat-user-member-linking-phase-2.md) | Feature | Large | Depends on Phase 1 |
 | [feat-user-member-linking-phase-3](backlog/feat-user-member-linking-phase-3.md) | Feature | Large | Depends on Phase 1 & 2 |
 | [feat-collaborative-song-notes](backlog/feat-collaborative-song-notes.md) | Feature | Medium | Timestamped comments |
@@ -105,6 +106,7 @@ Specs queued for implementation **in priority order**. Work through these sequen
 
 | Date | Spec | Change |
 |------|------|--------|
+| Dec 2024 | feat-lead-sheet-generation | ➕ Added to backlog |
 | Dec 2024 | perf-auto-save-debouncing | ✅ Completed |
 | Dec 2024 | perf-context-splitting | 🔴 Moved to Active |
 | Dec 2024 | feat-remove-ai-gemini-features | ✅ Completed |
