@@ -198,6 +198,8 @@ const App: React.FC = () => {
   const [lastSaved, setLastSaved] = useState<Date | null>(null);
   const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const pendingSaveRef = useRef<SaveData | null>(null);
+  /** Ref to track in-progress saves, preventing concurrent save operations */
+  const isSavingRef = useRef(false);
 
   // Keep ref in sync with currentBandId state
   useEffect(() => {
@@ -494,6 +496,10 @@ const App: React.FC = () => {
    * are module-level imports that don't change.
    */
   const performSave = useCallback(async (data: SaveData) => {
+    // Prevent concurrent saves
+    if (isSavingRef.current) return;
+
+    isSavingRef.current = true;
     setIsSaving(true);
     try {
       await StorageService.save(data.songs, data.members, data.roles, data.events);
@@ -503,6 +509,7 @@ const App: React.FC = () => {
       console.error('Error saving data:', error);
       toast.error('Failed to save changes');
     } finally {
+      isSavingRef.current = false;
       setIsSaving(false);
     }
   }, []);
@@ -537,7 +544,8 @@ const App: React.FC = () => {
         clearTimeout(saveTimeoutRef.current);
       }
       // Save pending data immediately on cleanup (e.g., auth expiration, unmount)
-      if (pendingSaveRef.current) {
+      // Skip if a save is already in progress to prevent concurrent saves
+      if (!isSavingRef.current && pendingSaveRef.current) {
         // Fire and forget - attempt to save before component unmounts
         StorageService.save(
           pendingSaveRef.current.songs,
@@ -567,7 +575,8 @@ const App: React.FC = () => {
    */
   useEffect(() => {
     const handleBeforeUnload = () => {
-      if (pendingSaveRef.current) {
+      // Skip if a save is already in progress to prevent concurrent saves
+      if (!isSavingRef.current && pendingSaveRef.current) {
         if (saveTimeoutRef.current) {
           clearTimeout(saveTimeoutRef.current);
         }
