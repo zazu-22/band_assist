@@ -2,6 +2,12 @@ import React, { useState, useEffect, useRef, useMemo, useCallback, lazy, Suspens
 import { Routes, Route, Navigate, useNavigate, useParams, useLocation } from 'react-router-dom';
 import { toast, LoadingScreen } from './components/ui';
 import { Session } from '@supabase/supabase-js';
+import {
+  AppActionsContext,
+  AppDataContext,
+  type AppActionsContextValue,
+  type AppDataContextValue,
+} from './contexts';
 
 // Eagerly loaded - small, frequently used components
 import { Dashboard } from './components/Dashboard';
@@ -39,49 +45,12 @@ import { useLayoutShortcuts } from './hooks/useLayoutShortcuts';
 import { ThemeProvider } from './components/ui/ThemeProvider';
 import { SidebarProvider, AppShell } from './components/layout';
 
-/**
- * Context value interface for the AppContext.
- * Contains all shared application state and update functions.
- * Note: Layout state (sidebar, mobile nav) is now managed by SidebarProvider.
- */
-interface AppContextValue {
-  songs: Song[];
-  setSongs: React.Dispatch<React.SetStateAction<Song[]>>;
-  members: BandMember[];
-  setMembers: React.Dispatch<React.SetStateAction<BandMember[]>>;
-  availableRoles: string[];
-  setAvailableRoles: React.Dispatch<React.SetStateAction<string[]>>;
-  events: BandEvent[];
-  setEvents: React.Dispatch<React.SetStateAction<BandEvent[]>>;
-  handleUpdateSong: (song: Song) => void;
-  session: Session | null;
-  currentBandId: string | null;
-  isAdmin: boolean;
-  isSaving: boolean;
-  lastSaved: Date | null;
-}
+// Re-export useAppContext from contexts for backwards compatibility
+// Components importing from App.tsx will continue to work
+export { useAppContext } from './contexts';
 
-/**
- * React Context for sharing application state across route components.
- * Must be used within the App component tree (inside BrowserRouter).
- */
-const AppContext = React.createContext<AppContextValue | null>(null);
-
-/**
- * Hook to access the application context.
- * Provides access to songs, members, roles, events, and their update functions.
- * @throws Error if used outside of the App component tree
- * @returns The application context value
- */
-export const useAppContext = (): AppContextValue => {
-  const context = React.useContext(AppContext);
-  if (!context) {
-    throw new Error(
-      'useAppContext must be used within App component (inside BrowserRouter and AppContext.Provider)'
-    );
-  }
-  return context;
-};
+// Import hooks for internal use in route components
+import { useAppActions, useAppData } from './contexts';
 
 /**
  * Route wrapper component for SongDetail.
@@ -91,7 +60,8 @@ export const useAppContext = (): AppContextValue => {
 const SongDetailRoute: React.FC = () => {
   const { songId } = useParams<{ songId: string }>();
   const navigate = useNavigate();
-  const { songs, members, availableRoles, handleUpdateSong } = useAppContext();
+  const { songs, members, availableRoles } = useAppData();
+  const { handleUpdateSong } = useAppActions();
 
   const song = songs.find(s => s.id === songId);
 
@@ -124,7 +94,7 @@ const SongDetailRoute: React.FC = () => {
  */
 const PracticeRoomRoute: React.FC = () => {
   const navigate = useNavigate();
-  const { songs } = useAppContext();
+  const { songs } = useAppData();
 
   return <PracticeRoom songs={songs} onNavigateToSong={id => navigate(getSongDetailRoute(id))} />;
 };
@@ -692,9 +662,23 @@ const App: React.FC = () => {
     }
   };
 
-  // Context value for child routes - memoized to prevent unnecessary re-renders
-  // Note: Layout state (sidebar, mobile nav) is now managed by SidebarProvider
-  const contextValue = useMemo<AppContextValue>(
+  // Memoize actions context - only changes when action-related values change
+  // This prevents re-renders of components that only consume actions when data changes
+  const actionsContextValue = useMemo<AppActionsContextValue>(
+    () => ({
+      handleUpdateSong,
+      session,
+      currentBandId,
+      isAdmin,
+      isSaving,
+      lastSaved,
+    }),
+    [handleUpdateSong, session, currentBandId, isAdmin, isSaving, lastSaved]
+  );
+
+  // Memoize data context - only changes when data values change
+  // This prevents re-renders of components that only consume data when actions change
+  const dataContextValue = useMemo<AppDataContextValue>(
     () => ({
       songs,
       setSongs,
@@ -704,25 +688,8 @@ const App: React.FC = () => {
       setAvailableRoles,
       events,
       setEvents,
-      handleUpdateSong,
-      session,
-      currentBandId,
-      isAdmin,
-      isSaving,
-      lastSaved,
     }),
-    [
-      songs,
-      members,
-      availableRoles,
-      events,
-      session,
-      currentBandId,
-      isAdmin,
-      handleUpdateSong,
-      isSaving,
-      lastSaved,
-    ]
+    [songs, members, availableRoles, events]
   );
 
   // Show loading screen while checking authentication
@@ -796,130 +763,132 @@ const App: React.FC = () => {
   return (
     <ThemeProvider defaultTheme="dark" storageKey="band-assist-theme">
       <SidebarProvider>
-        <AppContext.Provider value={contextValue}>
-          <Routes>
-            {/* Performance Mode - Full screen, no sidebar (lazy loaded) */}
-            <Route
-              path={ROUTES.PERFORMANCE}
-              element={
-                <Suspense fallback={<LoadingScreen message="Loading Performance Mode..." />}>
-                  <PerformanceMode songs={songs} onExit={() => navigate(ROUTES.DASHBOARD)} />
-                </Suspense>
-              }
-            />
-
-            {/* Song Detail - Full screen, no sidebar (lazy loaded) */}
-            <Route
-              path={`${ROUTES.SONG_DETAIL}/:songId`}
-              element={
-                <Suspense fallback={<LoadingScreen message="Loading Song Details..." />}>
-                  <SongDetailRoute />
-                </Suspense>
-              }
-            />
-
-            {/* Practice Room with specific song (lazy loaded) */}
-            <Route
-              path={`${ROUTES.SONG_DETAIL}/:songId/practice`}
-              element={
-                <Suspense fallback={<LoadingScreen message="Loading Practice Room..." />}>
-                  <PracticeRoomRoute />
-                </Suspense>
-              }
-            />
-
-            {/* Layout route for sidebar pages */}
-            <Route
-              element={
-                <AppLayout
-                  onLogout={handleLogout}
-                  showLogout={isSupabaseConfigured() && !!session}
-                  currentBandName={currentBandName}
-                  userBands={userBands}
-                  onSelectBand={handleSelectBand}
-                  isSaving={isSaving}
-                  lastSaved={lastSaved}
-                />
-              }
-            >
+        <AppActionsContext.Provider value={actionsContextValue}>
+          <AppDataContext.Provider value={dataContextValue}>
+            <Routes>
+              {/* Performance Mode - Full screen, no sidebar (lazy loaded) */}
               <Route
-                index
+                path={ROUTES.PERFORMANCE}
                 element={
-                  <Dashboard
-                    songs={songs}
-                    members={members}
-                    onNavigateToSong={id => navigate(getSongDetailRoute(id))}
-                    events={events}
-                  />
-                }
-              />
-              <Route
-                path={ROUTES.SETLIST}
-                element={
-                  <SetlistManager
-                    songs={songs}
-                    setSongs={setSongs}
-                    onSelectSong={id => navigate(getSongDetailRoute(id))}
-                    events={events}
-                    isAdmin={isAdmin}
-                  />
-                }
-              />
-              <Route
-                path={ROUTES.PRACTICE}
-                element={
-                  <Suspense fallback={<LoadingScreen message="Loading Practice Room..." />}>
-                    <PracticeRoom
-                      songs={songs}
-                      onNavigateToSong={id => navigate(getSongDetailRoute(id))}
-                    />
+                  <Suspense fallback={<LoadingScreen message="Loading Performance Mode..." />}>
+                    <PerformanceMode songs={songs} onExit={() => navigate(ROUTES.DASHBOARD)} />
                   </Suspense>
                 }
               />
+
+              {/* Song Detail - Full screen, no sidebar (lazy loaded) */}
               <Route
-                path={ROUTES.SCHEDULE}
+                path={`${ROUTES.SONG_DETAIL}/:songId`}
                 element={
-                  <ScheduleManager
-                    events={events}
-                    setEvents={setEvents}
-                    songs={songs}
-                    onNavigateToSong={id => navigate(getSongDetailRoute(id))}
-                  />
+                  <Suspense fallback={<LoadingScreen message="Loading Song Details..." />}>
+                    <SongDetailRoute />
+                  </Suspense>
                 }
               />
+
+              {/* Practice Room with specific song (lazy loaded) */}
               <Route
-                path={ROUTES.BAND}
+                path={`${ROUTES.SONG_DETAIL}/:songId/practice`}
                 element={
-                  <BandDashboard
-                    members={members}
-                    songs={songs}
-                    onNavigateToSong={id => navigate(getSongDetailRoute(id))}
-                  />
+                  <Suspense fallback={<LoadingScreen message="Loading Practice Room..." />}>
+                    <PracticeRoomRoute />
+                  </Suspense>
                 }
               />
+
+              {/* Layout route for sidebar pages */}
               <Route
-                path={ROUTES.SETTINGS}
                 element={
-                  <Settings
-                    members={members}
-                    setMembers={setMembers}
-                    availableRoles={availableRoles}
-                    setAvailableRoles={setAvailableRoles}
-                    songs={songs}
-                    setSongs={setSongs}
-                    events={events}
-                    setEvents={setEvents}
-                    currentBandId={currentBandId || undefined}
-                    currentUserId={session?.user?.id}
-                    isAdmin={isAdmin}
+                  <AppLayout
+                    onLogout={handleLogout}
+                    showLogout={isSupabaseConfigured() && !!session}
+                    currentBandName={currentBandName}
+                    userBands={userBands}
+                    onSelectBand={handleSelectBand}
+                    isSaving={isSaving}
+                    lastSaved={lastSaved}
                   />
                 }
-              />
-              {/* Redirect any unknown routes to dashboard */}
-              <Route path="*" element={<Navigate to={ROUTES.DASHBOARD} replace />} />
-            </Route>
-          </Routes>
-        </AppContext.Provider>
+              >
+                <Route
+                  index
+                  element={
+                    <Dashboard
+                      songs={songs}
+                      members={members}
+                      onNavigateToSong={id => navigate(getSongDetailRoute(id))}
+                      events={events}
+                    />
+                  }
+                />
+                <Route
+                  path={ROUTES.SETLIST}
+                  element={
+                    <SetlistManager
+                      songs={songs}
+                      setSongs={setSongs}
+                      onSelectSong={id => navigate(getSongDetailRoute(id))}
+                      events={events}
+                      isAdmin={isAdmin}
+                    />
+                  }
+                />
+                <Route
+                  path={ROUTES.PRACTICE}
+                  element={
+                    <Suspense fallback={<LoadingScreen message="Loading Practice Room..." />}>
+                      <PracticeRoom
+                        songs={songs}
+                        onNavigateToSong={id => navigate(getSongDetailRoute(id))}
+                      />
+                    </Suspense>
+                  }
+                />
+                <Route
+                  path={ROUTES.SCHEDULE}
+                  element={
+                    <ScheduleManager
+                      events={events}
+                      setEvents={setEvents}
+                      songs={songs}
+                      onNavigateToSong={id => navigate(getSongDetailRoute(id))}
+                    />
+                  }
+                />
+                <Route
+                  path={ROUTES.BAND}
+                  element={
+                    <BandDashboard
+                      members={members}
+                      songs={songs}
+                      onNavigateToSong={id => navigate(getSongDetailRoute(id))}
+                    />
+                  }
+                />
+                <Route
+                  path={ROUTES.SETTINGS}
+                  element={
+                    <Settings
+                      members={members}
+                      setMembers={setMembers}
+                      availableRoles={availableRoles}
+                      setAvailableRoles={setAvailableRoles}
+                      songs={songs}
+                      setSongs={setSongs}
+                      events={events}
+                      setEvents={setEvents}
+                      currentBandId={currentBandId || undefined}
+                      currentUserId={session?.user?.id}
+                      isAdmin={isAdmin}
+                    />
+                  }
+                />
+                {/* Redirect any unknown routes to dashboard */}
+                <Route path="*" element={<Navigate to={ROUTES.DASHBOARD} replace />} />
+              </Route>
+            </Routes>
+          </AppDataContext.Provider>
+        </AppActionsContext.Provider>
       </SidebarProvider>
     </ThemeProvider>
   );
