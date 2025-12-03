@@ -78,10 +78,10 @@ export const BandDashboard: React.FC<BandDashboardProps> = memo(function BandDas
 
   return (
     <div className="relative p-4 sm:p-6 lg:p-10 h-full flex flex-col">
-      {/* Ambient background glow */}
+      {/* Ambient background glow - fixed size to maintain consistent fade on all viewports */}
       <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
         <div
-          className="absolute -top-1/4 -left-1/4 w-1/2 h-1/2 rounded-full opacity-[0.03]"
+          className="absolute -top-48 -left-48 w-[500px] h-[500px] rounded-full opacity-[0.03]"
           style={{ background: 'radial-gradient(circle, var(--primary) 0%, transparent 70%)' }}
         />
       </div>

@@ -121,13 +121,14 @@ describe('AppShell', () => {
     it('adds padding on mobile for header', () => {
       renderAppShell({}, false);
       const main = screen.getByRole('main');
-      expect(main).toHaveClass('pt-16');
+      // pt-14 matches the h-14 mobile header height
+      expect(main).toHaveClass('pt-14');
     });
 
     it('does not add extra padding on desktop', () => {
       renderAppShell({}, true);
       const main = screen.getByRole('main');
-      expect(main).not.toHaveClass('pt-16');
+      expect(main).not.toHaveClass('pt-14');
     });
   });
 

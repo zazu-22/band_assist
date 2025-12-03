@@ -109,9 +109,7 @@ const AppLayout: React.FC<{
   currentBandName: string;
   userBands: Array<{ id: string; name: string }>;
   onSelectBand: (bandId: string) => void;
-  isSaving: boolean;
-  lastSaved: Date | null;
-}> = ({ onLogout, showLogout, currentBandName, userBands, onSelectBand, isSaving, lastSaved }) => {
+}> = ({ onLogout, showLogout, currentBandName, userBands, onSelectBand }) => {
   // Enable keyboard shortcuts for layout (Cmd/Ctrl+B to toggle sidebar)
   useLayoutShortcuts();
 
@@ -122,8 +120,6 @@ const AppLayout: React.FC<{
       currentBandName={currentBandName}
       userBands={userBands}
       onSelectBand={onSelectBand}
-      isSaving={isSaving}
-      lastSaved={lastSaved}
     />
   );
 };
@@ -465,19 +461,32 @@ const App: React.FC = () => {
    * and refs which are stable across renders. StorageService.save and toast.error
    * are module-level imports that don't change.
    */
-  const performSave = useCallback(async (data: SaveData) => {
+  const performSave = useCallback(async (data: SaveData, showToast = true) => {
     // Prevent concurrent saves
     if (isSavingRef.current) return;
 
     isSavingRef.current = true;
     setIsSaving(true);
+
+    // Show loading toast (only for user-visible saves, not cleanup saves)
+    const toastId = showToast ? toast.loading('Saving...') : undefined;
+
     try {
       await StorageService.save(data.songs, data.members, data.roles, data.events);
       setLastSaved(new Date());
       pendingSaveRef.current = null;
+
+      // Update toast to success and auto-dismiss
+      if (toastId) {
+        toast.success('Saved', { id: toastId, duration: 2000 });
+      }
     } catch (error) {
       console.error('Error saving data:', error);
-      toast.error('Failed to save changes');
+      if (toastId) {
+        toast.error('Failed to save changes', { id: toastId });
+      } else {
+        toast.error('Failed to save changes');
+      }
     } finally {
       isSavingRef.current = false;
       setIsSaving(false);
@@ -576,7 +585,8 @@ const App: React.FC = () => {
           clearTimeout(saveTimeoutRef.current);
         }
         // Fire and forget - better chance of completing than beforeunload
-        performSave(pendingSaveRef.current);
+        // Don't show toast for background saves (user won't see it anyway)
+        performSave(pendingSaveRef.current, false);
       }
     };
 
@@ -805,8 +815,6 @@ const App: React.FC = () => {
                     currentBandName={currentBandName}
                     userBands={userBands}
                     onSelectBand={handleSelectBand}
-                    isSaving={isSaving}
-                    lastSaved={lastSaved}
                   />
                 }
               >
