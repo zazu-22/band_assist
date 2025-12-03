@@ -57,6 +57,8 @@ interface AppContextValue {
   session: Session | null;
   currentBandId: string | null;
   isAdmin: boolean;
+  isSaving: boolean;
+  lastSaved: Date | null;
 }
 
 /**
@@ -137,7 +139,9 @@ const AppLayout: React.FC<{
   currentBandName: string;
   userBands: Array<{ id: string; name: string }>;
   onSelectBand: (bandId: string) => void;
-}> = ({ onLogout, showLogout, currentBandName, userBands, onSelectBand }) => {
+  isSaving: boolean;
+  lastSaved: Date | null;
+}> = ({ onLogout, showLogout, currentBandName, userBands, onSelectBand, isSaving, lastSaved }) => {
   // Enable keyboard shortcuts for layout (Cmd/Ctrl+B to toggle sidebar)
   useLayoutShortcuts();
 
@@ -148,6 +152,8 @@ const AppLayout: React.FC<{
       currentBandName={currentBandName}
       userBands={userBands}
       onSelectBand={onSelectBand}
+      isSaving={isSaving}
+      lastSaved={lastSaved}
     />
   );
 };
@@ -175,6 +181,25 @@ const App: React.FC = () => {
   const [members, setMembers] = useState<BandMember[]>([]);
   const [availableRoles, setAvailableRoles] = useState<string[]>([]);
   const [events, setEvents] = useState<BandEvent[]>([]);
+
+  // -- Auto-Save Configuration --
+  const AUTOSAVE_DEBOUNCE_MS = 1000;
+
+  /** Data structure for pending saves */
+  type SaveData = {
+    songs: Song[];
+    members: BandMember[];
+    roles: string[];
+    events: BandEvent[];
+  };
+
+  // -- Save Status State --
+  const [isSaving, setIsSaving] = useState(false);
+  const [lastSaved, setLastSaved] = useState<Date | null>(null);
+  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const pendingSaveRef = useRef<SaveData | null>(null);
+  /** Ref to track in-progress saves, preventing concurrent save operations */
+  const isSavingRef = useRef(false);
 
   // Keep ref in sync with currentBandId state
   useEffect(() => {
@@ -463,21 +488,133 @@ const App: React.FC = () => {
     };
   }, [isCheckingAuth, currentBandId, session]);
 
-  // -- Auto-Save Effect --
-  // Whenever core data changes, save to storage (debounced to avoid excessive saves)
+  // -- Debounced Auto-Save Effect --
+  /**
+   * Save function that can be called immediately (for beforeunload) or debounced.
+   * Empty dependency array is intentional: this callback only uses setState functions
+   * and refs which are stable across renders. StorageService.save and toast.error
+   * are module-level imports that don't change.
+   */
+  const performSave = useCallback(async (data: SaveData) => {
+    // Prevent concurrent saves
+    if (isSavingRef.current) return;
+
+    isSavingRef.current = true;
+    setIsSaving(true);
+    try {
+      await StorageService.save(data.songs, data.members, data.roles, data.events);
+      setLastSaved(new Date());
+      pendingSaveRef.current = null;
+    } catch (error) {
+      console.error('Error saving data:', error);
+      toast.error('Failed to save changes');
+    } finally {
+      isSavingRef.current = false;
+      setIsSaving(false);
+    }
+  }, []);
+
+  // Debounced auto-save effect
   useEffect(() => {
     if (isLoading) return; // Don't save during initial load
 
-    const saveData = async () => {
-      try {
-        await StorageService.save(songs, members, availableRoles, events);
-      } catch (error) {
-        console.error('Error saving data:', error);
+    // Store pending data for beforeunload handler
+    pendingSaveRef.current = {
+      songs,
+      members,
+      roles: availableRoles,
+      events,
+    };
+
+    // Clear previous timeout
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
+
+    // Set new timeout with configurable debounce
+    saveTimeoutRef.current = setTimeout(() => {
+      if (pendingSaveRef.current) {
+        performSave(pendingSaveRef.current);
+      }
+    }, AUTOSAVE_DEBOUNCE_MS);
+
+    // Cleanup: clear timeout and save pending data on unmount
+    return () => {
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
+      }
+      // Save pending data immediately on cleanup (e.g., auth expiration, unmount)
+      // Skip if a save is already in progress to prevent concurrent saves
+      if (!isSavingRef.current && pendingSaveRef.current) {
+        // Fire and forget - attempt to save before component unmounts
+        StorageService.save(
+          pendingSaveRef.current.songs,
+          pendingSaveRef.current.members,
+          pendingSaveRef.current.roles,
+          pendingSaveRef.current.events
+        ).catch(error => console.error('Error saving on cleanup:', error));
+      }
+    };
+  }, [songs, members, availableRoles, events, isLoading, performSave]);
+
+  /**
+   * Beforeunload Handler - Last-resort save attempt
+   *
+   * LIMITATION: StorageService.save() is async (uses Supabase), so this save
+   * may not complete before page unload. This is a known browser limitation -
+   * async operations in beforeunload handlers are not guaranteed to finish.
+   *
+   * For reliable saves, we rely on:
+   * 1. visibilitychange handler (below) - fires when tab becomes hidden, more
+   *    reliable for async saves as the page isn't immediately destroyed
+   * 2. Effect cleanup (above) - fires on component unmount for in-app navigation
+   *
+   * This handler serves as a best-effort fallback for hard page closes/refreshes.
+   * navigator.sendBeacon() would be more reliable but requires a dedicated
+   * server endpoint to receive the data.
+   */
+  useEffect(() => {
+    const handleBeforeUnload = () => {
+      // Skip if a save is already in progress to prevent concurrent saves
+      if (!isSavingRef.current && pendingSaveRef.current) {
+        if (saveTimeoutRef.current) {
+          clearTimeout(saveTimeoutRef.current);
+        }
+        // Best-effort async save - may not complete before page unload
+        StorageService.save(
+          pendingSaveRef.current.songs,
+          pendingSaveRef.current.members,
+          pendingSaveRef.current.roles,
+          pendingSaveRef.current.events
+        ).catch(error => console.error('Error saving on unload:', error));
       }
     };
 
-    saveData();
-  }, [songs, members, availableRoles, events, isLoading]);
+    window.addEventListener('beforeunload', handleBeforeUnload);
+    return () => {
+      window.removeEventListener('beforeunload', handleBeforeUnload);
+    };
+  }, []);
+
+  // -- Visibility Change Handler --
+  // Save when tab becomes hidden (more reliable than beforeunload for async saves)
+  useEffect(() => {
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'hidden' && pendingSaveRef.current) {
+        // Clear debounce and save immediately when tab becomes hidden
+        if (saveTimeoutRef.current) {
+          clearTimeout(saveTimeoutRef.current);
+        }
+        // Fire and forget - better chance of completing than beforeunload
+        performSave(pendingSaveRef.current);
+      }
+    };
+
+    document.addEventListener('visibilitychange', handleVisibilityChange);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibilityChange);
+    };
+  }, [performSave]);
 
   const handleUpdateSong = useCallback((updatedSong: Song) => {
     setSongs(prevSongs => prevSongs.map(s => (s.id === updatedSong.id ? updatedSong : s)));
@@ -571,8 +708,21 @@ const App: React.FC = () => {
       session,
       currentBandId,
       isAdmin,
+      isSaving,
+      lastSaved,
     }),
-    [songs, members, availableRoles, events, session, currentBandId, isAdmin, handleUpdateSong]
+    [
+      songs,
+      members,
+      availableRoles,
+      events,
+      session,
+      currentBandId,
+      isAdmin,
+      handleUpdateSong,
+      isSaving,
+      lastSaved,
+    ]
   );
 
   // Show loading screen while checking authentication
@@ -687,6 +837,8 @@ const App: React.FC = () => {
                   currentBandName={currentBandName}
                   userBands={userBands}
                   onSelectBand={handleSelectBand}
+                  isSaving={isSaving}
+                  lastSaved={lastSaved}
                 />
               }
             >

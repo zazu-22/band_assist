@@ -19,3 +19,6 @@ export { UploadZone } from './UploadZone';
 export { ThemeProvider, useTheme } from './ThemeProvider';
 export { ThemeToggle } from './ThemeToggle';
 export { VisuallyHidden } from './VisuallyHidden';
+
+// Status components
+export { SaveStatusIndicator } from './SaveStatusIndicator';

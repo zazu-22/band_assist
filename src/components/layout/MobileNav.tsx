@@ -8,6 +8,7 @@ import { useSidebar } from './SidebarProvider';
 import { Sidebar } from './Sidebar';
 import { VisuallyHidden } from '@/components/ui/VisuallyHidden';
 import { ThemeToggle } from '@/components/ui/ThemeToggle';
+import { SaveStatusIndicator } from '@/components/ui/SaveStatusIndicator';
 import { getPageTitle } from '@/routes';
 
 interface MobileNavProps {
@@ -16,6 +17,8 @@ interface MobileNavProps {
   currentBandName?: string;
   userBands?: Array<{ id: string; name: string }>;
   onSelectBand?: (bandId: string) => void;
+  isSaving?: boolean;
+  lastSaved?: Date | null;
 }
 
 export function MobileNav({
@@ -24,6 +27,8 @@ export function MobileNav({
   currentBandName,
   userBands = [],
   onSelectBand,
+  isSaving = false,
+  lastSaved = null,
 }: MobileNavProps) {
   const location = useLocation();
   const { mobileOpen, setMobileOpen } = useSidebar();
@@ -84,8 +89,9 @@ export function MobileNav({
           )}
         </div>
 
-        {/* Theme toggle on right - icon only */}
-        <div className="shrink-0">
+        {/* Save status and theme toggle on right */}
+        <div className="shrink-0 flex items-center gap-2">
+          <SaveStatusIndicator isSaving={isSaving} lastSaved={lastSaved} />
           <ThemeToggle iconOnly />
         </div>
       </div>
