@@ -3,6 +3,7 @@ import { Music } from 'lucide-react';
 import { toast, EmptyState, ConfirmDialog } from '@/components/ui';
 import { StorageService } from '@/services/storageService';
 import { parseLocalDate, getLocalToday, daysBetween } from '@/lib/dateUtils';
+import { useTouchSortable } from '@/hooks/useTouchSortable';
 import {
   SetlistHeader,
   SetlistStats,
@@ -50,35 +51,6 @@ function formatTotalTime(totalSec: number): string {
   return h > 0 ? `${h}h ${m}m` : `${m}m`;
 }
 
-// =============================================================================
-// DROP INDICATOR COMPONENT
-// =============================================================================
-
-interface DropIndicatorProps {
-  index: number;
-  onDragOver: (e: React.DragEvent<HTMLElement>, index: number) => void;
-  onDrop: (e: React.DragEvent<HTMLElement>) => void;
-}
-
-const DropIndicator = memo(function DropIndicator({
-  index,
-  onDragOver,
-  onDrop,
-}: DropIndicatorProps) {
-  return (
-    <div
-      onDragOver={e => onDragOver(e, index)}
-      onDrop={onDrop}
-      className="h-16 mb-3 rounded-xl border-2 border-dashed border-primary/50 bg-primary/5 flex items-center justify-center animate-fade-in"
-    >
-      <span className="text-primary/60 text-sm font-bold uppercase tracking-widest pointer-events-none">
-        Drop Here
-      </span>
-    </div>
-  );
-});
-
-DropIndicator.displayName = 'DropIndicator';
 
 // =============================================================================
 // MAIN COMPONENT
@@ -106,10 +78,6 @@ export const SetlistManager: React.FC<SetlistManagerProps> = memo(function Setli
   isAdmin = false,
 }) {
   const [isAdding, setIsAdding] = useState(false);
-
-  // DnD State
-  const [draggedIndex, setDraggedIndex] = useState<number | null>(null);
-  const [dragOverIndex, setDragOverIndex] = useState<number | null>(null);
 
   // Delete confirmation dialog state
   const [confirmDialog, setConfirmDialog] = useState<{
@@ -170,58 +138,30 @@ export const SetlistManager: React.FC<SetlistManagerProps> = memo(function Setli
     setIsAdding(false);
   }, []);
 
-  // --- Drag and Drop Handlers ---
+  // --- Touch/Mouse/Keyboard Sortable ---
 
-  const handleDragStart = useCallback((e: React.DragEvent<HTMLLIElement>, index: number) => {
-    e.dataTransfer.effectAllowed = 'move';
-    setTimeout(() => {
-      setDraggedIndex(index);
-    }, 0);
-  }, []);
-
-  const handleDragOver = useCallback(
-    (e: React.DragEvent<HTMLElement>, index: number) => {
-      e.preventDefault();
-      e.dataTransfer.dropEffect = 'move';
-
-      if (draggedIndex === null) return;
-      if (dragOverIndex !== index) {
-        setDragOverIndex(index);
-      }
-    },
-    [draggedIndex, dragOverIndex]
-  );
-
-  const handleDragEnd = useCallback(() => {
-    setDraggedIndex(null);
-    setDragOverIndex(null);
-  }, []);
-
-  const handleDrop = useCallback(
-    (e: React.DragEvent<HTMLElement>) => {
-      e.preventDefault();
-
-      if (draggedIndex === null || dragOverIndex === null) {
-        handleDragEnd();
-        return;
-      }
-
+  const handleReorder = useCallback(
+    (fromIndex: number, toIndex: number) => {
       const newSongs = [...songs];
-      const [movedSong] = newSongs.splice(draggedIndex, 1);
-      const targetIndex = dragOverIndex;
-      newSongs.splice(targetIndex, 0, movedSong);
+      const [movedSong] = newSongs.splice(fromIndex, 1);
+      newSongs.splice(toIndex, 0, movedSong);
 
       // Update sortOrder for all songs to persist ordering
-      const songsWithOrder = newSongs.map((song, index) => ({
+      const songsWithOrder = newSongs.map((song, idx) => ({
         ...song,
-        sortOrder: index,
+        sortOrder: idx,
       }));
 
       setSongs(songsWithOrder);
-      handleDragEnd();
     },
-    [draggedIndex, dragOverIndex, songs, setSongs, handleDragEnd]
+    [songs, setSongs]
   );
+
+  const { dragState, getItemProps, getDragHandleProps, getTransformStyle, liveRegionProps, announcement } =
+    useTouchSortable({
+      items: songs,
+      onReorder: handleReorder,
+    });
 
   const handleDeleteSong = useCallback((songId: string) => {
     setConfirmDialog({ isOpen: true, songId });
@@ -303,42 +243,45 @@ export const SetlistManager: React.FC<SetlistManagerProps> = memo(function Setli
             }}
           />
         ) : (
-          <ul className="space-y-3 pb-20">
-            {songs.map((song, index) => {
-              const isDragged = draggedIndex === index;
-              const isOver = dragOverIndex === index;
+          <>
+            <ul className="space-y-3 pb-20" role="list" aria-label="Setlist songs">
+              {songs.map((song, index) => {
+                const itemProps = getItemProps(index);
+                const dragHandleProps = getDragHandleProps(index);
+                const transformStyle = getTransformStyle(index);
+                const isDragging = dragState.isDragging && dragState.draggedIndex === index;
+                const isDropTarget =
+                  dragState.isDragging &&
+                  dragState.targetIndex === index &&
+                  dragState.draggedIndex !== index;
 
-              const showPlaceholderBefore = isOver && draggedIndex !== null && draggedIndex > index;
-              const showPlaceholderAfter = isOver && draggedIndex !== null && draggedIndex < index;
-
-              return (
-                <React.Fragment key={song.id}>
-                  {/* Conditional Placeholder Above */}
-                  {showPlaceholderBefore && (
-                    <DropIndicator index={index} onDragOver={handleDragOver} onDrop={handleDrop} />
-                  )}
-
+                return (
                   <SetlistItem
+                    key={song.id}
                     song={song}
                     index={index}
-                    isDragged={isDragged}
+                    isDragging={isDragging}
+                    isDropTarget={isDropTarget}
+                    transformStyle={transformStyle}
+                    itemRef={itemProps.ref}
+                    dragHandleProps={dragHandleProps}
+                    itemProps={{
+                      onKeyDown: itemProps.onKeyDown,
+                      tabIndex: itemProps.tabIndex,
+                      role: itemProps.role,
+                      'aria-grabbed': itemProps['aria-grabbed'],
+                      'aria-dropeffect': itemProps['aria-dropeffect'],
+                    }}
                     onSelect={onSelectSong}
                     onDelete={handleDeleteSong}
-                    onDragStart={handleDragStart}
-                    onDragOver={handleDragOver}
-                    onDrop={handleDrop}
-                    onDragEnd={handleDragEnd}
                     isAdmin={isAdmin}
                   />
-
-                  {/* Conditional Placeholder Below */}
-                  {showPlaceholderAfter && (
-                    <DropIndicator index={index} onDragOver={handleDragOver} onDrop={handleDrop} />
-                  )}
-                </React.Fragment>
-              );
-            })}
-          </ul>
+                );
+              })}
+            </ul>
+            {/* Screen reader announcements */}
+            <div {...liveRegionProps}>{announcement}</div>
+          </>
         )}
       </div>
 

@@ -21,19 +21,31 @@ export interface SetlistItemProps {
   /** Position index in the setlist (0-based) */
   index: number;
   /** Whether this item is currently being dragged */
-  isDragged: boolean;
+  isDragging: boolean;
+  /** Whether this is the current drop target */
+  isDropTarget: boolean;
+  /** Transform styles for drag animation */
+  transformStyle: React.CSSProperties;
+  /** Ref callback for position tracking */
+  itemRef: (el: HTMLElement | null) => void;
+  /** Props to spread on the drag handle element */
+  dragHandleProps: {
+    onMouseDown: (e: React.MouseEvent) => void;
+    onTouchStart: (e: React.TouchEvent) => void;
+    'aria-label': string;
+  };
+  /** Props to spread on the li element for keyboard/ARIA support */
+  itemProps: {
+    onKeyDown: (e: React.KeyboardEvent) => void;
+    tabIndex: number;
+    role: string;
+    'aria-grabbed': boolean | undefined;
+    'aria-dropeffect': 'move' | 'none';
+  };
   /** Callback when song title is clicked */
   onSelect: (id: string) => void;
   /** Callback when delete button is clicked */
   onDelete: (id: string) => void;
-  /** Callback when drag starts */
-  onDragStart: (e: React.DragEvent<HTMLLIElement>, index: number) => void;
-  /** Callback when dragging over this item */
-  onDragOver: (e: React.DragEvent<HTMLElement>, index: number) => void;
-  /** Callback when item is dropped */
-  onDrop: (e: React.DragEvent<HTMLElement>) => void;
-  /** Callback when drag ends */
-  onDragEnd: () => void;
   /** Whether the current user is a band admin (controls delete button visibility) */
   isAdmin?: boolean;
 }
@@ -55,22 +67,20 @@ export interface SetlistItemProps {
 export const SetlistItem = memo(function SetlistItem({
   song,
   index,
-  isDragged,
+  isDragging,
+  isDropTarget,
+  transformStyle,
+  itemRef,
+  dragHandleProps,
+  itemProps,
   onSelect,
   onDelete,
-  onDragStart,
-  onDragOver,
-  onDrop,
-  onDragEnd,
   isAdmin = false,
 }: SetlistItemProps) {
   return (
     <li
-      draggable
-      onDragStart={e => onDragStart(e, index)}
-      onDragOver={e => onDragOver(e, index)}
-      onDrop={onDrop}
-      onDragEnd={onDragEnd}
+      ref={itemRef}
+      {...itemProps}
       className={cn(
         // Base styles
         'group relative flex items-center gap-4 px-4 py-2.5',
@@ -83,18 +93,22 @@ export const SetlistItem = memo(function SetlistItem({
         // Motion support
         'motion-reduce:transition-none',
         // Drag states
-        isDragged && 'opacity-0 h-0 p-0 border-0 my-0 overflow-hidden',
+        isDragging && 'cursor-grabbing',
+        isDropTarget && 'ring-2 ring-primary ring-offset-2 ring-offset-background',
         // Staggered animation
-        'opacity-0 animate-slide-in-from-bottom animation-forwards'
+        'opacity-0 animate-slide-in-from-bottom animation-forwards',
+        // Focus visible for keyboard navigation
+        'focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-primary focus-visible:ring-offset-2'
       )}
       style={{
         animationDelay: `${index * 50}ms`,
+        ...transformStyle,
       }}
     >
       {/* Drag handle with proper touch target */}
       <div
-        className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground p-2 touch-none -ml-2"
-        aria-label="Drag to reorder"
+        {...dragHandleProps}
+        className="cursor-grab active:cursor-grabbing text-muted-foreground hover:text-foreground p-2 -ml-2 min-h-[44px] min-w-[44px] flex items-center justify-center"
       >
         <GripVertical size={20} />
       </div>
