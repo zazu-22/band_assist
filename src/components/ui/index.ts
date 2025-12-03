@@ -22,3 +22,6 @@ export { VisuallyHidden } from './VisuallyHidden';
 
 // Status components
 export { SaveStatusIndicator } from './SaveStatusIndicator';
+
+// Layout components
+export { ScrollableContainer } from './ScrollableContainer';
