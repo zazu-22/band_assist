@@ -62,7 +62,10 @@ export const ScrollableContainer = memo(function ScrollableContainer({
   const scrollRef = useRef<HTMLDivElement>(null);
   const [showLeftFade, setShowLeftFade] = useState(false);
   const [showRightFade, setShowRightFade] = useState(false);
-  // Track if initial check has been done to avoid re-running on each render
+  // Track if initial check has been done to avoid re-running on each render.
+  // Note: This ref intentionally persists across effect re-runs. If checkScroll
+  // were to change (currently stable due to empty deps), the initial check would
+  // not re-run. This is acceptable since checkScroll only reads from scrollRef.
   const hasInitialized = useRef(false);
 
   const checkScroll = useCallback(() => {
@@ -119,14 +122,10 @@ export const ScrollableContainer = memo(function ScrollableContainer({
         )}
         aria-hidden="true"
       >
-        {showChevrons && (
+        {showChevrons && showLeftFade && (
           <ChevronLeft
             size={16}
-            className={cn(
-              'absolute left-1 top-1/2 -translate-y-1/2 text-muted-foreground',
-              'transition-opacity duration-200',
-              showLeftFade ? 'opacity-70' : 'opacity-0'
-            )}
+            className="absolute left-1 top-1/2 -translate-y-1/2 text-muted-foreground opacity-70"
           />
         )}
       </div>
@@ -149,14 +148,10 @@ export const ScrollableContainer = memo(function ScrollableContainer({
         )}
         aria-hidden="true"
       >
-        {showChevrons && (
+        {showChevrons && showRightFade && (
           <ChevronRight
             size={16}
-            className={cn(
-              'absolute right-1 top-1/2 -translate-y-1/2 text-muted-foreground',
-              'transition-opacity duration-200',
-              showRightFade ? 'opacity-70' : 'opacity-0'
-            )}
+            className="absolute right-1 top-1/2 -translate-y-1/2 text-muted-foreground opacity-70"
           />
         )}
       </div>

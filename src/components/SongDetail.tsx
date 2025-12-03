@@ -400,8 +400,6 @@ export const SongDetail: React.FC<SongDetailProps> = ({
           <ScrollableContainer
             className="flex items-center gap-1"
             fadeClassName="from-card"
-            role="region"
-            aria-label="Song section tabs"
           >
             <div
               className="flex items-center gap-1"

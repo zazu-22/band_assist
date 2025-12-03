@@ -24,4 +24,4 @@ export { VisuallyHidden } from './VisuallyHidden';
 export { SaveStatusIndicator } from './SaveStatusIndicator';
 
 // Layout components
-export { ScrollableContainer } from './ScrollableContainer';
+export { ScrollableContainer, type ScrollableContainerProps } from './ScrollableContainer';
