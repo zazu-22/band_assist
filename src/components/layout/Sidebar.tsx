@@ -72,7 +72,7 @@ export const Sidebar = memo(function Sidebar({
   return (
     <div
       className={cn(
-        'bg-sidebar border-r border-sidebar-border flex flex-col h-screen sticky top-0',
+        'bg-sidebar border-r border-sidebar-border flex flex-col h-dvh sticky top-0',
         'transition-[width] duration-300 ease-in-out motion-reduce:transition-none',
         // In mobile drawer, parent sets w-64; otherwise use responsive width
         isMobileDrawer ? 'w-64' : effectiveCollapsed ? 'w-16' : 'w-20 lg:w-64'
