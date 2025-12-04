@@ -58,41 +58,25 @@ Band Assist uses comprehensive automation to ensure code quality, security, and 
 # View results in GitHub Actions tab
 ```
 
-### 2. Vercel Deployment (`.github/workflows/deploy-vercel.yml`)
+### 2. Vercel Deployment (Native Integration)
+
+Vercel's native GitHub integration handles all deployments automatically.
 
 **Triggers:**
 
-- Push to `main` (production deployment)
-- Push to `development` (preview deployment)
-- Pull requests (preview deployment)
+- Push to `main` → Production deployment
+- Pull requests → Preview deployment
+- Other branches → Skipped (configured via `ignoreCommand` in `vercel.json`)
 
-**Requirements:**
-Set these secrets in GitHub:
+**Configuration:**
 
-- `VERCEL_TOKEN`: Vercel authentication token
-- `VERCEL_ORG_ID`: Your Vercel organization ID
-- `VERCEL_PROJECT_ID`: Your Vercel project ID
+The `vercel.json` file includes an `ignoreCommand` that only builds for:
+- `main` branch (production)
+- Pull requests (previews)
 
-**Features:**
+This optimizes build minutes by skipping non-PR branch pushes.
 
-- Automatic preview deployments for PRs
-- Production deployments on main branch
-- Deployment URL posted as PR comment
-
-**Setup:**
-
-```bash
-# Install Vercel CLI
-npm install -g vercel
-
-# Login and link project
-vercel login
-vercel link
-
-# Get your tokens
-vercel whoami  # Organization info
-# Add secrets to GitHub: Settings > Secrets and variables > Actions
-```
+**No GitHub Actions workflow needed** - Vercel's native integration is more efficient.
 
 ### 3. Dependency Updates (`.github/workflows/dependency-update.yml`)
 
@@ -167,37 +151,47 @@ schedule:
 - GitHub Security tab > Code scanning alerts
 - Actions tab > Workflow runs > Artifacts
 
-### 5. Release Workflow (`.github/workflows/release.yml`)
+### 5. Automated Versioning (release-please)
 
-**Triggers:**
+**Workflows:**
 
-- Git tags matching `v*.*.*` (e.g., v1.0.0)
-- Manual trigger with version input
+- `.github/workflows/release-please.yml` - Creates Release PRs automatically
+- `.github/workflows/release.yml` - Runs post-release actions
 
-**Process:**
+**How It Works:**
 
-1. Runs tests and builds
-2. Generates categorized changelog
-3. Creates GitHub release
-4. Updates documentation
-5. Deploys to production
+1. Push commits to `main` using conventional commit format
+2. release-please analyzes commits and creates/updates a Release PR
+3. Release PR includes version bump and generated changelog
+4. Merge the Release PR to trigger release creation
+5. Draft GitHub Release is created (review and publish manually)
+
+**Automatic Version Bumps:**
+
+| Commit Type | Version Bump |
+|-------------|--------------|
+| `feat:` | Minor (0.1.0 → 0.2.0) |
+| `fix:` | Patch (0.1.0 → 0.1.1) |
+| `feat!:` or `BREAKING CHANGE:` | Major (0.x → 1.0) |
+| `docs:`, `chore:`, etc. | No release |
 
 **Creating a Release:**
 
 ```bash
-# Option 1: Create tag locally
-git tag v1.0.0
-git push origin v1.0.0
+# Just push commits with conventional format
+git commit -m "feat: add new feature"
+git push origin main
 
-# Option 2: Use GitHub Actions UI
-# Actions tab > Release workflow > Run workflow > Enter version
+# release-please will automatically create a Release PR
+# Merge the PR when ready to release
 ```
 
-**Versioning Convention:**
+**Manual Release (Emergency):**
 
-- `v1.0.0` - Production release
-- `v1.0.0-beta.1` - Beta release (marked as pre-release)
-- `v1.0.0-alpha.1` - Alpha release (marked as pre-release)
+```bash
+# Use workflow_dispatch in GitHub Actions UI
+# Actions tab > Release workflow > Run workflow > Enter version
+```
 
 ## Pre-commit Hooks
 
@@ -328,57 +322,36 @@ npm audit fix --force
 
 ## Release Process
 
-### Semantic Versioning
+### Automated via release-please
 
-We follow [SemVer](https://semver.org/):
+Releases are fully automated using release-please. No manual version bumping or tagging required.
 
-- **MAJOR** (1.0.0): Breaking changes
-- **MINOR** (0.1.0): New features (backward compatible)
-- **PATCH** (0.0.1): Bug fixes
+### Workflow
 
-### Release Checklist
+1. **Develop Features**
+   - Use conventional commits: `feat:`, `fix:`, `docs:`, etc.
+   - Push to `main` (or merge PRs to `main`)
 
-1. **Prepare Release**
+2. **Review Release PR**
+   - release-please automatically creates/updates a Release PR
+   - PR contains version bump and generated CHANGELOG
+   - Review the changes and approve
 
-   ```bash
-   # Ensure development branch is up to date
-   git checkout development
-   git pull origin development
+3. **Merge to Release**
+   - Merge the Release PR
+   - release-please creates a git tag and draft GitHub Release
+   - Vercel automatically deploys the new version
 
-   # Run tests locally
-   npm run typecheck
-   npm run build
-   ```
+4. **Publish Release** (optional)
+   - Go to GitHub Releases
+   - Find the draft release
+   - Click "Publish" to make it official
 
-2. **Create Release Branch**
+### Version Display
 
-   ```bash
-   git checkout -b release/v1.0.0
-   ```
-
-3. **Update Version**
-   - Version is in `package.json` (currently 0.1.0)
-   - Update CHANGELOG if maintaining one manually
-
-4. **Create PR to Main**
-   - Create PR from release branch to main
-   - Wait for CI to pass
-   - Get review approval
-
-5. **Trigger Release**
-
-   ```bash
-   # After PR is merged
-   git checkout main
-   git pull origin main
-   git tag v1.0.0
-   git push origin v1.0.0
-   ```
-
-6. **Verify Deployment**
-   - Check GitHub Release was created
-   - Verify production deployment
-   - Test production site
+The app version is displayed in Settings page. It updates automatically when:
+- Release PR is merged (version in `package.json` changes)
+- Vercel rebuilds and deploys
 
 ## Development Setup
 
@@ -542,5 +515,5 @@ npm run build
 
 ---
 
-**Last Updated:** 2025-11-23
+**Last Updated:** 2025-12-03
 **Maintained by:** Band Assist Team
