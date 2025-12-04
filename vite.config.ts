@@ -26,6 +26,7 @@ export default defineConfig(() => {
       },
     },
     define: {
+      // Version is read at build time; updates require rebuild/redeploy
       __APP_VERSION__: JSON.stringify(pkg.version),
     },
   };
