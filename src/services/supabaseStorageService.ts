@@ -482,7 +482,7 @@ export class SupabaseStorageService implements IStorageService {
    * @param file - File blob to upload
    * @param songId - Song ID for organizing files
    * @param fileType - 'chart' or 'audio'
-   * @returns Storage URL or null on error
+   * @returns Object with url and storagePath, or null on error
    */
   async uploadFile(
     file: Blob,
@@ -490,7 +490,7 @@ export class SupabaseStorageService implements IStorageService {
     mimeType: string,
     songId: string,
     fileType: 'chart' | 'audio'
-  ): Promise<string | null> {
+  ): Promise<{ url: string; storagePath: string } | null> {
     const supabase = getSupabaseClient();
     if (!supabase) {
       throw new Error('Supabase is not configured');
@@ -541,7 +541,9 @@ export class SupabaseStorageService implements IStorageService {
 
       // Generate Edge Function URL with file access token
       const edgeFunctionUrl = await this.regenerateSignedUrl(storagePath);
-      return edgeFunctionUrl;
+      if (!edgeFunctionUrl) return null;
+
+      return { url: edgeFunctionUrl, storagePath };
     } catch (error) {
       console.error('Error uploading file:', error);
       return null;
@@ -713,12 +715,10 @@ export class SupabaseStorageService implements IStorageService {
     songId: string
   ): Promise<{ url: string; storagePath: string; storageBase64?: string } | null> {
     // Upload to Storage
-    const url = await this.uploadFile(file, fileName, mimeType, songId, 'chart');
-    if (!url) return null;
+    const result = await this.uploadFile(file, fileName, mimeType, songId, 'chart');
+    if (!result) return null;
 
-    // Extract storage path from URL
-    const urlParts = url.split('/band-files/');
-    const storagePath = urlParts.length > 1 ? urlParts[1].split('?')[0] : '';
+    const { url, storagePath } = result;
 
     // For Guitar Pro files, also generate base64 for AlphaTab
     const isGp = /\.(gp|gp3|gp4|gp5|gpx)$/i.test(fileName);
@@ -754,15 +754,8 @@ export class SupabaseStorageService implements IStorageService {
     mimeType: string,
     songId: string
   ): Promise<{ url: string; storagePath: string } | null> {
-    // Upload to Storage
-    const url = await this.uploadFile(file, fileName, mimeType, songId, 'audio');
-    if (!url) return null;
-
-    // Extract storage path from URL
-    const urlParts = url.split('/band-files/');
-    const storagePath = urlParts.length > 1 ? urlParts[1].split('?')[0] : '';
-
-    return { url, storagePath };
+    // Upload to Storage and get both url and storagePath
+    return this.uploadFile(file, fileName, mimeType, songId, 'audio');
   }
 
   /**
@@ -770,18 +763,23 @@ export class SupabaseStorageService implements IStorageService {
    */
   async deleteFile(storageUrl: string): Promise<void> {
     const supabase = getSupabaseClient();
-    if (!supabase) return;
+    if (!supabase) {
+      throw new Error('Supabase is not configured');
+    }
 
     if (!this.currentBandId) {
       throw new Error('No band selected. Call setCurrentBand() first.');
     }
 
     try {
-      // Extract storage path from URL
-      const urlParts = storageUrl.split('/band-files/');
-      if (urlParts.length < 2) return;
+      // Extract storage path from Edge Function URL
+      // Format: https://.../functions/v1/serve-file-inline?path=...&token=...
+      const url = new URL(storageUrl);
+      const path = url.searchParams.get('path');
 
-      const path = urlParts[1].split('?')[0]; // Remove query params
+      if (!path) {
+        throw new Error('Invalid storage URL: missing path parameter');
+      }
 
       // Security: Verify the path belongs to current band
       // Expected path format: bands/{band_id}/charts/{song_id}/{file_id}.ext
@@ -803,7 +801,7 @@ export class SupabaseStorageService implements IStorageService {
       await supabase.from('files').delete().eq('storage_path', path);
     } catch (error) {
       console.error('Error deleting file:', error);
-      throw error; // Re-throw instead of silently swallowing
+      throw error;
     }
   }
 

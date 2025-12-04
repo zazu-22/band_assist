@@ -206,7 +206,8 @@ export class MigrationService {
     }
 
     const service = supabaseStorageService as SupabaseStorageService;
-    return service.uploadFile(blobData.blob, fileName, blobData.mimeType, songId, fileType);
+    const result = await service.uploadFile(blobData.blob, fileName, blobData.mimeType, songId, fileType);
+    return result?.url ?? null;
   }
 
   /**

@@ -77,17 +77,6 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Check token hasn't been used (single-use tokens)
-    if (tokenData.used_at) {
-      return new Response(
-        JSON.stringify({ error: 'Token has already been used' }),
-        {
-          status: 401,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
-        }
-      )
-    }
-
     // Verify the storage path matches the token's path (path-based authorization)
     if (storagePath !== tokenData.storage_path) {
       return new Response(
@@ -123,11 +112,26 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Mark token as used (single-use)
-    await supabase
+    // Atomically mark token as used (single-use enforcement)
+    // Uses compare-and-swap to prevent race conditions: only updates if used_at is still NULL
+    const { data: updateResult, error: updateError } = await supabase
       .from('file_access_tokens')
       .update({ used_at: new Date().toISOString() })
       .eq('id', tokenData.id)
+      .is('used_at', null)  // Only update if still unused (atomic CAS)
+      .select()
+      .single()
+
+    if (updateError || !updateResult) {
+      // Token was already used by another concurrent request
+      return new Response(
+        JSON.stringify({ error: 'Token has already been used' }),
+        {
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      )
+    }
 
     // Download file from storage
     const { data, error } = await supabase.storage
