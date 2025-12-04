@@ -13,10 +13,13 @@ const TOKEN_REUSE_GRACE_PERIOD_MS = 30 * 1000
 // Falls back to '*' for development/testing (not recommended for production)
 const getAllowedOrigin = (requestOrigin: string | null): string => {
   const allowedOriginsEnv = Deno.env.get('ALLOWED_ORIGINS')
+  const isDevelopment = Deno.env.get('DEVELOPMENT') === 'true'
 
   if (!allowedOriginsEnv) {
     // No restriction configured - allow all origins (development mode)
-    console.warn('ALLOWED_ORIGINS not set - allowing all origins. Set ALLOWED_ORIGINS in production.')
+    if (!isDevelopment) {
+      console.warn('ALLOWED_ORIGINS not set - allowing all origins. Set ALLOWED_ORIGINS in production.')
+    }
     return '*'
   }
 
@@ -110,9 +113,10 @@ Deno.serve(async (req) => {
     }
 
     // Check token hasn't expired
-    const now = new Date()
+    // Capture fresh timestamp for accurate expiration check
+    const expiryCheckTime = new Date()
     const expiresAt = new Date(tokenData.expires_at)
-    if (now > expiresAt) {
+    if (expiryCheckTime > expiresAt) {
       return new Response(
         JSON.stringify({ error: 'Token has expired' }),
         {
@@ -161,7 +165,9 @@ Deno.serve(async (req) => {
     if (tokenData.used_at) {
       // Allow reuse within grace period for PDF viewer reloads
       const usedAt = new Date(tokenData.used_at)
-      if (now.getTime() - usedAt.getTime() > TOKEN_REUSE_GRACE_PERIOD_MS) {
+      // Capture fresh timestamp for accurate grace period check
+      const gracePeriodCheckNow = new Date()
+      if (gracePeriodCheckNow.getTime() - usedAt.getTime() > TOKEN_REUSE_GRACE_PERIOD_MS) {
         return new Response(
           JSON.stringify({ error: 'Token has already been used' }),
           {

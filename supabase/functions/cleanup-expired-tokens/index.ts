@@ -5,8 +5,9 @@ import { createClient } from 'jsr:@supabase/supabase-js@2'
 
 Deno.serve(async (req) => {
   try {
-    // Verify this is a scheduled invocation (not a manual HTTP call)
-    // In production, you should add authentication here
+    // Verify authentication
+    // Supabase Edge Functions enforce JWT verification when verify_jwt=true in config.toml
+    // This requires a valid Bearer token (service role key for scheduled invocations)
     const authHeader = req.headers.get('Authorization')
     if (!authHeader?.startsWith('Bearer ')) {
       return new Response(

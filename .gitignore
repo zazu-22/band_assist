@@ -5,6 +5,7 @@
 supabase/.temp
 test-credentials.json
 .test-credentials
+.npmrc
 
 # Logs
 logs
