@@ -539,25 +539,58 @@ export class SupabaseStorageService implements IStorageService {
         console.warn('Failed to save file metadata:', metadataError);
       }
 
-      // Generate Edge Function URL for inline display with auth token
-      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
-      if (!supabaseUrl) {
-        console.error('VITE_SUPABASE_URL not configured');
-        return null;
-      }
-
-      const { data: { session } } = await supabase.auth.getSession();
-      const accessToken = session?.access_token;
-
-      if (!accessToken) {
-        console.error('No active session for file upload');
-        return null;
-      }
-
-      const edgeFunctionUrl = `${supabaseUrl}/functions/v1/serve-file-inline?path=${encodeURIComponent(storagePath)}&token=${encodeURIComponent(accessToken)}`;
+      // Generate Edge Function URL with file access token
+      const edgeFunctionUrl = await this.regenerateSignedUrl(storagePath);
       return edgeFunctionUrl;
     } catch (error) {
       console.error('Error uploading file:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Generate a short-lived, single-use file access token
+   * @param storagePath - Path in the band-files bucket
+   * @param userId - User ID who will access the file
+   * @param bandId - Band ID that owns the file
+   * @returns File access token (random UUID)
+   */
+  private async generateFileAccessToken(
+    storagePath: string,
+    userId: string,
+    bandId: string
+  ): Promise<string | null> {
+    try {
+      const supabase = getSupabaseClient();
+      if (!supabase) {
+        console.error('[generateFileAccessToken] No Supabase client available');
+        return null;
+      }
+
+      // Generate random token
+      const token = crypto.randomUUID();
+
+      // Token expires in 5 minutes
+      const expiresAt = new Date();
+      expiresAt.setMinutes(expiresAt.getMinutes() + 5);
+
+      // Insert token into database
+      const { error } = await supabase.from('file_access_tokens').insert({
+        token,
+        user_id: userId,
+        storage_path: storagePath,
+        band_id: bandId,
+        expires_at: expiresAt.toISOString(),
+      });
+
+      if (error) {
+        console.error('[generateFileAccessToken] Failed to create token:', error);
+        return null;
+      }
+
+      return token;
+    } catch (error) {
+      console.error('[generateFileAccessToken] Exception:', error);
       return null;
     }
   }
@@ -567,9 +600,10 @@ export class SupabaseStorageService implements IStorageService {
    * The Edge Function serves files with Content-Disposition: inline header
    * which fixes Firefox PDF viewer issue
    * @param storagePath - Path in the band-files bucket
+   * @param userId - Optional user ID (if not provided, will get from session)
    * @returns Edge Function URL that serves file inline
    */
-  async regenerateSignedUrl(storagePath: string): Promise<string | null> {
+  async regenerateSignedUrl(storagePath: string, userId?: string): Promise<string | null> {
     try {
       // Get Supabase URL from environment
       const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
@@ -578,24 +612,44 @@ export class SupabaseStorageService implements IStorageService {
         return null;
       }
 
-      // Get user's auth token
       const supabase = getSupabaseClient();
       if (!supabase) {
         console.error('[regenerateSignedUrl] No Supabase client available');
         return null;
       }
 
-      const { data: { session } } = await supabase.auth.getSession();
-      const accessToken = session?.access_token;
+      // Get user ID if not provided
+      let currentUserId = userId;
+      if (!currentUserId) {
+        const { data: { session } } = await supabase.auth.getSession();
+        currentUserId = session?.user?.id;
+      }
 
-      if (!accessToken) {
-        console.error('[regenerateSignedUrl] No active session');
+      if (!currentUserId) {
+        console.error('[regenerateSignedUrl] No user ID available');
         return null;
       }
 
-      // Generate Edge Function URL with auth token
+      if (!this.currentBandId) {
+        console.error('[regenerateSignedUrl] No band selected');
+        return null;
+      }
+
+      // Generate short-lived file access token (5 minutes, single-use)
+      const fileToken = await this.generateFileAccessToken(
+        storagePath,
+        currentUserId,
+        this.currentBandId
+      );
+
+      if (!fileToken) {
+        console.error('[regenerateSignedUrl] Failed to generate file access token');
+        return null;
+      }
+
+      // Generate Edge Function URL with file access token
       // Format: https://your-project.supabase.co/functions/v1/serve-file-inline?path=...&token=...
-      const edgeFunctionUrl = `${supabaseUrl}/functions/v1/serve-file-inline?path=${encodeURIComponent(storagePath)}&token=${encodeURIComponent(accessToken)}`;
+      const edgeFunctionUrl = `${supabaseUrl}/functions/v1/serve-file-inline?path=${encodeURIComponent(storagePath)}&token=${encodeURIComponent(fileToken)}`;
 
       return edgeFunctionUrl;
     } catch (error) {
@@ -613,11 +667,27 @@ export class SupabaseStorageService implements IStorageService {
   private async refreshChartUrls(charts: SongChart[]): Promise<SongChart[]> {
     if (!charts || charts.length === 0) return charts;
 
+    // Performance optimization: Get session once instead of for each chart
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      console.warn('[refreshChartUrls] No Supabase client available');
+      return charts;
+    }
+
+    const { data: { session } } = await supabase.auth.getSession();
+    const userId = session?.user?.id;
+
+    if (!userId) {
+      console.warn('[refreshChartUrls] No active session');
+      return charts;
+    }
+
     const refreshedCharts = await Promise.all(
       charts.map(async (chart) => {
         // Only refresh if chart has a storagePath and it's a file type (PDF, IMAGE, GP)
         if (chart.storagePath && (chart.type === 'PDF' || chart.type === 'IMAGE' || chart.type === 'GP')) {
-          const freshUrl = await this.regenerateSignedUrl(chart.storagePath);
+          // Pass userId to avoid redundant session lookups
+          const freshUrl = await this.regenerateSignedUrl(chart.storagePath, userId);
           if (freshUrl) {
             return { ...chart, url: freshUrl };
           } else {

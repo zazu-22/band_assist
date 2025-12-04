@@ -29,7 +29,7 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Get user's auth token from URL parameter (for iframe compatibility)
+    // Get file access token from URL parameter (for iframe compatibility)
     const tokenParam = url.searchParams.get('token')
     if (!tokenParam) {
       return new Response(
@@ -41,15 +41,20 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Validate the user's token first
+    // Use service role to validate token and access storage
     const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-    const supabaseAnonKey = Deno.env.get('SUPABASE_ANON_KEY')!
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
-    // Verify the JWT token
-    const authClient = createClient(supabaseUrl, supabaseAnonKey)
-    const { data: { user }, error: authError } = await authClient.auth.getUser(tokenParam)
+    // Validate file access token
+    // This token is short-lived (5 min) and single-use, providing better security than JWT in URL
+    const { data: tokenData, error: tokenError } = await supabase
+      .from('file_access_tokens')
+      .select('id, user_id, storage_path, band_id, expires_at, used_at')
+      .eq('token', tokenParam)
+      .single()
 
-    if (authError || !user) {
+    if (tokenError || !tokenData) {
       return new Response(
         JSON.stringify({ error: 'Invalid or expired token' }),
         {
@@ -59,10 +64,70 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Use service role to access storage (for inline Content-Disposition)
-    // RLS is enforced because we validated the user above
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
-    const supabase = createClient(supabaseUrl, supabaseServiceKey)
+    // Check token hasn't expired
+    const now = new Date()
+    const expiresAt = new Date(tokenData.expires_at)
+    if (now > expiresAt) {
+      return new Response(
+        JSON.stringify({ error: 'Token has expired' }),
+        {
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      )
+    }
+
+    // Check token hasn't been used (single-use tokens)
+    if (tokenData.used_at) {
+      return new Response(
+        JSON.stringify({ error: 'Token has already been used' }),
+        {
+          status: 401,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      )
+    }
+
+    // Verify the storage path matches the token's path (path-based authorization)
+    if (storagePath !== tokenData.storage_path) {
+      return new Response(
+        JSON.stringify({ error: 'Token is not valid for this file' }),
+        {
+          status: 403,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      )
+    }
+
+    // Verify user has access to this band
+    // Storage paths are in format: bands/{band_id}/charts/{song_id}/{file_id}.ext
+    const pathSegments = storagePath.split('/')
+    if (pathSegments.length < 2 || pathSegments[0] !== 'bands') {
+      return new Response(
+        JSON.stringify({ error: 'Invalid storage path format' }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      )
+    }
+
+    const pathBandId = pathSegments[1]
+    if (pathBandId !== tokenData.band_id) {
+      return new Response(
+        JSON.stringify({ error: 'File does not belong to the authorized band' }),
+        {
+          status: 403,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      )
+    }
+
+    // Mark token as used (single-use)
+    await supabase
+      .from('file_access_tokens')
+      .update({ used_at: new Date().toISOString() })
+      .eq('id', tokenData.id)
 
     // Download file from storage
     const { data, error } = await supabase.storage
