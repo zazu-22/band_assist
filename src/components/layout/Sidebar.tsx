@@ -203,7 +203,13 @@ export const Sidebar = memo(function Sidebar({
       </ScrollArea>
 
       {/* Footer */}
-      <div className="px-3 py-4 border-t border-sidebar-border space-y-2">
+      <div
+        className={cn(
+          'px-3 py-4 border-t border-sidebar-border space-y-2',
+          // Add safe area padding on mobile for iOS Safari
+          isMobileDrawer && 'pb-safe'
+        )}
+      >
         {/* Collapse toggle - desktop only, hidden in mobile drawer */}
         {!isMobileDrawer && (
           <Button
