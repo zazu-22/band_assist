@@ -3,6 +3,7 @@ import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
 import { alphaTab } from '@coderline/alphatab/vite';
+import pkg from './package.json';
 
 export default defineConfig(() => {
   return {
@@ -23,6 +24,10 @@ export default defineConfig(() => {
       alias: {
         '@': path.resolve(__dirname, './src'),
       },
+    },
+    define: {
+      // Version is read at build time; updates require rebuild/redeploy
+      __APP_VERSION__: JSON.stringify(pkg.version),
     },
   };
 });
