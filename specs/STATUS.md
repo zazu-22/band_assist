@@ -11,8 +11,8 @@
 | Status | Count | Description |
 |--------|-------|-------------|
 | 🔴 Active | 0 | Currently being implemented |
-| 🟢 Done | 16 | Completed and merged |
-| 🟡 Pending | 2 | Queued for implementation (in sequence order) |
+| 🟢 Done | 17 | Completed and merged |
+| 🟡 Pending | 1 | Queued for implementation (in sequence order) |
 | ⚪ Backlog | 13 | Planned but not yet prioritized |
 
 ---
@@ -33,15 +33,15 @@ Specs queued for implementation **in priority order**. Work through these sequen
 
 | Seq | Spec | Type | Effort | Notes |
 |-----|------|------|--------|-------|
-| 1 | [infra-automated-versioning](pending/infra-automated-versioning.md) | Infrastructure | Medium | Release-please for semantic versioning |
-| 2 | [feat-user-member-linking-phase-1](pending/feat-user-member-linking-phase-1.md) | Feature | Large | Foundation for personalization features |
+| 1 | [feat-user-member-linking-phase-1](pending/feat-user-member-linking-phase-1.md) | Feature | Large | Foundation for personalization features |
 
 ---
 
-## 🟢 Done (16)
+## 🟢 Done (17)
 
 | Spec | Type | Priority | Completed |
 |------|------|----------|-----------|
+| [infra-automated-versioning](done/infra-automated-versioning.md) | Infrastructure | Medium | 2025-12-03 |
 | [perf-context-splitting](done/perf-context-splitting.md) | Performance | Medium | 2025-12-02 |
 | [perf-auto-save-debouncing](done/perf-auto-save-debouncing.md) | Performance | High | Dec 2025 |
 | [feat-remove-ai-gemini-features](done/feat-remove-ai-gemini-features.md) | Cleanup | High | Dec 2025 |
@@ -107,6 +107,7 @@ Specs queued for implementation **in priority order**. Work through these sequen
 
 | Date | Spec | Change |
 |------|------|--------|
+| 2025-12-03 | infra-automated-versioning | ✅ Completed |
 | 2025-12-03 | perf-context-splitting | ✅ Completed |
 | Dec 2025 | feat-lead-sheet-generation | ➕ Added to backlog |
 | Dec 2025 | perf-auto-save-debouncing | ✅ Completed |

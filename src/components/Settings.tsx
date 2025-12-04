@@ -543,6 +543,13 @@ export const Settings: React.FC<SettingsProps> = memo(function Settings({
         </TabsContent>
       </Tabs>
 
+      {/* Version Footer */}
+      <div className="mt-8 pt-4 border-t border-border">
+        <p className="text-xs text-muted-foreground text-center font-mono">
+          Band Assist v{__APP_VERSION__}
+        </p>
+      </div>
+
       {/* Confirm Dialog */}
       <ConfirmDialog
         isOpen={confirmDialog.isOpen}
