@@ -52,3 +52,7 @@ public/soundfont/
 
 # Don't ignore spec commands
 !.claude/commands/spec
+
+# Simple Task Master - User tasks are git-ignored
+.simple-task-master/tasks/
+.simple-task-master/lock
