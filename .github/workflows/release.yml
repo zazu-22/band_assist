@@ -1,3 +1,12 @@
+# Release Workflow
+#
+# Triggers:
+# - Automatically when release-please publishes a GitHub Release
+# - Manually via workflow_dispatch (fallback for manual releases)
+#
+# Note: For manual releases, this must be run from the main branch.
+# Release-please is the preferred method for creating releases.
+
 name: Release
 
 on:
@@ -14,6 +23,8 @@ jobs:
   create-release:
     name: Create Release
     runs-on: ubuntu-latest
+    # Ensure workflow_dispatch only runs on main to prevent race conditions
+    if: github.event_name == 'release' || github.ref == 'refs/heads/main'
     permissions:
       contents: write
       pull-requests: write

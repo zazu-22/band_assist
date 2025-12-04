@@ -1,3 +1,16 @@
+# Release Please - Automated Versioning
+#
+# This workflow automates versioning and changelog generation using release-please.
+#
+# Flow:
+# 1. On push to main, release-please analyzes commits since last release
+# 2. If releasable changes found, creates/updates a "Release PR" with version bump
+# 3. When Release PR is merged, release-please creates a GitHub Release (as draft)
+# 4. The GitHub Release triggers release.yml workflow (on: release: [published])
+#    to run builds and production deployment
+#
+# Manual releases are still possible via release.yml's workflow_dispatch
+
 name: Release Please
 
 on:
