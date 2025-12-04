@@ -48,7 +48,7 @@ export function AppShell({
   return (
     <TooltipProvider>
       <SkipLink />
-      <div className="flex h-screen bg-background">
+      <div className="flex h-dvh bg-background">
         {/* Desktop Sidebar */}
         {isDesktop && (
           <Sidebar
