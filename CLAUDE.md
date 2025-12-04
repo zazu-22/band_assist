@@ -66,3 +66,36 @@ setSongs(songs.map(s => (s.id === id ? updated : s)));
 ## Testing
 
 Browser automation reads credentials from `test-credentials.json`. Test data isolated in dedicated band (`npm run seed:test`).
+
+## Git Conventions
+
+### Conventional Commits (Required)
+
+This project uses [Conventional Commits](https://www.conventionalcommits.org/) for automated versioning via release-please.
+
+**Format:** `type(scope?): subject`
+
+| Type | Version Bump | Use For |
+|------|--------------|---------|
+| `feat:` | Minor (0.1.0 → 0.2.0) | New features |
+| `fix:` | Patch (0.1.0 → 0.1.1) | Bug fixes |
+| `feat!:` or `BREAKING CHANGE:` | Major (0.x → 1.0) | Breaking changes |
+| `docs:`, `chore:`, `refactor:`, `test:`, `ci:`, `perf:`, `build:` | None | No release triggered |
+
+**Examples:**
+```
+feat(player): add loop section functionality
+fix: resolve audio playback on iOS Safari
+docs: update deployment guide
+chore: upgrade dependencies
+```
+
+Commits are validated by commitlint via husky hook. Invalid commits will be rejected.
+
+### Automated Versioning
+
+When commits are pushed to `main`:
+1. release-please analyzes commit messages
+2. Creates/updates a Release PR with changelog
+3. Merging the Release PR bumps version and creates GitHub Release
+4. Version displays in Settings page (`__APP_VERSION__`)
