@@ -58,6 +58,8 @@ This prevents users from accessing files belonging to other bands, even if they 
 
 ## Configuration
 
+### Edge Function Configuration
+
 In `supabase/config.toml`:
 
 ```toml
@@ -67,6 +69,29 @@ verify_jwt = false  # We use custom file access tokens instead
 ```
 
 **Important**: `verify_jwt` is set to `false` because this function validates custom file access tokens, not JWT tokens.
+
+### CORS Configuration
+
+The function supports configurable CORS origins via the `ALLOWED_ORIGINS` environment variable.
+
+**Development** (allows all origins):
+```bash
+# No configuration needed - defaults to '*'
+```
+
+**Production** (recommended):
+```bash
+# Set in Supabase Dashboard > Edge Functions > serve-file-inline > Settings
+ALLOWED_ORIGINS=https://yourdomain.com,https://app.yourdomain.com
+```
+
+Multiple origins can be specified as a comma-separated list. The function will:
+1. Check the request's `Origin` header
+2. Allow the request if the origin is in the allowed list
+3. Return the matching origin in the `Access-Control-Allow-Origin` header
+4. Fall back to the first allowed origin if no match (browser will block)
+
+**Security Note**: Without `ALLOWED_ORIGINS` set, the function allows all origins (`*`). This is acceptable for development but should be restricted in production to prevent unauthorized domains from accessing your files.
 
 ## Token Cleanup
 

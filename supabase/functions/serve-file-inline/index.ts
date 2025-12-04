@@ -7,12 +7,41 @@ import { createClient } from 'jsr:@supabase/supabase-js@2'
 // PDF viewers may pre-fetch, reload on zoom/scroll, or re-request for print dialog
 const TOKEN_REUSE_GRACE_PERIOD_MS = 30 * 1000
 
-const corsHeaders = {
-  'Access-Control-Allow-Origin': '*',
-  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+// CORS configuration
+// In production, set ALLOWED_ORIGINS environment variable to your app domain(s)
+// Example: ALLOWED_ORIGINS=https://yourdomain.com,https://app.yourdomain.com
+// Falls back to '*' for development/testing (not recommended for production)
+const getAllowedOrigin = (requestOrigin: string | null): string => {
+  const allowedOriginsEnv = Deno.env.get('ALLOWED_ORIGINS')
+
+  if (!allowedOriginsEnv) {
+    // No restriction configured - allow all origins (development mode)
+    console.warn('ALLOWED_ORIGINS not set - allowing all origins. Set ALLOWED_ORIGINS in production.')
+    return '*'
+  }
+
+  const allowedOrigins = allowedOriginsEnv.split(',').map(origin => origin.trim())
+
+  // Check if request origin is in allowed list
+  if (requestOrigin && allowedOrigins.includes(requestOrigin)) {
+    return requestOrigin
+  }
+
+  // If origin doesn't match, return first allowed origin (or deny with empty string)
+  // Browsers will block requests without matching CORS origin
+  return allowedOrigins[0] || ''
 }
 
+const getCorsHeaders = (requestOrigin: string | null) => ({
+  'Access-Control-Allow-Origin': getAllowedOrigin(requestOrigin),
+  'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
+})
+
 Deno.serve(async (req) => {
+  // Get CORS headers based on request origin
+  const requestOrigin = req.headers.get('Origin')
+  const corsHeaders = getCorsHeaders(requestOrigin)
+
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response('ok', { headers: corsHeaders })
@@ -163,7 +192,9 @@ Deno.serve(async (req) => {
 
         if (recheckToken?.used_at) {
           const usedAt = new Date(recheckToken.used_at)
-          if (now.getTime() - usedAt.getTime() > TOKEN_REUSE_GRACE_PERIOD_MS) {
+          // Capture fresh timestamp for accurate grace period check
+          const recheckNow = new Date()
+          if (recheckNow.getTime() - usedAt.getTime() > TOKEN_REUSE_GRACE_PERIOD_MS) {
             return new Response(
               JSON.stringify({ error: 'Token has already been used' }),
               {

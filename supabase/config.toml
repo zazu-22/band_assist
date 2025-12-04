@@ -12,3 +12,9 @@ entrypoint = "./functions/serve-file-inline/index.ts"
 # Specifies static files to be bundled with the function. Supports glob patterns.
 # For example, if you want to serve static HTML pages in your function:
 # static_files = [ "./functions/serve-file-inline/*.html" ]
+
+[functions.cleanup-expired-tokens]
+enabled = true
+verify_jwt = true
+import_map = "./functions/cleanup-expired-tokens/deno.json"
+entrypoint = "./functions/cleanup-expired-tokens/index.ts"

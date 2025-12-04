@@ -684,21 +684,52 @@ export class SupabaseStorageService implements IStorageService {
       return charts;
     }
 
+    let failureCount = 0;
     const refreshedCharts = await Promise.all(
       charts.map(async (chart) => {
         // Only refresh if chart has a storagePath and it's a file type (PDF, IMAGE, GP)
         if (chart.storagePath && (chart.type === 'PDF' || chart.type === 'IMAGE' || chart.type === 'GP')) {
-          // Pass userId to avoid redundant session lookups
-          const freshUrl = await this.regenerateSignedUrl(chart.storagePath, userId);
-          if (freshUrl) {
-            return { ...chart, url: freshUrl };
-          } else {
-            console.warn('[refreshChartUrls] Failed to generate fresh URL for chart:', chart.name);
+          try {
+            // Pass userId to avoid redundant session lookups
+            const freshUrl = await this.regenerateSignedUrl(chart.storagePath, userId);
+            if (freshUrl) {
+              return { ...chart, url: freshUrl };
+            } else {
+              failureCount++;
+              console.error(
+                '[refreshChartUrls] Failed to generate fresh URL for chart:',
+                chart.name,
+                'storagePath:',
+                chart.storagePath,
+                '- Chart will use stale URL which may fail to load'
+              );
+              // Keep the old URL for graceful degradation
+              // The chart may still work if the old URL hasn't expired yet
+              return chart;
+            }
+          } catch (error) {
+            failureCount++;
+            console.error(
+              '[refreshChartUrls] Exception while refreshing URL for chart:',
+              chart.name,
+              'Error:',
+              error instanceof Error ? error.message : String(error)
+            );
+            // Return chart with old URL for graceful degradation
+            return chart;
           }
         }
         return chart;
       })
     );
+
+    // Log summary if there were failures
+    if (failureCount > 0) {
+      console.error(
+        `[refreshChartUrls] Failed to refresh ${failureCount} out of ${charts.length} chart URLs. ` +
+        `Charts with stale URLs may fail to load. Check console for details.`
+      );
+    }
 
     return refreshedCharts;
   }
