@@ -774,7 +774,14 @@ export class SupabaseStorageService implements IStorageService {
     try {
       // Extract storage path from Edge Function URL
       // Format: https://.../functions/v1/serve-file-inline?path=...&token=...
-      const url = new URL(storageUrl);
+      let url: URL;
+      try {
+        url = new URL(storageUrl);
+      } catch (urlError) {
+        throw new Error(
+          `Invalid storage URL format. Expected Edge Function URL with path parameter, got: ${storageUrl}`
+        );
+      }
       const path = url.searchParams.get('path');
 
       if (!path) {

@@ -3,6 +3,10 @@
 
 import { createClient } from 'jsr:@supabase/supabase-js@2'
 
+// Token reuse grace period for PDF viewer reloads (30 seconds)
+// PDF viewers may pre-fetch, reload on zoom/scroll, or re-request for print dialog
+const TOKEN_REUSE_GRACE_PERIOD_MS = 30 * 1000
+
 const corsHeaders = {
   'Access-Control-Allow-Origin': '*',
   'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type',
@@ -42,8 +46,20 @@ Deno.serve(async (req) => {
     }
 
     // Use service role to validate token and access storage
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')!
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')!
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')
+    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+
+    if (!supabaseUrl || !supabaseServiceKey) {
+      console.error('Missing required environment variables')
+      return new Response(
+        JSON.stringify({ error: 'Server configuration error' }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      )
+    }
+
     const supabase = createClient(supabaseUrl, supabaseServiceKey)
 
     // Validate file access token
@@ -112,25 +128,52 @@ Deno.serve(async (req) => {
       )
     }
 
-    // Atomically mark token as used (single-use enforcement)
-    // Uses compare-and-swap to prevent race conditions: only updates if used_at is still NULL
-    const { data: updateResult, error: updateError } = await supabase
-      .from('file_access_tokens')
-      .update({ used_at: new Date().toISOString() })
-      .eq('id', tokenData.id)
-      .is('used_at', null)  // Only update if still unused (atomic CAS)
-      .select()
-      .single()
+    // Check if token was already used
+    if (tokenData.used_at) {
+      // Allow reuse within grace period for PDF viewer reloads
+      const usedAt = new Date(tokenData.used_at)
+      if (now.getTime() - usedAt.getTime() > TOKEN_REUSE_GRACE_PERIOD_MS) {
+        return new Response(
+          JSON.stringify({ error: 'Token has already been used' }),
+          {
+            status: 401,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          }
+        )
+      }
+      // Allow re-use within grace period - skip marking as used again
+    } else {
+      // First use: atomically mark token as used
+      // Uses compare-and-swap to prevent race conditions: only updates if used_at is still NULL
+      const { data: updateResult, error: updateError } = await supabase
+        .from('file_access_tokens')
+        .update({ used_at: new Date().toISOString() })
+        .eq('id', tokenData.id)
+        .is('used_at', null)  // Only update if still unused (atomic CAS)
+        .select()
+        .single()
 
-    if (updateError || !updateResult) {
-      // Token was already used by another concurrent request
-      return new Response(
-        JSON.stringify({ error: 'Token has already been used' }),
-        {
-          status: 401,
-          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+      if (updateError || !updateResult) {
+        // Token was already used by another concurrent request - check grace period
+        const { data: recheckToken } = await supabase
+          .from('file_access_tokens')
+          .select('used_at')
+          .eq('id', tokenData.id)
+          .single()
+
+        if (recheckToken?.used_at) {
+          const usedAt = new Date(recheckToken.used_at)
+          if (now.getTime() - usedAt.getTime() > TOKEN_REUSE_GRACE_PERIOD_MS) {
+            return new Response(
+              JSON.stringify({ error: 'Token has already been used' }),
+              {
+                status: 401,
+                headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+              }
+            )
+          }
         }
-      )
+      }
     }
 
     // Download file from storage
@@ -172,7 +215,8 @@ Deno.serve(async (req) => {
         ...corsHeaders,
         'Content-Type': contentType,
         'Content-Disposition': 'inline', // This is the key header that fixes Firefox!
-        'Cache-Control': 'public, max-age=31536000', // Cache for 1 year
+        // No cache - each URL has a unique token and tokens are short-lived (5 min)
+        'Cache-Control': 'private, no-store',
       },
     })
 

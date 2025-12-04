@@ -20,6 +20,7 @@ CREATE TABLE file_access_tokens (
 CREATE INDEX idx_file_access_tokens_token ON file_access_tokens(token) WHERE used_at IS NULL AND expires_at > NOW();
 CREATE INDEX idx_file_access_tokens_user_id ON file_access_tokens(user_id);
 CREATE INDEX idx_file_access_tokens_expires_at ON file_access_tokens(expires_at);
+CREATE INDEX idx_file_access_tokens_created_at ON file_access_tokens(created_at); -- For efficient cleanup queries
 
 -- =============================================================================
 -- ROW LEVEL SECURITY
@@ -48,6 +49,12 @@ CREATE POLICY "Service role can update file access tokens"
   TO service_role
   USING (true);
 
+-- Users can delete their own tokens
+CREATE POLICY "Users can delete their own file access tokens"
+  ON file_access_tokens FOR DELETE
+  TO authenticated
+  USING (user_id = auth.uid());
+
 -- =============================================================================
 -- CLEANUP FUNCTION
 -- =============================================================================
@@ -70,9 +77,10 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 -- COMMENTS
 -- =============================================================================
 
-COMMENT ON TABLE file_access_tokens IS 'Short-lived, single-use tokens for secure file access. Tokens expire after 5 minutes and are marked as used on first access.';
+COMMENT ON TABLE file_access_tokens IS 'Short-lived tokens for secure file access. Tokens expire after 5 minutes and can be reused within 30 seconds of first use (grace period for PDF viewer reloads).';
 COMMENT ON COLUMN file_access_tokens.token IS 'Random token used in URL query parameter';
 COMMENT ON COLUMN file_access_tokens.storage_path IS 'Full storage path (e.g., bands/{band_id}/charts/{song_id}/{file_id}.ext)';
 COMMENT ON COLUMN file_access_tokens.band_id IS 'Band that owns the file - used for authorization';
 COMMENT ON COLUMN file_access_tokens.expires_at IS 'Token expiry time (typically 5 minutes from creation)';
-COMMENT ON COLUMN file_access_tokens.used_at IS 'Timestamp of first use - for single-use tokens';
+COMMENT ON COLUMN file_access_tokens.used_at IS 'Timestamp of first use - tokens can be reused within 30s grace period';
+COMMENT ON FUNCTION cleanup_expired_file_tokens() IS 'Cleans up expired tokens. Should be called periodically (e.g., hourly) via pg_cron or scheduled edge function.';

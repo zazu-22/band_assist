@@ -8,10 +8,10 @@ This Supabase Edge Function serves storage files with the `Content-Disposition: 
 
 ### File Access Tokens
 
-This function uses **short-lived, single-use file access tokens** instead of JWT tokens in URLs. This provides significantly better security:
+This function uses **short-lived file access tokens** instead of JWT tokens in URLs. This provides significantly better security:
 
 - **Tokens expire after 5 minutes** - Reduces exposure window
-- **Single-use only** - Token is marked as used on first access
+- **Limited reuse** - Token can be reused within 30 seconds of first use (grace period for PDF viewer reloads)
 - **File-specific** - Each token is bound to a specific storage path
 - **Band-scoped** - Token includes band_id for authorization
 
@@ -27,10 +27,10 @@ This function uses **short-lived, single-use file access tokens** instead of JWT
 
 3. **Edge Function validation**:
    - Validates token exists and hasn't expired
-   - Checks token hasn't been used (single-use)
+   - Checks token can be used (first use or within 30s grace period)
    - Verifies storage path matches token's path
    - Confirms file belongs to the authorized band
-   - Marks token as used
+   - Marks token as used on first access
 
 4. **File delivery**: Serves file with `Content-Disposition: inline` header
 
@@ -105,6 +105,6 @@ Watch for these Edge Function logs:
 
 - `Invalid or expired token` - Token validation failed
 - `Token has expired` - Token past expiry time
-- `Token has already been used` - Attempt to reuse single-use token
+- `Token has already been used` - Token used beyond 30-second grace period
 - `Token is not valid for this file` - Path mismatch
 - `File does not belong to the authorized band` - Authorization failure

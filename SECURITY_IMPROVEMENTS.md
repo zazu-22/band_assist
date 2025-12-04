@@ -16,20 +16,20 @@ The original implementation in PR #109 used JWT access tokens in URL query param
 - JWT tokens are long-lived (hours/days)
 - Same token can access multiple files
 
-**Solution**: Implemented short-lived, single-use file access tokens:
+**Solution**: Implemented short-lived file access tokens with grace period:
 
 - **Created `file_access_tokens` table** (`supabase/migrations/016_add_file_access_tokens.sql`)
   - Stores token, user_id, storage_path, band_id, expires_at, used_at
   - Tokens expire after 5 minutes
-  - Tokens marked as used on first access (single-use)
+  - Tokens can be reused within 30 seconds of first use (grace period for PDF viewer reloads)
   - Includes cleanup function for expired tokens
 
 - **Updated Edge Function** (`supabase/functions/serve-file-inline/index.ts`)
   - Validates file access token instead of JWT
   - Checks token hasn't expired
-  - Checks token hasn't been used
+  - Allows reuse within 30-second grace period (handles PDF viewer pre-fetch/reload)
   - Verifies storage path matches token's path
-  - Marks token as used after first access
+  - Marks token as used on first access
 
 - **Updated Storage Service** (`src/services/supabaseStorageService.ts`)
   - Added `generateFileAccessToken()` method
@@ -128,7 +128,7 @@ All 735 tests passing:
 ## Security Checklist Summary
 
 - ✅ Short-lived tokens (5 minutes)
-- ✅ Single-use tokens
+- ✅ Limited reuse tokens (30-second grace period)
 - ✅ File-specific tokens
 - ✅ Band-scoped authorization
 - ✅ Path validation
