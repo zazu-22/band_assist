@@ -364,30 +364,38 @@ export class SupabaseStorageService implements IStorageService {
           }))
         : null;
 
+      // Transform and refresh chart URLs for all songs
       const songs: Song[] | null = songsData
-        ? songsData.map(s => ({
-            id: s.id,
-            title: s.title,
-            artist: s.artist,
-            duration: s.duration || '',
-            bpm: s.bpm || 120,
-            key: s.key || 'C',
-            isOriginal: s.is_original,
-            status: s.status as 'To Learn' | 'In Progress' | 'Performance Ready',
-            targetDate: s.target_date || undefined,
-            charts: (s.charts as unknown as SongChart[]) || [],
-            assignments: (s.assignments as unknown as Assignment[]) || [],
-            parts: (s.parts as unknown as SongPart[]) || [],
-            backingTrackUrl: s.backing_track_url || undefined,
-            backingTrackStoragePath: s.backing_track_storage_path || undefined,
-            aiAnalysis: s.ai_analysis || undefined,
-            lyrics: s.lyrics || undefined,
-            sortOrder: s.sort_order !== null ? s.sort_order : undefined,
-            // Legacy fields (not used but kept for compatibility)
-            annotations: undefined,
-            tabContent: undefined,
-            tabUrl: undefined,
-          }))
+        ? await Promise.all(
+            songsData.map(async s => {
+              const charts = (s.charts as unknown as SongChart[]) || [];
+              const refreshedCharts = await this.refreshChartUrls(charts);
+
+              return {
+                id: s.id,
+                title: s.title,
+                artist: s.artist,
+                duration: s.duration || '',
+                bpm: s.bpm || 120,
+                key: s.key || 'C',
+                isOriginal: s.is_original,
+                status: s.status as 'To Learn' | 'In Progress' | 'Performance Ready',
+                targetDate: s.target_date || undefined,
+                charts: refreshedCharts,
+                assignments: (s.assignments as unknown as Assignment[]) || [],
+                parts: (s.parts as unknown as SongPart[]) || [],
+                backingTrackUrl: s.backing_track_url || undefined,
+                backingTrackStoragePath: s.backing_track_storage_path || undefined,
+                aiAnalysis: s.ai_analysis || undefined,
+                lyrics: s.lyrics || undefined,
+                sortOrder: s.sort_order !== null ? s.sort_order : undefined,
+                // Legacy fields (not used but kept for compatibility)
+                annotations: undefined,
+                tabContent: undefined,
+                tabUrl: undefined,
+              };
+            })
+          )
         : null;
 
       const events: BandEvent[] | null = eventsData
@@ -531,16 +539,96 @@ export class SupabaseStorageService implements IStorageService {
         console.warn('Failed to save file metadata:', metadataError);
       }
 
-      // Get public URL (signed URL for private bucket)
-      const { data: urlData } = await supabase.storage
-        .from('band-files')
-        .createSignedUrl(storagePath, 31536000); // 1 year expiry
+      // Generate Edge Function URL for inline display with auth token
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      if (!supabaseUrl) {
+        console.error('VITE_SUPABASE_URL not configured');
+        return null;
+      }
 
-      return urlData?.signedUrl || null;
+      const { data: { session } } = await supabase.auth.getSession();
+      const accessToken = session?.access_token;
+
+      if (!accessToken) {
+        console.error('No active session for file upload');
+        return null;
+      }
+
+      const edgeFunctionUrl = `${supabaseUrl}/functions/v1/serve-file-inline?path=${encodeURIComponent(storagePath)}&token=${encodeURIComponent(accessToken)}`;
+      return edgeFunctionUrl;
     } catch (error) {
       console.error('Error uploading file:', error);
       return null;
     }
+  }
+
+  /**
+   * Regenerate a URL from a storage path using Edge Function
+   * The Edge Function serves files with Content-Disposition: inline header
+   * which fixes Firefox PDF viewer issue
+   * @param storagePath - Path in the band-files bucket
+   * @returns Edge Function URL that serves file inline
+   */
+  async regenerateSignedUrl(storagePath: string): Promise<string | null> {
+    try {
+      // Get Supabase URL from environment
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      if (!supabaseUrl) {
+        console.error('[regenerateSignedUrl] VITE_SUPABASE_URL not configured');
+        return null;
+      }
+
+      // Get user's auth token
+      const supabase = getSupabaseClient();
+      if (!supabase) {
+        console.error('[regenerateSignedUrl] No Supabase client available');
+        return null;
+      }
+
+      const { data: { session } } = await supabase.auth.getSession();
+      const accessToken = session?.access_token;
+
+      if (!accessToken) {
+        console.error('[regenerateSignedUrl] No active session');
+        return null;
+      }
+
+      // Generate Edge Function URL with auth token
+      // Format: https://your-project.supabase.co/functions/v1/serve-file-inline?path=...&token=...
+      const edgeFunctionUrl = `${supabaseUrl}/functions/v1/serve-file-inline?path=${encodeURIComponent(storagePath)}&token=${encodeURIComponent(accessToken)}`;
+
+      return edgeFunctionUrl;
+    } catch (error) {
+      console.error('[regenerateSignedUrl] Exception:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Refresh chart URLs with fresh signed URLs
+   * This ensures all charts use the latest URL parameters (e.g., download: false)
+   * @param charts - Array of song charts to refresh
+   * @returns Charts with refreshed URLs
+   */
+  private async refreshChartUrls(charts: SongChart[]): Promise<SongChart[]> {
+    if (!charts || charts.length === 0) return charts;
+
+    const refreshedCharts = await Promise.all(
+      charts.map(async (chart) => {
+        // Only refresh if chart has a storagePath and it's a file type (PDF, IMAGE, GP)
+        if (chart.storagePath && (chart.type === 'PDF' || chart.type === 'IMAGE' || chart.type === 'GP')) {
+          const freshUrl = await this.regenerateSignedUrl(chart.storagePath);
+          if (freshUrl) {
+            return { ...chart, url: freshUrl };
+          } else {
+            console.warn('[refreshChartUrls] Failed to generate fresh URL for chart:', chart.name);
+          }
+        }
+        return chart;
+      })
+    );
+
+    return refreshedCharts;
   }
 
   /**
