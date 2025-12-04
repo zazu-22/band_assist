@@ -48,7 +48,7 @@ export function AppShell({
   return (
     <TooltipProvider>
       <SkipLink />
-      <div className="flex h-screen bg-background">
+      <div className="flex h-dvh bg-background">
         {/* Desktop Sidebar */}
         {isDesktop && (
           <Sidebar
@@ -78,7 +78,8 @@ export function AppShell({
           className={cn(
             'flex-1 overflow-auto focus:outline-none',
             // Add padding on mobile to account for the floating menu button (h-14 = 56px)
-            !isDesktop && 'pt-14'
+            // and safe area at bottom for iOS Safari with viewport-fit=cover
+            !isDesktop && 'pt-14 pb-safe'
           )}
         >
           <ErrorBoundary>
