@@ -1,0 +1,20 @@
+
+[functions.serve-file-inline]
+enabled = true
+# JWT verification is disabled because the function uses custom file access tokens
+# instead of JWT tokens. File access tokens are short-lived (5 min), single-use
+# tokens stored in the database, providing better security than JWT in URL.
+verify_jwt = false
+import_map = "./functions/serve-file-inline/deno.json"
+# Uncomment to specify a custom file path to the entrypoint.
+# Supported file extensions are: .ts, .js, .mjs, .jsx, .tsx
+entrypoint = "./functions/serve-file-inline/index.ts"
+# Specifies static files to be bundled with the function. Supports glob patterns.
+# For example, if you want to serve static HTML pages in your function:
+# static_files = [ "./functions/serve-file-inline/*.html" ]
+
+[functions.cleanup-expired-tokens]
+enabled = true
+verify_jwt = true
+import_map = "./functions/cleanup-expired-tokens/deno.json"
+entrypoint = "./functions/cleanup-expired-tokens/index.ts"

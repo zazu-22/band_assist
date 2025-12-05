@@ -60,7 +60,8 @@ const memberArbitrary: fc.Arbitrary<BandMember> = fc.record({
 const eventArbitrary: fc.Arbitrary<BandEvent> = fc.record({
     id: fc.uuid(),
     title: fc.string({ minLength: 1, maxLength: 100 }),
-    date: fc.date().map(d => d.toISOString().split('T')[0]), // YYYY-MM-DD format
+    // Generate date from timestamp to avoid invalid Date values
+    date: fc.integer({ min: 946684800000, max: 4102444800000 }).map(ts => new Date(ts).toISOString().split('T')[0]), // 2000-2100
     type: fc.constantFrom('PRACTICE' as const, 'GIG' as const, 'OTHER' as const),
 });
 

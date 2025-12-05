@@ -3,7 +3,9 @@ import { IStorageService, LoadResult } from './IStorageService';
 import { getSupabaseClient, isSupabaseConfigured } from './supabaseClient';
 import { validateAvatarColor } from '@/lib/avatar';
 import { RealtimeChannel } from '@supabase/supabase-js';
-import type { Json } from '../types/database.types';
+import type { Json, Database } from '../types/database.types';
+
+type FileAccessTokenInsert = Database['public']['Tables']['file_access_tokens']['Insert'];
 
 /**
  * Supabase-based persistence service
@@ -364,30 +366,38 @@ export class SupabaseStorageService implements IStorageService {
           }))
         : null;
 
+      // Transform and refresh chart URLs for all songs
       const songs: Song[] | null = songsData
-        ? songsData.map(s => ({
-            id: s.id,
-            title: s.title,
-            artist: s.artist,
-            duration: s.duration || '',
-            bpm: s.bpm || 120,
-            key: s.key || 'C',
-            isOriginal: s.is_original,
-            status: s.status as 'To Learn' | 'In Progress' | 'Performance Ready',
-            targetDate: s.target_date || undefined,
-            charts: (s.charts as unknown as SongChart[]) || [],
-            assignments: (s.assignments as unknown as Assignment[]) || [],
-            parts: (s.parts as unknown as SongPart[]) || [],
-            backingTrackUrl: s.backing_track_url || undefined,
-            backingTrackStoragePath: s.backing_track_storage_path || undefined,
-            aiAnalysis: s.ai_analysis || undefined,
-            lyrics: s.lyrics || undefined,
-            sortOrder: s.sort_order !== null ? s.sort_order : undefined,
-            // Legacy fields (not used but kept for compatibility)
-            annotations: undefined,
-            tabContent: undefined,
-            tabUrl: undefined,
-          }))
+        ? await Promise.all(
+            songsData.map(async s => {
+              const charts = (s.charts as unknown as SongChart[]) || [];
+              const refreshedCharts = await this.refreshChartUrls(charts);
+
+              return {
+                id: s.id,
+                title: s.title,
+                artist: s.artist,
+                duration: s.duration || '',
+                bpm: s.bpm || 120,
+                key: s.key || 'C',
+                isOriginal: s.is_original,
+                status: s.status as 'To Learn' | 'In Progress' | 'Performance Ready',
+                targetDate: s.target_date || undefined,
+                charts: refreshedCharts,
+                assignments: (s.assignments as unknown as Assignment[]) || [],
+                parts: (s.parts as unknown as SongPart[]) || [],
+                backingTrackUrl: s.backing_track_url || undefined,
+                backingTrackStoragePath: s.backing_track_storage_path || undefined,
+                aiAnalysis: s.ai_analysis || undefined,
+                lyrics: s.lyrics || undefined,
+                sortOrder: s.sort_order !== null ? s.sort_order : undefined,
+                // Legacy fields (not used but kept for compatibility)
+                annotations: undefined,
+                tabContent: undefined,
+                tabUrl: undefined,
+              };
+            })
+          )
         : null;
 
       const events: BandEvent[] | null = eventsData
@@ -474,7 +484,7 @@ export class SupabaseStorageService implements IStorageService {
    * @param file - File blob to upload
    * @param songId - Song ID for organizing files
    * @param fileType - 'chart' or 'audio'
-   * @returns Storage URL or null on error
+   * @returns Object with url and storagePath, or null on error
    */
   async uploadFile(
     file: Blob,
@@ -482,7 +492,7 @@ export class SupabaseStorageService implements IStorageService {
     mimeType: string,
     songId: string,
     fileType: 'chart' | 'audio'
-  ): Promise<string | null> {
+  ): Promise<{ url: string; storagePath: string } | null> {
     const supabase = getSupabaseClient();
     if (!supabase) {
       throw new Error('Supabase is not configured');
@@ -492,11 +502,13 @@ export class SupabaseStorageService implements IStorageService {
       throw new Error('No band selected. Call setCurrentBand() first.');
     }
 
+    const bandId = this.currentBandId;
+
     try {
       const fileId = crypto.randomUUID();
       const extension = fileName.split('.').pop() || 'bin';
       // New path structure: bands/{band_id}/charts/{song_id}/{file_id}.ext
-      const storagePath = `bands/${this.currentBandId}/${fileType}s/${songId}/${fileId}.${extension}`;
+      const storagePath = `bands/${bandId}/${fileType}s/${songId}/${fileId}.${extension}`;
 
       const { error: uploadError } = await supabase.storage
         .from('band-files')
@@ -522,7 +534,7 @@ export class SupabaseStorageService implements IStorageService {
         file_name: fileName,
         mime_type: mimeType,
         file_size: file.size,
-        band_id: this.currentBandId!,
+        band_id: bandId,
       };
       const { error: metadataError } = await supabase.from('files').insert(fileMetadata);
 
@@ -531,16 +543,274 @@ export class SupabaseStorageService implements IStorageService {
         console.warn('Failed to save file metadata:', metadataError);
       }
 
-      // Get public URL (signed URL for private bucket)
-      const { data: urlData } = await supabase.storage
-        .from('band-files')
-        .createSignedUrl(storagePath, 31536000); // 1 year expiry
+      // Generate Edge Function URL with file access token
+      const edgeFunctionUrl = await this.regenerateSignedUrl(storagePath);
+      if (!edgeFunctionUrl) return null;
 
-      return urlData?.signedUrl || null;
+      return { url: edgeFunctionUrl, storagePath };
     } catch (error) {
       console.error('Error uploading file:', error);
       return null;
     }
+  }
+
+  /**
+   * Generate a short-lived, single-use file access token
+   * @param storagePath - Path in the band-files bucket
+   * @param userId - User ID who will access the file
+   * @param bandId - Band ID that owns the file
+   * @returns File access token (random UUID)
+   */
+  private async generateFileAccessToken(
+    storagePath: string,
+    userId: string,
+    bandId: string
+  ): Promise<string | null> {
+    try {
+      const supabase = getSupabaseClient();
+      if (!supabase) {
+        console.error('[generateFileAccessToken] No Supabase client available');
+        return null;
+      }
+
+      // Generate random token
+      const token = crypto.randomUUID();
+
+      // Token expires in 5 minutes
+      const expiresAt = new Date();
+      expiresAt.setMinutes(expiresAt.getMinutes() + 5);
+
+      // Insert token into database
+      const tokenData: FileAccessTokenInsert = {
+        token,
+        user_id: userId,
+        storage_path: storagePath,
+        band_id: bandId,
+        expires_at: expiresAt.toISOString(),
+      };
+      const { error } = await supabase.from('file_access_tokens').insert(tokenData);
+
+      if (error) {
+        console.error('[generateFileAccessToken] Failed to create token:', error);
+        return null;
+      }
+
+      return token;
+    } catch (error) {
+      console.error('[generateFileAccessToken] Exception:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Generate file access tokens for multiple storage paths in a single batch
+   * Reduces N+1 DB queries when refreshing URLs for multiple charts
+   */
+  private async generateFileAccessTokensBatch(
+    storagePaths: string[],
+    userId: string,
+    bandId: string
+  ): Promise<Map<string, string>> {
+    const tokenMap = new Map<string, string>();
+
+    if (storagePaths.length === 0) return tokenMap;
+
+    try {
+      const supabase = getSupabaseClient();
+      if (!supabase) {
+        console.error('[generateFileAccessTokensBatch] No Supabase client available');
+        return tokenMap;
+      }
+
+      // Token expires in 5 minutes
+      const expiresAt = new Date();
+      expiresAt.setMinutes(expiresAt.getMinutes() + 5);
+      const expiresAtISO = expiresAt.toISOString();
+
+      // Generate all tokens and prepare batch insert
+      const tokensData: FileAccessTokenInsert[] = storagePaths.map(storagePath => {
+        const token = crypto.randomUUID();
+        tokenMap.set(storagePath, token);
+        return {
+          token,
+          user_id: userId,
+          storage_path: storagePath,
+          band_id: bandId,
+          expires_at: expiresAtISO,
+        };
+      });
+
+      // Batch insert all tokens
+      const { error } = await supabase.from('file_access_tokens').insert(tokensData);
+
+      if (error) {
+        console.error('[generateFileAccessTokensBatch] Failed to create tokens:', error);
+        return new Map(); // Return empty map on error
+      }
+
+      return tokenMap;
+    } catch (error) {
+      console.error('[generateFileAccessTokensBatch] Exception:', error);
+      return new Map();
+    }
+  }
+
+  /**
+   * Regenerate a URL from a storage path using Edge Function
+   * The Edge Function serves files with Content-Disposition: inline header
+   * which fixes Firefox PDF viewer issue
+   * @param storagePath - Path in the band-files bucket
+   * @param userId - Optional user ID (if not provided, will get from session)
+   * @returns Edge Function URL that serves file inline
+   */
+  async regenerateSignedUrl(storagePath: string, userId?: string): Promise<string | null> {
+    try {
+      // Get Supabase URL from environment
+      const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+      if (!supabaseUrl) {
+        console.error('[regenerateSignedUrl] VITE_SUPABASE_URL not configured');
+        return null;
+      }
+
+      const supabase = getSupabaseClient();
+      if (!supabase) {
+        console.error('[regenerateSignedUrl] No Supabase client available');
+        return null;
+      }
+
+      // Get user ID if not provided
+      let currentUserId = userId;
+      if (!currentUserId) {
+        const { data: { session } } = await supabase.auth.getSession();
+        currentUserId = session?.user?.id;
+      }
+
+      if (!currentUserId) {
+        console.error('[regenerateSignedUrl] No user ID available');
+        return null;
+      }
+
+      if (!this.currentBandId) {
+        console.error('[regenerateSignedUrl] No band selected');
+        return null;
+      }
+
+      // Generate short-lived file access token (5 minutes, single-use)
+      const fileToken = await this.generateFileAccessToken(
+        storagePath,
+        currentUserId,
+        this.currentBandId
+      );
+
+      if (!fileToken) {
+        console.error('[regenerateSignedUrl] Failed to generate file access token');
+        return null;
+      }
+
+      // Generate Edge Function URL with file access token
+      // Format: https://your-project.supabase.co/functions/v1/serve-file-inline?path=...&token=...
+      const edgeFunctionUrl = `${supabaseUrl}/functions/v1/serve-file-inline?path=${encodeURIComponent(storagePath)}&token=${encodeURIComponent(fileToken)}`;
+
+      return edgeFunctionUrl;
+    } catch (error) {
+      console.error('[regenerateSignedUrl] Exception:', error);
+      return null;
+    }
+  }
+
+  /**
+   * Refresh chart URLs with fresh signed URLs
+   * This ensures all charts use the latest URL parameters (e.g., download: false)
+   *
+   * Performance: Uses batch token generation to avoid N+1 DB queries
+   *
+   * Future optimization: Consider client-side token caching with expiry tracking
+   * to avoid regenerating tokens on every load. Tokens have 5-minute lifespan,
+   * so caching could reduce DB writes for frequently accessed charts.
+   *
+   * @param charts - Array of song charts to refresh
+   * @returns Charts with refreshed URLs
+   */
+  private async refreshChartUrls(charts: SongChart[]): Promise<SongChart[]> {
+    if (!charts || charts.length === 0) return charts;
+
+    // Performance optimization: Get session and band ID once
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      console.warn('[refreshChartUrls] No Supabase client available');
+      return charts;
+    }
+
+    const { data: { session } } = await supabase.auth.getSession();
+    const userId = session?.user?.id;
+
+    if (!userId) {
+      console.warn('[refreshChartUrls] No active session');
+      return charts;
+    }
+
+    if (!this.currentBandId) {
+      console.warn('[refreshChartUrls] No band selected');
+      return charts;
+    }
+
+    const bandId = this.currentBandId;
+
+    // Collect charts that need URL refresh
+    const chartsNeedingRefresh = charts.filter(
+      chart => chart.storagePath && (chart.type === 'PDF' || chart.type === 'IMAGE' || chart.type === 'GP')
+    );
+
+    if (chartsNeedingRefresh.length === 0) {
+      return charts;
+    }
+
+    // Extract storage paths for batch token generation
+    const storagePaths = chartsNeedingRefresh.map(chart => chart.storagePath!);
+
+    // Generate tokens in batch (single DB insert instead of N inserts)
+    const tokenMap = await this.generateFileAccessTokensBatch(storagePaths, userId, bandId);
+
+    if (tokenMap.size === 0) {
+      console.error('[refreshChartUrls] Failed to generate tokens in batch');
+      return charts;
+    }
+
+    // Get Edge Function URL
+    const edgeFunctionUrl = `${import.meta.env.VITE_SUPABASE_URL}/functions/v1/serve-file-inline`;
+
+    // Map charts to refreshed versions
+    let failureCount = 0;
+    const refreshedCharts = charts.map(chart => {
+      if (chart.storagePath && tokenMap.has(chart.storagePath)) {
+        const token = tokenMap.get(chart.storagePath)!;
+        const freshUrl = `${edgeFunctionUrl}?path=${encodeURIComponent(chart.storagePath)}&token=${token}`;
+        return { ...chart, url: freshUrl };
+      }
+
+      // Chart doesn't need refresh or token generation failed for it
+      if (chartsNeedingRefresh.some(c => c.id === chart.id)) {
+        failureCount++;
+        console.error(
+          '[refreshChartUrls] Failed to generate fresh URL for chart:',
+          chart.name,
+          'storagePath:',
+          chart.storagePath
+        );
+      }
+
+      return chart;
+    });
+
+    // Log summary if there were failures
+    if (failureCount > 0) {
+      console.error(
+        `[refreshChartUrls] Failed to refresh ${failureCount} out of ${chartsNeedingRefresh.length} chart URLs. ` +
+        `Charts with stale URLs may fail to load. Check console for details.`
+      );
+    }
+
+    return refreshedCharts;
   }
 
   /**
@@ -555,12 +825,10 @@ export class SupabaseStorageService implements IStorageService {
     songId: string
   ): Promise<{ url: string; storagePath: string; storageBase64?: string } | null> {
     // Upload to Storage
-    const url = await this.uploadFile(file, fileName, mimeType, songId, 'chart');
-    if (!url) return null;
+    const result = await this.uploadFile(file, fileName, mimeType, songId, 'chart');
+    if (!result) return null;
 
-    // Extract storage path from URL
-    const urlParts = url.split('/band-files/');
-    const storagePath = urlParts.length > 1 ? urlParts[1].split('?')[0] : '';
+    const { url, storagePath } = result;
 
     // For Guitar Pro files, also generate base64 for AlphaTab
     const isGp = /\.(gp|gp3|gp4|gp5|gpx)$/i.test(fileName);
@@ -596,15 +864,8 @@ export class SupabaseStorageService implements IStorageService {
     mimeType: string,
     songId: string
   ): Promise<{ url: string; storagePath: string } | null> {
-    // Upload to Storage
-    const url = await this.uploadFile(file, fileName, mimeType, songId, 'audio');
-    if (!url) return null;
-
-    // Extract storage path from URL
-    const urlParts = url.split('/band-files/');
-    const storagePath = urlParts.length > 1 ? urlParts[1].split('?')[0] : '';
-
-    return { url, storagePath };
+    // Upload to Storage and get both url and storagePath
+    return this.uploadFile(file, fileName, mimeType, songId, 'audio');
   }
 
   /**
@@ -612,18 +873,30 @@ export class SupabaseStorageService implements IStorageService {
    */
   async deleteFile(storageUrl: string): Promise<void> {
     const supabase = getSupabaseClient();
-    if (!supabase) return;
+    if (!supabase) {
+      throw new Error('Supabase is not configured');
+    }
 
     if (!this.currentBandId) {
       throw new Error('No band selected. Call setCurrentBand() first.');
     }
 
     try {
-      // Extract storage path from URL
-      const urlParts = storageUrl.split('/band-files/');
-      if (urlParts.length < 2) return;
+      // Extract storage path from Edge Function URL
+      // Format: https://.../functions/v1/serve-file-inline?path=...&token=...
+      let url: URL;
+      try {
+        url = new URL(storageUrl);
+      } catch (urlError) {
+        throw new Error(
+          `Invalid storage URL format. Expected Edge Function URL with path parameter, got: ${storageUrl}`
+        );
+      }
+      const path = url.searchParams.get('path');
 
-      const path = urlParts[1].split('?')[0]; // Remove query params
+      if (!path) {
+        throw new Error('Invalid storage URL: missing path parameter');
+      }
 
       // Security: Verify the path belongs to current band
       // Expected path format: bands/{band_id}/charts/{song_id}/{file_id}.ext
@@ -645,7 +918,7 @@ export class SupabaseStorageService implements IStorageService {
       await supabase.from('files').delete().eq('storage_path', path);
     } catch (error) {
       console.error('Error deleting file:', error);
-      throw error; // Re-throw instead of silently swallowing
+      throw error;
     }
   }
 

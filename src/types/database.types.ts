@@ -117,6 +117,54 @@ export type Database = {
         };
         Relationships: [];
       };
+      file_access_tokens: {
+        Row: {
+          band_id: string;
+          created_at: string;
+          expires_at: string;
+          id: string;
+          storage_path: string;
+          token: string;
+          used_at: string | null;
+          user_id: string;
+        };
+        Insert: {
+          band_id: string;
+          created_at?: string;
+          expires_at: string;
+          id?: string;
+          storage_path: string;
+          token: string;
+          used_at?: string | null;
+          user_id: string;
+        };
+        Update: {
+          band_id?: string;
+          created_at?: string;
+          expires_at?: string;
+          id?: string;
+          storage_path?: string;
+          token?: string;
+          used_at?: string | null;
+          user_id?: string;
+        };
+        Relationships: [
+          {
+            foreignKeyName: 'file_access_tokens_band_id_fkey';
+            columns: ['band_id'];
+            isOneToOne: false;
+            referencedRelation: 'bands';
+            referencedColumns: ['id'];
+          },
+          {
+            foreignKeyName: 'file_access_tokens_user_id_fkey';
+            columns: ['user_id'];
+            isOneToOne: false;
+            referencedRelation: 'users';
+            referencedColumns: ['id'];
+          },
+        ];
+      };
       files: {
         Row: {
           band_id: string | null;
