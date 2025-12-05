@@ -28,7 +28,11 @@ Deno.serve(async (req) => {
     const supabaseUrl = Deno.env.get('SUPABASE_URL')
     // SUPABASE_SERVICE_ROLE_KEY is auto-injected by Supabase (new auth uses SUPABASE_SECRET_KEY)
     // Used for creating the Supabase client to call database functions
-    const supabaseSecretKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') || Deno.env.get('SUPABASE_SECRET_KEY')
+    const serviceRoleKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+    const secretKey = Deno.env.get('SUPABASE_SECRET_KEY')
+    const supabaseSecretKey = serviceRoleKey || secretKey
+    const supabaseKeySource = serviceRoleKey ? 'SUPABASE_SERVICE_ROLE_KEY' : secretKey ? 'SUPABASE_SECRET_KEY' : 'none'
+    debugLog('supabase_key', { source: supabaseKeySource, keySet: !!supabaseSecretKey })
     // EDGE_SECRET_KEY is our custom secret for authenticating external callers (GitHub Actions)
     // Set via: supabase secrets set EDGE_SECRET_KEY=<your-secret>
     const edgeSecretKey = Deno.env.get('EDGE_SECRET_KEY')
@@ -59,6 +63,8 @@ Deno.serve(async (req) => {
         }
       )
     }
+
+    debugLog('auth_success', { method: 'x-edge-secret' })
 
     if (!supabaseUrl || !supabaseSecretKey) {
       console.error('Missing required environment variables')
