@@ -109,3 +109,51 @@ export interface Setlist {
   date: string;
   songs: string[];
 }
+
+// Personal song status enum
+export type UserSongStatus = 'Not Started' | 'Learning' | 'Learned' | 'Mastered';
+
+// Personal song progress tracking
+export interface UserSongProgress {
+  id: string;
+  userId: string;
+  songId: string;
+  status: UserSongStatus;
+  confidenceLevel?: number; // 1-5 scale
+  lastPracticedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Individual practice session record
+export interface PracticeSession {
+  id: string;
+  userId: string;
+  songId: string;
+  bandId: string;
+  durationMinutes: number;
+  tempoBpm?: number;
+  sectionsPracticed?: string[]; // e.g., ["Intro", "Chorus", "Solo 1"]
+  notes?: string;
+  date: string; // YYYY-MM-DD
+  createdAt: string;
+  updatedAt: string;
+}
+
+// Aggregate stats for display
+export interface PracticeStats {
+  totalSessions: number;
+  totalMinutes: number;
+  averageSessionMinutes: number;
+  songsLearned: number;
+  songsMastered: number;
+  recentSessions: PracticeSession[];
+}
+
+// Filter options for querying practice sessions
+export interface PracticeFilters {
+  songId?: string;
+  startDate?: string;
+  endDate?: string;
+  limit?: number;
+}

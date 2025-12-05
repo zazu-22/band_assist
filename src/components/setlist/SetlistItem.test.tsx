@@ -81,8 +81,8 @@ describe('SetlistItem', () => {
 
     it('renders StatusBadge with correct status', () => {
       render(<SetlistItem {...createDefaultProps()} />);
-      // StatusBadge renders the status text
-      expect(screen.getByText('Performance Ready')).toBeInTheDocument();
+      // SongStatusBadges renders the status text with "Band: " prefix
+      expect(screen.getByText(/Performance Ready/)).toBeInTheDocument();
     });
 
     it('renders delete button with correct aria-label when isAdmin', () => {
@@ -296,7 +296,7 @@ describe('SetlistItem', () => {
           })}
         />
       );
-      expect(screen.getByText('In Progress')).toBeInTheDocument();
+      expect(screen.getByText(/In Progress/)).toBeInTheDocument();
     });
 
     it('renders To Learn status', () => {
@@ -307,7 +307,7 @@ describe('SetlistItem', () => {
           })}
         />
       );
-      expect(screen.getByText('To Learn')).toBeInTheDocument();
+      expect(screen.getByText(/To Learn/)).toBeInTheDocument();
     });
   });
 

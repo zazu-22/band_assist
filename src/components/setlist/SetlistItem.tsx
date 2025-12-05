@@ -7,9 +7,9 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/primitives';
-import { StatusBadge } from '@/components/ui';
+import { SongStatusBadges } from '@/components/SongStatusBadges';
 import { cn } from '@/lib/utils';
-import type { Song } from '@/types';
+import type { Song, UserSongProgress } from '@/types';
 
 // =============================================================================
 // TYPES
@@ -48,6 +48,8 @@ export interface SetlistItemProps {
   onDelete: (id: string) => void;
   /** Whether the current user is a band admin (controls delete button visibility) */
   isAdmin?: boolean;
+  /** User's personal learning status for this song (optional) */
+  userStatus?: UserSongProgress | null;
 }
 
 // =============================================================================
@@ -76,6 +78,7 @@ export const SetlistItem = memo(function SetlistItem({
   onSelect,
   onDelete,
   isAdmin = false,
+  userStatus: _userStatus,
 }: SetlistItemProps) {
   return (
     <li
@@ -141,7 +144,7 @@ export const SetlistItem = memo(function SetlistItem({
 
       {/* Status + Actions */}
       <div className="flex items-center gap-2 shrink-0">
-        <StatusBadge status={song.status} />
+        <SongStatusBadges song={song} userStatus={_userStatus} />
         {isAdmin && (
           <TooltipProvider delayDuration={100}>
             <Tooltip>

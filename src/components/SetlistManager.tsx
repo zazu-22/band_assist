@@ -4,6 +4,7 @@ import { toast, EmptyState, ConfirmDialog } from '@/components/ui';
 import { StorageService } from '@/services/storageService';
 import { parseLocalDate, getLocalToday, daysBetween } from '@/lib/dateUtils';
 import { useTouchSortable } from '@/hooks/useTouchSortable';
+import { useAllUserSongStatuses } from '@/hooks/useUserSongStatus';
 import {
   SetlistHeader,
   SetlistStats,
@@ -25,6 +26,10 @@ interface SetlistManagerProps {
   events?: BandEvent[];
   /** Whether the current user is a band admin */
   isAdmin?: boolean;
+  /** Current user ID for fetching personal song statuses */
+  currentUserId?: string | null;
+  /** Current band ID for fetching personal song statuses */
+  currentBandId?: string | null;
 }
 
 // =============================================================================
@@ -76,8 +81,13 @@ export const SetlistManager: React.FC<SetlistManagerProps> = memo(function Setli
   onSelectSong,
   events = [],
   isAdmin = false,
+  currentUserId = null,
+  currentBandId = null,
 }) {
   const [isAdding, setIsAdding] = useState(false);
+
+  // Fetch all user song statuses for batch display
+  const { statuses } = useAllUserSongStatuses(currentUserId, currentBandId);
 
   // Delete confirmation dialog state
   const [confirmDialog, setConfirmDialog] = useState<{
@@ -255,6 +265,9 @@ export const SetlistManager: React.FC<SetlistManagerProps> = memo(function Setli
                   dragState.targetIndex === index &&
                   dragState.draggedIndex !== index;
 
+                // Get user's personal status for this song
+                const userStatus = statuses.get(song.id) || null;
+
                 return (
                   <SetlistItem
                     key={song.id}
@@ -275,6 +288,7 @@ export const SetlistManager: React.FC<SetlistManagerProps> = memo(function Setli
                     onSelect={onSelectSong}
                     onDelete={handleDeleteSong}
                     isAdmin={isAdmin}
+                    userStatus={userStatus}
                   />
                 );
               })}

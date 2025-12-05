@@ -16,6 +16,8 @@ export const ROUTES = {
   SETLIST: '/setlist',
   /** Practice room page */
   PRACTICE: '/practice',
+  /** Practice history page */
+  PRACTICE_HISTORY: '/practice-history',
   /** Schedule/events page */
   SCHEDULE: '/schedule',
   /** Band lineup/dashboard page */
@@ -56,6 +58,7 @@ export const getPracticeRoute = (songId?: string): string =>
 export const NAV_ITEMS = [
   { id: 'DASHBOARD', path: ROUTES.DASHBOARD, label: 'Dashboard' },
   { id: 'PRACTICE', path: ROUTES.PRACTICE, label: 'Practice Room' },
+  { id: 'PRACTICE_HISTORY', path: ROUTES.PRACTICE_HISTORY, label: 'Practice History' },
   { id: 'SETLIST', path: ROUTES.SETLIST, label: 'Setlist Builder' },
   { id: 'SCHEDULE', path: ROUTES.SCHEDULE, label: 'Schedule' },
   { id: 'BAND', path: ROUTES.BAND, label: 'Band Lineup' },
@@ -100,6 +103,7 @@ export const getPageTitle = (pathname: string): string => {
   // Custom mappings for non-nav routes
   if (pathname === '/settings') return 'Settings';
   if (pathname === '/performance') return 'Performance';
+  if (pathname === '/practice-history') return 'Practice History';
   if (pathname.startsWith('/songs/')) return 'Song Details';
 
   return '';
