@@ -14,10 +14,9 @@ Deno.serve(async (req) => {
     const edgeSecretKey = Deno.env.get('EDGE_SECRET_KEY')
 
     // Verify authentication manually since verify_jwt is disabled in config.toml
-    // New Supabase secret keys (sb_secret_...) are not JWTs, so we compare directly
-    // See: https://supabase.com/docs/guides/api/api-keys
-    const authHeader = req.headers.get('Authorization')
-    const providedKey = authHeader?.replace('Bearer ', '')
+    // Use custom header x-edge-secret with a random secret (not sb_secret_... format)
+    // to avoid Supabase's header value filtering that blocks API key patterns
+    const providedKey = req.headers.get('x-edge-secret')
 
     if (!edgeSecretKey || !providedKey || providedKey !== edgeSecretKey) {
       return new Response(
