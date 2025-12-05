@@ -3,6 +3,7 @@
 .env.production
 .envrc
 supabase/.temp
+supabase/.branches
 test-credentials.json
 .test-credentials
 .npmrc
