@@ -117,6 +117,12 @@ export function useLinkedMember(bandId: string | null): UseLinkedMemberResult {
     }
   }, [bandId]);
 
+  // Clear stale data immediately when bandId changes
+  useEffect(() => {
+    setLinkedMember(null);
+    setUnlinkedMembers([]);
+  }, [bandId]);
+
   useEffect(() => {
     fetchLinkedMember();
   }, [fetchLinkedMember]);

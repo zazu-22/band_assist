@@ -74,7 +74,7 @@ export const LinkAccountSection = memo(function LinkAccountSection({
         </CardHeader>
         <CardContent>
           <div className="flex items-center justify-center py-8">
-            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" aria-label="Loading member information" />
           </div>
         </CardContent>
       </Card>
@@ -90,12 +90,15 @@ export const LinkAccountSection = memo(function LinkAccountSection({
             Connect your user account to a band member record for personalized features
           </CardDescription>
         </CardHeader>
-        <CardContent>
+        <CardContent className="space-y-4">
           <Alert variant="destructive">
             <AlertCircle className="h-4 w-4" />
             <AlertTitle>Error</AlertTitle>
             <AlertDescription>{error}</AlertDescription>
           </Alert>
+          <Button variant="outline" onClick={() => refetch()}>
+            Try Again
+          </Button>
         </CardContent>
       </Card>
     );
