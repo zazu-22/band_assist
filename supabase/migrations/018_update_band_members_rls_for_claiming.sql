@@ -42,6 +42,9 @@ CREATE POLICY "Users can update band member details"
     -- Member must remain in user's band
     band_id IN (SELECT band_id FROM user_bands WHERE user_id = auth.uid())
     -- user_id must remain unchanged
+    -- NOTE: In RLS WITH CHECK, 'band_members.id' refers to the NEW row values,
+    -- while the subquery SELECT returns the CURRENT (pre-update) value from the table.
+    -- This effectively compares NEW.user_id with OLD.user_id to prevent changes.
     AND (
       user_id IS NOT DISTINCT FROM (
         SELECT user_id FROM band_members WHERE id = band_members.id
