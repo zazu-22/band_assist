@@ -11,6 +11,9 @@ import {
   Upload,
   AlertTriangle,
   UserPlus,
+  Loader2,
+  AlertCircle,
+  Info,
 } from 'lucide-react';
 import {
   Button,
@@ -27,12 +30,19 @@ import {
   Avatar,
   AvatarFallback,
   Badge,
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
 } from '@/components/primitives';
-import { toast, ConfirmDialog, DangerousActionDialog } from '@/components/ui';
+import { toast, ConfirmDialog, DangerousActionDialog, Alert, AlertTitle, AlertDescription } from '@/components/ui';
 import { StorageService } from '@/services/storageService';
 import { InvitationManager } from '@/components/InvitationManager';
-import { isSupabaseConfigured } from '@/services/supabaseClient';
-import { getAvatarColor, getNextAvatarColor } from '@/lib/avatar';
+import { isSupabaseConfigured, supabase } from '@/services/supabaseClient';
+import { useLinkedMember } from '@/hooks/useLinkedMember';
+import { claimMember } from '@/services/supabaseStorageService';
+import { getAvatarColor, getNextAvatarColor, getInitials } from '@/lib/avatar';
 import { cn } from '@/lib/utils';
 import type { BandMember, Song, BandEvent } from '@/types';
 
@@ -70,6 +80,169 @@ const INITIAL_DIALOG_STATE: ConfirmDialogState = {
   variant: 'danger',
   onConfirm: NOOP,
 };
+
+/**
+ * LinkAccountSection component for claiming member records
+ * Displays linked member or dropdown to claim unlinked members
+ */
+function LinkAccountSection({ currentBandId }: { currentBandId: string | undefined }) {
+  const { linkedMember, unlinkedMembers, isLoading, error, refetch } = useLinkedMember(currentBandId || null);
+  const [selectedMemberId, setSelectedMemberId] = useState<string>('');
+  const [isClaiming, setIsClaiming] = useState(false);
+
+  const handleClaimMember = async () => {
+    if (!selectedMemberId || !currentBandId || !supabase) return;
+
+    setIsClaiming(true);
+
+    try {
+      const { data: { user } } = await supabase.auth.getUser();
+
+      if (!user) {
+        toast.error('Not authenticated', {
+          description: 'Please log in to claim a member',
+        });
+        return;
+      }
+
+      await claimMember(user.id, selectedMemberId, currentBandId);
+
+      toast.success('Member claimed successfully');
+
+      await refetch();
+      setSelectedMemberId('');
+    } catch (err) {
+      console.error('Error claiming member:', err);
+
+      const errorMessage = err instanceof Error ? err.message : 'Failed to claim member';
+
+      toast.error('Failed to claim member', {
+        description: errorMessage,
+      });
+    } finally {
+      setIsClaiming(false);
+    }
+  };
+
+  if (isLoading) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Link Your Account</CardTitle>
+          <CardDescription>
+            Connect your user account to a band member record for personalized features
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center justify-center py-8">
+            <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (error) {
+    return (
+      <Card>
+        <CardHeader>
+          <CardTitle>Link Your Account</CardTitle>
+          <CardDescription>
+            Connect your user account to a band member record for personalized features
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <Alert variant="destructive">
+            <AlertCircle className="h-4 w-4" />
+            <AlertTitle>Error</AlertTitle>
+            <AlertDescription>{error}</AlertDescription>
+          </Alert>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Link Your Account</CardTitle>
+        <CardDescription>
+          Connect your user account to a band member record for personalized features
+        </CardDescription>
+      </CardHeader>
+      <CardContent>
+        {linkedMember ? (
+          <div className="flex items-center justify-between">
+            <div className="flex items-center gap-3">
+              <Avatar className={getAvatarColor(linkedMember.avatarColor)}>
+                <AvatarFallback>{getInitials(linkedMember.name)}</AvatarFallback>
+              </Avatar>
+              <div>
+                <p className="font-medium">{linkedMember.name}</p>
+                <p className="text-sm text-muted-foreground">
+                  {linkedMember.roles.join(', ')}
+                </p>
+              </div>
+            </div>
+            <Badge variant="secondary" className="ml-auto">
+              Linked
+            </Badge>
+          </div>
+        ) : unlinkedMembers.length > 0 ? (
+          <div className="space-y-4">
+            <p className="text-sm text-muted-foreground">
+              Select the band member that represents you:
+            </p>
+            <Select value={selectedMemberId} onValueChange={setSelectedMemberId}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select a member" />
+              </SelectTrigger>
+              <SelectContent>
+                {unlinkedMembers.map(member => (
+                  <SelectItem key={member.id} value={member.id}>
+                    <div className="flex items-center gap-2">
+                      <Avatar className={`h-6 w-6 ${getAvatarColor(member.avatarColor)}`}>
+                        <AvatarFallback className="text-xs">
+                          {getInitials(member.name)}
+                        </AvatarFallback>
+                      </Avatar>
+                      <span>{member.name}</span>
+                      <span className="text-muted-foreground">
+                        ({member.roles.join(', ')})
+                      </span>
+                    </div>
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            <Button
+              onClick={handleClaimMember}
+              disabled={!selectedMemberId || isClaiming}
+              className="w-full"
+            >
+              {isClaiming ? (
+                <>
+                  <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                  Claiming...
+                </>
+              ) : (
+                'Claim Member'
+              )}
+            </Button>
+          </div>
+        ) : (
+          <Alert>
+            <Info className="h-4 w-4" />
+            <AlertTitle>No members available</AlertTitle>
+            <AlertDescription>
+              All members are already linked. Contact your band admin if you need to claim a member.
+            </AlertDescription>
+          </Alert>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
 
 export const Settings: React.FC<SettingsProps> = memo(function Settings({
   members,
@@ -430,6 +603,8 @@ export const Settings: React.FC<SettingsProps> = memo(function Settings({
         {/* Team Tab - Only rendered when Supabase is configured */}
         {showInvitations && currentBandId && currentUserId && (
           <TabsContent value="TEAM" className="space-y-6 animate-slide-in-from-bottom animation-forwards">
+            <LinkAccountSection currentBandId={currentBandId} />
+
             <Card>
               <CardContent className="p-6">
                 <InvitationManager

@@ -15,6 +15,22 @@ export interface BandMember {
   name: string;
   roles: string[]; // Default/Preferred roles (e.g. ["Lead Guitar", "Vocals"])
   avatarColor?: AvatarColorClass; // Validated avatar background color
+  userId?: string | null; // Link to auth.users for personalized features
+}
+
+// Type guard to check if member is linked to a user
+export function isMemberLinked(member: BandMember): member is BandMember & { userId: string } {
+  return member.userId != null;
+}
+
+// Helper to get user-linked members from a list
+export function getLinkedMembers(members: BandMember[]): Array<BandMember & { userId: string }> {
+  return members.filter(isMemberLinked);
+}
+
+// Helper to get unlinked members from a list
+export function getUnlinkedMembers(members: BandMember[]): BandMember[] {
+  return members.filter(member => !isMemberLinked(member));
 }
 
 export interface Assignment {

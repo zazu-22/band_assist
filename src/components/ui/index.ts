@@ -7,8 +7,9 @@ export { ConfirmDialog } from './ConfirmDialog';
 export { DangerousActionDialog } from './DangerousActionDialog';
 export { ErrorBoundary } from './ErrorBoundary';
 export { ResizablePanel } from './ResizablePanel';
+export { Alert, AlertTitle, AlertDescription } from './Alert';
 
-// New shadcn-based components
+// shadcn-based components
 export { StatusBadge } from './StatusBadge';
 export { StatCard } from './StatCard';
 export { ConditionalTooltip } from './ConditionalTooltip';

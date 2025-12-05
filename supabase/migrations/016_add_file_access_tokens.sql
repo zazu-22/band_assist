@@ -17,7 +17,9 @@ CREATE TABLE file_access_tokens (
 );
 
 -- Indexes for fast lookups
-CREATE INDEX idx_file_access_tokens_token ON file_access_tokens(token) WHERE used_at IS NULL AND expires_at > NOW();
+-- Note: Cannot use expires_at > NOW() in partial index (NOW() is not IMMUTABLE)
+-- Instead, we use a regular index and filter in queries
+CREATE INDEX idx_file_access_tokens_token ON file_access_tokens(token) WHERE used_at IS NULL;
 CREATE INDEX idx_file_access_tokens_user_id ON file_access_tokens(user_id);
 CREATE INDEX idx_file_access_tokens_expires_at ON file_access_tokens(expires_at);
 CREATE INDEX idx_file_access_tokens_created_at ON file_access_tokens(created_at); -- For efficient cleanup queries
