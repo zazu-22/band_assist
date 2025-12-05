@@ -14,6 +14,7 @@ import {
   LucideIcon,
   ChevronLeft,
   ChevronRight,
+  History,
 } from 'lucide-react';
 import { BandSelector } from './BandSelector';
 import { useSidebar } from './layout/SidebarProvider';
@@ -31,6 +32,7 @@ type NavItemId = (typeof NAV_ITEMS)[number]['id'];
 const iconMap: Record<NavItemId, LucideIcon> = {
   DASHBOARD: LayoutDashboard,
   PRACTICE: Mic2,
+  PRACTICE_HISTORY: History,
   SETLIST: ListMusic,
   SCHEDULE: CalendarClock,
   BAND: Users,

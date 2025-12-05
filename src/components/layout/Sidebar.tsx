@@ -12,6 +12,7 @@ import {
   LogOut,
   ChevronLeft,
   ChevronRight,
+  History,
   type LucideIcon,
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -29,6 +30,7 @@ type NavItemId = (typeof NAV_ITEMS)[number]['id'];
 const iconMap: Record<NavItemId, LucideIcon> = {
   DASHBOARD: LayoutDashboard,
   PRACTICE: Mic2,
+  PRACTICE_HISTORY: History,
   SETLIST: ListMusic,
   SCHEDULE: CalendarClock,
   BAND: Users,

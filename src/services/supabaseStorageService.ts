@@ -1,4 +1,4 @@
-import { Song, BandMember, BandEvent, SongChart, Assignment, SongPart } from '../types';
+import { Song, BandMember, BandEvent, SongChart, Assignment, SongPart, PracticeSession, PracticeFilters, UserSongProgress, UserSongStatus, PracticeStats } from '../types';
 import { IStorageService, LoadResult } from './IStorageService';
 import { getSupabaseClient, isSupabaseConfigured } from './supabaseClient';
 import { validateAvatarColor } from '@/lib/avatar';
@@ -1187,6 +1187,401 @@ export class SupabaseStorageService implements IStorageService {
     } catch (err) {
       console.error('[getLinkedMemberForUser] Unexpected error:', err);
       throw err;
+    }
+  }
+
+  /**
+   * Log a practice session for a user
+   * @throws Error if validation fails or database operation fails
+   */
+  async logPracticeSession(
+    session: Omit<PracticeSession, 'id' | 'createdAt' | 'updatedAt'>
+  ): Promise<PracticeSession> {
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      throw new Error('Supabase is not configured. Check environment variables.');
+    }
+
+    if (!this.currentBandId) {
+      throw new Error('No band selected. Call setCurrentBand() first.');
+    }
+
+    // Validate session data
+    if (session.durationMinutes <= 0) {
+      throw new Error('Practice duration must be greater than 0 minutes');
+    }
+
+    try {
+      // Insert practice session
+      const { data, error } = await supabase
+        .from('practice_sessions')
+        .insert({
+          user_id: session.userId,
+          song_id: session.songId,
+          band_id: session.bandId,
+          duration_minutes: session.durationMinutes,
+          tempo_bpm: session.tempoBpm ?? null,
+          sections_practiced: session.sectionsPracticed ?? null,
+          notes: session.notes ?? null,
+          date: session.date,
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error logging practice session:', error);
+        throw new Error('Failed to save practice session');
+      }
+
+      // Update last_practiced_at in user_song_status
+      const { error: statusError } = await supabase
+        .from('user_song_status')
+        .upsert(
+          {
+            user_id: session.userId,
+            song_id: session.songId,
+            status: 'Learning', // Default status, won't overwrite existing
+            last_practiced_at: new Date().toISOString(),
+          },
+          {
+            onConflict: 'user_id,song_id',
+            ignoreDuplicates: false,
+          }
+        );
+
+      if (statusError) {
+        // Log warning but don't fail the operation
+        console.warn('Failed to update last_practiced_at:', statusError);
+      }
+
+      return this.transformPracticeSession(data);
+    } catch (error) {
+      console.error('Error in logPracticeSession:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Get practice sessions for a user with optional filters
+   */
+  async getPracticeSessions(
+    userId: string,
+    bandId: string,
+    filters?: PracticeFilters
+  ): Promise<PracticeSession[]> {
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      throw new Error('Supabase is not configured. Check environment variables.');
+    }
+
+    if (!this.currentBandId) {
+      throw new Error('No band selected. Call setCurrentBand() first.');
+    }
+
+    try {
+      let query = supabase
+        .from('practice_sessions')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('band_id', bandId)
+        .order('date', { ascending: false });
+
+      if (filters?.songId) {
+        query = query.eq('song_id', filters.songId);
+      }
+
+      if (filters?.startDate) {
+        query = query.gte('date', filters.startDate);
+      }
+
+      if (filters?.endDate) {
+        query = query.lte('date', filters.endDate);
+      }
+
+      if (filters?.limit) {
+        query = query.limit(filters.limit);
+      }
+
+      const { data, error } = await query;
+
+      if (error) {
+        console.error('Error fetching practice sessions:', error);
+        throw new Error('Failed to load practice sessions');
+      }
+
+      return (data || []).map(row => this.transformPracticeSession(row));
+    } catch (error) {
+      console.error('Error in getPracticeSessions:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Transform database row to PracticeSession type
+   */
+  private transformPracticeSession(
+    row: Database['public']['Tables']['practice_sessions']['Row']
+  ): PracticeSession {
+    return {
+      id: row.id,
+      userId: row.user_id,
+      songId: row.song_id,
+      bandId: row.band_id,
+      durationMinutes: row.duration_minutes,
+      tempoBpm: row.tempo_bpm ?? undefined,
+      sectionsPracticed: (row.sections_practiced as string[] | null) ?? undefined,
+      notes: row.notes ?? undefined,
+      date: row.date,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+    };
+  }
+
+  /**
+   * Update user's learning status for a song
+   * Uses upsert to handle both insert and update cases
+   */
+  async updateUserSongStatus(
+    userId: string,
+    songId: string,
+    status: UserSongStatus,
+    confidence?: number
+  ): Promise<UserSongProgress> {
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      throw new Error('Supabase is not configured. Check environment variables.');
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('user_song_status')
+        .upsert(
+          {
+            user_id: userId,
+            song_id: songId,
+            status,
+            confidence_level: confidence ?? null,
+            updated_at: new Date().toISOString(),
+          },
+          {
+            onConflict: 'user_id,song_id',
+          }
+        )
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error updating user song status:', error);
+        throw new Error('Failed to update song status');
+      }
+
+      return this.transformUserSongProgress(data);
+    } catch (error) {
+      console.error('Error in updateUserSongStatus:', error);
+      throw error instanceof Error ? error : new Error('Failed to update song status');
+    }
+  }
+
+  /**
+   * Get user's learning status for a specific song
+   * Returns null if no status exists yet
+   */
+  async getUserSongStatus(userId: string, songId: string): Promise<UserSongProgress | null> {
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      throw new Error('Supabase is not configured. Check environment variables.');
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('user_song_status')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('song_id', songId)
+        .maybeSingle();
+
+      if (error) {
+        console.error('Error fetching user song status:', error);
+        throw new Error('Failed to load song status');
+      }
+
+      return data ? this.transformUserSongProgress(data) : null;
+    } catch (error) {
+      console.error('Error in getUserSongStatus:', error);
+      throw error instanceof Error ? error : new Error('Failed to load song status');
+    }
+  }
+
+  /**
+   * Get all song statuses for a user in a band
+   * Returns a Map keyed by songId for efficient lookups
+   */
+  async getAllUserSongStatuses(userId: string, bandId: string): Promise<Map<string, UserSongProgress>> {
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      throw new Error('Supabase is not configured. Check environment variables.');
+    }
+
+    try {
+      // First get all song IDs for this band
+      const { data: songs, error: songsError } = await supabase
+        .from('songs')
+        .select('id')
+        .eq('band_id', bandId);
+
+      if (songsError) {
+        console.error('Error fetching songs:', songsError);
+        throw new Error('Failed to load songs');
+      }
+
+      const songIds = songs?.map(s => s.id) || [];
+
+      if (songIds.length === 0) {
+        return new Map();
+      }
+
+      // Get user's statuses for these songs
+      const { data, error } = await supabase
+        .from('user_song_status')
+        .select('*')
+        .eq('user_id', userId)
+        .in('song_id', songIds);
+
+      if (error) {
+        console.error('Error fetching user song statuses:', error);
+        throw new Error('Failed to load song statuses');
+      }
+
+      const statusMap = new Map<string, UserSongProgress>();
+      (data || []).forEach(row => {
+        statusMap.set(row.song_id, this.transformUserSongProgress(row));
+      });
+
+      return statusMap;
+    } catch (error) {
+      console.error('Error in getAllUserSongStatuses:', error);
+      throw error instanceof Error ? error : new Error('Failed to load song statuses');
+    }
+  }
+
+  /**
+   * Transform database row to UserSongProgress type
+   */
+  private transformUserSongProgress(
+    row: Database['public']['Tables']['user_song_status']['Row']
+  ): UserSongProgress {
+    return {
+      id: row.id,
+      userId: row.user_id,
+      songId: row.song_id,
+      status: row.status as UserSongStatus,
+      confidenceLevel: row.confidence_level ?? undefined,
+      lastPracticedAt: row.last_practiced_at ?? undefined,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+    };
+  }
+
+  /**
+   * Calculate aggregate practice statistics for a user
+   * @param userId - User ID to calculate stats for
+   * @param bandId - Band ID to scope the statistics
+   * @param dateRange - Optional date range to filter sessions
+   * @returns Aggregate statistics including session counts, time, and learning progress
+   */
+  async calculatePracticeStats(
+    userId: string,
+    bandId: string,
+    dateRange?: { start: string; end: string }
+  ): Promise<PracticeStats> {
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      throw new Error('Supabase is not configured. Check environment variables.');
+    }
+
+    if (!this.currentBandId) {
+      throw new Error('No band selected. Call setCurrentBand() first.');
+    }
+
+    try {
+      // Build query for practice sessions
+      let sessionsQuery = supabase
+        .from('practice_sessions')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('band_id', bandId);
+
+      if (dateRange?.start) {
+        sessionsQuery = sessionsQuery.gte('date', dateRange.start);
+      }
+      if (dateRange?.end) {
+        sessionsQuery = sessionsQuery.lte('date', dateRange.end);
+      }
+
+      const { data: sessions, error: sessionsError } = await sessionsQuery;
+
+      if (sessionsError) {
+        console.error('Error fetching sessions for stats:', sessionsError);
+        throw new Error('Failed to calculate practice statistics');
+      }
+
+      // Get song IDs for this band
+      const { data: songs, error: songsError } = await supabase
+        .from('songs')
+        .select('id')
+        .eq('band_id', bandId);
+
+      if (songsError) {
+        console.error('Error fetching songs:', songsError);
+        throw new Error('Failed to load songs');
+      }
+
+      const songIds = songs?.map(s => s.id) || [];
+
+      // Get user's song statuses
+      let statusesQuery = supabase
+        .from('user_song_status')
+        .select('*')
+        .eq('user_id', userId);
+
+      if (songIds.length > 0) {
+        statusesQuery = statusesQuery.in('song_id', songIds);
+      }
+
+      const { data: statuses, error: statusError } = await statusesQuery;
+
+      if (statusError) {
+        console.error('Error fetching statuses:', statusError);
+        throw new Error('Failed to load song statuses');
+      }
+
+      // Calculate statistics
+      const totalSessions = sessions?.length || 0;
+      const totalMinutes = sessions?.reduce((sum, s) => sum + s.duration_minutes, 0) || 0;
+      const averageSessionMinutes = totalSessions > 0 ? Math.round(totalMinutes / totalSessions) : 0;
+
+      const songsLearned = (statuses || []).filter(
+        s => s.status === 'Learned' || s.status === 'Mastered'
+      ).length;
+      const songsMastered = (statuses || []).filter(s => s.status === 'Mastered').length;
+
+      // Get recent sessions (last 5)
+      const recentSessions = (sessions || [])
+        .sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime())
+        .slice(0, 5)
+        .map(row => this.transformPracticeSession(row));
+
+      return {
+        totalSessions,
+        totalMinutes,
+        averageSessionMinutes,
+        songsLearned,
+        songsMastered,
+        recentSessions,
+      };
+    } catch (error) {
+      console.error('Error in calculatePracticeStats:', error);
+      throw error instanceof Error ? error : new Error('Failed to calculate practice statistics');
     }
   }
 }
