@@ -1,13 +1,14 @@
 # User-Member Linking: Phase 1 - Foundation
 
-| Field       | Value                                       |
-| ----------- | ------------------------------------------- |
-| **Status**  | Active                                      |
-| **Authors** | Claude (AI Assistant)                       |
-| **Created** | 2025-12-02                                  |
-| **Updated** | 2025-12-05                                  |
-| **Priority**| High                                        |
-| **Type**    | Feature                                     |
+| Field        | Value                                       |
+| ------------ | ------------------------------------------- |
+| **Status**   | Done                                        |
+| **Authors**  | Claude (AI Assistant)                       |
+| **Created**  | 2025-12-02                                  |
+| **Updated**  | 2025-12-05                                  |
+| **Completed**| 2025-12-05                                  |
+| **Priority** | High                                        |
+| **Type**     | Feature                                     |
 
 ---
 

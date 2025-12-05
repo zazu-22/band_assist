@@ -10,8 +10,8 @@
 
 | Status | Count | Description |
 |--------|-------|-------------|
-| 🔴 Active | 1 | Currently being implemented |
-| 🟢 Done | 14 | Completed and merged |
+| 🔴 Active | 0 | Currently being implemented |
+| 🟢 Done | 15 | Completed and merged |
 | 🟡 Pending | 2 | Queued for implementation (in sequence order) |
 | ⚪ Backlog | 14 | Planned but not yet prioritized |
 
@@ -19,11 +19,7 @@
 
 ## 🔴 Active Spec
 
-The spec currently being implemented:
-
-| Spec | Type | Effort | Notes |
-|------|------|--------|-------|
-| [feat-user-member-linking-phase-1](feat-user-member-linking-phase-1.md) | Feature | Medium | Foundation: user_id linking only (1-2 days) |
+No specs currently active. Next up: [feat-user-member-linking-phase-2](pending/feat-user-member-linking-phase-2.md)
 
 ---
 
@@ -38,10 +34,11 @@ Specs queued for implementation **in priority order**. Work through these sequen
 
 ---
 
-## 🟢 Done (14)
+## 🟢 Done (15)
 
 | Spec | Type | Priority | Completed |
 |------|------|----------|-----------|
+| [feat-user-member-linking-phase-1](done/feat-user-member-linking-phase-1.md) | Feature | High | 2025-12-05 |
 | [infra-automated-versioning](done/infra-automated-versioning.md) | Infrastructure | Medium | 2025-12-03 |
 | [perf-context-splitting](done/perf-context-splitting.md) | Performance | Medium | 2025-12-02 |
 | [perf-auto-save-debouncing](done/perf-auto-save-debouncing.md) | Performance | High | Dec 2025 |
@@ -65,6 +62,7 @@ Specs queued for implementation **in priority order**. Work through these sequen
 
 | Spec | Type | Effort | Notes |
 |------|------|--------|-------|
+| [infra-test-environment-setup](backlog/infra-test-environment-setup.md) | Infrastructure | Small | Blocks service-layer-testing and ci-test-suite |
 | [infra-service-layer-testing](backlog/infra-service-layer-testing.md) | Testing | Medium | Critical path has 0% coverage |
 
 ### Medium Priority
@@ -106,6 +104,8 @@ Specs queued for implementation **in priority order**. Work through these sequen
 
 | Date | Spec | Change |
 |------|------|--------|
+| 2025-12-05 | infra-test-environment-setup | ➕ Added to backlog (blocks testing specs) |
+| 2025-12-05 | feat-user-member-linking-phase-1 | ✅ Completed |
 | 2025-12-05 | feat-user-member-linking-phase-1 | 🔴 Moved to active (specs/feat-user-member-linking-phase-1.md) |
 | 2025-12-05 | feat-user-member-linking-phase-1 | 📝 Revised: removed user_preferences, auto-link; added error handling |
 | 2025-12-05 | feat-user-member-linking-phase-2 | 📝 Revised: added service methods, error handling, state management |
