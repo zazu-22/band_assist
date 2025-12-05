@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.2](https://github.com/zazu-22/band_assist/compare/v0.1.1...v0.1.2) (2025-12-05)
+
+
+### Bug Fixes
+
+* **pdf-viewer:** resolve Firefox PDF download issue with Edge Function ([#109](https://github.com/zazu-22/band_assist/issues/109)) ([8429994](https://github.com/zazu-22/band_assist/commit/84299945b21a76a2d3789385599208b91ef807d4))
+
 ## [0.1.1](https://github.com/zazu-22/band_assist/compare/v0.1.0...v0.1.1) (2025-12-04)
 
 
