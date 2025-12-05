@@ -13,7 +13,7 @@
 | 🔴 Active | 0 | Currently being implemented |
 | 🟢 Done | 15 | Completed and merged |
 | 🟡 Pending | 2 | Queued for implementation (in sequence order) |
-| ⚪ Backlog | 14 | Planned but not yet prioritized |
+| ⚪ Backlog | 15 | Planned but not yet prioritized |
 
 ---
 
@@ -80,6 +80,7 @@ Specs queued for implementation **in priority order**. Work through these sequen
 
 | Spec | Type | Effort | Notes |
 |------|------|--------|-------|
+| [feat-user-member-unlinking](backlog/feat-user-member-unlinking.md) | Feature | Small | Undo accidental member claim |
 | [feat-alphatab-dark-mode-theming](backlog/feat-alphatab-dark-mode-theming.md) | Feature | Medium | Design system integration |
 | [feat-performance-mode-alphatab-metronome](backlog/feat-performance-mode-alphatab-metronome.md) | Feature | Small | Enable metronome |
 | [feat-performance-mode-pdf-viewer-improvements](backlog/feat-performance-mode-pdf-viewer-improvements.md) | Feature | Small | Better PDF display |
@@ -104,6 +105,7 @@ Specs queued for implementation **in priority order**. Work through these sequen
 
 | Date | Spec | Change |
 |------|------|--------|
+| 2025-12-05 | feat-user-member-unlinking | ➕ Added to backlog (undo wrong member claim) |
 | 2025-12-05 | infra-test-environment-setup | ➕ Added to backlog (blocks testing specs) |
 | 2025-12-05 | feat-user-member-linking-phase-1 | ✅ Completed |
 | 2025-12-05 | feat-user-member-linking-phase-1 | 🔴 Moved to active (specs/feat-user-member-linking-phase-1.md) |
