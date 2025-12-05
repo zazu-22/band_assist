@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.3](https://github.com/zazu-22/band_assist/compare/v0.1.2...v0.1.3) (2025-12-05)
+
+
+### Features
+
+* **user-member-linking:** Phase 1 - Foundation ([#112](https://github.com/zazu-22/band_assist/issues/112)) ([f62cbaf](https://github.com/zazu-22/band_assist/commit/f62cbafff886482526e7b36bfef26a4fdf6188dd))
+
 ## [0.1.2](https://github.com/zazu-22/band_assist/compare/v0.1.1...v0.1.2) (2025-12-05)
 
 
