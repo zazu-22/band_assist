@@ -11,15 +11,15 @@
 | Status | Count | Description |
 |--------|-------|-------------|
 | 🔴 Active | 0 | Currently being implemented |
-| 🟢 Done | 15 | Completed and merged |
-| 🟡 Pending | 2 | Queued for implementation (in sequence order) |
+| 🟢 Done | 16 | Completed and merged |
+| 🟡 Pending | 1 | Queued for implementation (in sequence order) |
 | ⚪ Backlog | 15 | Planned but not yet prioritized |
 
 ---
 
 ## 🔴 Active Spec
 
-No specs currently active. Next up: [feat-user-member-linking-phase-2](pending/feat-user-member-linking-phase-2.md)
+No specs currently active. Next up: [feat-user-member-linking-phase-3](pending/feat-user-member-linking-phase-3.md)
 
 ---
 
@@ -29,15 +29,15 @@ Specs queued for implementation **in priority order**. Work through these sequen
 
 | Seq | Spec | Type | Effort | Notes |
 |-----|------|------|--------|-------|
-| 1 | [feat-user-member-linking-phase-2](pending/feat-user-member-linking-phase-2.md) | Feature | Medium | Practice tracking (3-4 days) |
-| 2 | [feat-user-member-linking-phase-3](pending/feat-user-member-linking-phase-3.md) | Feature | Large | Personalization + preferences (5-7 days) |
+| 1 | [feat-user-member-linking-phase-3](pending/feat-user-member-linking-phase-3.md) | Feature | Large | Personalization + preferences (5-7 days) |
 
 ---
 
-## 🟢 Done (15)
+## 🟢 Done (16)
 
 | Spec | Type | Priority | Completed |
 |------|------|----------|-----------|
+| [feat-user-member-linking-phase-2](done/feat-user-member-linking-phase-2.md) | Feature | High | 2025-12-05 |
 | [feat-user-member-linking-phase-1](done/feat-user-member-linking-phase-1.md) | Feature | High | 2025-12-05 |
 | [infra-automated-versioning](done/infra-automated-versioning.md) | Infrastructure | Medium | 2025-12-03 |
 | [perf-context-splitting](done/perf-context-splitting.md) | Performance | Medium | 2025-12-02 |
@@ -105,6 +105,7 @@ Specs queued for implementation **in priority order**. Work through these sequen
 
 | Date | Spec | Change |
 |------|------|--------|
+| 2025-12-05 | feat-user-member-linking-phase-2 | ✅ Completed |
 | 2025-12-05 | feat-user-member-unlinking | ➕ Added to backlog (undo wrong member claim) |
 | 2025-12-05 | infra-test-environment-setup | ➕ Added to backlog (blocks testing specs) |
 | 2025-12-05 | feat-user-member-linking-phase-1 | ✅ Completed |
@@ -129,8 +130,8 @@ Specs queued for implementation **in priority order**. Work through these sequen
 ## Dependencies Graph
 
 ```
-feat-user-member-linking-phase-1
-    └── feat-user-member-linking-phase-2
+feat-user-member-linking-phase-1 ✅
+    └── feat-user-member-linking-phase-2 ✅
             └── feat-user-member-linking-phase-3
 
 perf-alphatab-lazy-loading ✅
