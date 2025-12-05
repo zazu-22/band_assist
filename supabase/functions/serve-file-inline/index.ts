@@ -90,9 +90,10 @@ Deno.serve(async (req) => {
 
     // Use service role to validate token and access storage
     const supabaseUrl = Deno.env.get('SUPABASE_URL')
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+    // Support both new (SUPABASE_SECRET_KEY) and legacy (SUPABASE_SERVICE_ROLE_KEY) env var names
+    const supabaseSecretKey = Deno.env.get('SUPABASE_SECRET_KEY') || Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
 
-    if (!supabaseUrl || !supabaseServiceKey) {
+    if (!supabaseUrl || !supabaseSecretKey) {
       console.error('Missing required environment variables')
       return new Response(
         JSON.stringify({ error: 'Server configuration error' }),
@@ -103,7 +104,7 @@ Deno.serve(async (req) => {
       )
     }
 
-    const supabase = createClient(supabaseUrl, supabaseServiceKey)
+    const supabase = createClient(supabaseUrl, supabaseSecretKey)
 
     // Validate file access token
     // This token is short-lived (5 min) and single-use, providing better security than JWT in URL

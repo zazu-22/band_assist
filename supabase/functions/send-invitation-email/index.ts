@@ -5,10 +5,11 @@
 // - RESEND_API_KEY: Your Resend API key
 // - APP_URL: Your app's base URL (e.g., https://band-assist.vercel.app)
 // - EMAIL_FROM: From address (e.g., "Band Assist <noreply@yourdomain.com>")
+// - WEBHOOK_SECRET: Shared secret for webhook authentication (configured in webhook headers)
 //
 // Auto-injected by Supabase:
 // - SUPABASE_URL
-// - SUPABASE_SERVICE_ROLE_KEY
+// - SUPABASE_SECRET_KEY (or legacy SUPABASE_SERVICE_ROLE_KEY)
 
 import { serve } from 'https://deno.land/std@0.177.0/http/server.ts';
 import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
@@ -17,8 +18,10 @@ import { createClient } from 'https://esm.sh/@supabase/supabase-js@2';
 const RESEND_API_KEY = Deno.env.get('RESEND_API_KEY');
 const APP_URL = Deno.env.get('APP_URL') || 'http://localhost:3000';
 const EMAIL_FROM = Deno.env.get('EMAIL_FROM') || 'Band Assist <noreply@example.com>';
+const WEBHOOK_SECRET = Deno.env.get('WEBHOOK_SECRET');
 const SUPABASE_URL = Deno.env.get('SUPABASE_URL');
-const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+// Support both new (SUPABASE_SECRET_KEY) and legacy (SUPABASE_SERVICE_ROLE_KEY) env var names
+const SUPABASE_SECRET_KEY = Deno.env.get('SUPABASE_SECRET_KEY') || Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
 
 interface WebhookPayload {
   type: 'INSERT' | 'UPDATE' | 'DELETE';
@@ -79,6 +82,31 @@ serve(async (req: Request) => {
     return new Response('Method not allowed', { status: 405 });
   }
 
+  // Verify webhook authentication
+  // The webhook must include x-webhook-secret header matching our WEBHOOK_SECRET
+  if (!WEBHOOK_SECRET) {
+    console.error('WEBHOOK_SECRET is not configured');
+    return new Response(
+      JSON.stringify({ error: 'Server configuration error: missing WEBHOOK_SECRET' }),
+      {
+        status: 500,
+        headers: { 'Content-Type': 'application/json' },
+      }
+    );
+  }
+
+  const providedSecret = req.headers.get('x-webhook-secret');
+  if (providedSecret !== WEBHOOK_SECRET) {
+    console.error('Invalid or missing webhook secret');
+    return new Response(
+      JSON.stringify({ error: 'Unauthorized' }),
+      {
+        status: 401,
+        headers: { 'Content-Type': 'application/json' },
+      }
+    );
+  }
+
   // Validate required environment variables
   if (!RESEND_API_KEY) {
     console.error('RESEND_API_KEY secret is not set');
@@ -91,7 +119,7 @@ serve(async (req: Request) => {
     );
   }
 
-  if (!SUPABASE_URL || !SUPABASE_SERVICE_ROLE_KEY) {
+  if (!SUPABASE_URL || !SUPABASE_SECRET_KEY) {
     console.error('Missing Supabase environment variables');
     return new Response(
       JSON.stringify({ error: 'Server configuration error: missing Supabase credentials' }),
@@ -134,7 +162,7 @@ serve(async (req: Request) => {
     }
 
     // Create Supabase client with service role for admin access
-    const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+    const supabase = createClient(SUPABASE_URL, SUPABASE_SECRET_KEY);
 
     // Look up band name - fail if we can't get it (indicates RLS or DB issue)
     const { data: band, error: bandError } = await supabase
