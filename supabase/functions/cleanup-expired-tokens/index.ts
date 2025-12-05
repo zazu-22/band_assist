@@ -5,11 +5,21 @@ import { createClient } from 'jsr:@supabase/supabase-js@2'
 
 Deno.serve(async (req) => {
   try {
-    // Verify authentication
-    // Supabase Edge Functions enforce JWT verification when verify_jwt=true in config.toml
-    // This requires a valid Bearer token (service role key for scheduled invocations)
+    const supabaseUrl = Deno.env.get('SUPABASE_URL')
+    // SUPABASE_SERVICE_ROLE_KEY is auto-injected by Supabase (legacy JWT format)
+    // Used for creating the Supabase client to call database functions
+    const supabaseSecretKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
+    // EDGE_SECRET_KEY is our custom secret for authenticating external callers (GitHub Actions)
+    // Set via: supabase secrets set EDGE_SECRET_KEY=<your-sb_secret-key>
+    const edgeSecretKey = Deno.env.get('EDGE_SECRET_KEY')
+
+    // Verify authentication manually since verify_jwt is disabled in config.toml
+    // New Supabase secret keys (sb_secret_...) are not JWTs, so we compare directly
+    // See: https://supabase.com/docs/guides/api/api-keys
     const authHeader = req.headers.get('Authorization')
-    if (!authHeader?.startsWith('Bearer ')) {
+    const providedKey = authHeader?.replace('Bearer ', '')
+
+    if (!edgeSecretKey || !providedKey || providedKey !== edgeSecretKey) {
       return new Response(
         JSON.stringify({ error: 'Unauthorized' }),
         {
@@ -19,10 +29,7 @@ Deno.serve(async (req) => {
       )
     }
 
-    const supabaseUrl = Deno.env.get('SUPABASE_URL')
-    const supabaseServiceKey = Deno.env.get('SUPABASE_SERVICE_ROLE_KEY')
-
-    if (!supabaseUrl || !supabaseServiceKey) {
+    if (!supabaseUrl || !supabaseSecretKey) {
       console.error('Missing required environment variables')
       return new Response(
         JSON.stringify({ error: 'Server configuration error' }),
@@ -33,7 +40,7 @@ Deno.serve(async (req) => {
       )
     }
 
-    const supabase = createClient(supabaseUrl, supabaseServiceKey)
+    const supabase = createClient(supabaseUrl, supabaseSecretKey)
 
     // Call the cleanup function
     const { data, error } = await supabase.rpc('cleanup_expired_file_tokens')
