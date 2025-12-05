@@ -108,3 +108,24 @@ export function getNextAvatarColor(memberIndex: number): AvatarColorClass {
   const safeIndex = Math.max(0, Math.floor(memberIndex));
   return AVATAR_COLORS[safeIndex % AVATAR_COLORS.length];
 }
+
+/**
+ * Get initials from a name (up to 2 characters).
+ * @param name - Full name to extract initials from
+ * @returns Initials (1-2 uppercase characters)
+ */
+export function getInitials(name: string): string {
+  if (!name || !name.trim()) {
+    return '?';
+  }
+
+  const words = name.trim().split(/\s+/);
+
+  if (words.length === 1) {
+    // Single word: return first character
+    return words[0].charAt(0).toUpperCase();
+  }
+
+  // Multiple words: return first character of first and last word
+  return (words[0].charAt(0) + words[words.length - 1].charAt(0)).toUpperCase();
+}

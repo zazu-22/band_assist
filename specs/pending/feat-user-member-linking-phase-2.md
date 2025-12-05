@@ -2,10 +2,10 @@
 
 | Field       | Value                                       |
 | ----------- | ------------------------------------------- |
-| **Status**  | Backlog                                     |
+| **Status**  | Pending                                     |
 | **Authors** | Claude (AI Assistant)                       |
 | **Created** | 2025-12-02                                  |
-| **Updated** | 2025-12-02                                  |
+| **Updated** | 2025-12-05                                  |
 | **Priority**| High                                        |
 | **Type**    | Feature                                     |
 
@@ -508,6 +508,175 @@ Update song list displays to show personal status alongside band status:
 </div>
 ```
 
+### Service Layer Methods
+
+The following service methods must be implemented in `src/services/supabaseStorageService.ts`:
+
+```typescript
+/**
+ * Log a practice session for a user
+ * @throws Error if user is not linked to a member or validation fails
+ */
+async function logPracticeSession(
+  session: Omit<PracticeSession, 'id' | 'createdAt' | 'updatedAt'>
+): Promise<PracticeSession> {
+  // 1. Validate session data (duration > 0, valid songId, etc.)
+  // 2. Insert into practice_sessions table
+  // 3. Update user_song_status.last_practiced_at
+  // 4. Return created session
+}
+
+/**
+ * Update user's learning status for a song
+ */
+async function updateUserSongStatus(
+  userId: string,
+  songId: string,
+  status: UserSongStatus,
+  confidence?: number
+): Promise<UserSongProgress> {
+  // Upsert user_song_status (INSERT ON CONFLICT UPDATE)
+}
+
+/**
+ * Get practice sessions for a user, optionally filtered
+ */
+async function getPracticeSessions(
+  userId: string,
+  bandId: string,
+  filters?: {
+    songId?: string;
+    startDate?: string;
+    endDate?: string;
+    limit?: number;
+  }
+): Promise<PracticeSession[]> {
+  // Query practice_sessions with optional filters and date range
+}
+
+/**
+ * Calculate aggregate practice statistics for a user
+ */
+async function calculatePracticeStats(
+  userId: string,
+  bandId: string,
+  dateRange?: { start: string; end: string }
+): Promise<PracticeStats> {
+  // 1. Count total sessions
+  // 2. Sum total minutes
+  // 3. Calculate average session duration
+  // 4. Count songs learned (user_song_status)
+  // 5. Count songs mastered
+  // 6. Fetch recent sessions
+}
+
+/**
+ * Get user's learning status for a specific song
+ */
+async function getUserSongStatus(
+  userId: string,
+  songId: string
+): Promise<UserSongProgress | null> {
+  // Query user_song_status for specific user + song
+}
+
+/**
+ * Get all song statuses for a user in a band
+ */
+async function getAllUserSongStatuses(
+  userId: string,
+  bandId: string
+): Promise<Map<string, UserSongProgress>> {
+  // Query all user_song_status records, return as Map keyed by songId
+}
+```
+
+### Error Handling
+
+All operations must handle the following error scenarios:
+
+| Error Scenario | User-Facing Message | Technical Handling |
+|----------------|---------------------|-------------------|
+| User not linked to member | "Link your account to a band member to track practice" | Check if user has linked member before showing practice log UI |
+| Invalid duration (≤0) | "Practice duration must be greater than 0 minutes" | Validate input before submission |
+| Song not found | "This song no longer exists" | Handle foreign key violations gracefully |
+| Network failure | "Connection lost. Your practice session was not saved. Please try again." | Catch network errors, allow retry with same data |
+| Database constraint violation | "Failed to save practice session. Please try again." | Log error details, show generic message to user |
+| Empty practice sessions | "No practice sessions found. Start logging your practice to see your progress!" | Show empty state with encouragement |
+
+### State Management
+
+**React State Structure:**
+
+```typescript
+// In PerformanceMode.tsx
+const [showPracticeLogDialog, setShowPracticeLogDialog] = useState(false);
+const [practiceLog, setPracticeLog] = useState({
+  duration: 30,
+  tempoBpm: song.bpm || undefined,
+  sections: [],
+  notes: '',
+  status: 'Learning' as UserSongStatus,
+  confidence: 3,
+});
+const [isSaving, setIsSaving] = useState(false);
+
+// In PracticeHistory.tsx
+const [sessions, setSessions] = useState<PracticeSession[]>([]);
+const [stats, setStats] = useState<PracticeStats | null>(null);
+const [isLoading, setIsLoading] = useState(true);
+const [selectedSongFilter, setSelectedSongFilter] = useState<string | 'all'>('all');
+const [dateRange, setDateRange] = useState({
+  start: getDateDaysAgo(30),
+  end: getTodayDate(),
+});
+```
+
+**Data Fetching Pattern:**
+
+```typescript
+// Custom hook: src/hooks/usePracticeSessions.ts
+export function usePracticeSessions(
+  userId: string | null,
+  bandId: string | null,
+  filters?: PracticeFilters
+) {
+  const [sessions, setSessions] = useState<PracticeSession[]>([]);
+  const [isLoading, setIsLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
+
+  useEffect(() => {
+    if (!userId || !bandId) return;
+
+    async function load() {
+      try {
+        setIsLoading(true);
+        const data = await getPracticeSessions(userId, bandId, filters);
+        setSessions(data);
+        setError(null);
+      } catch (err) {
+        setError(err as Error);
+      } finally {
+        setIsLoading(false);
+      }
+    }
+
+    load();
+  }, [userId, bandId, JSON.stringify(filters)]);
+
+  return { sessions, isLoading, error, refetch: load };
+}
+```
+
+**Optimistic Updates:**
+
+When logging a practice session:
+1. Show loading state on "Save" button
+2. Optimistically update local state (add session to list)
+3. Make API call
+4. On success: Show success toast, close dialog
+5. On failure: Revert optimistic update, show error message
+
 ---
 
 ## Database Changes
@@ -545,9 +714,10 @@ Update song list displays to show personal status alongside band status:
 - `/src/components/PracticeHistory.tsx` (NEW - practice history view)
 - `/src/components/SongList.tsx` (add personal status badges)
 - `/src/components/Dashboard.tsx` (add practice stats widgets)
-- `/src/services/supabaseStorageService.ts` (add practice session CRUD)
-- `/src/hooks/usePracticeSessions.ts` (NEW - custom hook for practice data)
+- `/src/services/supabaseStorageService.ts` (add practice session CRUD methods)
+- `/src/hooks/usePracticeSessions.ts` (NEW - custom hook for fetching practice data)
 - `/src/hooks/useUserSongStatus.ts` (NEW - custom hook for personal song status)
+- `/src/hooks/usePracticeStats.ts` (NEW - custom hook for aggregate statistics)
 - `/src/App.tsx` (add route for /practice-history)
 - `/src/lib/practiceStats.ts` (NEW - helper functions for stats calculations)
 

@@ -31,6 +31,7 @@ import {
 import { toast, ConfirmDialog, DangerousActionDialog } from '@/components/ui';
 import { StorageService } from '@/services/storageService';
 import { InvitationManager } from '@/components/InvitationManager';
+import { LinkAccountSection } from '@/components/LinkAccountSection';
 import { isSupabaseConfigured } from '@/services/supabaseClient';
 import { getAvatarColor, getNextAvatarColor } from '@/lib/avatar';
 import { cn } from '@/lib/utils';
@@ -430,6 +431,8 @@ export const Settings: React.FC<SettingsProps> = memo(function Settings({
         {/* Team Tab - Only rendered when Supabase is configured */}
         {showInvitations && currentBandId && currentUserId && (
           <TabsContent value="TEAM" className="space-y-6 animate-slide-in-from-bottom animation-forwards">
+            <LinkAccountSection currentBandId={currentBandId} currentUserId={currentUserId} />
+
             <Card>
               <CardContent className="p-6">
                 <InvitationManager

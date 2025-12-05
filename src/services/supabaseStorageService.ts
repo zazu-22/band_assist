@@ -1140,6 +1140,192 @@ export class SupabaseStorageService implements IStorageService {
       return null;
     }
   }
+
+  /**
+   * Get the member record linked to a specific user in a band
+   * @param userId - Supabase auth user ID
+   * @param bandId - Band ID to search within
+   * @returns BandMember if linked, null if not linked
+   * @throws Error if database query fails
+   */
+  async getLinkedMemberForUser(userId: string, bandId: string): Promise<BandMember | null> {
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      throw new Error('Supabase is not configured. Check environment variables.');
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('band_members')
+        .select('*')
+        .eq('user_id', userId)
+        .eq('band_id', bandId)
+        .maybeSingle(); // Use maybeSingle to handle 0 or 1 results
+
+      if (error) {
+        console.error('[getLinkedMemberForUser] Database query failed:', {
+          userId,
+          bandId,
+          error: error.message,
+          code: error.code,
+        });
+        throw new Error(`Failed to fetch linked member: ${error.message}`);
+      }
+
+      if (!data) {
+        return null;
+      }
+
+      // Map database row to BandMember interface
+      return {
+        id: data.id,
+        name: data.name,
+        roles: data.roles,
+        avatarColor: validateAvatarColor(data.avatar_color),
+        userId: data.user_id,
+      };
+    } catch (err) {
+      console.error('[getLinkedMemberForUser] Unexpected error:', err);
+      throw err;
+    }
+  }
+}
+
+/**
+ * Fetch all unlinked members in a band from the database (user_id IS NULL)
+ * @param bandId - Band ID to search within
+ * @returns Array of BandMember records available for claiming
+ * @throws Error if database query fails
+ */
+export async function fetchUnlinkedMembers(
+  bandId: string
+): Promise<BandMember[]> {
+  try {
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      throw new Error('Supabase is not configured. Check environment variables.');
+    }
+
+    const { data, error } = await supabase
+      .from('band_members')
+      .select('*')
+      .eq('band_id', bandId)
+      .is('user_id', null)
+      .order('name', { ascending: true });
+
+    if (error) {
+      console.error('Error fetching unlinked members:', error);
+      throw new Error(`Failed to fetch unlinked members: ${error.message}`);
+    }
+
+    if (!data || data.length === 0) {
+      return [];
+    }
+
+    // Map database rows to BandMember interfaces
+    return data.map(row => ({
+      id: row.id,
+      name: row.name,
+      roles: row.roles,
+      avatarColor: validateAvatarColor(row.avatar_color),
+      userId: row.user_id, // Will be null for all results
+    }));
+  } catch (err) {
+    console.error('Unexpected error in fetchUnlinkedMembers:', err);
+    throw err;
+  }
+}
+
+/**
+ * Claim a band member record by linking it to the current user
+ * @param userId - Supabase auth user ID
+ * @param memberId - Band member ID to claim
+ * @param bandId - Band ID (for validation)
+ * @throws Error if user is not a band member or member is already claimed
+ */
+export async function claimMember(
+  userId: string,
+  memberId: string,
+  bandId: string
+): Promise<void> {
+  try {
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      throw new Error('Supabase is not configured. Check environment variables.');
+    }
+
+    // Step 1: Verify user is a member of the band
+    const { data: userBand, error: userBandError } = await supabase
+      .from('user_bands')
+      .select('user_id')
+      .eq('user_id', userId)
+      .eq('band_id', bandId)
+      .maybeSingle();
+
+    if (userBandError) {
+      console.error('Error checking user band membership:', userBandError);
+      throw new Error('Failed to verify band membership');
+    }
+
+    if (!userBand) {
+      throw new Error('You must be a member of this band to claim a member record');
+    }
+
+    // Step 2: Verify member exists and is not already claimed
+    const { data: member, error: memberError } = await supabase
+      .from('band_members')
+      .select('id, user_id, name, band_id')
+      .eq('id', memberId)
+      .eq('band_id', bandId)
+      .maybeSingle();
+
+    if (memberError) {
+      console.error('Error fetching member:', memberError);
+      throw new Error('Failed to verify member status');
+    }
+
+    if (!member) {
+      throw new Error('Member not found in this band');
+    }
+
+    if (member.user_id !== null) {
+      throw new Error('This member is already linked to another user');
+    }
+
+    // Step 3: Attempt to claim the member (update user_id)
+    const { error: updateError } = await supabase
+      .from('band_members')
+      .update({ user_id: userId })
+      .eq('id', memberId)
+      .eq('band_id', bandId)
+      .is('user_id', null); // Additional check to prevent race condition
+
+    if (updateError) {
+      console.error('Error claiming member:', updateError);
+
+      // Check for unique constraint violation (23505 is PostgreSQL unique violation code)
+      if (updateError.code === '23505') {
+        // User already linked to another member in this band
+        throw new Error('You are already linked to a member in this band');
+      }
+
+      throw new Error(`Failed to claim member: ${updateError.message}`);
+    }
+
+    // Step 4: Verify the update was successful (prevents race condition)
+    const { data: updatedMember, error: verifyError } = await supabase
+      .from('band_members')
+      .select('user_id')
+      .eq('id', memberId)
+      .single();
+
+    if (verifyError || updatedMember?.user_id !== userId) {
+      throw new Error('This member was just claimed by someone else');
+    }
+  } catch (err) {
+    console.error('Error in claimMember:', err);
+    throw err;
+  }
 }
 
 // Export singleton instance
