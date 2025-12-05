@@ -30,5 +30,5 @@ jobs:
           fi
 
           # Extract deleted count from JSON response
-          DELETED_COUNT=$(echo "$BODY" | grep -o '"deletedCount":[0-9]*' | cut -d':' -f2)
+          DELETED_COUNT=$(echo "$BODY" | jq -r '.deletedCount // 0')
           echo "Successfully cleaned up $DELETED_COUNT expired tokens"

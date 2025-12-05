@@ -30,9 +30,9 @@ const getAllowedOrigin = (requestOrigin: string | null): string => {
     return requestOrigin
   }
 
-  // If origin doesn't match, return first allowed origin (or deny with empty string)
-  // Browsers will block requests without matching CORS origin
-  return allowedOrigins[0] || ''
+  // If origin doesn't match, return empty string to explicitly reject
+  // Browser will block requests when Access-Control-Allow-Origin doesn't match request origin
+  return ''
 }
 
 const getCorsHeaders = (requestOrigin: string | null) => ({
@@ -58,6 +58,17 @@ Deno.serve(async (req) => {
     if (!storagePath) {
       return new Response(
         JSON.stringify({ error: 'Missing path parameter' }),
+        {
+          status: 400,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      )
+    }
+
+    // Prevent path traversal attacks
+    if (storagePath.includes('..')) {
+      return new Response(
+        JSON.stringify({ error: 'Invalid path' }),
         {
           status: 400,
           headers: { ...corsHeaders, 'Content-Type': 'application/json' }
@@ -190,13 +201,24 @@ Deno.serve(async (req) => {
 
       if (updateError || !updateResult) {
         // Token was already used by another concurrent request - check grace period
-        const { data: recheckToken } = await supabase
+        const { data: recheckToken, error: recheckError } = await supabase
           .from('file_access_tokens')
           .select('used_at')
           .eq('id', tokenData.id)
           .single()
 
-        if (recheckToken?.used_at) {
+        if (recheckError || !recheckToken) {
+          // Recheck failed - token may have been deleted or is invalid
+          return new Response(
+            JSON.stringify({ error: 'Token validation failed' }),
+            {
+              status: 401,
+              headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+            }
+          )
+        }
+
+        if (recheckToken.used_at) {
           const usedAt = new Date(recheckToken.used_at)
           // Capture fresh timestamp for accurate grace period check
           const recheckNow = new Date()
@@ -271,6 +293,7 @@ Deno.serve(async (req) => {
 
 /* To invoke:
 
-  GET https://your-project.supabase.co/functions/v1/serve-file-inline?path=bands/xxx/charts/xxx/file.pdf
+  GET https://your-project.supabase.co/functions/v1/serve-file-inline?path=bands/xxx/charts/xxx/file.pdf&token=xxx
 
+  Note: Requires a valid file access token (short-lived, single-use token generated via generateFileAccessToken)
 */
