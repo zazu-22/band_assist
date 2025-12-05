@@ -2,10 +2,10 @@
 
 | Field       | Value                                       |
 | ----------- | ------------------------------------------- |
-| **Status**  | Backlog                                     |
+| **Status**  | Pending                                     |
 | **Authors** | Claude (AI Assistant)                       |
 | **Created** | 2025-12-02                                  |
-| **Updated** | 2025-12-02                                  |
+| **Updated** | 2025-12-05                                  |
 | **Priority**| High                                        |
 | **Type**    | Feature                                     |
 
@@ -70,12 +70,57 @@ USING (auth.uid() = user_id);
 CREATE POLICY user_song_notes_delete_own
 ON user_song_notes FOR DELETE
 USING (auth.uid() = user_id);
+
+-- User preferences table (for personalized AlphaTab and UI settings)
+CREATE TABLE user_preferences (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID NOT NULL REFERENCES auth.users(id) ON DELETE CASCADE,
+  band_id UUID NOT NULL REFERENCES bands(id) ON DELETE CASCADE,
+  preferred_instrument TEXT, -- e.g., "Lead Guitar", "Bass Guitar"
+  preferred_track_index INTEGER DEFAULT 0, -- AlphaTab track preference
+  created_at TIMESTAMPTZ DEFAULT NOW(),
+  updated_at TIMESTAMPTZ DEFAULT NOW(),
+  UNIQUE(user_id, band_id)
+);
+
+-- Index for efficient lookups
+CREATE INDEX idx_user_preferences_user_band ON user_preferences(user_id, band_id);
+
+-- Enable RLS
+ALTER TABLE user_preferences ENABLE ROW LEVEL SECURITY;
+
+-- User can read/write their own preferences
+CREATE POLICY user_preferences_select_own
+ON user_preferences FOR SELECT
+USING (auth.uid() = user_id);
+
+CREATE POLICY user_preferences_insert_own
+ON user_preferences FOR INSERT
+WITH CHECK (auth.uid() = user_id);
+
+CREATE POLICY user_preferences_update_own
+ON user_preferences FOR UPDATE
+USING (auth.uid() = user_id);
+
+CREATE POLICY user_preferences_delete_own
+ON user_preferences FOR DELETE
+USING (auth.uid() = user_id);
 ```
 
 ### TypeScript Types
 
 ```typescript
 // src/types.ts
+
+export interface UserPreferences {
+  id: string;
+  userId: string;
+  bandId: string;
+  preferredInstrument?: string;
+  preferredTrackIndex: number;
+  createdAt: string;
+  updatedAt: string;
+}
 
 export interface UserSongNote {
   id: string;
@@ -114,6 +159,35 @@ export type Database = {
   public: {
     Tables: {
       // ... existing tables
+      user_preferences: {
+        Row: {
+          id: string;
+          user_id: string;
+          band_id: string;
+          preferred_instrument: string | null;
+          preferred_track_index: number;
+          created_at: string;
+          updated_at: string;
+        };
+        Insert: {
+          id?: string;
+          user_id: string;
+          band_id: string;
+          preferred_instrument?: string | null;
+          preferred_track_index?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+        Update: {
+          id?: string;
+          user_id?: string;
+          band_id?: string;
+          preferred_instrument?: string | null;
+          preferred_track_index?: number;
+          created_at?: string;
+          updated_at?: string;
+        };
+      };
       user_song_notes: {
         Row: {
           id: string;
@@ -394,6 +468,60 @@ Add a personal notes section to the song detail view:
 )}
 ```
 
+### UI: User Preferences in Settings
+
+Add preferences section to Settings > Team tab (below the linked member display from Phase 1):
+
+```tsx
+// src/components/Settings.tsx (new section in Team tab)
+
+{currentLinkedMember && (
+  <Card>
+    <CardHeader>
+      <CardTitle>Your Preferences</CardTitle>
+      <CardDescription>
+        Set your default instrument and chart preferences
+      </CardDescription>
+    </CardHeader>
+    <CardContent className="space-y-4">
+      <div>
+        <label className="text-sm font-medium">Preferred Instrument</label>
+        <Select
+          value={preferences.preferredInstrument || ''}
+          onValueChange={handlePreferredInstrumentChange}
+        >
+          <SelectTrigger>
+            <SelectValue placeholder="Select instrument" />
+          </SelectTrigger>
+          <SelectContent>
+            {availableRoles.map(role => (
+              <SelectItem key={role} value={role}>
+                {role}
+              </SelectItem>
+            ))}
+          </SelectContent>
+        </Select>
+        <p className="text-xs text-muted-foreground mt-1">
+          Used to auto-select the matching track in AlphaTab
+        </p>
+      </div>
+      <div>
+        <label className="text-sm font-medium">Default Track Index (AlphaTab)</label>
+        <Input
+          type="number"
+          min="0"
+          value={preferences.preferredTrackIndex}
+          onChange={(e) => handleTrackIndexChange(parseInt(e.target.value, 10))}
+        />
+        <p className="text-xs text-muted-foreground mt-1">
+          Track index to display by default when opening Guitar Pro files (if instrument match not found)
+        </p>
+      </div>
+    </CardContent>
+  </Card>
+)}
+```
+
 ### AlphaTab Auto-Track Selection
 
 Use user preferences to automatically select the preferred track:
@@ -655,29 +783,39 @@ export const PracticeQueueWidget: React.FC = () => {
 
 ## Database Changes
 
-1. Create `user_song_notes` table for personal notes
+1. Create `user_preferences` table for personalized settings
+   - `user_id` (FK to auth.users)
+   - `band_id` (FK to bands)
+   - `preferred_instrument` (TEXT, nullable)
+   - `preferred_track_index` (INTEGER, default 0)
+   - Unique constraint on `(user_id, band_id)`
+   - Enable RLS with policies for users to manage their own preferences
+
+2. Create `user_song_notes` table for personal notes
    - `user_id` (FK to auth.users)
    - `song_id` (FK to songs)
    - `note_text` (text, required)
    - `chart_id` (FK to charts, nullable - for chart-specific notes)
    - `line_index` (integer, nullable - for line-specific notes)
    - Indexes on `(user_id, song_id)` and `created_at`
-2. Enable RLS with policies for users to manage their own notes
+   - Enable RLS with policies for users to manage their own notes
 
 ---
 
 ## Files Likely Affected
 
-- `/supabase/migrations/YYYYMMDDHHMMSS_add_personal_notes.sql` (NEW)
+- `/supabase/migrations/YYYYMMDDHHMMSS_add_personalization.sql` (NEW - both preferences and notes)
 - `/src/types/database.types.ts` (regenerate)
-- `/src/types.ts` (add UserSongNote, PracticeQueueItem, MySongsFilter)
+- `/src/types.ts` (add UserPreferences, UserSongNote, PracticeQueueItem, MySongsFilter)
+- `/src/components/Settings.tsx` (add user preferences UI to Team tab)
 - `/src/components/MySongs.tsx` (NEW - personalized dashboard)
 - `/src/components/MySongCard.tsx` (NEW - card component for my songs)
 - `/src/components/SongDetail.tsx` (add personal notes section)
-- `/src/components/AlphaTabRenderer.tsx` (auto-select preferred track)
+- `/src/components/AlphaTabRenderer.tsx` (auto-select preferred track using preferences)
 - `/src/components/PracticeQueueWidget.tsx` (NEW - practice queue widget)
 - `/src/components/Dashboard.tsx` (add practice queue widget)
-- `/src/services/supabaseStorageService.ts` (add personal notes CRUD)
+- `/src/services/supabaseStorageService.ts` (add preferences and personal notes CRUD)
+- `/src/hooks/useUserPreferences.ts` (NEW - custom hook for user preferences)
 - `/src/hooks/usePersonalNotes.ts` (NEW - custom hook for personal notes)
 - `/src/hooks/usePracticeQueue.ts` (NEW - custom hook for practice queue)
 - `/src/lib/practiceQueue.ts` (NEW - urgency calculation logic)
@@ -688,7 +826,12 @@ export const PracticeQueueWidget: React.FC = () => {
 
 ## Acceptance Criteria
 
-- [ ] Migration creates `user_song_notes` table with RLS
+- [ ] Migration creates `user_preferences` table with RLS policies
+- [ ] Migration creates `user_song_notes` table with RLS policies
+- [ ] Settings > Team tab shows user preferences UI (instrument, track index)
+- [ ] Users can set and update their preferred instrument
+- [ ] Users can set and update their preferred track index
+- [ ] Preferences persist across sessions
 - [ ] "My Songs" route displays only assigned songs
 - [ ] Quick stats show counts for different learning statuses
 - [ ] Filter controls work correctly (assigned only, in progress, hide completed)
@@ -710,12 +853,12 @@ export const PracticeQueueWidget: React.FC = () => {
 ## Dependencies
 
 - **Requires**: Phase 1 (User-Member Linking Foundation)
-  - Needs `userId` in BandMember
-  - Needs user preferences for track selection
+  - Needs `userId` in BandMember to identify current user's member record
+  - Needs claim member functionality to be complete
 - **Requires**: Phase 2 (Personal Practice Tracking)
-  - Needs `user_song_status` for learning progress
-  - Needs `practice_sessions` for last practiced date
-  - Needs practice stats for urgency calculations
+  - Needs `user_song_status` table for learning progress data
+  - Needs `practice_sessions` table for last practiced date calculations
+  - Needs practice stats calculations for urgency scoring
 
 ---
 

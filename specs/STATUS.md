@@ -2,7 +2,7 @@
 
 > Quick reference for all specs with current status and priority.
 >
-> Last updated: 2025-12-03
+> Last updated: 2025-12-05
 
 ---
 
@@ -10,10 +10,10 @@
 
 | Status | Count | Description |
 |--------|-------|-------------|
-| 🔴 Active | 0 | Currently being implemented |
-| 🟢 Done | 17 | Completed and merged |
-| 🟡 Pending | 1 | Queued for implementation (in sequence order) |
-| ⚪ Backlog | 13 | Planned but not yet prioritized |
+| 🔴 Active | 1 | Currently being implemented |
+| 🟢 Done | 14 | Completed and merged |
+| 🟡 Pending | 2 | Queued for implementation (in sequence order) |
+| ⚪ Backlog | 14 | Planned but not yet prioritized |
 
 ---
 
@@ -23,7 +23,7 @@ The spec currently being implemented:
 
 | Spec | Type | Effort | Notes |
 |------|------|--------|-------|
-
+| [feat-user-member-linking-phase-1](feat-user-member-linking-phase-1.md) | Feature | Medium | Foundation: user_id linking only (1-2 days) |
 
 ---
 
@@ -33,11 +33,12 @@ Specs queued for implementation **in priority order**. Work through these sequen
 
 | Seq | Spec | Type | Effort | Notes |
 |-----|------|------|--------|-------|
-| 1 | [feat-user-member-linking-phase-1](pending/feat-user-member-linking-phase-1.md) | Feature | Large | Foundation for personalization features |
+| 1 | [feat-user-member-linking-phase-2](pending/feat-user-member-linking-phase-2.md) | Feature | Medium | Practice tracking (3-4 days) |
+| 2 | [feat-user-member-linking-phase-3](pending/feat-user-member-linking-phase-3.md) | Feature | Large | Personalization + preferences (5-7 days) |
 
 ---
 
-## 🟢 Done (17)
+## 🟢 Done (14)
 
 | Spec | Type | Priority | Completed |
 |------|------|----------|-----------|
@@ -71,8 +72,6 @@ Specs queued for implementation **in priority order**. Work through these sequen
 | Spec | Type | Effort | Notes |
 |------|------|--------|-------|
 | [feat-lead-sheet-generation](backlog/feat-lead-sheet-generation.md) | Feature | Large | Auto-generate from GP files |
-| [feat-user-member-linking-phase-2](backlog/feat-user-member-linking-phase-2.md) | Feature | Large | Depends on Phase 1 |
-| [feat-user-member-linking-phase-3](backlog/feat-user-member-linking-phase-3.md) | Feature | Large | Depends on Phase 1 & 2 |
 | [feat-collaborative-song-notes](backlog/feat-collaborative-song-notes.md) | Feature | Medium | Timestamped comments |
 | [feat-practice-mode-track-presets](backlog/feat-practice-mode-track-presets.md) | Feature | Medium | Save practice configurations |
 | [feat-setlist-analytics](backlog/feat-setlist-analytics.md) | Feature | Medium | Analyze setlist flow |
@@ -107,12 +106,19 @@ Specs queued for implementation **in priority order**. Work through these sequen
 
 | Date | Spec | Change |
 |------|------|--------|
-| 2025-12-03 | infra-automated-versioning | ✅ Completed |
+| 2025-12-05 | feat-user-member-linking-phase-1 | 🔴 Moved to active (specs/feat-user-member-linking-phase-1.md) |
+| 2025-12-05 | feat-user-member-linking-phase-1 | 📝 Revised: removed user_preferences, auto-link; added error handling |
+| 2025-12-05 | feat-user-member-linking-phase-2 | 📝 Revised: added service methods, error handling, state management |
+| 2025-12-05 | feat-user-member-linking-phase-3 | 📝 Revised: added user_preferences from Phase 1 |
+| 2025-12-05 | feat-user-member-linking-phase-1 | ➕ Added to pending |
+| 2025-12-05 | feat-user-member-linking-phase-2 | ➕ Added to pending |
+| 2025-12-05 | feat-user-member-linking-phase-3 | ➕ Added to pending |
+| 2025-12-05 | infra-automated-versioning | ✅ Completed |
 | 2025-12-03 | perf-context-splitting | ✅ Completed |
 | Dec 2025 | feat-lead-sheet-generation | ➕ Added to backlog |
 | Dec 2025 | perf-auto-save-debouncing | ✅ Completed |
 | Dec 2025 | feat-remove-ai-gemini-features | ✅ Completed |
-| Dec 2025 | infra-automated-versioning | 🟡 Moved to Pending (seq #2) |
+| Dec 2025 | infra-automated-versioning | ✅ Completed |
 | Dec 2025 | perf-alphatab-lazy-loading | ✅ Completed |
 | Dec 2025 | feat-alphatab-dark-mode-theming | ➕ Added to backlog |
 
