@@ -12,7 +12,7 @@ The file `supabaseStorageService.userMemberLinking.test.ts` contains comprehensi
    - Returns null when user is in different band
    - Throws error on database failure
 
-2. **getUnlinkedMembers** (5 tests)
+2. **fetchUnlinkedMembers** (5 tests)
    - Returns array of unlinked members
    - Returns empty array when all members are linked
    - Does not return linked members

@@ -1,6 +1,6 @@
 import { useState, useEffect, useCallback } from 'react';
 import { BandMember } from '../types';
-import { supabaseStorageService, getUnlinkedMembers } from '../services/supabaseStorageService';
+import { supabaseStorageService, fetchUnlinkedMembers } from '../services/supabaseStorageService';
 import { supabase } from '../services/supabaseClient';
 
 interface UseLinkedMemberResult {
@@ -79,13 +79,36 @@ export function useLinkedMember(bandId: string | null): UseLinkedMemberResult {
       }
 
       // Fetch linked member and unlinked members in parallel
-      const [linked, unlinked] = await Promise.all([
+      // Use allSettled to handle partial success - if one fails, we still get the other
+      const [linkedResult, unlinkedResult] = await Promise.allSettled([
         supabaseStorageService.getLinkedMemberForUser(user.id, bandId),
-        getUnlinkedMembers(bandId),
+        fetchUnlinkedMembers(bandId),
       ]);
 
-      setLinkedMember(linked);
-      setUnlinkedMembers(unlinked);
+      // Handle linked member result
+      if (linkedResult.status === 'fulfilled') {
+        setLinkedMember(linkedResult.value);
+      } else {
+        console.error('Error fetching linked member:', linkedResult.reason);
+        setLinkedMember(null);
+      }
+
+      // Handle unlinked members result
+      if (unlinkedResult.status === 'fulfilled') {
+        setUnlinkedMembers(unlinkedResult.value);
+      } else {
+        console.error('Error fetching unlinked members:', unlinkedResult.reason);
+        setUnlinkedMembers([]);
+      }
+
+      // Only set error if BOTH failed
+      if (linkedResult.status === 'rejected' && unlinkedResult.status === 'rejected') {
+        throw new Error('Failed to load member information');
+      } else if (linkedResult.status === 'rejected' || unlinkedResult.status === 'rejected') {
+        // Partial failure - set a warning error but don't fail completely
+        const failedPart = linkedResult.status === 'rejected' ? 'linked member' : 'unlinked members';
+        setError(`Warning: Failed to load ${failedPart}`);
+      }
     } catch (err) {
       console.error('Error fetching linked member:', err);
       setError(err instanceof Error ? err.message : 'Failed to load member information');

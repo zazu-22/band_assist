@@ -1,7 +1,7 @@
 import { Song, BandMember, BandEvent, SongChart, Assignment, SongPart } from '../types';
 import { IStorageService, LoadResult } from './IStorageService';
 import { getSupabaseClient, isSupabaseConfigured } from './supabaseClient';
-import { validateAvatarColor, type AvatarColorClass } from '@/lib/avatar';
+import { validateAvatarColor } from '@/lib/avatar';
 import { RealtimeChannel } from '@supabase/supabase-js';
 import type { Json, Database } from '../types/database.types';
 
@@ -1192,12 +1192,12 @@ export class SupabaseStorageService implements IStorageService {
 }
 
 /**
- * Get all unlinked members in a band (user_id IS NULL)
+ * Fetch all unlinked members in a band from the database (user_id IS NULL)
  * @param bandId - Band ID to search within
  * @returns Array of BandMember records available for claiming
  * @throws Error if database query fails
  */
-export async function getUnlinkedMembers(
+export async function fetchUnlinkedMembers(
   bandId: string
 ): Promise<BandMember[]> {
   try {
@@ -1227,11 +1227,11 @@ export async function getUnlinkedMembers(
       id: row.id,
       name: row.name,
       roles: row.roles,
-      avatarColor: row.avatar_color as AvatarColorClass | undefined,
+      avatarColor: validateAvatarColor(row.avatar_color),
       userId: row.user_id, // Will be null for all results
     }));
   } catch (err) {
-    console.error('Unexpected error in getUnlinkedMembers:', err);
+    console.error('Unexpected error in fetchUnlinkedMembers:', err);
     throw err;
   }
 }

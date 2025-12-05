@@ -1,6 +1,6 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import {
-  getUnlinkedMembers,
+  fetchUnlinkedMembers,
   claimMember,
   SupabaseStorageService,
 } from '../supabaseStorageService';
@@ -11,7 +11,7 @@ import { getSupabaseClient } from '../supabaseClient';
  *
  * These tests verify the functionality of:
  * - getLinkedMemberForUser: Retrieve member linked to a user
- * - getUnlinkedMembers: Get all members not linked to users
+ * - fetchUnlinkedMembers: Get all members not linked to users
  * - claimMember: Link a member record to a user
  *
  * Test Strategy:
@@ -233,12 +233,12 @@ describe.skip('User-Member Linking Service Methods', () => {
     });
   });
 
-  describe('getUnlinkedMembers', () => {
+  describe('fetchUnlinkedMembers', () => {
     it('should return array of unlinked members', async () => {
       // Arrange: All members are unlinked by default from beforeEach
 
       // Act
-      const result = await getUnlinkedMembers(testBandId);
+      const result = await fetchUnlinkedMembers(testBandId);
 
       // Assert
       expect(result).toHaveLength(3);
@@ -281,7 +281,7 @@ describe.skip('User-Member Linking Service Methods', () => {
         .eq('id', testMemberId3);
 
       // Act
-      const result = await getUnlinkedMembers(testBandId);
+      const result = await fetchUnlinkedMembers(testBandId);
 
       // Assert
       expect(result).toHaveLength(0);
@@ -298,18 +298,18 @@ describe.skip('User-Member Linking Service Methods', () => {
         .eq('id', testMemberId1);
 
       // Act
-      const result = await getUnlinkedMembers(testBandId);
+      const result = await fetchUnlinkedMembers(testBandId);
 
       // Assert
       expect(result).toHaveLength(2);
-      expect(result.find(m => m.id === testMemberId1)).toBeUndefined();
-      expect(result.find(m => m.id === testMemberId2)).toBeDefined();
-      expect(result.find(m => m.id === testMemberId3)).toBeDefined();
+      expect(result.find((m: { id: string }) => m.id === testMemberId1)).toBeUndefined();
+      expect(result.find((m: { id: string }) => m.id === testMemberId2)).toBeDefined();
+      expect(result.find((m: { id: string }) => m.id === testMemberId3)).toBeDefined();
     });
 
     it('should return members sorted by name', async () => {
       // Act
-      const result = await getUnlinkedMembers(testBandId);
+      const result = await fetchUnlinkedMembers(testBandId);
 
       // Assert
       expect(result).toHaveLength(3);
@@ -321,10 +321,11 @@ describe.skip('User-Member Linking Service Methods', () => {
 
     it('should throw error on database failure', async () => {
       // Arrange: Mock Supabase client to return null (simulating configuration error)
-      vi.spyOn({ getSupabaseClient }, 'getSupabaseClient').mockReturnValue(null);
+      const supabaseClientModule = await import('../supabaseClient');
+      vi.spyOn(supabaseClientModule, 'getSupabaseClient').mockReturnValue(null);
 
       // Act & Assert
-      await expect(getUnlinkedMembers(testBandId)).rejects.toThrow(
+      await expect(fetchUnlinkedMembers(testBandId)).rejects.toThrow(
         'Supabase is not configured'
       );
 
@@ -455,7 +456,8 @@ describe.skip('User-Member Linking Service Methods', () => {
 
     it('should throw error on database failure', async () => {
       // Arrange: Mock getSupabaseClient to return null
-      vi.spyOn({ getSupabaseClient }, 'getSupabaseClient').mockReturnValue(null);
+      const supabaseClientModule = await import('../supabaseClient');
+      vi.spyOn(supabaseClientModule, 'getSupabaseClient').mockReturnValue(null);
 
       // Act & Assert
       await expect(claimMember(testUserId, testMemberId1, testBandId)).rejects.toThrow(

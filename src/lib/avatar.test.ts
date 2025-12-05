@@ -4,6 +4,7 @@ import {
   getNextAvatarColor,
   validateAvatarColor,
   isValidAvatarColor,
+  getInitials,
   DEFAULT_AVATAR_COLOR,
   AVATAR_COLORS,
 } from './avatar';
@@ -163,6 +164,60 @@ describe('avatar utilities', () => {
   describe('DEFAULT_AVATAR_COLOR constant', () => {
     it('is bg-muted', () => {
       expect(DEFAULT_AVATAR_COLOR).toBe('bg-muted');
+    });
+  });
+
+  describe('getInitials', () => {
+    it('returns first character uppercase for single word name', () => {
+      expect(getInitials('Alice')).toBe('A');
+      expect(getInitials('bob')).toBe('B');
+      expect(getInitials('CHARLIE')).toBe('C');
+    });
+
+    it('returns first and last word initials for two word name', () => {
+      expect(getInitials('Alice Smith')).toBe('AS');
+      expect(getInitials('bob jones')).toBe('BJ');
+      expect(getInitials('CHARLIE BROWN')).toBe('CB');
+    });
+
+    it('returns first and last word initials for three+ word name', () => {
+      expect(getInitials('Alice B. Smith')).toBe('AS');
+      expect(getInitials('John Paul Jones')).toBe('JJ');
+      expect(getInitials('Mary Jane Watson Parker')).toBe('MP');
+    });
+
+    it('returns "?" for empty string', () => {
+      expect(getInitials('')).toBe('?');
+    });
+
+    it('returns "?" for whitespace only', () => {
+      expect(getInitials(' ')).toBe('?');
+      expect(getInitials('   ')).toBe('?');
+      expect(getInitials('\t')).toBe('?');
+      expect(getInitials('\n')).toBe('?');
+    });
+
+    it('handles names with extra spaces gracefully', () => {
+      expect(getInitials('  Alice  Smith  ')).toBe('AS');
+      expect(getInitials('Alice    Smith')).toBe('AS');
+      expect(getInitials('  Bob  ')).toBe('B');
+    });
+
+    it('returns uppercase initials for lowercase input', () => {
+      expect(getInitials('alice')).toBe('A');
+      expect(getInitials('alice smith')).toBe('AS');
+      expect(getInitials('alice b. smith')).toBe('AS');
+    });
+
+    it('handles special characters in names', () => {
+      expect(getInitials("O'Brien")).toBe('O');
+      expect(getInitials("Mary O'Brien")).toBe('MO');
+      expect(getInitials('Jean-Luc Picard')).toBe('JP');
+    });
+
+    it('handles names with middle initials', () => {
+      expect(getInitials('John F. Kennedy')).toBe('JK');
+      expect(getInitials('Martin Luther King Jr.')).toBe('MJ');
     });
   });
 });
