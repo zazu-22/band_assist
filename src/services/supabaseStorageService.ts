@@ -555,6 +555,57 @@ export class SupabaseStorageService implements IStorageService {
   }
 
   /**
+   * Ensure the session is valid and refreshed
+   * This is critical for RLS policies that depend on auth.uid()
+   * @returns Valid session or null if refresh failed
+   */
+  private async ensureValidSession(): Promise<{ userId: string } | null> {
+    try {
+      const supabase = getSupabaseClient();
+      if (!supabase) {
+        console.error('[ensureValidSession] No Supabase client available');
+        return null;
+      }
+
+      // First try to get the cached session
+      const { data: { session }, error: sessionError } = await supabase.auth.getSession();
+
+      if (sessionError) {
+        console.error('[ensureValidSession] Error getting session:', sessionError);
+        return null;
+      }
+
+      if (!session) {
+        console.warn('[ensureValidSession] No active session');
+        return null;
+      }
+
+      // Check if session is about to expire (within 60 seconds)
+      const expiresAt = session.expires_at;
+      const now = Math.floor(Date.now() / 1000);
+      const isAboutToExpire = expiresAt && (expiresAt - now) < 60;
+
+      if (isAboutToExpire) {
+        // Proactively refresh the session
+        const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+        if (refreshError) {
+          console.error('[ensureValidSession] Failed to refresh session:', refreshError);
+          // Return old session, it might still work
+          return { userId: session.user.id };
+        }
+        if (refreshData.session) {
+          return { userId: refreshData.session.user.id };
+        }
+      }
+
+      return { userId: session.user.id };
+    } catch (error) {
+      console.error('[ensureValidSession] Exception:', error);
+      return null;
+    }
+  }
+
+  /**
    * Generate a short-lived, single-use file access token
    * @param storagePath - Path in the band-files bucket
    * @param userId - User ID who will access the file
@@ -570,6 +621,13 @@ export class SupabaseStorageService implements IStorageService {
       const supabase = getSupabaseClient();
       if (!supabase) {
         console.error('[generateFileAccessToken] No Supabase client available');
+        return null;
+      }
+
+      // Ensure session is valid before attempting insert (RLS depends on auth.uid())
+      const validSession = await this.ensureValidSession();
+      if (!validSession) {
+        console.error('[generateFileAccessToken] Cannot generate token without valid session');
         return null;
       }
 
@@ -591,7 +649,14 @@ export class SupabaseStorageService implements IStorageService {
       const { error } = await supabase.from('file_access_tokens').insert(tokenData);
 
       if (error) {
-        console.error('[generateFileAccessToken] Failed to create token:', error);
+        console.error('[generateFileAccessToken] Failed to create token:', {
+          error: error.message,
+          code: error.code,
+          details: error.details,
+          hint: error.hint,
+          storagePath,
+          bandId,
+        });
         return null;
       }
 
@@ -622,6 +687,13 @@ export class SupabaseStorageService implements IStorageService {
         return tokenMap;
       }
 
+      // Ensure session is valid before attempting insert (RLS depends on auth.uid())
+      const validSession = await this.ensureValidSession();
+      if (!validSession) {
+        console.error('[generateFileAccessTokensBatch] Cannot generate tokens without valid session');
+        return tokenMap;
+      }
+
       // Token expires in 5 minutes
       const expiresAt = new Date();
       expiresAt.setMinutes(expiresAt.getMinutes() + 5);
@@ -644,7 +716,14 @@ export class SupabaseStorageService implements IStorageService {
       const { error } = await supabase.from('file_access_tokens').insert(tokensData);
 
       if (error) {
-        console.error('[generateFileAccessTokensBatch] Failed to create tokens:', error);
+        console.error('[generateFileAccessTokensBatch] Failed to create tokens:', {
+          error: error.message,
+          code: error.code,
+          details: error.details,
+          hint: error.hint,
+          pathCount: storagePaths.length,
+          bandId,
+        });
         return new Map(); // Return empty map on error
       }
 
@@ -678,16 +757,15 @@ export class SupabaseStorageService implements IStorageService {
         return null;
       }
 
-      // Get user ID if not provided
+      // Get user ID - prefer provided ID, otherwise ensure session is valid
       let currentUserId = userId;
       if (!currentUserId) {
-        const { data: { session } } = await supabase.auth.getSession();
-        currentUserId = session?.user?.id;
-      }
-
-      if (!currentUserId) {
-        console.error('[regenerateSignedUrl] No user ID available');
-        return null;
+        const validSession = await this.ensureValidSession();
+        if (!validSession) {
+          console.error('[regenerateSignedUrl] No valid session available');
+          return null;
+        }
+        currentUserId = validSession.userId;
       }
 
       if (!this.currentBandId) {
@@ -741,13 +819,14 @@ export class SupabaseStorageService implements IStorageService {
       return charts;
     }
 
-    const { data: { session } } = await supabase.auth.getSession();
-    const userId = session?.user?.id;
-
-    if (!userId) {
-      console.warn('[refreshChartUrls] No active session');
+    // Ensure session is valid and refreshed before generating tokens
+    const validSession = await this.ensureValidSession();
+    if (!validSession) {
+      console.warn('[refreshChartUrls] No valid session - charts may show expired token errors');
       return charts;
     }
+
+    const userId = validSession.userId;
 
     if (!this.currentBandId) {
       console.warn('[refreshChartUrls] No band selected');
