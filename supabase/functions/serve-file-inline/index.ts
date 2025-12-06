@@ -113,7 +113,42 @@ Deno.serve(async (req) => {
       .eq('token', tokenParam)
       .single()
 
-    if (tokenError || !tokenData) {
+    if (tokenError) {
+      // Log the actual error for debugging
+      console.error('Token lookup error:', {
+        code: tokenError.code,
+        message: tokenError.message,
+        details: tokenError.details,
+        hint: tokenError.hint,
+      })
+
+      // Check if it's a "not found" error vs a database error
+      if (tokenError.code === 'PGRST116') {
+        // PGRST116 = "JSON object requested, multiple (or no) rows returned"
+        // This means the token doesn't exist
+        return new Response(
+          JSON.stringify({ error: 'Invalid or expired token' }),
+          {
+            status: 401,
+            headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+          }
+        )
+      }
+
+      // For other errors (like table doesn't exist), return a more helpful message
+      return new Response(
+        JSON.stringify({
+          error: 'Token validation failed',
+          details: tokenError.message
+        }),
+        {
+          status: 500,
+          headers: { ...corsHeaders, 'Content-Type': 'application/json' }
+        }
+      )
+    }
+
+    if (!tokenData) {
       return new Response(
         JSON.stringify({ error: 'Invalid or expired token' }),
         {
