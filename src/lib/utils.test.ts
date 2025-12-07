@@ -2,6 +2,7 @@ import { describe, it, expect } from 'vitest';
 import {
   sanitizeFilename,
   extractFileExtension,
+  extractExtensionFromDataUrl,
   generateDownloadFilename,
 } from './utils';
 
@@ -120,6 +121,70 @@ describe('extractFileExtension', () => {
     expect(extractFileExtension('file.mp3')).toBe('mp3');
     expect(extractFileExtension('file.jpeg')).toBe('jpeg');
     expect(extractFileExtension('file.gp5')).toBe('gp5');
+  });
+
+  it('extracts extension from data URLs', () => {
+    expect(extractFileExtension('data:audio/wav;base64,UklGR...')).toBe('wav');
+    expect(extractFileExtension('data:audio/mpeg;base64,//uQ...')).toBe('mp3');
+    expect(extractFileExtension('data:image/png;base64,iVBOR...')).toBe('png');
+    expect(extractFileExtension('data:image/jpeg;base64,/9j/4...')).toBe('jpg');
+    expect(extractFileExtension('data:application/pdf;base64,JVB...')).toBe('pdf');
+  });
+
+  it('handles data URLs without base64 encoding', () => {
+    expect(extractFileExtension('data:text/plain,Hello')).toBeUndefined();
+    expect(extractFileExtension('data:audio/ogg,rawdata')).toBe('ogg');
+  });
+
+  it('returns undefined for unknown MIME types in data URLs', () => {
+    expect(extractFileExtension('data:application/octet-stream;base64,...')).toBeUndefined();
+    expect(extractFileExtension('data:video/mp4;base64,...')).toBeUndefined();
+  });
+});
+
+describe('extractExtensionFromDataUrl', () => {
+  it('extracts audio extensions from data URLs', () => {
+    expect(extractExtensionFromDataUrl('data:audio/wav;base64,UklGR...')).toBe('wav');
+    expect(extractExtensionFromDataUrl('data:audio/mpeg;base64,//uQ...')).toBe('mp3');
+    expect(extractExtensionFromDataUrl('data:audio/mp3;base64,//uQ...')).toBe('mp3');
+    expect(extractExtensionFromDataUrl('data:audio/ogg;base64,...')).toBe('ogg');
+    expect(extractExtensionFromDataUrl('data:audio/flac;base64,...')).toBe('flac');
+    expect(extractExtensionFromDataUrl('data:audio/aac;base64,...')).toBe('aac');
+    expect(extractExtensionFromDataUrl('data:audio/mp4;base64,...')).toBe('m4a');
+    expect(extractExtensionFromDataUrl('data:audio/x-m4a;base64,...')).toBe('m4a');
+  });
+
+  it('extracts image extensions from data URLs', () => {
+    expect(extractExtensionFromDataUrl('data:image/png;base64,iVBOR...')).toBe('png');
+    expect(extractExtensionFromDataUrl('data:image/jpeg;base64,/9j/4...')).toBe('jpg');
+    expect(extractExtensionFromDataUrl('data:image/gif;base64,...')).toBe('gif');
+    expect(extractExtensionFromDataUrl('data:image/webp;base64,...')).toBe('webp');
+  });
+
+  it('extracts document extensions from data URLs', () => {
+    expect(extractExtensionFromDataUrl('data:application/pdf;base64,JVB...')).toBe('pdf');
+  });
+
+  it('handles various WAV MIME type variants', () => {
+    expect(extractExtensionFromDataUrl('data:audio/wav;base64,...')).toBe('wav');
+    expect(extractExtensionFromDataUrl('data:audio/wave;base64,...')).toBe('wav');
+    expect(extractExtensionFromDataUrl('data:audio/x-wav;base64,...')).toBe('wav');
+  });
+
+  it('returns undefined for non-data URLs', () => {
+    expect(extractExtensionFromDataUrl('https://example.com/file.mp3')).toBeUndefined();
+    expect(extractExtensionFromDataUrl('/path/to/file.wav')).toBeUndefined();
+    expect(extractExtensionFromDataUrl('file.mp3')).toBeUndefined();
+  });
+
+  it('returns undefined for unknown MIME types', () => {
+    expect(extractExtensionFromDataUrl('data:application/octet-stream;base64,...')).toBeUndefined();
+    expect(extractExtensionFromDataUrl('data:text/html;base64,...')).toBeUndefined();
+  });
+
+  it('handles case insensitivity', () => {
+    expect(extractExtensionFromDataUrl('data:AUDIO/WAV;base64,...')).toBe('wav');
+    expect(extractExtensionFromDataUrl('data:Audio/MPEG;base64,...')).toBe('mp3');
   });
 });
 

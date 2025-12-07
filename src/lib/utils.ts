@@ -111,12 +111,66 @@ export function sanitizeFilename(filename: string): string {
 }
 
 /**
+ * Common MIME type to file extension mappings for audio and image files.
+ */
+const MIME_TO_EXTENSION: Record<string, string> = {
+  // Audio
+  'audio/mpeg': 'mp3',
+  'audio/mp3': 'mp3',
+  'audio/wav': 'wav',
+  'audio/wave': 'wav',
+  'audio/x-wav': 'wav',
+  'audio/ogg': 'ogg',
+  'audio/flac': 'flac',
+  'audio/aac': 'aac',
+  'audio/mp4': 'm4a',
+  'audio/x-m4a': 'm4a',
+  'audio/webm': 'weba',
+  // Images
+  'image/jpeg': 'jpg',
+  'image/png': 'png',
+  'image/gif': 'gif',
+  'image/webp': 'webp',
+  'image/svg+xml': 'svg',
+  // Documents
+  'application/pdf': 'pdf',
+};
+
+/**
+ * Extract file extension from a data URL's MIME type.
+ * Data URLs have format: data:[<mediatype>][;base64],<data>
+ *
+ * @param dataUrl - A data URL string
+ * @returns The file extension derived from the MIME type, or undefined
+ */
+export function extractExtensionFromDataUrl(dataUrl: string): string | undefined {
+  if (!dataUrl.startsWith('data:')) {
+    return undefined;
+  }
+
+  // Extract MIME type: data:audio/wav;base64,... -> audio/wav
+  const mimeMatch = dataUrl.match(/^data:([^;,]+)/);
+  if (!mimeMatch) {
+    return undefined;
+  }
+
+  const mimeType = mimeMatch[1].toLowerCase();
+  return MIME_TO_EXTENSION[mimeType];
+}
+
+/**
  * Extract file extension from a filename or URL.
  * Returns the extension in lowercase without the dot, or undefined if not found.
+ * Also handles data URLs by extracting extension from MIME type.
  *
  * @param filenameOrUrl - Filename or URL to extract extension from
  */
 export function extractFileExtension(filenameOrUrl: string): string | undefined {
+  // Handle data URLs specially
+  if (filenameOrUrl.startsWith('data:')) {
+    return extractExtensionFromDataUrl(filenameOrUrl);
+  }
+
   // Remove query parameters and hash if URL
   let cleanPath = filenameOrUrl.split('?')[0].split('#')[0];
 
