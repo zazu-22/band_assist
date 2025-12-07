@@ -10,9 +10,9 @@ export function cn(...inputs: ClassValue[]) {
 }
 
 /**
- * Format a date as a relative time string (e.g., "just now", "2 minutes ago").
- * Used for displaying save status indicators.
- * Handles time ranges from seconds to weeks, with fallback to absolute date.
+ * Produce a human-readable relative time for the given date.
+ *
+ * @returns A string like "just now", "2 minutes ago", "1 day ago", "3 weeks ago", or an absolute locale-formatted date for older timestamps.
  */
 export function formatRelativeTime(date: Date): string {
   const now = new Date();
@@ -69,11 +69,15 @@ export function formatRelativeTime(date: Date): string {
 }
 
 /**
- * Sanitize a string for use as a filename.
- * Removes or replaces characters that are invalid in Windows/Mac/Linux filesystems.
+ * Produce a filesystem-safe filename by removing or normalizing characters and whitespace.
  *
- * Invalid characters: / \ : * ? " < > |
- * Also handles control characters and leading/trailing spaces/dots.
+ * The returned name replaces invalid filesystem characters with underscores, removes ASCII
+ * control characters, collapses consecutive underscores and spaces to a single underscore,
+ * trims leading/trailing underscores and spaces, strips leading dots, and truncates to
+ * at most 200 characters. If all characters are removed, returns `"download"`.
+ *
+ * @param filename - Original filename string to sanitize
+ * @returns A sanitized filename safe for use on common filesystems
  */
 export function sanitizeFilename(filename: string): string {
   // Replace invalid characters with underscores
@@ -106,12 +110,12 @@ export function sanitizeFilename(filename: string): string {
 }
 
 /**
- * Generate a download filename that includes the song name.
- * Format: "Song Title - Chart Name.ext" or "Song Title - description.ext"
+ * Create a safe download filename combining a song title and an item name, with an optional extension.
  *
- * @param songTitle - The title of the song
- * @param itemName - The name of the item being downloaded (chart name, "backing_track", etc.)
- * @param extension - Optional file extension (without dot). If not provided, extracts from itemName.
+ * @param songTitle - The song title to include in the filename
+ * @param itemName - The item name or source filename; used as the base name and to derive an extension if `extension` is omitted
+ * @param extension - Optional file extension without a leading dot; when omitted, the extension is extracted from `itemName` if present
+ * @returns The constructed, sanitized filename in the form "Song Title - Item Name" with the extension appended in lowercase when present
  */
 export function generateDownloadFilename(
   songTitle: string,
