@@ -101,6 +101,14 @@ describe('sanitizeFilename', () => {
     expect(sanitizeFilename('auxiliary')).toBe('auxiliary');
     expect(sanitizeFilename('COM10')).toBe('COM10');
   });
+
+  it('handles Windows reserved names with extensions', () => {
+    // Reserved names with extensions are also invalid on Windows
+    expect(sanitizeFilename('con.txt')).toBe('_con.txt');
+    expect(sanitizeFilename('PRN.pdf')).toBe('_PRN.pdf');
+    expect(sanitizeFilename('aux.mp3')).toBe('_aux.mp3');
+    expect(sanitizeFilename('COM1.doc')).toBe('_COM1.doc');
+  });
 });
 
 describe('extractFileExtension', () => {
@@ -308,5 +316,21 @@ describe('generateDownloadFilename', () => {
     // Extensions > 10 chars should be ignored for safety
     expect(generateDownloadFilename('Song', 'Chart', longExt))
       .toBe('Song - Chart');
+  });
+
+  it('strips leading dots from extension', () => {
+    // Caller might accidentally pass ".mp3" instead of "mp3"
+    expect(generateDownloadFilename('Song', 'Chart', '.pdf'))
+      .toBe('Song - Chart.pdf');
+    expect(generateDownloadFilename('Song', 'Chart', '..mp3'))
+      .toBe('Song - Chart.mp3');
+  });
+
+  it('cleans trailing separators when truncating without extension', () => {
+    const longSongTitle = 'A'.repeat(180);
+    const result = generateDownloadFilename(longSongTitle, 'Chart');
+    // Should not end with trailing spaces or dashes
+    expect(result).not.toMatch(/[\s-]+$/);
+    expect(result.length).toBeLessThanOrEqual(200);
   });
 });

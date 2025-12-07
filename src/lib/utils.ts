@@ -31,6 +31,9 @@ export function formatRelativeTime(date: Date): string {
   if (diffSeconds < 5) {
     return 'just now';
   }
+  if (diffSeconds === 1) {
+    return '1 second ago';
+  }
   if (diffSeconds < 60) {
     return `${diffSeconds} seconds ago`;
   }
@@ -121,7 +124,9 @@ export function sanitizeFilename(filename: string): string {
   }
 
   // Handle Windows reserved names (CON, PRN, AUX, NUL, COM1-9, LPT1-9)
-  if (WINDOWS_RESERVED_NAMES.has(sanitized.toLowerCase())) {
+  // Check only the part before the first dot to catch "con.txt" etc.
+  const [root] = sanitized.split('.');
+  if (WINDOWS_RESERVED_NAMES.has(root.toLowerCase())) {
     sanitized = `_${sanitized}`;
   }
 
@@ -260,7 +265,8 @@ export function generateDownloadFilename(
   let filename = `${sanitizedSongTitle} - ${sanitizedItemName}`;
 
   // Add extension if present (validate length to prevent negative maxBaseLength)
-  const normalizedExt = ext?.toLowerCase().trim();
+  // Strip leading dots in case caller passes ".mp3" instead of "mp3"
+  const normalizedExt = ext?.toLowerCase().trim().replace(/^\.+/, '');
   if (normalizedExt && normalizedExt.length <= 10) {
     // Calculate max base length to leave room for extension
     const extWithDot = `.${normalizedExt}`;
@@ -277,6 +283,8 @@ export function generateDownloadFilename(
   } else if (filename.length > MAX_FILENAME_LENGTH) {
     // No extension, just truncate to max length
     filename = filename.substring(0, MAX_FILENAME_LENGTH);
+    // Clean up any trailing spaces or dashes from truncation
+    filename = filename.replace(/[\s-]+$/, '');
   }
 
   return filename;
