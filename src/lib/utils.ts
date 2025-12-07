@@ -2,8 +2,10 @@ import { type ClassValue, clsx } from 'clsx';
 import { twMerge } from 'tailwind-merge';
 
 /**
- * Merge class names with Tailwind-aware conflict resolution.
- * Uses clsx for conditional classes and tailwind-merge for deduplication.
+ * Combine multiple class-name inputs into a single class string with Tailwind-aware conflict resolution.
+ *
+ * @param inputs - One or more class name inputs (strings, arrays, objects, or mixed values) to be merged
+ * @returns A single string containing the merged class names with conflicting Tailwind utilities resolved
  */
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -12,7 +14,8 @@ export function cn(...inputs: ClassValue[]) {
 /**
  * Produce a human-readable relative time for the given date.
  *
- * @returns A string like "just now", "2 minutes ago", "1 day ago", "3 weeks ago", or an absolute locale-formatted date for older timestamps.
+ * @param date - The date to compare against the current time
+ * @returns A relative time string such as `"just now"`, `"2 seconds ago"`, `"1 minute ago"`, `"3 days ago"`, or an absolute locale-formatted date for timestamps older than four weeks
  */
 export function formatRelativeTime(date: Date): string {
   const now = new Date();
@@ -137,11 +140,10 @@ const MIME_TO_EXTENSION: Record<string, string> = {
 };
 
 /**
- * Extract file extension from a data URL's MIME type.
- * Data URLs have format: data:[<mediatype>][;base64],<data>
+ * Derives a file extension from a data URL's MIME type.
  *
- * @param dataUrl - A data URL string
- * @returns The file extension derived from the MIME type, or undefined
+ * @param dataUrl - The data URL to inspect (should start with `data:`)
+ * @returns The corresponding file extension (for example, `png` or `mp3`), or `undefined` if the input is not a valid data URL or the MIME type is not recognized
  */
 export function extractExtensionFromDataUrl(dataUrl: string): string | undefined {
   if (!dataUrl.startsWith('data:')) {
@@ -159,11 +161,14 @@ export function extractExtensionFromDataUrl(dataUrl: string): string | undefined
 }
 
 /**
- * Extract file extension from a filename or URL.
- * Returns the extension in lowercase without the dot, or undefined if not found.
- * Also handles data URLs by extracting extension from MIME type.
+ * Extracts a file extension from a filename, URL, or data URL.
  *
- * @param filenameOrUrl - Filename or URL to extract extension from
+ * For data URLs, derives the extension from the MIME type. For URLs or paths,
+ * query strings and hashes are ignored and the last path segment is inspected.
+ * The returned extension is lowercase and must be 1–10 alphanumeric characters.
+ *
+ * @param filenameOrUrl - Filename, path, URL, or data URL to extract the extension from
+ * @returns The extension without a leading dot, or `undefined` if no valid extension is found
  */
 export function extractFileExtension(filenameOrUrl: string): string | undefined {
   // Handle data URLs specially
