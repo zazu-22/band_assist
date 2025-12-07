@@ -8,6 +8,34 @@ import type { Json, Database } from '../types/database.types';
 type FileAccessTokenInsert = Database['public']['Tables']['file_access_tokens']['Insert'];
 
 /**
+ * Generate a random UUID with fallback for environments where crypto.randomUUID is unavailable
+ */
+function generateUUID(): string {
+  // Try native crypto.randomUUID first (available in modern browsers and Node 19+)
+  if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
+    return crypto.randomUUID();
+  }
+
+  // Fallback: generate UUID v4 using crypto.getRandomValues
+  if (typeof crypto !== 'undefined' && typeof crypto.getRandomValues === 'function') {
+    const bytes = new Uint8Array(16);
+    crypto.getRandomValues(bytes);
+    // Set version (4) and variant (RFC4122)
+    bytes[6] = (bytes[6] & 0x0f) | 0x40;
+    bytes[8] = (bytes[8] & 0x3f) | 0x80;
+    const hex = Array.from(bytes, (b) => b.toString(16).padStart(2, '0')).join('');
+    return `${hex.slice(0, 8)}-${hex.slice(8, 12)}-${hex.slice(12, 16)}-${hex.slice(16, 20)}-${hex.slice(20)}`;
+  }
+
+  // Last resort fallback using Math.random (less secure but functional)
+  return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, (c) => {
+    const r = (Math.random() * 16) | 0;
+    const v = c === 'x' ? r : (r & 0x3) | 0x8;
+    return v.toString(16);
+  });
+}
+
+/**
  * Supabase-based persistence service
  * Stores data in PostgreSQL and files in Supabase Storage
  */
@@ -505,7 +533,7 @@ export class SupabaseStorageService implements IStorageService {
     const bandId = this.currentBandId;
 
     try {
-      const fileId = crypto.randomUUID();
+      const fileId = generateUUID();
       const extension = fileName.split('.').pop() || 'bin';
       // New path structure: bands/{band_id}/charts/{song_id}/{file_id}.ext
       const storagePath = `bands/${bandId}/${fileType}s/${songId}/${fileId}.${extension}`;
@@ -632,7 +660,7 @@ export class SupabaseStorageService implements IStorageService {
       }
 
       // Generate random token
-      const token = crypto.randomUUID();
+      const token = generateUUID();
 
       // Token expires in 5 minutes
       const expiresAt = new Date();
@@ -701,7 +729,7 @@ export class SupabaseStorageService implements IStorageService {
 
       // Generate all tokens and prepare batch insert
       const tokensData: FileAccessTokenInsert[] = storagePaths.map(storagePath => {
-        const token = crypto.randomUUID();
+        const token = generateUUID();
         tokenMap.set(storagePath, token);
         return {
           token,
