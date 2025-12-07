@@ -4,11 +4,10 @@ import { Button, Input, Label } from '@/components/primitives';
 import { AuthLayout } from '@/components/AuthLayout';
 import { getSupabaseClient } from '@/services/supabaseClient';
 import { validatePassword, PASSWORD_HINT } from '@/utils/validation';
-import { clearAuthTokensFromUrl, hasRecoveryToken } from '@/lib/auth';
+import { clearAuthTokensFromUrl } from '@/lib/auth';
 
 interface PasswordUpdateProps {
   onSuccess: () => void;
-  onNavigate: (view: string) => void;
 }
 
 export const PasswordUpdate: React.FC<PasswordUpdateProps> = memo(function PasswordUpdate({
@@ -30,22 +29,24 @@ export const PasswordUpdate: React.FC<PasswordUpdateProps> = memo(function Passw
         return;
       }
 
-      // Use utility to check for recovery token in URL
-      if (!hasRecoveryToken()) {
-        setError('Invalid or expired password reset link. Please request a new one.');
-        setIsValidSession(false);
-        return;
-      }
-
+      // SECURITY: Server-side session validation is authoritative.
+      // The session is created by Supabase when it processes the recovery token.
+      // We check for tokens in URL only to clear them for security (not for access control).
+      // The actual password update via updateUser() requires a valid server-side session.
       const { data } = await supabase.auth.getSession();
+
+      // Clear sensitive tokens from URL unconditionally on mount.
+      // This prevents tokens from being exposed in browser history or copied URLs.
+      // clearAuthTokensFromUrl() internally checks if tokens exist before clearing.
+      clearAuthTokensFromUrl();
+
+      // Session is required - this is the authoritative security check
+      // Recovery tokens should have been processed by Supabase's detectSessionInUrl
       if (!data.session) {
         setError('Invalid or expired password reset link. Please request a new one.');
         setIsValidSession(false);
         return;
       }
-
-      // Clear sensitive tokens from URL after successful session verification
-      clearAuthTokensFromUrl();
     };
 
     checkSession();

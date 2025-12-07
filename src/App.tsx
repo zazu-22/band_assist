@@ -174,6 +174,8 @@ const App: React.FC = () => {
   const [currentBandName, setCurrentBandName] = useState<string>('');
   const [userBands, setUserBands] = useState<Array<{ id: string; name: string }>>([]);
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
+  // Track if user is in password recovery mode (from reset email link)
+  const [isRecoveryMode, setIsRecoveryMode] = useState<boolean>(false);
 
   // Ref to track current band ID for race condition prevention
   const currentBandIdRef = useRef<string | null>(null);
@@ -211,16 +213,20 @@ const App: React.FC = () => {
     currentBandIdRef.current = currentBandId;
   }, [currentBandId]);
 
-  // Check for password reset hash in URL
+  // Check for password reset hash in URL (backwards compatibility for old hash-based links)
   // Only process after session check is complete to avoid race conditions
   useEffect(() => {
     // Wait for session check to complete
     if (isCheckingAuth) return;
 
+    // Skip if already in recovery mode (PASSWORD_RECOVERY event already handled this)
+    if (isRecoveryMode) return;
+
     const hash = window.location.hash;
 
-    // Check for our custom redirect (#password-update)
+    // Check for our custom redirect (#password-update) - legacy format
     if (hash === '#password-update') {
+      setIsRecoveryMode(true);
       navigate(ROUTES.PASSWORD_UPDATE, { replace: true });
       return;
     }
@@ -228,9 +234,10 @@ const App: React.FC = () => {
     // Check for Supabase recovery token in hash
     // Format: #access_token=...&type=recovery&...
     if (hash.includes('type=recovery')) {
+      setIsRecoveryMode(true);
       navigate(ROUTES.PASSWORD_UPDATE, { replace: true });
     }
-  }, [isCheckingAuth, navigate]);
+  }, [isCheckingAuth, isRecoveryMode, navigate]);
 
   // -- Authentication Check --
   // Check if Supabase is configured and user is authenticated
@@ -277,9 +284,21 @@ const App: React.FC = () => {
         // Listen for auth changes (SIGNED_OUT on token refresh failure sets newSession to null)
         const {
           data: { subscription },
-        } = supabase.auth.onAuthStateChange((_event, newSession) => {
+        } = supabase.auth.onAuthStateChange((event, newSession) => {
           if (mounted) {
             setSession(newSession);
+
+            // Handle password recovery flow
+            // When user clicks recovery link, Supabase fires PASSWORD_RECOVERY event
+            if (event === 'PASSWORD_RECOVERY') {
+              setIsRecoveryMode(true);
+              navigate(ROUTES.PASSWORD_UPDATE, { replace: true });
+            }
+
+            // Clear recovery mode when user signs out (cleanup stale state)
+            if (event === 'SIGNED_OUT') {
+              setIsRecoveryMode(false);
+            }
           }
         });
 
@@ -303,7 +322,7 @@ const App: React.FC = () => {
       authUnsubscribeRef.current?.();
       authUnsubscribeRef.current = null;
     };
-  }, []);
+  }, [navigate]);
 
   // -- Fetch/Create Band for User --
   // After authentication, fetch user's bands or create a new one
@@ -754,20 +773,34 @@ const App: React.FC = () => {
     return <LoadingScreen message="Checking authentication..." />;
   }
 
-  // Show auth screens if Supabase is configured but user is not authenticated
+  // ROUTE BRANCH 1: Password recovery mode (triggered by PASSWORD_RECOVERY event)
+  // This handles users who clicked a password reset link from their email.
+  // Recovery tokens create a valid session, so this must run BEFORE the !session check.
+  // The isRecoveryMode flag is set by onAuthStateChange when PASSWORD_RECOVERY fires.
+  if (isSupabaseConfigured() && isRecoveryMode) {
+    return (
+      <PasswordUpdate
+        onSuccess={() => {
+          // Clear recovery mode and redirect to login
+          // Hash is already cleared by PasswordUpdate's clearAuthTokensFromUrl()
+          setIsRecoveryMode(false);
+          navigate(ROUTES.LOGIN);
+        }}
+      />
+    );
+  }
+
+  // ROUTE BRANCH 2: Unauthenticated users (no session)
+  // This handles login, signup, and password reset request flows.
   if (isSupabaseConfigured() && !session) {
-    // Check if we're on the password-update route
+    // Sub-branch: Direct /password-update URL access (backwards compatibility)
+    // Handles old hash-based reset links or direct URL visits without recovery event.
+    // PasswordUpdate will validate if a recovery token exists in the URL.
     if (location.pathname === ROUTES.PASSWORD_UPDATE) {
       return (
         <PasswordUpdate
           onSuccess={() => {
-            // Clear the hash and redirect to login
-            window.location.hash = '';
             navigate(ROUTES.LOGIN);
-          }}
-          onNavigate={(view: string) => {
-            if (view === 'LOGIN') navigate(ROUTES.LOGIN);
-            else if (view === 'SIGNUP') navigate(ROUTES.SIGNUP);
           }}
         />
       );

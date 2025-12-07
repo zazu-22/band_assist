@@ -41,7 +41,8 @@ export const PasswordReset: React.FC<PasswordResetProps> = memo(function Passwor
       try {
         const normalizedEmail = normalizeEmail(email);
         const { error: resetError } = await supabase.auth.resetPasswordForEmail(normalizedEmail, {
-          redirectTo: `${window.location.origin}/#password-update`,
+          // Use path-based redirect (not hash) so Supabase can append tokens correctly
+          redirectTo: `${window.location.origin}/password-update`,
         });
 
         if (resetError) {
