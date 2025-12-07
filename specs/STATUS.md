@@ -2,7 +2,7 @@
 
 > Quick reference for all specs, GitHub issues, and current status.
 >
-> Last updated: 2025-12-07 (updated for #100 resolution)
+> Last updated: 2025-12-07
 
 ---
 
@@ -21,7 +21,7 @@
 | 🟢 Done | 16 | Completed and merged |
 | 🟡 Pending | 1 | Queued for implementation (in sequence order) |
 | ⚪ Backlog | 16 | Planned but not yet prioritized |
-| 🔵 GitHub Issues | 8 | Tracked in GitHub (bugs, smaller features) |
+| 🔵 GitHub Issues | 7 | Tracked in GitHub (bugs, smaller features) |
 
 ---
 
@@ -41,7 +41,7 @@ Specs queued for implementation **in priority order**. Work through these sequen
 
 ---
 
-## 🔵 GitHub Issues (8 open)
+## 🔵 GitHub Issues (7 open)
 
 Smaller features, bug fixes, and follow-up work tracked in GitHub rather than full specs.
 
@@ -71,7 +71,7 @@ Smaller features, bug fixes, and follow-up work tracked in GitHub rather than fu
 
 | # | Title | Effort | Notes |
 |---|-------|--------|-------|
-| [#107](https://github.com/zazu-22/band_assist/issues/107) | Add song naming to files (PDFs) | Small | Quick win, better UX |
+| ~~[#107](https://github.com/zazu-22/band_assist/issues/107)~~ | ~~Add song naming to files (PDFs)~~ | ~~Small~~ | ✅ Completed 2025-12-07 |
 | [#101](https://github.com/zazu-22/band_assist/issues/101) | Mobile layout for iOS Safari | Large | Major refactor, needs device testing |
 
 ---
@@ -149,6 +149,7 @@ Smaller features, bug fixes, and follow-up work tracked in GitHub rather than fu
 
 | Date | Item | Change |
 |------|------|--------|
+| 2025-12-07 | [#107](https://github.com/zazu-22/band_assist/issues/107) Song file naming | ✅ Completed |
 | 2025-12-07 | [#100](https://github.com/zazu-22/band_assist/issues/100) Password reset bug | ✅ Resolved (merged in #130) |
 | 2025-12-07 | GitHub Issues | 📋 Added 9 open issues to STATUS.md with dependency graph |
 | 2025-12-07 | Proposed Sequence | 📋 Added recommended implementation order |
@@ -198,7 +199,7 @@ infra-test-environment-setup (backlog)
 ```
 #100 (password reset bug) ─── ✅ RESOLVED
 
-#107 (file naming) ─── standalone, quick win
+#107 (file naming) ─── ✅ RESOLVED
 
 #125 (practice edit) ───┬──► #121 (virtualization)
 #126 (filtering/sort) ──┘
@@ -215,11 +216,11 @@ infra-test-environment-setup (backlog)
 
 Recommended order considering dependencies and effort:
 
-### Phase 1: Critical & Quick Wins
+### Phase 1: Critical & Quick Wins ✅ COMPLETE
 | Order | Item | Type | Rationale |
 |-------|------|------|-----------|
 | ~~1~~ | ~~[#100](https://github.com/zazu-22/band_assist/issues/100) Password reset bug~~ | ~~Bug~~ | ✅ Resolved 2025-12-07 |
-| 2 | [#107](https://github.com/zazu-22/band_assist/issues/107) Song naming for files | Issue | Quick win, standalone, improves UX |
+| ~~2~~ | ~~[#107](https://github.com/zazu-22/band_assist/issues/107) Song naming for files~~ | ~~Issue~~ | ✅ Completed 2025-12-07 |
 
 ### Phase 2: Practice Tracking
 | Order | Item | Type | Rationale |
