@@ -5,8 +5,8 @@
 | **Status**  | Done                                        |
 | **Authors** | Claude (AI Assistant)                       |
 | **Created** | 2025-12-02                                  |
-| **Updated** | 2025-12-05                                  |
-| **Completed** | 2025-12-05                                |
+| **Updated** | 2025-12-07                                  |
+| **Completed** | 2025-12-07                                |
 | **Priority**| High                                        |
 | **Type**    | Feature                                     |
 
@@ -672,6 +672,7 @@ export function usePracticeSessions(
 **Optimistic Updates:**
 
 When logging a practice session:
+
 1. Show loading state on "Save" button
 2. Optimistically update local state (add session to list)
 3. Make API call
@@ -726,16 +727,16 @@ When logging a practice session:
 
 ## Acceptance Criteria
 
-- [ ] Migration creates `user_song_status` and `practice_sessions` tables
+- [x] Migration creates `user_song_status` and `practice_sessions` tables
 - [ ] RLS policies correctly restrict access to user's own data
-- [ ] Performance Mode shows "Log Practice" button for authenticated users
-- [ ] Practice log dialog captures all required fields
-- [ ] Saving a practice session updates both `practice_sessions` and `user_song_status`
-- [ ] Practice History route displays sessions in a table
-- [ ] Practice stats are calculated correctly (total sessions, time, learned songs)
-- [ ] Users can filter practice history by song and date range
-- [ ] Song lists show both band status and personal status badges
-- [ ] Personal status persists across sessions
+- [x] Performance Mode shows "Log Practice" button for authenticated users
+- [x] Practice log dialog captures all required fields
+- [x] Saving a practice session updates both `practice_sessions` and `user_song_status`
+- [x] Practice History route displays sessions in a table
+- [x] Practice stats are calculated correctly (total sessions, time, learned songs)
+- [x] Users can filter practice history by song and date range
+- [x] Song lists show both band status and personal status badges
+- [x] Personal status persists across sessions
 - [ ] Practice sessions are scoped to the current band
 - [ ] Non-linked users see graceful messaging (e.g., "Link your account to track practice")
 - [ ] Code follows project conventions (component hierarchy, imports, performance patterns)
