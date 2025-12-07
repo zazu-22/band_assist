@@ -81,10 +81,20 @@ export function useUserSongStatus(
 
       // Optimistic update
       const previousStatus = status;
+      const now = new Date().toISOString();
       setStatus(prev =>
         prev
           ? { ...prev, status: newStatus, confidenceLevel: confidence }
-          : null
+          : {
+              // Create optimistic placeholder for first-time status
+              id: 'optimistic-' + Date.now(),
+              userId,
+              songId,
+              status: newStatus,
+              confidenceLevel: confidence,
+              createdAt: now,
+              updatedAt: now,
+            }
       );
 
       try {

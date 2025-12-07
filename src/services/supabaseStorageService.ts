@@ -1341,24 +1341,17 @@ export class SupabaseStorageService implements IStorageService {
         throw new Error('Failed to save practice session');
       }
 
-      // Update last_practiced_at in user_song_status
+      // Update last_practiced_at in user_song_status (only if record exists)
+      // We don't want to create a status record or overwrite existing status -
+      // that should only happen when the user explicitly sets their status
       const { error: statusError } = await supabase
         .from('user_song_status')
-        .upsert(
-          {
-            user_id: session.userId,
-            song_id: session.songId,
-            status: 'Learning', // Default status, won't overwrite existing
-            last_practiced_at: new Date().toISOString(),
-          },
-          {
-            onConflict: 'user_id,song_id',
-            ignoreDuplicates: false,
-          }
-        );
+        .update({ last_practiced_at: new Date().toISOString() })
+        .eq('user_id', session.userId)
+        .eq('song_id', session.songId);
 
       if (statusError) {
-        // Log warning but don't fail the operation
+        // Log warning but don't fail the operation - record may not exist yet
         console.warn('Failed to update last_practiced_at:', statusError);
       }
 

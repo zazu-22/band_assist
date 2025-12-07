@@ -38,6 +38,7 @@ import {
 } from './primitives/select';
 import { toast } from './ui/Toast';
 import { supabaseStorageService } from '@/services/supabaseStorageService';
+import { useUserSongStatus } from '@/hooks/useUserSongStatus';
 
 interface PerformanceModeProps {
   songs: Song[];
@@ -69,9 +70,20 @@ export const PerformanceMode: React.FC<PerformanceModeProps> = ({
     status: 'Not Started' as UserSongStatus,
     confidence: 3,
   });
+  // Track original status when dialog opens to detect user changes
+  const [originalStatus, setOriginalStatus] = useState<{
+    status: UserSongStatus;
+    confidence: number;
+  } | null>(null);
 
   // Chart state
   const currentSong = songs[currentIndex];
+
+  // Fetch user's current song status
+  const { status: userSongStatus } = useUserSongStatus(
+    currentUserId || null,
+    currentSong.id
+  );
 
   const [activeChartId, setActiveChartId] = useState<string | null>(
     currentSong.charts.length > 0 ? currentSong.charts[0].id : null
@@ -179,16 +191,22 @@ export const PerformanceMode: React.FC<PerformanceModeProps> = ({
 
   // Practice Log Handlers
   const handleOpenPracticeLog = useCallback(() => {
+    // Pre-populate with user's current status (if any)
+    const currentStatus = userSongStatus?.status || 'Not Started';
+    const currentConfidence = userSongStatus?.confidenceLevel ?? 3;
+
     setPracticeLog({
       duration: 30,
       tempoBpm: currentSong.bpm || 0,
       sections: [],
       notes: '',
-      status: 'Not Started',
-      confidence: 3,
+      status: currentStatus,
+      confidence: currentConfidence,
     });
+    // Track original to detect if user changes it
+    setOriginalStatus({ status: currentStatus, confidence: currentConfidence });
     setShowPracticeLogDialog(true);
-  }, [currentSong.bpm]);
+  }, [currentSong.bpm, userSongStatus]);
 
   const toggleSection = useCallback((sectionName: string) => {
     setPracticeLog(prev => ({
@@ -227,13 +245,20 @@ export const PerformanceMode: React.FC<PerformanceModeProps> = ({
         date: today,
       });
 
-      // Update user song status
-      await supabaseStorageService.updateUserSongStatus(
-        currentUserId,
-        currentSong.id,
-        practiceLog.status,
-        practiceLog.confidence
-      );
+      // Only update user song status if the user changed it from their current status
+      const statusChanged =
+        !originalStatus ||
+        practiceLog.status !== originalStatus.status ||
+        practiceLog.confidence !== originalStatus.confidence;
+
+      if (statusChanged) {
+        await supabaseStorageService.updateUserSongStatus(
+          currentUserId,
+          currentSong.id,
+          practiceLog.status,
+          practiceLog.confidence
+        );
+      }
 
       toast.success('Practice session logged successfully');
       setShowPracticeLogDialog(false);
@@ -253,7 +278,7 @@ export const PerformanceMode: React.FC<PerformanceModeProps> = ({
     } finally {
       setIsSaving(false);
     }
-  }, [currentUserId, currentSong, currentBandId, practiceLog]);
+  }, [currentUserId, currentSong, currentBandId, practiceLog, originalStatus]);
 
   // Manual scroll functions
   const scrollBy = useCallback(

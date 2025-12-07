@@ -48,6 +48,7 @@ describe('Practice Tracking Service Methods', () => {
       // Chainable methods
       insert: vi.fn().mockReturnThis(),
       select: vi.fn().mockReturnThis(),
+      update: vi.fn().mockReturnThis(),
       upsert: vi.fn().mockReturnThis(),
       eq: vi.fn().mockReturnThis(),
       is: vi.fn().mockReturnThis(),
@@ -203,25 +204,20 @@ describe('Practice Tracking Service Methods', () => {
         .mockReturnValueOnce(mockStatusQuery);
 
       mockSessionQuery.single.mockResolvedValueOnce({ data: mockInsertedSession, error: null });
-      mockStatusQuery.upsert.mockResolvedValueOnce({ data: null, error: null });
 
       // Act
       await service.logPracticeSession(validSession);
 
-      // Assert - verify upsert was called with last_practiced_at
+      // Assert - verify update was called with just last_practiced_at (no status override)
       expect(mockSupabase.from).toHaveBeenCalledWith('user_song_status');
-      expect(mockStatusQuery.upsert).toHaveBeenCalledWith(
+      expect(mockStatusQuery.update).toHaveBeenCalledWith(
         expect.objectContaining({
-          user_id: validSession.userId,
-          song_id: validSession.songId,
-          status: 'Learning',
           last_practiced_at: expect.any(String),
-        }),
-        expect.objectContaining({
-          onConflict: 'user_id,song_id',
-          ignoreDuplicates: false,
         })
       );
+      // Verify eq filters were chained for user_id and song_id
+      expect(mockStatusQuery.eq).toHaveBeenCalledWith('user_id', validSession.userId);
+      expect(mockStatusQuery.eq).toHaveBeenCalledWith('song_id', validSession.songId);
     });
 
     it('should handle database error', async () => {

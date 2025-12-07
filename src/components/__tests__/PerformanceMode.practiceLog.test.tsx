@@ -21,6 +21,17 @@ vi.mock('../ui/Toast', () => ({
   },
 }));
 
+// Mock useUserSongStatus hook - returns null status by default (no existing status)
+vi.mock('@/hooks/useUserSongStatus', () => ({
+  useUserSongStatus: vi.fn(() => ({
+    status: null,
+    isLoading: false,
+    error: null,
+    updateStatus: vi.fn(),
+    refetch: vi.fn(),
+  })),
+}));
+
 // Mock LazyAlphaTab to avoid rendering issues in tests
 vi.mock('../LazyAlphaTab', () => ({
   LazyAlphaTab: () => <div>Mocked AlphaTab</div>,
@@ -538,6 +549,11 @@ describe('PerformanceMode - Practice Log Dialog', () => {
       render(<PerformanceMode {...defaultProps} />);
 
       await user.click(screen.getByText('Log Practice'));
+
+      // Change confidence to trigger status update (status only updates if changed)
+      const confidenceButtons = screen.getAllByRole('button', { name: /^[1-5]$/ });
+      const level5Button = confidenceButtons.find(btn => btn.textContent === '5');
+      await user.click(level5Button!);
 
       const saveButton = screen.getByRole('button', { name: /Save Practice Log/ });
       await user.click(saveButton);
