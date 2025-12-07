@@ -1,5 +1,17 @@
 # Changelog
 
+## [0.1.6](https://github.com/zazu-22/band_assist/compare/v0.1.5...v0.1.6) (2025-12-07)
+
+
+### Features
+
+* **files:** add song name to downloaded file names ([#132](https://github.com/zazu-22/band_assist/issues/132)) ([5e50c58](https://github.com/zazu-22/band_assist/commit/5e50c5863796f53d13ab711af3029a31f58138de))
+
+
+### Bug Fixes
+
+* **auth:** resolve password reset flow not showing update form ([#130](https://github.com/zazu-22/band_assist/issues/130)) ([2006d36](https://github.com/zazu-22/band_assist/commit/2006d365715380cb87ff5cece7bb606c02afcb04))
+
 ## [0.1.5](https://github.com/zazu-22/band_assist/compare/v0.1.4...v0.1.5) (2025-12-07)
 
 
