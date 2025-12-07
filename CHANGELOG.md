@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.4](https://github.com/zazu-22/band_assist/compare/v0.1.3...v0.1.4) (2025-12-07)
+
+
+### Bug Fixes
+
+* **db:** resolve infinite recursion in band_members RLS policy ([#119](https://github.com/zazu-22/band_assist/issues/119)) ([b1fff04](https://github.com/zazu-22/band_assist/commit/b1fff043411f9e360029a63054ea66498fd0f668))
+* **pdf:** resolve PDF token generation failures with session refresh ([#116](https://github.com/zazu-22/band_assist/issues/116)) ([4ae3215](https://github.com/zazu-22/band_assist/commit/4ae3215e7d0b44c8b4d788fbacd38a0a6694318b))
+
 ## [0.1.3](https://github.com/zazu-22/band_assist/compare/v0.1.2...v0.1.3) (2025-12-05)
 
 
