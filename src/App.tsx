@@ -226,6 +226,7 @@ const App: React.FC = () => {
 
     // Check for our custom redirect (#password-update) - legacy format
     if (hash === '#password-update') {
+      setIsRecoveryMode(true);
       navigate(ROUTES.PASSWORD_UPDATE, { replace: true });
       return;
     }
@@ -233,6 +234,7 @@ const App: React.FC = () => {
     // Check for Supabase recovery token in hash
     // Format: #access_token=...&type=recovery&...
     if (hash.includes('type=recovery')) {
+      setIsRecoveryMode(true);
       navigate(ROUTES.PASSWORD_UPDATE, { replace: true });
     }
   }, [isCheckingAuth, isRecoveryMode, navigate]);

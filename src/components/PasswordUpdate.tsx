@@ -4,7 +4,7 @@ import { Button, Input, Label } from '@/components/primitives';
 import { AuthLayout } from '@/components/AuthLayout';
 import { getSupabaseClient } from '@/services/supabaseClient';
 import { validatePassword, PASSWORD_HINT } from '@/utils/validation';
-import { clearAuthTokensFromUrl, hasRecoveryToken } from '@/lib/auth';
+import { clearAuthTokensFromUrl } from '@/lib/auth';
 
 interface PasswordUpdateProps {
   onSuccess: () => void;
@@ -35,11 +35,10 @@ export const PasswordUpdate: React.FC<PasswordUpdateProps> = memo(function Passw
       // The actual password update via updateUser() requires a valid server-side session.
       const { data } = await supabase.auth.getSession();
 
-      // Clear sensitive tokens from URL immediately (before any other checks)
-      // This prevents tokens from being exposed in browser history or copied URLs
-      if (hasRecoveryToken()) {
-        clearAuthTokensFromUrl();
-      }
+      // Clear sensitive tokens from URL unconditionally on mount.
+      // This prevents tokens from being exposed in browser history or copied URLs.
+      // clearAuthTokensFromUrl() internally checks if tokens exist before clearing.
+      clearAuthTokensFromUrl();
 
       // Session is required - this is the authoritative security check
       // Recovery tokens should have been processed by Supabase's detectSessionInUrl
