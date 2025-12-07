@@ -83,9 +83,8 @@ Deno.serve(async (req: Request): Promise<Response> => {
     }
     // Use service role to validate token and access storage
     const supabaseUrl = Deno.env.get('SUPABASE_URL');
-    // Support new secret key (DB_SECRET_KEY) and legacy (SUPABASE_SERVICE_ROLE_KEY) env var names
-    // Note: SUPABASE_SECRET_KEY cannot be set manually (reserved prefix), so we use DB_SECRET_KEY
-    const supabaseSecretKey = Deno.env.get('DB_SECRET_KEY') || Deno.env.get('SUPABASE_SERVICE_ROLE_KEY');
+    // DB_SECRET_KEY must be set in Edge Function secrets (SUPABASE_ prefix is reserved)
+    const supabaseSecretKey = Deno.env.get('DB_SECRET_KEY');
     if (!supabaseUrl || !supabaseSecretKey) {
       console.error('Missing required environment variables');
       return new Response(JSON.stringify({
@@ -102,10 +101,8 @@ Deno.serve(async (req: Request): Promise<Response> => {
     const isDevelopment = Deno.env.get('DEVELOPMENT') === 'true';
     if (isDevelopment) {
       console.log('[serve-file-inline] Environment check:', {
-        SUPABASE_URL: supabaseUrl ? `[SET: ${supabaseUrl.length} chars]` : '[NOT SET]',
-        DB_SECRET_KEY: Deno.env.get('DB_SECRET_KEY') ? '[SET]' : '[NOT SET]',
-        SUPABASE_SERVICE_ROLE_KEY: Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ? '[SET]' : '[NOT SET]',
-        usingKey: Deno.env.get('DB_SECRET_KEY') ? 'DB_SECRET_KEY' : 'SUPABASE_SERVICE_ROLE_KEY',
+        SUPABASE_URL: supabaseUrl ? '[SET]' : '[NOT SET]',
+        DB_SECRET_KEY: supabaseSecretKey ? '[SET]' : '[NOT SET]',
       });
     }
 
