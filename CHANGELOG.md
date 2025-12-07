@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.5](https://github.com/zazu-22/band_assist/compare/v0.1.4...v0.1.5) (2025-12-07)
+
+
+### Features
+
+* **practice-tracking:** Phase 2 - Personal Practice Tracking ([#120](https://github.com/zazu-22/band_assist/issues/120)) ([0591a84](https://github.com/zazu-22/band_assist/commit/0591a84802f8ab0a80f131376568e4f90edd9dbc))
+
 ## [0.1.4](https://github.com/zazu-22/band_assist/compare/v0.1.3...v0.1.4) (2025-12-07)
 
 
