@@ -83,9 +83,10 @@ export function sanitizeFilename(filename: string): string {
   // Replace invalid characters with underscores
   let sanitized = filename.replace(/[/\\:*?"<>|]/g, '_');
 
-  // Replace control characters (ASCII 0-31)
-  // eslint-disable-next-line no-control-regex
-  sanitized = sanitized.replace(/[\u0000-\u001f]/g, '');
+  // Replace control characters (ASCII 0-31) using character code filtering
+  sanitized = Array.from(sanitized)
+    .filter(char => char.charCodeAt(0) >= 32)
+    .join('');
 
   // Replace multiple consecutive underscores/spaces with single underscore
   sanitized = sanitized.replace(/[_\s]+/g, '_');
@@ -110,6 +111,39 @@ export function sanitizeFilename(filename: string): string {
 }
 
 /**
+ * Extract file extension from a filename or URL.
+ * Returns the extension in lowercase without the dot, or undefined if not found.
+ *
+ * @param filenameOrUrl - Filename or URL to extract extension from
+ */
+export function extractFileExtension(filenameOrUrl: string): string | undefined {
+  // Remove query parameters and hash if URL
+  let cleanPath = filenameOrUrl.split('?')[0].split('#')[0];
+
+  // Handle URL-encoded characters
+  try {
+    cleanPath = decodeURIComponent(cleanPath);
+  } catch {
+    // Ignore decode errors
+  }
+
+  // Extract just the filename part if it's a path/URL
+  const filename = cleanPath.split('/').pop() || cleanPath;
+
+  // Find the extension
+  const lastDot = filename.lastIndexOf('.');
+  if (lastDot > 0 && lastDot < filename.length - 1) {
+    const ext = filename.substring(lastDot + 1).toLowerCase();
+    // Validate it's a reasonable extension (1-10 chars, alphanumeric)
+    if (ext.length >= 1 && ext.length <= 10 && /^[a-z0-9]+$/.test(ext)) {
+      return ext;
+    }
+  }
+
+  return undefined;
+}
+
+/**
  * Create a safe download filename combining a song title and an item name, with an optional extension.
  *
  * @param songTitle - The song title to include in the filename
@@ -126,12 +160,17 @@ export function generateDownloadFilename(
   let ext = extension;
   let baseName = itemName;
 
-  if (!ext) {
+  // Check if itemName has an extension
+  const itemExt = extractFileExtension(itemName);
+  if (itemExt) {
+    // Remove extension from baseName
     const lastDot = itemName.lastIndexOf('.');
-    if (lastDot > 0 && lastDot < itemName.length - 1) {
-      ext = itemName.substring(lastDot + 1);
-      baseName = itemName.substring(0, lastDot);
-    }
+    baseName = itemName.substring(0, lastDot);
+  }
+
+  // Use provided extension or fall back to extracted one
+  if (!ext) {
+    ext = itemExt;
   }
 
   // Sanitize both parts

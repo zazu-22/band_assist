@@ -21,7 +21,7 @@
 | 🟢 Done | 16 | Completed and merged |
 | 🟡 Pending | 1 | Queued for implementation (in sequence order) |
 | ⚪ Backlog | 16 | Planned but not yet prioritized |
-| 🔵 GitHub Issues | 7 | Tracked in GitHub (bugs, smaller features) |
+| 🔵 GitHub Issues | 8 | Tracked in GitHub (bugs, smaller features) |
 
 ---
 
@@ -41,7 +41,7 @@ Specs queued for implementation **in priority order**. Work through these sequen
 
 ---
 
-## 🔵 GitHub Issues (7 open)
+## 🔵 GitHub Issues (8 open)
 
 Smaller features, bug fixes, and follow-up work tracked in GitHub rather than full specs.
 
@@ -71,7 +71,7 @@ Smaller features, bug fixes, and follow-up work tracked in GitHub rather than fu
 
 | # | Title | Effort | Notes |
 |---|-------|--------|-------|
-| ~~[#107](https://github.com/zazu-22/band_assist/issues/107)~~ | ~~Add song naming to files (PDFs)~~ | ~~Small~~ | ✅ Completed 2025-12-07 |
+| [#107](https://github.com/zazu-22/band_assist/issues/107) | Add song naming to files (PDFs) | Small | ✅ Implemented - pending close |
 | [#101](https://github.com/zazu-22/band_assist/issues/101) | Mobile layout for iOS Safari | Large | Major refactor, needs device testing |
 
 ---
@@ -149,7 +149,7 @@ Smaller features, bug fixes, and follow-up work tracked in GitHub rather than fu
 
 | Date | Item | Change |
 |------|------|--------|
-| 2025-12-07 | [#107](https://github.com/zazu-22/band_assist/issues/107) Song file naming | ✅ Completed |
+| 2025-12-07 | [#107](https://github.com/zazu-22/band_assist/issues/107) Song file naming | ✅ Implemented (pending issue close) |
 | 2025-12-07 | [#100](https://github.com/zazu-22/band_assist/issues/100) Password reset bug | ✅ Resolved (merged in #130) |
 | 2025-12-07 | GitHub Issues | 📋 Added 9 open issues to STATUS.md with dependency graph |
 | 2025-12-07 | Proposed Sequence | 📋 Added recommended implementation order |
@@ -199,7 +199,7 @@ infra-test-environment-setup (backlog)
 ```
 #100 (password reset bug) ─── ✅ RESOLVED
 
-#107 (file naming) ─── ✅ RESOLVED
+#107 (file naming) ─── ✅ IMPLEMENTED (pending close)
 
 #125 (practice edit) ───┬──► #121 (virtualization)
 #126 (filtering/sort) ──┘
@@ -217,12 +217,14 @@ infra-test-environment-setup (backlog)
 Recommended order considering dependencies and effort:
 
 ### Phase 1: Critical & Quick Wins ✅ COMPLETE
+
 | Order | Item | Type | Rationale |
 |-------|------|------|-----------|
-| ~~1~~ | ~~[#100](https://github.com/zazu-22/band_assist/issues/100) Password reset bug~~ | ~~Bug~~ | ✅ Resolved 2025-12-07 |
-| ~~2~~ | ~~[#107](https://github.com/zazu-22/band_assist/issues/107) Song naming for files~~ | ~~Issue~~ | ✅ Completed 2025-12-07 |
+| 1 | [#100](https://github.com/zazu-22/band_assist/issues/100) Password reset bug | Bug | ✅ Resolved 2025-12-07 |
+| 2 | [#107](https://github.com/zazu-22/band_assist/issues/107) Song naming for files | Issue | ✅ Implemented 2025-12-07 |
 
 ### Phase 2: Practice Tracking
+
 | Order | Item | Type | Rationale |
 |-------|------|------|-----------|
 | 3 | [#125](https://github.com/zazu-22/band_assist/issues/125) Practice logging | Issue | Foundation for #121 |
@@ -230,6 +232,7 @@ Recommended order considering dependencies and effort:
 | 5 | [#121](https://github.com/zazu-22/band_assist/issues/121) Virtualize table | Issue | Now safe after #125/#126 |
 
 ### Phase 3: Band Management
+
 | Order | Item | Type | Rationale |
 |-------|------|------|-----------|
 | 6 | [#127](https://github.com/zazu-22/band_assist/issues/127) Band selector | Issue | Foundation for multi-band UX |
@@ -237,6 +240,7 @@ Recommended order considering dependencies and effort:
 | 8 | Close [#124](https://github.com/zazu-22/band_assist/issues/124) | Issue | Parent tracking issue done |
 
 ### Phase 4: Larger Efforts
+
 | Order | Item | Type | Rationale |
 |-------|------|------|-----------|
 | 9 | [feat-user-member-linking-phase-3](pending/feat-user-member-linking-phase-3.md) | Spec | Large feature, personalization |
@@ -245,7 +249,7 @@ Recommended order considering dependencies and effort:
 ### Parallel Opportunities
 
 These can run concurrently with minimal conflict:
-- **#107** (file naming) + **#125** (practice logging) — different areas
+
 - **#127** + **#128** — same feature area, can be done together
 - **#101** (mobile) can run in parallel with Phase 2/3 if resources allow
 

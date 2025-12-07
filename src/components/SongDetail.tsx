@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/primitives/select';
-import { cn, generateDownloadFilename } from '@/lib/utils';
+import { cn, generateDownloadFilename, extractFileExtension } from '@/lib/utils';
 import { parseLocalDate } from '@/lib/dateUtils';
 import {
   Music2,
@@ -744,7 +744,10 @@ export const SongDetail: React.FC<SongDetailProps> = ({
                         variant="ghost"
                         size="icon"
                         onClick={() => {
-                          const ext = activeChart.type === 'PDF' ? 'pdf' : activeChart.type === 'IMAGE' ? 'png' : undefined;
+                          // Try to extract extension from chart name, then storage path, then fall back by type
+                          const ext = extractFileExtension(activeChart.name)
+                            || (activeChart.storagePath && extractFileExtension(activeChart.storagePath))
+                            || (activeChart.type === 'PDF' ? 'pdf' : activeChart.type === 'IMAGE' ? 'png' : undefined);
                           downloadFile(activeChart.url!, generateDownloadFilename(song.title, activeChart.name, ext));
                         }}
                         className="bg-card/80 backdrop-blur-sm hover:bg-muted"
@@ -960,9 +963,13 @@ export const SongDetail: React.FC<SongDetailProps> = ({
                         <Button
                           variant="ghost"
                           size="sm"
-                          onClick={() =>
-                            downloadFile(song.backingTrackUrl!, generateDownloadFilename(song.title, 'backing_track', 'mp3'))
-                          }
+                          onClick={() => {
+                            // Try to extract extension from storage path or URL, fall back to mp3
+                            const ext = (song.backingTrackStoragePath && extractFileExtension(song.backingTrackStoragePath))
+                              || extractFileExtension(song.backingTrackUrl!)
+                              || 'mp3';
+                            downloadFile(song.backingTrackUrl!, generateDownloadFilename(song.title, 'backing_track', ext));
+                          }}
                           className="text-info gap-1"
                         >
                           <Download size={12} /> Download Track
