@@ -9,8 +9,9 @@ type FileAccessTokenInsert = Database['public']['Tables']['file_access_tokens'][
 
 /**
  * Generate a random UUID with fallback for environments where crypto.randomUUID is unavailable
+ * Exported for testing purposes
  */
-function generateUUID(): string {
+export function generateUUID(): string {
   // Try native crypto.randomUUID first (available in modern browsers and Node 19+)
   if (typeof crypto !== 'undefined' && typeof crypto.randomUUID === 'function') {
     return crypto.randomUUID();

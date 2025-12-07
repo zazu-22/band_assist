@@ -8,7 +8,7 @@ const TOKEN_REUSE_GRACE_PERIOD_MS = 30 * 1000;
 // In production, set ALLOWED_ORIGINS environment variable to your app domain(s)
 // Example: ALLOWED_ORIGINS=https://yourdomain.com,https://app.yourdomain.com
 // Falls back to '*' for development/testing (not recommended for production)
-const getAllowedOrigin = (requestOrigin)=>{
+const getAllowedOrigin = (requestOrigin: string | null): string => {
   const allowedOriginsEnv = Deno.env.get('ALLOWED_ORIGINS');
   const isDevelopment = Deno.env.get('DEVELOPMENT') === 'true';
   if (!allowedOriginsEnv) {
@@ -27,11 +27,11 @@ const getAllowedOrigin = (requestOrigin)=>{
   // Browser will block requests when Access-Control-Allow-Origin doesn't match request origin
   return '';
 };
-const getCorsHeaders = (requestOrigin)=>({
+const getCorsHeaders = (requestOrigin: string | null): Record<string, string> => ({
     'Access-Control-Allow-Origin': getAllowedOrigin(requestOrigin),
     'Access-Control-Allow-Headers': 'authorization, x-client-info, apikey, content-type'
   });
-Deno.serve(async (req)=>{
+Deno.serve(async (req: Request): Promise<Response> => {
   // Get CORS headers based on request origin
   const requestOrigin = req.headers.get('Origin');
   const corsHeaders = getCorsHeaders(requestOrigin);
@@ -98,36 +98,43 @@ Deno.serve(async (req)=>{
         }
       });
     }
-    // Debug: Log environment variable status
-    console.log('[serve-file-inline] Environment check:', {
-      SUPABASE_URL: supabaseUrl ? `[SET: ${supabaseUrl.length} chars]` : '[NOT SET]',
-      DB_SECRET_KEY: Deno.env.get('DB_SECRET_KEY') ? '[SET]' : '[NOT SET]',
-      SUPABASE_SERVICE_ROLE_KEY: Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ? '[SET]' : '[NOT SET]',
-      usingKey: Deno.env.get('DB_SECRET_KEY') ? 'DB_SECRET_KEY' : 'SUPABASE_SERVICE_ROLE_KEY',
-    });
+    // Debug logging (only in development mode)
+    const isDevelopment = Deno.env.get('DEVELOPMENT') === 'true';
+    if (isDevelopment) {
+      console.log('[serve-file-inline] Environment check:', {
+        SUPABASE_URL: supabaseUrl ? `[SET: ${supabaseUrl.length} chars]` : '[NOT SET]',
+        DB_SECRET_KEY: Deno.env.get('DB_SECRET_KEY') ? '[SET]' : '[NOT SET]',
+        SUPABASE_SERVICE_ROLE_KEY: Deno.env.get('SUPABASE_SERVICE_ROLE_KEY') ? '[SET]' : '[NOT SET]',
+        usingKey: Deno.env.get('DB_SECRET_KEY') ? 'DB_SECRET_KEY' : 'SUPABASE_SERVICE_ROLE_KEY',
+      });
+    }
 
     const supabase = createClient(supabaseUrl, supabaseSecretKey);
 
-    // Debug: Log token being validated
-    console.log('[serve-file-inline] Validating token:', {
-      tokenLength: tokenParam.length,
-      tokenPrefix: tokenParam.substring(0, 8) + '...',
-      storagePath,
-    });
+    // Debug: Log token being validated (only in development)
+    if (isDevelopment) {
+      console.log('[serve-file-inline] Validating token:', {
+        tokenLength: tokenParam.length,
+        tokenPrefix: tokenParam.substring(0, 8) + '...',
+        storagePath,
+      });
+    }
 
     // Validate file access token
     // This token is short-lived (5 min) and single-use, providing better security than JWT in URL
     const { data: tokenData, error: tokenError } = await supabase.from('file_access_tokens').select('id, user_id, storage_path, band_id, expires_at, used_at').eq('token', tokenParam).single();
 
-    // Debug: Log query result
-    console.log('[serve-file-inline] Token query result:', {
-      hasData: !!tokenData,
-      hasError: !!tokenError,
-      errorCode: tokenError?.code,
-      errorMessage: tokenError?.message,
-      errorDetails: tokenError?.details,
-      errorHint: tokenError?.hint,
-    });
+    // Debug: Log query result (only in development)
+    if (isDevelopment) {
+      console.log('[serve-file-inline] Token query result:', {
+        hasData: !!tokenData,
+        hasError: !!tokenError,
+        errorCode: tokenError?.code,
+        errorMessage: tokenError?.message,
+        errorDetails: tokenError?.details,
+        errorHint: tokenError?.hint,
+      });
+    }
 
     if (tokenError || !tokenData) {
       console.error('[serve-file-inline] Token validation failed:', {
@@ -135,11 +142,7 @@ Deno.serve(async (req)=>{
         tokenParam: tokenParam.substring(0, 8) + '...',
       });
       return new Response(JSON.stringify({
-        error: 'Invalid or expired token',
-        debug: {
-          code: tokenError?.code,
-          message: tokenError?.message,
-        }
+        error: 'Invalid or expired token'
       }), {
         status: 401,
         headers: {
@@ -275,7 +278,7 @@ Deno.serve(async (req)=>{
     }
     // Get content type from file extension
     const extension = storagePath.split('.').pop()?.toLowerCase() || '';
-    const contentTypeMap = {
+    const contentTypeMap: Record<string, string> = {
       'pdf': 'application/pdf',
       'png': 'image/png',
       'jpg': 'image/jpeg',
