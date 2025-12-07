@@ -73,6 +73,34 @@ describe('sanitizeFilename', () => {
     expect(sanitizeFilename('日本語ファイル')).toBe('日本語ファイル');
     expect(sanitizeFilename('Cañón')).toBe('Cañón');
   });
+
+  it('strips trailing dots for Windows compatibility', () => {
+    expect(sanitizeFilename('filename.')).toBe('filename');
+    expect(sanitizeFilename('filename...')).toBe('filename');
+    expect(sanitizeFilename('file.name.')).toBe('file.name');
+    expect(sanitizeFilename('..file..')).toBe('file');
+  });
+
+  it('handles Windows reserved filenames', () => {
+    // Reserved names get prefixed with underscore
+    expect(sanitizeFilename('CON')).toBe('_CON');
+    expect(sanitizeFilename('con')).toBe('_con');
+    expect(sanitizeFilename('PRN')).toBe('_PRN');
+    expect(sanitizeFilename('AUX')).toBe('_AUX');
+    expect(sanitizeFilename('NUL')).toBe('_NUL');
+    expect(sanitizeFilename('COM1')).toBe('_COM1');
+    expect(sanitizeFilename('COM9')).toBe('_COM9');
+    expect(sanitizeFilename('LPT1')).toBe('_LPT1');
+    expect(sanitizeFilename('LPT9')).toBe('_LPT9');
+  });
+
+  it('does not modify non-reserved names that contain reserved strings', () => {
+    // These contain reserved strings but are not reserved names themselves
+    expect(sanitizeFilename('CONCERT')).toBe('CONCERT');
+    expect(sanitizeFilename('icon')).toBe('icon');
+    expect(sanitizeFilename('auxiliary')).toBe('auxiliary');
+    expect(sanitizeFilename('COM10')).toBe('COM10');
+  });
 });
 
 describe('extractFileExtension', () => {
@@ -152,6 +180,7 @@ describe('extractExtensionFromDataUrl', () => {
     expect(extractExtensionFromDataUrl('data:audio/aac;base64,...')).toBe('aac');
     expect(extractExtensionFromDataUrl('data:audio/mp4;base64,...')).toBe('m4a');
     expect(extractExtensionFromDataUrl('data:audio/x-m4a;base64,...')).toBe('m4a');
+    expect(extractExtensionFromDataUrl('data:audio/webm;base64,...')).toBe('webm');
   });
 
   it('extracts image extensions from data URLs', () => {
@@ -241,5 +270,36 @@ describe('generateDownloadFilename', () => {
   it('handles empty item name gracefully', () => {
     expect(generateDownloadFilename('Song', '', 'pdf'))
       .toBe('Song - download.pdf');
+  });
+
+  it('truncates very long combined filenames to 200 chars total', () => {
+    const longTitle = 'A'.repeat(150);
+    const longItem = 'B'.repeat(100);
+    const result = generateDownloadFilename(longTitle, longItem, 'pdf');
+    // Should be truncated to 200 chars including extension
+    expect(result.length).toBeLessThanOrEqual(200);
+    expect(result.endsWith('.pdf')).toBe(true);
+  });
+
+  it('cleans up trailing dashes and spaces after truncation', () => {
+    // Create a title that will cause truncation right after a dash/space
+    const title = 'A'.repeat(190) + ' - ';
+    const item = 'B'.repeat(50);
+    const result = generateDownloadFilename(title, item, 'pdf');
+    // Should not end with " - .pdf" or similar
+    expect(result).not.toMatch(/[\s-]+\.pdf$/);
+    expect(result.endsWith('.pdf')).toBe(true);
+  });
+
+  it('normalizes extension with whitespace', () => {
+    expect(generateDownloadFilename('Song', 'Chart', '  PDF  '))
+      .toBe('Song - Chart.pdf');
+  });
+
+  it('handles Windows reserved names in song titles', () => {
+    expect(generateDownloadFilename('CON', 'Chart', 'pdf'))
+      .toBe('_CON - Chart.pdf');
+    expect(generateDownloadFilename('aux', 'Tab', 'pdf'))
+      .toBe('_aux - Tab.pdf');
   });
 });

@@ -72,12 +72,29 @@ export function formatRelativeTime(date: Date): string {
 }
 
 /**
+ * Windows reserved filenames that cannot be used (case-insensitive).
+ * These names are reserved regardless of extension.
+ */
+const WINDOWS_RESERVED_NAMES = new Set([
+  'con', 'prn', 'aux', 'nul',
+  'com1', 'com2', 'com3', 'com4', 'com5', 'com6', 'com7', 'com8', 'com9',
+  'lpt1', 'lpt2', 'lpt3', 'lpt4', 'lpt5', 'lpt6', 'lpt7', 'lpt8', 'lpt9',
+]);
+
+/**
+ * Maximum filename length (excluding extension).
+ * Leaves room for extension and path on most filesystems.
+ */
+const MAX_FILENAME_LENGTH = 200;
+
+/**
  * Produce a filesystem-safe filename by removing or normalizing characters and whitespace.
  *
  * The returned name replaces invalid filesystem characters with underscores, removes ASCII
  * control characters, collapses consecutive underscores and spaces to a single underscore,
- * trims leading/trailing underscores and spaces, strips leading dots, and truncates to
- * at most 200 characters. If all characters are removed, returns `"download"`.
+ * trims leading/trailing underscores, spaces, and dots, strips leading dots, handles Windows
+ * reserved names, and truncates to at most 200 characters. If all characters are removed,
+ * returns `"download"`.
  *
  * @param filename - Original filename string to sanitize
  * @returns A sanitized filename safe for use on common filesystems
@@ -94,8 +111,8 @@ export function sanitizeFilename(filename: string): string {
   // Replace multiple consecutive underscores/spaces with single underscore
   sanitized = sanitized.replace(/[_\s]+/g, '_');
 
-  // Trim leading/trailing underscores and spaces
-  sanitized = sanitized.replace(/^[_\s]+|[_\s]+$/g, '');
+  // Trim leading/trailing underscores, spaces, and dots (dots problematic on Windows)
+  sanitized = sanitized.replace(/^[_\s.]+|[_\s.]+$/g, '');
 
   // Remove leading dots (hidden files on Unix, problematic on Windows)
   sanitized = sanitized.replace(/^\.+/, '');
@@ -105,9 +122,14 @@ export function sanitizeFilename(filename: string): string {
     return 'download';
   }
 
-  // Limit length to 200 characters (leaves room for extension and path)
-  if (sanitized.length > 200) {
-    sanitized = sanitized.substring(0, 200);
+  // Handle Windows reserved names (CON, PRN, AUX, NUL, COM1-9, LPT1-9)
+  if (WINDOWS_RESERVED_NAMES.has(sanitized.toLowerCase())) {
+    sanitized = `_${sanitized}`;
+  }
+
+  // Limit length to MAX_FILENAME_LENGTH characters (leaves room for extension and path)
+  if (sanitized.length > MAX_FILENAME_LENGTH) {
+    sanitized = sanitized.substring(0, MAX_FILENAME_LENGTH);
   }
 
   return sanitized;
@@ -128,7 +150,7 @@ const MIME_TO_EXTENSION: Record<string, string> = {
   'audio/aac': 'aac',
   'audio/mp4': 'm4a',
   'audio/x-m4a': 'm4a',
-  'audio/webm': 'weba',
+  'audio/webm': 'webm',
   // Images
   'image/jpeg': 'jpg',
   'image/png': 'png',
@@ -240,8 +262,23 @@ export function generateDownloadFilename(
   let filename = `${sanitizedSongTitle} - ${sanitizedItemName}`;
 
   // Add extension if present
-  if (ext) {
-    filename = `${filename}.${ext.toLowerCase()}`;
+  const normalizedExt = ext?.toLowerCase().trim();
+  if (normalizedExt) {
+    // Calculate max base length to leave room for extension
+    const extWithDot = `.${normalizedExt}`;
+    const maxBaseLength = MAX_FILENAME_LENGTH - extWithDot.length;
+
+    // Truncate base filename if needed to fit within total limit
+    if (filename.length > maxBaseLength) {
+      filename = filename.substring(0, maxBaseLength);
+      // Clean up any trailing spaces or dashes from truncation
+      filename = filename.replace(/[\s-]+$/, '');
+    }
+
+    filename = `${filename}${extWithDot}`;
+  } else if (filename.length > MAX_FILENAME_LENGTH) {
+    // No extension, just truncate to max length
+    filename = filename.substring(0, MAX_FILENAME_LENGTH);
   }
 
   return filename;
