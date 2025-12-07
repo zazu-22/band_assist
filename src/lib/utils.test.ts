@@ -202,6 +202,11 @@ describe('extractExtensionFromDataUrl', () => {
     expect(extractExtensionFromDataUrl('data:application/pdf;base64,JVB...')).toBe('pdf');
   });
 
+  it('extracts Guitar Pro extensions from data URLs', () => {
+    expect(extractExtensionFromDataUrl('data:application/x-guitar-pro;base64,...')).toBe('gp');
+    expect(extractExtensionFromDataUrl('data:application/vnd.guitar-pro;base64,...')).toBe('gp');
+  });
+
   it('handles various WAV MIME type variants', () => {
     expect(extractExtensionFromDataUrl('data:audio/wav;base64,...')).toBe('wav');
     expect(extractExtensionFromDataUrl('data:audio/wave;base64,...')).toBe('wav');

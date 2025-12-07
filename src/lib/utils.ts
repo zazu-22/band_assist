@@ -31,9 +31,6 @@ export function formatRelativeTime(date: Date): string {
   if (diffSeconds < 5) {
     return 'just now';
   }
-  if (diffSeconds === 1) {
-    return '1 second ago';
-  }
   if (diffSeconds < 60) {
     return `${diffSeconds} seconds ago`;
   }
@@ -139,7 +136,7 @@ export function sanitizeFilename(filename: string): string {
 }
 
 /**
- * Common MIME type to file extension mappings for audio and image files.
+ * Common MIME type to file extension mappings for audio, image, and document files.
  */
 const MIME_TO_EXTENSION: Record<string, string> = {
   // Audio
@@ -162,6 +159,9 @@ const MIME_TO_EXTENSION: Record<string, string> = {
   'image/svg+xml': 'svg',
   // Documents
   'application/pdf': 'pdf',
+  // Guitar Pro (used by AlphaTab)
+  'application/x-guitar-pro': 'gp',
+  'application/vnd.guitar-pro': 'gp',
 };
 
 /**
