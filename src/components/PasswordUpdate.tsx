@@ -8,7 +8,6 @@ import { clearAuthTokensFromUrl, hasRecoveryToken } from '@/lib/auth';
 
 interface PasswordUpdateProps {
   onSuccess: () => void;
-  onNavigate: (view: string) => void;
 }
 
 export const PasswordUpdate: React.FC<PasswordUpdateProps> = memo(function PasswordUpdate({

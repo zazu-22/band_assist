@@ -213,15 +213,18 @@ const App: React.FC = () => {
     currentBandIdRef.current = currentBandId;
   }, [currentBandId]);
 
-  // Check for password reset hash in URL
+  // Check for password reset hash in URL (backwards compatibility for old hash-based links)
   // Only process after session check is complete to avoid race conditions
   useEffect(() => {
     // Wait for session check to complete
     if (isCheckingAuth) return;
 
+    // Skip if already in recovery mode (PASSWORD_RECOVERY event already handled this)
+    if (isRecoveryMode) return;
+
     const hash = window.location.hash;
 
-    // Check for our custom redirect (#password-update)
+    // Check for our custom redirect (#password-update) - legacy format
     if (hash === '#password-update') {
       navigate(ROUTES.PASSWORD_UPDATE, { replace: true });
       return;
@@ -232,7 +235,7 @@ const App: React.FC = () => {
     if (hash.includes('type=recovery')) {
       navigate(ROUTES.PASSWORD_UPDATE, { replace: true });
     }
-  }, [isCheckingAuth, navigate]);
+  }, [isCheckingAuth, isRecoveryMode, navigate]);
 
   // -- Authentication Check --
   // Check if Supabase is configured and user is authenticated
@@ -781,15 +784,6 @@ const App: React.FC = () => {
           setIsRecoveryMode(false);
           navigate(ROUTES.LOGIN);
         }}
-        onNavigate={(view: string) => {
-          if (view === 'LOGIN') {
-            setIsRecoveryMode(false);
-            navigate(ROUTES.LOGIN);
-          } else if (view === 'SIGNUP') {
-            setIsRecoveryMode(false);
-            navigate(ROUTES.SIGNUP);
-          }
-        }}
       />
     );
   }
@@ -805,10 +799,6 @@ const App: React.FC = () => {
         <PasswordUpdate
           onSuccess={() => {
             navigate(ROUTES.LOGIN);
-          }}
-          onNavigate={(view: string) => {
-            if (view === 'LOGIN') navigate(ROUTES.LOGIN);
-            else if (view === 'SIGNUP') navigate(ROUTES.SIGNUP);
           }}
         />
       );
