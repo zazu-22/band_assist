@@ -1,8 +1,15 @@
 # Specification Status Tracker
 
-> Quick reference for all specs with current status and priority.
+> Quick reference for all specs, GitHub issues, and current status.
 >
 > Last updated: 2025-12-07
+
+---
+
+## Quick Links
+
+- **GitHub Issues:** [zazu-22/band_assist/issues](https://github.com/zazu-22/band_assist/issues)
+- **Local CLI:** `gh issue list --state open` (requires GitHub CLI)
 
 ---
 
@@ -14,6 +21,7 @@
 | 🟢 Done | 16 | Completed and merged |
 | 🟡 Pending | 1 | Queued for implementation (in sequence order) |
 | ⚪ Backlog | 16 | Planned but not yet prioritized |
+| 🔵 GitHub Issues | 9 | Tracked in GitHub (bugs, smaller features) |
 
 ---
 
@@ -30,6 +38,43 @@ Specs queued for implementation **in priority order**. Work through these sequen
 | Seq | Spec | Type | Effort | Notes |
 |-----|------|------|--------|-------|
 | 1 | [feat-user-member-linking-phase-3](pending/feat-user-member-linking-phase-3.md) | Feature | Large | Personalization + preferences (5-7 days) |
+
+---
+
+## 🔵 GitHub Issues (9 open)
+
+Smaller features, bug fixes, and follow-up work tracked in GitHub rather than full specs.
+
+> **Tip:** Use `gh issue list --state open` locally or visit [GitHub Issues](https://github.com/zazu-22/band_assist/issues)
+
+### Bugs (Critical)
+
+| # | Title | Effort | Notes |
+|---|-------|--------|-------|
+| [#100](https://github.com/zazu-22/band_assist/issues/100) | Fix password reset / forgot password bug | Small | Auth blocker - fix first |
+
+### Practice Tracking Cluster
+
+| # | Title | Effort | Dependencies |
+|---|-------|--------|--------------|
+| [#125](https://github.com/zazu-22/band_assist/issues/125) | Practice Logging: Date Selection & Edit | Medium | None |
+| [#126](https://github.com/zazu-22/band_assist/issues/126) | Practice History Filtering & Sorting | Medium | None |
+| [#121](https://github.com/zazu-22/band_assist/issues/121) | Virtualize PracticeHistory table | Medium | **After #125, #126** |
+
+### Band Management Cluster
+
+| # | Title | Effort | Dependencies |
+|---|-------|--------|--------------|
+| [#124](https://github.com/zazu-22/band_assist/issues/124) | Band management UI (parent tracking) | - | Close after #127, #128 |
+| [#127](https://github.com/zazu-22/band_assist/issues/127) | Enhanced band selector with creation flow | Medium | None |
+| [#128](https://github.com/zazu-22/band_assist/issues/128) | Band settings/management UI | Medium | None |
+
+### Standalone Enhancements
+
+| # | Title | Effort | Notes |
+|---|-------|--------|-------|
+| [#107](https://github.com/zazu-22/band_assist/issues/107) | Add song naming to files (PDFs) | Small | Quick win, better UX |
+| [#101](https://github.com/zazu-22/band_assist/issues/101) | Mobile layout for iOS Safari | Large | Major refactor, needs device testing |
 
 ---
 
@@ -104,8 +149,10 @@ Specs queued for implementation **in priority order**. Work through these sequen
 
 ## Recent Activity
 
-| Date | Spec | Change |
+| Date | Item | Change |
 |------|------|--------|
+| 2025-12-07 | GitHub Issues | 📋 Added 9 open issues to STATUS.md with dependency graph |
+| 2025-12-07 | Proposed Sequence | 📋 Added recommended implementation order |
 | 2025-12-07 | feat-user-member-linking-phase-4-practice-history-design | ➕ Added to backlog |
 | 2025-12-07 | feat-user-member-linking-phase-2 | ✅ Completed (migration fix) |
 | 2025-12-05 | feat-user-member-unlinking | ➕ Added to backlog (undo wrong member claim) |
@@ -131,15 +178,76 @@ Specs queued for implementation **in priority order**. Work through these sequen
 
 ## Dependencies Graph
 
+### Specs
+
 ```
 feat-user-member-linking-phase-1 ✅
     └── feat-user-member-linking-phase-2 ✅
-            ├── feat-user-member-linking-phase-3
-            └── feat-user-member-linking-phase-4-practice-history-design (design polish)
+            ├── feat-user-member-linking-phase-3 (pending)
+            └── feat-user-member-linking-phase-4-practice-history-design (backlog)
 
 perf-alphatab-lazy-loading ✅
-    └── feat-alphatab-dark-mode-theming (optional enhancement)
+    └── feat-alphatab-dark-mode-theming (backlog)
+
+infra-test-environment-setup (backlog)
+    └── infra-service-layer-testing (backlog)
+            └── infra-ci-test-suite (backlog)
 ```
+
+### GitHub Issues
+
+```
+#100 (password reset bug) ─── standalone, CRITICAL
+
+#107 (file naming) ─── standalone, quick win
+
+#125 (practice edit) ───┬──► #121 (virtualization)
+#126 (filtering/sort) ──┘
+
+#127 (band selector) ───┬──► #124 (close parent)
+#128 (band settings) ───┘
+
+#101 (mobile iOS) ─── standalone, large scope
+```
+
+---
+
+## Proposed Sequence
+
+Recommended order considering dependencies and effort:
+
+### Phase 1: Critical & Quick Wins
+| Order | Item | Type | Rationale |
+|-------|------|------|-----------|
+| 1 | [#100](https://github.com/zazu-22/band_assist/issues/100) Password reset bug | Bug | Auth bugs block users entirely |
+| 2 | [#107](https://github.com/zazu-22/band_assist/issues/107) Song naming for files | Issue | Quick win, standalone, improves UX |
+
+### Phase 2: Practice Tracking
+| Order | Item | Type | Rationale |
+|-------|------|------|-----------|
+| 3 | [#125](https://github.com/zazu-22/band_assist/issues/125) Practice logging | Issue | Foundation for #121 |
+| 4 | [#126](https://github.com/zazu-22/band_assist/issues/126) Filtering & sorting | Issue | Foundation for #121 |
+| 5 | [#121](https://github.com/zazu-22/band_assist/issues/121) Virtualize table | Issue | Now safe after #125/#126 |
+
+### Phase 3: Band Management
+| Order | Item | Type | Rationale |
+|-------|------|------|-----------|
+| 6 | [#127](https://github.com/zazu-22/band_assist/issues/127) Band selector | Issue | Foundation for multi-band UX |
+| 7 | [#128](https://github.com/zazu-22/band_assist/issues/128) Band settings | Issue | Completes band management |
+| 8 | Close [#124](https://github.com/zazu-22/band_assist/issues/124) | Issue | Parent tracking issue done |
+
+### Phase 4: Larger Efforts
+| Order | Item | Type | Rationale |
+|-------|------|------|-----------|
+| 9 | [feat-user-member-linking-phase-3](pending/feat-user-member-linking-phase-3.md) | Spec | Large feature, personalization |
+| 10 | [#101](https://github.com/zazu-22/band_assist/issues/101) Mobile iOS refactor | Issue | Large scope, device testing needed |
+
+### Parallel Opportunities
+
+These can run concurrently with minimal conflict:
+- **#107** (file naming) + **#125** (practice logging) — different areas
+- **#127** + **#128** — same feature area, can be done together
+- **#101** (mobile) can run in parallel with Phase 2/3 if resources allow
 
 ---
 

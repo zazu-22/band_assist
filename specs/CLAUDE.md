@@ -1,6 +1,82 @@
 # CLAUDE.md - Specs Directory
 
-Instructions for managing specifications in this directory.
+Instructions for managing specifications and GitHub issues.
+
+---
+
+## GitHub Issues vs Specs
+
+We use **two tracking systems** for different scopes of work:
+
+| Use | When | Examples |
+|-----|------|----------|
+| **GitHub Issues** | Bugs, small features, follow-up work, quick fixes | Password reset bug, UI tweaks, file naming improvements |
+| **Spec Files** | Large planned features, multi-phase work, architectural changes | User-member linking (3 phases), design system overhaul |
+
+### When to Check GitHub Issues
+
+**Before creating a new spec**, check if the work is already tracked as a GitHub issue:
+
+```bash
+# List open issues
+gh issue list --state open
+
+# Search for specific topic
+gh issue list --search "practice"
+
+# View issue details
+gh issue view 125
+```
+
+If an issue exists and is small enough, implement directly from the issue rather than creating a spec.
+
+### GitHub CLI Commands
+
+```bash
+# List all open issues
+gh issue list --state open
+
+# View issue with full description
+gh issue view <number>
+
+# Create new issue
+gh issue create --title "Title" --body "Description"
+
+# Close issue when done
+gh issue close <number>
+
+# Add comment to issue
+gh issue comment <number> --body "Comment text"
+
+# Link PR to issue (auto-closes on merge)
+gh pr create --title "fix: description" --body "Fixes #123"
+```
+
+### Updating GitHub Issues
+
+Update issues when:
+- Starting work → add comment noting you're working on it
+- Making progress → add comments with updates
+- Blocked → add comment explaining the blocker
+- Completing → close with `gh issue close <number>` or via PR
+
+### Issue Labels
+
+| Label | Meaning |
+|-------|---------|
+| `bug` | Something is broken |
+| `enhancement` | New feature or improvement |
+| `ui` | User interface related |
+| `mobile` | Mobile-specific |
+
+### Promoting an Issue to a Spec
+
+If an issue grows in scope, promote it to a full spec:
+
+1. Create spec file in `backlog/` referencing the issue
+2. Add issue link in spec metadata or description
+3. Close the issue with comment: "Promoted to spec: `specs/backlog/feat-name.md`"
+4. Update STATUS.md accordingly
 
 ---
 
@@ -98,11 +174,34 @@ Update STATUS.md when:
 - Changing a spec's sequence position
 - Completing a spec
 - Adding a new spec to backlog
+- **GitHub issue count changes** (new issues opened, issues closed)
+- **Issue dependencies change** (update dependency graph)
 
 Always update:
-- Status Overview counts
+- Status Overview counts (including GitHub Issues count)
 - Relevant section tables
 - Recent Activity log
+- GitHub Issues section (if issues changed)
+- Dependency graph (if dependencies changed)
+
+### Syncing GitHub Issues with STATUS.md
+
+The GitHub Issues section in STATUS.md is a **snapshot** for planning purposes. Keep it updated:
+
+```bash
+# Check current open issues
+gh issue list --state open
+
+# Update STATUS.md issue count in Status Overview
+# Update the GitHub Issues tables if issues were opened/closed
+# Update dependency graph if new dependencies identified
+```
+
+**When completing a GitHub issue:**
+1. Close the issue: `gh issue close <number>` or via PR with "Fixes #123"
+2. Remove from STATUS.md GitHub Issues section
+3. Update the issue count in Status Overview
+4. Add to Recent Activity: `✅ Closed #123 - description`
 
 ## Creating New Specs
 
