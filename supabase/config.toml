@@ -15,6 +15,17 @@ entrypoint = "./functions/serve-file-inline/index.ts"
 
 [functions.cleanup-expired-tokens]
 enabled = true
-verify_jwt = true
+# JWT verification disabled - using new Supabase auth framework (not legacy JWT).
+# Auth is handled manually by checking x-edge-secret header against EDGE_SECRET_KEY.
+# IMPORTANT: Use base64 secret (not 64-char hex) to avoid gateway pattern filtering.
+# Set secret via: supabase secrets set EDGE_SECRET_KEY=<your-base64-secret>
+verify_jwt = false
 import_map = "./functions/cleanup-expired-tokens/deno.json"
 entrypoint = "./functions/cleanup-expired-tokens/index.ts"
+
+[functions.send-invitation-email]
+enabled = true
+# JWT verification disabled - auth handled via WEBHOOK_SECRET header.
+# Configure the database webhook to include header: x-webhook-secret: <your-secret>
+verify_jwt = false
+entrypoint = "./functions/send-invitation-email/index.ts"

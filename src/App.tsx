@@ -25,6 +25,7 @@ import { SetlistManager } from './components/SetlistManager';
 import { Settings } from './components/Settings';
 import { BandDashboard } from './components/BandDashboard';
 import { ScheduleManager } from './components/ScheduleManager';
+import { PracticeHistory } from './components/PracticeHistory';
 import { Login } from './components/Login';
 import { Signup } from './components/Signup';
 import { PasswordReset } from './components/PasswordReset';
@@ -828,7 +829,12 @@ const App: React.FC = () => {
                 path={ROUTES.PERFORMANCE}
                 element={
                   <Suspense fallback={<LoadingScreen message="Loading Performance Mode..." />}>
-                    <PerformanceMode songs={songs} onExit={() => navigate(ROUTES.DASHBOARD)} />
+                    <PerformanceMode
+                      songs={songs}
+                      onExit={() => navigate(ROUTES.DASHBOARD)}
+                      currentUserId={session?.user?.id}
+                      currentBandId={currentBandId}
+                    />
                   </Suspense>
                 }
               />
@@ -885,6 +891,8 @@ const App: React.FC = () => {
                       onSelectSong={id => navigate(getSongDetailRoute(id))}
                       events={events}
                       isAdmin={isAdmin}
+                      currentUserId={session?.user?.id || null}
+                      currentBandId={currentBandId}
                     />
                   }
                 />
@@ -894,6 +902,16 @@ const App: React.FC = () => {
                     <Suspense fallback={<LoadingScreen message="Loading Practice Room..." />}>
                       <PracticeRoomWithQueryParam />
                     </Suspense>
+                  }
+                />
+                <Route
+                  path={ROUTES.PRACTICE_HISTORY}
+                  element={
+                    <PracticeHistory
+                      songs={songs}
+                      currentUserId={session?.user?.id || null}
+                      currentBandId={currentBandId}
+                    />
                   }
                 />
                 <Route

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
-import { Song } from '@/types';
+import { Song, UserSongStatus } from '@/types';
 import {
   X,
   ChevronLeft,
@@ -13,25 +13,77 @@ import {
   ArrowDown,
   Scroll,
   Gauge,
+  Clock,
 } from 'lucide-react';
 import { SmartTabEditor } from './SmartTabEditor';
 import { LazyAlphaTab } from './LazyAlphaTab';
 import { ErrorBoundary } from './ui';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from './primitives/dialog';
+import { Button } from './primitives/button';
+import { Input } from './primitives/input';
+import { Label } from './primitives/label';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from './primitives/select';
+import { toast } from './ui/Toast';
+import { supabaseStorageService } from '@/services/supabaseStorageService';
+import { useUserSongStatus } from '@/hooks/useUserSongStatus';
 
 interface PerformanceModeProps {
   songs: Song[];
   onExit: () => void;
+  currentUserId?: string;
+  currentBandId?: string | null;
 }
 
-export const PerformanceMode: React.FC<PerformanceModeProps> = ({ songs, onExit }) => {
+export const PerformanceMode: React.FC<PerformanceModeProps> = ({
+  songs,
+  onExit,
+  currentUserId,
+  currentBandId,
+}) => {
   const [currentIndex, setCurrentIndex] = useState(0);
   const [isPlaying, setIsPlaying] = useState(false);
   const [elapsedTime, setElapsedTime] = useState(0);
   const [metronomeActive, setMetronomeActive] = useState(false);
   const [tick, setTick] = useState(false); // Visual tick for metronome
 
+  // Practice Log Dialog State
+  const [showPracticeLogDialog, setShowPracticeLogDialog] = useState(false);
+  const [isSaving, setIsSaving] = useState(false);
+  const [practiceLog, setPracticeLog] = useState({
+    duration: 30,
+    tempoBpm: 0,
+    sections: [] as string[],
+    notes: '',
+    status: 'Not Started' as UserSongStatus,
+    confidence: 3,
+  });
+  // Track original status when dialog opens to detect user changes
+  const [originalStatus, setOriginalStatus] = useState<{
+    status: UserSongStatus;
+    confidence: number;
+  } | null>(null);
+
   // Chart state
   const currentSong = songs[currentIndex];
+
+  // Fetch user's current song status
+  const { status: userSongStatus } = useUserSongStatus(
+    currentUserId || null,
+    currentSong.id
+  );
 
   const [activeChartId, setActiveChartId] = useState<string | null>(
     currentSong.charts.length > 0 ? currentSong.charts[0].id : null
@@ -136,6 +188,97 @@ export const PerformanceMode: React.FC<PerformanceModeProps> = ({ songs, onExit 
     const secs = seconds % 60;
     return `${mins}:${secs.toString().padStart(2, '0')}`;
   };
+
+  // Practice Log Handlers
+  const handleOpenPracticeLog = useCallback(() => {
+    // Pre-populate with user's current status (if any)
+    const currentStatus = userSongStatus?.status || 'Not Started';
+    const currentConfidence = userSongStatus?.confidenceLevel ?? 3;
+
+    setPracticeLog({
+      duration: 30,
+      tempoBpm: currentSong.bpm || 0,
+      sections: [],
+      notes: '',
+      status: currentStatus,
+      confidence: currentConfidence,
+    });
+    // Track original to detect if user changes it
+    setOriginalStatus({ status: currentStatus, confidence: currentConfidence });
+    setShowPracticeLogDialog(true);
+  }, [currentSong.bpm, userSongStatus]);
+
+  const toggleSection = useCallback((sectionName: string) => {
+    setPracticeLog(prev => ({
+      ...prev,
+      sections: prev.sections.includes(sectionName)
+        ? prev.sections.filter(s => s !== sectionName)
+        : [...prev.sections, sectionName],
+    }));
+  }, []);
+
+  const handleSavePracticeLog = useCallback(async () => {
+    if (!currentUserId || !currentSong || !currentBandId) {
+      toast.error('Missing required information to log practice session');
+      return;
+    }
+
+    if (practiceLog.duration <= 0) {
+      toast.error('Duration must be greater than 0');
+      return;
+    }
+
+    setIsSaving(true);
+
+    try {
+      const today = new Date().toISOString().split('T')[0];
+
+      // Log practice session
+      await supabaseStorageService.logPracticeSession({
+        userId: currentUserId,
+        songId: currentSong.id,
+        bandId: currentBandId,
+        durationMinutes: practiceLog.duration,
+        tempoBpm: practiceLog.tempoBpm || undefined,
+        sectionsPracticed: practiceLog.sections.length > 0 ? practiceLog.sections : undefined,
+        notes: practiceLog.notes || undefined,
+        date: today,
+      });
+
+      // Only update user song status if the user changed it from their current status
+      const statusChanged =
+        !originalStatus ||
+        practiceLog.status !== originalStatus.status ||
+        practiceLog.confidence !== originalStatus.confidence;
+
+      if (statusChanged) {
+        await supabaseStorageService.updateUserSongStatus(
+          currentUserId,
+          currentSong.id,
+          practiceLog.status,
+          practiceLog.confidence
+        );
+      }
+
+      toast.success('Practice session logged successfully');
+      setShowPracticeLogDialog(false);
+
+      // Reset form
+      setPracticeLog({
+        duration: 30,
+        tempoBpm: currentSong.bpm || 0,
+        sections: [],
+        notes: '',
+        status: 'Not Started',
+        confidence: 3,
+      });
+    } catch (error) {
+      console.error('Error logging practice session:', error);
+      toast.error('Failed to log practice session');
+    } finally {
+      setIsSaving(false);
+    }
+  }, [currentUserId, currentSong, currentBandId, practiceLog, originalStatus]);
 
   // Manual scroll functions
   const scrollBy = useCallback(
@@ -294,6 +437,18 @@ export const PerformanceMode: React.FC<PerformanceModeProps> = ({ songs, onExit 
                 <Music2 size={16} /> {currentSong.bpm} BPM
               </button>
             </>
+          )}
+
+          {/* Log Practice Button (Only when authenticated) */}
+          {currentUserId && (
+            <button
+              onClick={handleOpenPracticeLog}
+              className="flex items-center gap-2 px-3 py-1.5 rounded-lg border border-zinc-700 text-sm font-bold text-zinc-400 hover:text-white hover:bg-zinc-800 transition-colors"
+              title="Log practice session"
+            >
+              <Clock size={16} />
+              Log Practice
+            </button>
           )}
 
           {/* Gig Timer */}
@@ -475,6 +630,151 @@ export const PerformanceMode: React.FC<PerformanceModeProps> = ({ songs, onExit 
           <ChevronRight size={32} />
         </button>
       </footer>
+
+      {/* Practice Log Dialog */}
+      <Dialog open={showPracticeLogDialog} onOpenChange={setShowPracticeLogDialog}>
+        <DialogContent className="max-w-2xl bg-zinc-900 text-white border-zinc-800">
+          <DialogHeader>
+            <DialogTitle className="text-2xl font-bold">Log Practice Session</DialogTitle>
+            <DialogDescription className="text-zinc-400">
+              Record your practice session for {currentSong.title}
+            </DialogDescription>
+          </DialogHeader>
+
+          <div className="space-y-6 py-4">
+            {/* Duration */}
+            <div className="space-y-2">
+              <Label htmlFor="duration" className="text-sm font-bold text-zinc-300">
+                Duration (minutes) *
+              </Label>
+              <Input
+                id="duration"
+                type="number"
+                min="1"
+                value={practiceLog.duration}
+                onChange={e => setPracticeLog(prev => ({ ...prev, duration: parseInt(e.target.value) || 0 }))}
+                className="bg-zinc-800 border-zinc-700 text-white"
+              />
+            </div>
+
+            {/* Tempo */}
+            <div className="space-y-2">
+              <Label htmlFor="tempo" className="text-sm font-bold text-zinc-300">
+                Tempo (BPM)
+              </Label>
+              <Input
+                id="tempo"
+                type="number"
+                min="1"
+                placeholder={currentSong.bpm ? `Song tempo: ${currentSong.bpm}` : 'Enter tempo'}
+                value={practiceLog.tempoBpm || ''}
+                onChange={e => setPracticeLog(prev => ({ ...prev, tempoBpm: parseInt(e.target.value) || 0 }))}
+                className="bg-zinc-800 border-zinc-700 text-white placeholder:text-zinc-500"
+              />
+            </div>
+
+            {/* Sections */}
+            {currentSong.parts && currentSong.parts.length > 0 && (
+              <div className="space-y-2">
+                <Label className="text-sm font-bold text-zinc-300">Sections Practiced</Label>
+                <div className="flex flex-wrap gap-2">
+                  {currentSong.parts.map(part => (
+                    <button
+                      key={part.id}
+                      type="button"
+                      onClick={() => toggleSection(part.name)}
+                      className={`px-3 py-1.5 rounded-lg text-sm font-bold transition-colors ${
+                        practiceLog.sections.includes(part.name)
+                          ? 'bg-amber-600 text-white border-2 border-amber-500'
+                          : 'bg-zinc-800 text-zinc-400 border-2 border-zinc-700 hover:border-zinc-600'
+                      }`}
+                    >
+                      {part.name}
+                    </button>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            {/* Notes */}
+            <div className="space-y-2">
+              <Label htmlFor="notes" className="text-sm font-bold text-zinc-300">
+                Notes
+              </Label>
+              <textarea
+                id="notes"
+                rows={3}
+                value={practiceLog.notes}
+                onChange={e => setPracticeLog(prev => ({ ...prev, notes: e.target.value }))}
+                className="w-full bg-zinc-800 border border-zinc-700 rounded-lg p-3 text-white placeholder:text-zinc-500 focus:outline-none focus:ring-2 focus:ring-amber-500"
+                placeholder="Any observations or things to work on..."
+              />
+            </div>
+
+            {/* Status */}
+            <div className="space-y-2">
+              <Label htmlFor="status" className="text-sm font-bold text-zinc-300">
+                Learning Status
+              </Label>
+              <Select
+                value={practiceLog.status}
+                onValueChange={(value: UserSongStatus) =>
+                  setPracticeLog(prev => ({ ...prev, status: value }))
+                }
+              >
+                <SelectTrigger id="status" className="bg-zinc-800 border-zinc-700 text-white">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent className="bg-zinc-800 border-zinc-700 text-white">
+                  <SelectItem value="Not Started">Not Started</SelectItem>
+                  <SelectItem value="Learning">Learning</SelectItem>
+                  <SelectItem value="Learned">Learned</SelectItem>
+                  <SelectItem value="Mastered">Mastered</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            {/* Confidence */}
+            <div className="space-y-2">
+              <Label className="text-sm font-bold text-zinc-300">Confidence Level</Label>
+              <div className="flex gap-2">
+                {[1, 2, 3, 4, 5].map(level => (
+                  <button
+                    key={level}
+                    type="button"
+                    onClick={() => setPracticeLog(prev => ({ ...prev, confidence: level }))}
+                    className={`flex-1 py-2 rounded-lg text-lg font-bold transition-all ${
+                      practiceLog.confidence === level
+                        ? 'bg-amber-600 text-white scale-110 shadow-lg'
+                        : 'bg-zinc-800 text-zinc-400 hover:bg-zinc-700'
+                    }`}
+                  >
+                    {level}
+                  </button>
+                ))}
+              </div>
+              <p className="text-xs text-zinc-500 text-center">1 = Not confident, 5 = Very confident</p>
+            </div>
+          </div>
+
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => setShowPracticeLogDialog(false)}
+              className="bg-zinc-800 border-zinc-700 text-white hover:bg-zinc-700"
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={handleSavePracticeLog}
+              disabled={isSaving}
+              className="bg-amber-600 hover:bg-amber-700 text-white"
+            >
+              {isSaving ? 'Saving...' : 'Save Practice Log'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
