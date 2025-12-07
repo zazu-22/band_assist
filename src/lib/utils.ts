@@ -112,10 +112,8 @@ export function sanitizeFilename(filename: string): string {
   sanitized = sanitized.replace(/[_\s]+/g, '_');
 
   // Trim leading/trailing underscores, spaces, and dots (dots problematic on Windows)
+  // This also handles leading dots (hidden files on Unix)
   sanitized = sanitized.replace(/^[_\s.]+|[_\s.]+$/g, '');
-
-  // Remove leading dots (hidden files on Unix, problematic on Windows)
-  sanitized = sanitized.replace(/^\.+/, '');
 
   // Ensure we have a valid filename (fallback if everything was stripped)
   if (!sanitized) {
@@ -261,9 +259,9 @@ export function generateDownloadFilename(
   // Combine: "Song Title - Item Name"
   let filename = `${sanitizedSongTitle} - ${sanitizedItemName}`;
 
-  // Add extension if present
+  // Add extension if present (validate length to prevent negative maxBaseLength)
   const normalizedExt = ext?.toLowerCase().trim();
-  if (normalizedExt) {
+  if (normalizedExt && normalizedExt.length <= 10) {
     // Calculate max base length to leave room for extension
     const extWithDot = `.${normalizedExt}`;
     const maxBaseLength = MAX_FILENAME_LENGTH - extWithDot.length;

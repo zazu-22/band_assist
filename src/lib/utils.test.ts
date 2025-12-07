@@ -302,4 +302,11 @@ describe('generateDownloadFilename', () => {
     expect(generateDownloadFilename('aux', 'Tab', 'pdf'))
       .toBe('_aux - Tab.pdf');
   });
+
+  it('ignores excessively long extensions', () => {
+    const longExt = 'a'.repeat(15);
+    // Extensions > 10 chars should be ignored for safety
+    expect(generateDownloadFilename('Song', 'Chart', longExt))
+      .toBe('Song - Chart');
+  });
 });
