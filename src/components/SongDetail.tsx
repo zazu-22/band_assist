@@ -17,7 +17,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/primitives/select';
-import { cn } from '@/lib/utils';
+import { cn, generateDownloadFilename } from '@/lib/utils';
 import { parseLocalDate } from '@/lib/dateUtils';
 import {
   Music2,
@@ -743,9 +743,10 @@ export const SongDetail: React.FC<SongDetailProps> = ({
                       <Button
                         variant="ghost"
                         size="icon"
-                        onClick={() =>
-                          downloadFile(activeChart.url!, `${activeChart.name.replace(/\s+/g, '_')}`)
-                        }
+                        onClick={() => {
+                          const ext = activeChart.type === 'PDF' ? 'pdf' : activeChart.type === 'IMAGE' ? 'png' : undefined;
+                          downloadFile(activeChart.url!, generateDownloadFilename(song.title, activeChart.name, ext));
+                        }}
                         className="bg-card/80 backdrop-blur-sm hover:bg-muted"
                         title="Download Original"
                       >
@@ -960,7 +961,7 @@ export const SongDetail: React.FC<SongDetailProps> = ({
                           variant="ghost"
                           size="sm"
                           onClick={() =>
-                            downloadFile(song.backingTrackUrl!, `${song.title}_backing_track`)
+                            downloadFile(song.backingTrackUrl!, generateDownloadFilename(song.title, 'backing_track', 'mp3'))
                           }
                           className="text-info gap-1"
                         >
