@@ -30,22 +30,23 @@ export const PasswordUpdate: React.FC<PasswordUpdateProps> = memo(function Passw
         return;
       }
 
-      // Use utility to check for recovery token in URL
-      if (!hasRecoveryToken()) {
-        setError('Invalid or expired password reset link. Please request a new one.');
-        setIsValidSession(false);
-        return;
-      }
-
+      // Check for valid session (created by recovery token) or recovery token in URL
+      // The PASSWORD_RECOVERY event in App.tsx sets isRecoveryMode and shows this component
+      // Supabase's detectSessionInUrl consumes the token and creates a session
       const { data } = await supabase.auth.getSession();
-      if (!data.session) {
+      const hasToken = hasRecoveryToken();
+
+      if (!data.session && !hasToken) {
+        // No session and no recovery token - invalid access
         setError('Invalid or expired password reset link. Please request a new one.');
         setIsValidSession(false);
         return;
       }
 
-      // Clear sensitive tokens from URL after successful session verification
-      clearAuthTokensFromUrl();
+      // Clear sensitive tokens from URL if present
+      if (hasToken) {
+        clearAuthTokensFromUrl();
+      }
     };
 
     checkSession();
