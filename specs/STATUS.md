@@ -2,7 +2,7 @@
 
 > Quick reference for all specs, GitHub issues, and current status.
 >
-> Last updated: 2025-12-07
+> Last updated: 2025-12-07 (updated for #100 resolution)
 
 ---
 
@@ -21,7 +21,7 @@
 | 🟢 Done | 16 | Completed and merged |
 | 🟡 Pending | 1 | Queued for implementation (in sequence order) |
 | ⚪ Backlog | 16 | Planned but not yet prioritized |
-| 🔵 GitHub Issues | 9 | Tracked in GitHub (bugs, smaller features) |
+| 🔵 GitHub Issues | 8 | Tracked in GitHub (bugs, smaller features) |
 
 ---
 
@@ -41,7 +41,7 @@ Specs queued for implementation **in priority order**. Work through these sequen
 
 ---
 
-## 🔵 GitHub Issues (9 open)
+## 🔵 GitHub Issues (8 open)
 
 Smaller features, bug fixes, and follow-up work tracked in GitHub rather than full specs.
 
@@ -49,9 +49,7 @@ Smaller features, bug fixes, and follow-up work tracked in GitHub rather than fu
 
 ### Bugs (Critical)
 
-| # | Title | Effort | Notes |
-|---|-------|--------|-------|
-| [#100](https://github.com/zazu-22/band_assist/issues/100) | Fix password reset / forgot password bug | Small | Auth blocker - fix first |
+✅ No critical bugs open. ([#100](https://github.com/zazu-22/band_assist/issues/100) password reset fixed 2025-12-07)
 
 ### Practice Tracking Cluster
 
@@ -151,6 +149,7 @@ Smaller features, bug fixes, and follow-up work tracked in GitHub rather than fu
 
 | Date | Item | Change |
 |------|------|--------|
+| 2025-12-07 | [#100](https://github.com/zazu-22/band_assist/issues/100) Password reset bug | ✅ Resolved (merged in #130) |
 | 2025-12-07 | GitHub Issues | 📋 Added 9 open issues to STATUS.md with dependency graph |
 | 2025-12-07 | Proposed Sequence | 📋 Added recommended implementation order |
 | 2025-12-07 | feat-user-member-linking-phase-4-practice-history-design | ➕ Added to backlog |
@@ -197,7 +196,7 @@ infra-test-environment-setup (backlog)
 ### GitHub Issues
 
 ```
-#100 (password reset bug) ─── standalone, CRITICAL
+#100 (password reset bug) ─── ✅ RESOLVED
 
 #107 (file naming) ─── standalone, quick win
 
@@ -219,7 +218,7 @@ Recommended order considering dependencies and effort:
 ### Phase 1: Critical & Quick Wins
 | Order | Item | Type | Rationale |
 |-------|------|------|-----------|
-| 1 | [#100](https://github.com/zazu-22/band_assist/issues/100) Password reset bug | Bug | Auth bugs block users entirely |
+| ~~1~~ | ~~[#100](https://github.com/zazu-22/band_assist/issues/100) Password reset bug~~ | ~~Bug~~ | ✅ Resolved 2025-12-07 |
 | 2 | [#107](https://github.com/zazu-22/band_assist/issues/107) Song naming for files | Issue | Quick win, standalone, improves UX |
 
 ### Phase 2: Practice Tracking
