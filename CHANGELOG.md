@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.7](https://github.com/zazu-22/band_assist/compare/v0.1.6...v0.1.7) (2025-12-08)
+
+
+### Features
+
+* **practice:** add date selection, editing, and sorting for practice sessions ([#135](https://github.com/zazu-22/band_assist/issues/135)) ([e162810](https://github.com/zazu-22/band_assist/commit/e162810d0d40b2e438d35c07dd74ea444abe9035))
+
 ## [0.1.6](https://github.com/zazu-22/band_assist/compare/v0.1.5...v0.1.6) (2025-12-07)
 
 
