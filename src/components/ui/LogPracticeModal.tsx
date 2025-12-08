@@ -121,6 +121,12 @@ export const LogPracticeModal: React.FC<LogPracticeModalProps> = memo(function L
         return;
       }
 
+      // Validate date is not in the future (defense against bypassing HTML max attribute)
+      if (date > getTodayDateString()) {
+        setError('Practice date cannot be in the future');
+        return;
+      }
+
       // Parse optional tempo
       let tempo: number | undefined;
       if (tempoBpm.trim()) {
