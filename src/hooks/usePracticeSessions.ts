@@ -1,52 +1,39 @@
 import { useState, useEffect, useCallback } from 'react';
-import type { PracticeSession, PracticeFilters } from '../types';
+import type { PracticeSession, PracticeFilters, UpdatePracticeSessionInput } from '../types';
 import { supabaseStorageService } from '../services/supabaseStorageService';
+
+// Re-export for consumers that import from this hook
+export type { UpdatePracticeSessionInput } from '../types';
+
+/** Input data for logging a new practice session */
+export interface LogPracticeSessionInput {
+  songId: string;
+  durationMinutes: number;
+  tempoBpm?: number;
+  sectionsPracticed?: string[];
+  notes?: string;
+  date: string;
+}
 
 interface UsePracticeSessionsResult {
   sessions: PracticeSession[];
   isLoading: boolean;
   error: Error | null;
   refetch: () => Promise<void>;
+  logSession: (input: LogPracticeSessionInput) => Promise<PracticeSession>;
+  updateSession: (sessionId: string, updates: UpdatePracticeSessionInput) => Promise<PracticeSession>;
+  deleteSession: (sessionId: string) => Promise<void>;
 }
 
 /**
- * Custom hook to fetch and manage practice sessions
+ * Manage and provide practice sessions for a user within a band.
  *
- * Fetches practice sessions for a user in a band with optional filtering.
- * Automatically refetches when userId, bandId, or filters change.
- * Returns empty sessions when userId or bandId is null.
+ * Automatically fetches sessions and refetches when `userId`, `bandId`, or `filters` change.
  *
- * Note: filters object should be memoized in the calling component to avoid
- * unnecessary refetches on every render.
- *
- * @param userId - User ID to fetch sessions for
- * @param bandId - Band ID to filter sessions by
- * @param filters - Optional filters (songId, date range, limit)
- * @returns Practice sessions, loading state, error, and refetch function
- *
- * @example
- * ```tsx
- * function PracticeLog() {
- *   const filters = useMemo(() => ({ limit: 10, startDate: '2025-01-01' }), []);
- *   const { sessions, isLoading, error, refetch } = usePracticeSessions(
- *     user?.id || null,
- *     currentBandId,
- *     filters
- *   );
- *
- *   if (isLoading) return <div>Loading...</div>;
- *   if (error) return <div>Error: {error.message}</div>;
- *
- *   return (
- *     <div>
- *       {sessions.map(session => (
- *         <div key={session.id}>{session.durationMinutes} mins</div>
- *       ))}
- *       <button onClick={refetch}>Refresh</button>
- *     </div>
- *   );
- * }
- * ```
+ * @param userId - The user ID to scope fetched sessions, or `null` to indicate no user selected
+ * @param bandId - The band ID to scope fetched sessions, or `null` to indicate no band selected
+ * @param filters - Optional query filters (e.g., songId, date range, limit); memoize to avoid unnecessary refetches
+ * @returns An object with `sessions`, `isLoading`, `error`, `refetch`, `logSession`, `updateSession`, and `deleteSession`
  */
 export function usePracticeSessions(
   userId: string | null,
@@ -85,5 +72,63 @@ export function usePracticeSessions(
     load();
   }, [load]);
 
-  return { sessions, isLoading, error, refetch: load };
+  const logSession = useCallback(
+    async (input: LogPracticeSessionInput): Promise<PracticeSession> => {
+      if (!userId || !bandId) {
+        throw new Error('User and band must be selected to log a practice session');
+      }
+
+      const session = await supabaseStorageService.logPracticeSession({
+        userId,
+        bandId,
+        ...input,
+      });
+
+      // Refetch to ensure correct ordering based on current sort settings
+      await load();
+
+      return session;
+    },
+    [userId, bandId, load]
+  );
+
+  const updateSession = useCallback(
+    async (sessionId: string, updates: UpdatePracticeSessionInput): Promise<PracticeSession> => {
+      if (!userId || !bandId) {
+        throw new Error('User and band must be selected to update a practice session');
+      }
+
+      const updated = await supabaseStorageService.updatePracticeSession(sessionId, userId, updates);
+
+      // Refetch to ensure correct ordering if date changed
+      await load();
+
+      return updated;
+    },
+    [userId, bandId, load]
+  );
+
+  const deleteSession = useCallback(
+    async (sessionId: string): Promise<void> => {
+      if (!userId || !bandId) {
+        throw new Error('User and band must be selected to delete a practice session');
+      }
+
+      await supabaseStorageService.deletePracticeSession(sessionId, userId);
+
+      // Refetch to update the list
+      await load();
+    },
+    [userId, bandId, load]
+  );
+
+  return {
+    sessions,
+    isLoading,
+    error,
+    refetch: load,
+    logSession,
+    updateSession,
+    deleteSession,
+  };
 }

@@ -1,5 +1,20 @@
-import React, { memo, useMemo, useState } from 'react';
-import { CalendarDays, Clock, Target, Trophy, Music } from 'lucide-react';
+import React, { memo, useMemo, useState, useCallback } from 'react';
+import {
+  CalendarDays,
+  Clock,
+  Target,
+  Trophy,
+  Music,
+  Plus,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
+  Pencil,
+  Trash2,
+  MoreHorizontal,
+  Filter,
+  X,
+} from 'lucide-react';
 import {
   Card,
   CardContent,
@@ -14,12 +29,26 @@ import {
   Input,
   Label,
   Badge,
+  Button,
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
 } from '@/components/primitives';
-import { StatCard, LoadingSpinner, EmptyState } from '@/components/ui';
+import {
+  StatCard,
+  LoadingSpinner,
+  EmptyState,
+  LogPracticeModal,
+  ConfirmDialog,
+  toast,
+} from '@/components/ui';
+import type { PracticeFormData } from '@/components/ui';
 import { usePracticeSessions } from '@/hooks/usePracticeSessions';
 import { usePracticeStats } from '@/hooks/usePracticeStats';
 import { useAllUserSongStatuses } from '@/hooks/useUserSongStatus';
-import type { Song, PracticeFilters, UserSongStatus } from '@/types';
+import { getTodayDateString, getDateDaysAgo } from '@/lib/dateUtils';
+import type { Song, PracticeFilters, UserSongStatus, PracticeSortField, SortDirection, PracticeSession } from '@/types';
 
 // =============================================================================
 // TYPES
@@ -32,6 +61,16 @@ interface PracticeHistoryProps {
 }
 
 type BadgeVariant = 'success' | 'info' | 'warning' | 'default';
+
+// Status filter options including 'all'
+type StatusFilterValue = UserSongStatus | 'all';
+const STATUS_OPTIONS: { value: StatusFilterValue; label: string }[] = [
+  { value: 'all', label: 'All Statuses' },
+  { value: 'Not Started', label: 'Not Started' },
+  { value: 'Learning', label: 'Learning' },
+  { value: 'Learned', label: 'Learned' },
+  { value: 'Mastered', label: 'Mastered' },
+];
 
 // =============================================================================
 // HELPER FUNCTIONS
@@ -65,23 +104,6 @@ function formatDate(dateStr: string): string {
   });
 }
 
-/**
- * Get date N days ago in YYYY-MM-DD format
- * @example getDateDaysAgo(30) // "2025-11-05" (if today is 2025-12-05)
- */
-function getDateDaysAgo(days: number): string {
-  const date = new Date();
-  date.setDate(date.getDate() - days);
-  return date.toISOString().split('T')[0];
-}
-
-/**
- * Get today's date in YYYY-MM-DD format
- * @example getTodayDate() // "2025-12-05"
- */
-function getTodayDate(): string {
-  return new Date().toISOString().split('T')[0];
-}
 
 /**
  * Map UserSongStatus to Badge variant
@@ -103,37 +125,88 @@ function getStatusVariant(status: UserSongStatus | undefined): BadgeVariant {
 // COMPONENT
 // =============================================================================
 
+// Default filter values
+const DEFAULT_FILTERS = {
+  songId: 'all' as string,
+  status: 'all' as StatusFilterValue,
+  startDate: getDateDaysAgo(30),
+  endDate: getTodayDateString(),
+};
+
 export const PracticeHistory: React.FC<PracticeHistoryProps> = memo(function PracticeHistory({
   songs,
   currentUserId,
   currentBandId,
 }) {
-  // Date range state - default to last 30 days
-  const [startDate, setStartDate] = useState(getDateDaysAgo(30));
-  const [endDate, setEndDate] = useState(getTodayDate());
-  const [selectedSongId, setSelectedSongId] = useState<string>('all');
+  // Staged filter state (UI edits these)
+  const [stagedSongId, setStagedSongId] = useState<string>(DEFAULT_FILTERS.songId);
+  const [stagedStatus, setStagedStatus] = useState<StatusFilterValue>(DEFAULT_FILTERS.status);
+  const [stagedStartDate, setStagedStartDate] = useState(DEFAULT_FILTERS.startDate);
+  const [stagedEndDate, setStagedEndDate] = useState(DEFAULT_FILTERS.endDate);
 
-  // Memoize filters to prevent unnecessary refetches
+  // Applied filter state (used for actual queries)
+  const [appliedSongId, setAppliedSongId] = useState<string>(DEFAULT_FILTERS.songId);
+  const [appliedStatus, setAppliedStatus] = useState<StatusFilterValue>(DEFAULT_FILTERS.status);
+  const [appliedStartDate, setAppliedStartDate] = useState(DEFAULT_FILTERS.startDate);
+  const [appliedEndDate, setAppliedEndDate] = useState(DEFAULT_FILTERS.endDate);
+
+  // Sort state (applies immediately, not staged)
+  const [sortBy, setSortBy] = useState<PracticeSortField>('date');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+
+  // Modal state
+  const [isLogModalOpen, setIsLogModalOpen] = useState(false);
+  const [editingSession, setEditingSession] = useState<PracticeSession | undefined>();
+
+  // Delete confirmation state
+  const [deleteSessionId, setDeleteSessionId] = useState<string | null>(null);
+
+  // Memoize filters to prevent unnecessary refetches (uses applied state)
   const filters = useMemo<PracticeFilters>(
     () => ({
-      songId: selectedSongId === 'all' ? undefined : selectedSongId,
-      startDate,
-      endDate,
+      songId: appliedSongId === 'all' ? undefined : appliedSongId,
+      startDate: appliedStartDate,
+      endDate: appliedEndDate,
+      sortBy,
+      sortDirection,
     }),
-    [selectedSongId, startDate, endDate]
+    [appliedSongId, appliedStartDate, appliedEndDate, sortBy, sortDirection]
   );
 
   const dateRange = useMemo(
-    () => ({ start: startDate, end: endDate }),
-    [startDate, endDate]
+    () => ({ start: appliedStartDate, end: appliedEndDate }),
+    [appliedStartDate, appliedEndDate]
   );
 
+  // Check if staged filters differ from applied filters
+  const hasUnappliedChanges = useMemo(() => {
+    return (
+      stagedSongId !== appliedSongId ||
+      stagedStatus !== appliedStatus ||
+      stagedStartDate !== appliedStartDate ||
+      stagedEndDate !== appliedEndDate
+    );
+  }, [stagedSongId, appliedSongId, stagedStatus, appliedStatus, stagedStartDate, appliedStartDate, stagedEndDate, appliedEndDate]);
+
+  // Check if filters are at default values
+  const isDefaultFilters = useMemo(() => {
+    return (
+      appliedSongId === DEFAULT_FILTERS.songId &&
+      appliedStatus === DEFAULT_FILTERS.status &&
+      appliedStartDate === DEFAULT_FILTERS.startDate &&
+      appliedEndDate === DEFAULT_FILTERS.endDate
+    );
+  }, [appliedSongId, appliedStatus, appliedStartDate, appliedEndDate]);
+
   // Fetch data using hooks
-  const { sessions, isLoading: sessionsLoading, error: sessionsError } = usePracticeSessions(
-    currentUserId,
-    currentBandId,
-    filters
-  );
+  const {
+    sessions,
+    isLoading: sessionsLoading,
+    error: sessionsError,
+    logSession,
+    updateSession,
+    deleteSession,
+  } = usePracticeSessions(currentUserId, currentBandId, filters);
 
   const { stats, isLoading: statsLoading, error: statsError } = usePracticeStats(
     currentUserId,
@@ -151,9 +224,124 @@ export const PracticeHistory: React.FC<PracticeHistoryProps> = memo(function Pra
     return new Map(songs.map(song => [song.id, song]));
   }, [songs]);
 
+  // Apply client-side status filter (uses applied status)
+  // Status is per-song (from user_song_status), so we filter sessions by their song's status
+  const filteredSessions = useMemo(() => {
+    if (appliedStatus === 'all') {
+      return sessions;
+    }
+    return sessions.filter(session => {
+      const songStatus = statuses.get(session.songId);
+      // If no status exists, treat as 'Not Started'
+      const effectiveStatus = songStatus?.status || 'Not Started';
+      return effectiveStatus === appliedStatus;
+    });
+  }, [sessions, statuses, appliedStatus]);
+
   // Combined loading state
   const isLoading = sessionsLoading || statsLoading || statusesLoading;
   const error = sessionsError || statsError;
+
+  // Filter handlers
+  const handleApplyFilters = useCallback(() => {
+    setAppliedSongId(stagedSongId);
+    setAppliedStatus(stagedStatus);
+    setAppliedStartDate(stagedStartDate);
+    setAppliedEndDate(stagedEndDate);
+  }, [stagedSongId, stagedStatus, stagedStartDate, stagedEndDate]);
+
+  const handleClearFilters = useCallback(() => {
+    // Reset staged to defaults
+    setStagedSongId(DEFAULT_FILTERS.songId);
+    setStagedStatus(DEFAULT_FILTERS.status);
+    setStagedStartDate(DEFAULT_FILTERS.startDate);
+    setStagedEndDate(DEFAULT_FILTERS.endDate);
+    // Reset applied to defaults
+    setAppliedSongId(DEFAULT_FILTERS.songId);
+    setAppliedStatus(DEFAULT_FILTERS.status);
+    setAppliedStartDate(DEFAULT_FILTERS.startDate);
+    setAppliedEndDate(DEFAULT_FILTERS.endDate);
+  }, []);
+
+  // Sort column click handler
+  const handleSortClick = useCallback((field: PracticeSortField) => {
+    if (sortBy === field) {
+      // Toggle direction if same field
+      setSortDirection(prev => (prev === 'asc' ? 'desc' : 'asc'));
+    } else {
+      // New field, default to descending
+      setSortBy(field);
+      setSortDirection('desc');
+    }
+  }, [sortBy]);
+
+  // Get sort icon for column header
+  const getSortIcon = (field: PracticeSortField) => {
+    if (sortBy !== field) {
+      return <ArrowUpDown className="ml-1 h-4 w-4 text-muted-foreground/50" />;
+    }
+    return sortDirection === 'asc' ? (
+      <ArrowUp className="ml-1 h-4 w-4" />
+    ) : (
+      <ArrowDown className="ml-1 h-4 w-4" />
+    );
+  };
+
+  // Modal handlers
+  const handleOpenLogModal = useCallback(() => {
+    setEditingSession(undefined);
+    setIsLogModalOpen(true);
+  }, []);
+
+  const handleOpenEditModal = useCallback((session: PracticeSession) => {
+    setEditingSession(session);
+    setIsLogModalOpen(true);
+  }, []);
+
+  const handleCloseModal = useCallback(() => {
+    setIsLogModalOpen(false);
+    setEditingSession(undefined);
+  }, []);
+
+  const handleSubmitSession = useCallback(
+    async (data: PracticeFormData) => {
+      try {
+        if (editingSession) {
+          await updateSession(editingSession.id, data);
+          toast.success('Practice session updated');
+        } else {
+          await logSession(data);
+          toast.success('Practice session logged');
+        }
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'An error occurred';
+        toast.error(editingSession ? `Failed to update session: ${message}` : `Failed to log session: ${message}`);
+        throw err; // Re-throw so modal can handle it
+      }
+    },
+    [editingSession, logSession, updateSession]
+  );
+
+  // Delete handlers
+  const handleDeleteClick = useCallback((sessionId: string) => {
+    setDeleteSessionId(sessionId);
+  }, []);
+
+  const handleConfirmDelete = useCallback(async () => {
+    if (deleteSessionId) {
+      try {
+        await deleteSession(deleteSessionId);
+        toast.success('Practice session deleted');
+      } catch {
+        toast.error('Failed to delete practice session');
+      }
+      setDeleteSessionId(null);
+    }
+  }, [deleteSessionId, deleteSession]);
+
+  const handleCancelDelete = useCallback(() => {
+    setDeleteSessionId(null);
+  }, []);
 
   // Show link account message when not authenticated
   if (!currentUserId) {
@@ -177,11 +365,17 @@ export const PracticeHistory: React.FC<PracticeHistoryProps> = memo(function Pra
   return (
     <div className="container mx-auto p-4 sm:p-6 lg:p-8 max-w-7xl">
       {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-foreground mb-2">Practice History</h1>
-        <p className="text-muted-foreground">
-          Track your practice sessions and progress over time
-        </p>
+      <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground mb-2">Practice History</h1>
+          <p className="text-muted-foreground">
+            Track your practice sessions and progress over time
+          </p>
+        </div>
+        <Button onClick={handleOpenLogModal} className="self-start sm:self-auto">
+          <Plus className="mr-2 h-4 w-4" />
+          Log Practice
+        </Button>
       </div>
 
       {/* Loading State */}
@@ -237,13 +431,18 @@ export const PracticeHistory: React.FC<PracticeHistoryProps> = memo(function Pra
           <Card className="mb-6">
             <CardHeader>
               <CardTitle>Filters</CardTitle>
+              {hasUnappliedChanges && (
+                <CardDescription className="text-warning">
+                  You have unapplied filter changes
+                </CardDescription>
+              )}
             </CardHeader>
-            <CardContent>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <CardContent className="space-y-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {/* Song Filter */}
                 <div className="space-y-2">
                   <Label htmlFor="song-filter">Song</Label>
-                  <Select value={selectedSongId} onValueChange={setSelectedSongId}>
+                  <Select value={stagedSongId} onValueChange={setStagedSongId}>
                     <SelectTrigger id="song-filter">
                       <SelectValue placeholder="All Songs" />
                     </SelectTrigger>
@@ -258,14 +457,31 @@ export const PracticeHistory: React.FC<PracticeHistoryProps> = memo(function Pra
                   </Select>
                 </div>
 
+                {/* Status Filter */}
+                <div className="space-y-2">
+                  <Label htmlFor="status-filter">Status</Label>
+                  <Select value={stagedStatus} onValueChange={(value) => setStagedStatus(value as StatusFilterValue)}>
+                    <SelectTrigger id="status-filter">
+                      <SelectValue placeholder="All Statuses" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {STATUS_OPTIONS.map(option => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
                 {/* Start Date */}
                 <div className="space-y-2">
                   <Label htmlFor="start-date">Start Date</Label>
                   <Input
                     id="start-date"
                     type="date"
-                    value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
+                    value={stagedStartDate}
+                    onChange={(e) => setStagedStartDate(e.target.value)}
                   />
                 </div>
 
@@ -275,10 +491,31 @@ export const PracticeHistory: React.FC<PracticeHistoryProps> = memo(function Pra
                   <Input
                     id="end-date"
                     type="date"
-                    value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
+                    value={stagedEndDate}
+                    onChange={(e) => setStagedEndDate(e.target.value)}
                   />
                 </div>
+              </div>
+
+              {/* Filter Actions */}
+              <div className="flex flex-wrap gap-2 pt-2">
+                <Button
+                  onClick={handleApplyFilters}
+                  disabled={!hasUnappliedChanges}
+                  size="sm"
+                >
+                  <Filter className="mr-2 h-4 w-4" />
+                  Apply Filters
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={handleClearFilters}
+                  disabled={isDefaultFilters && !hasUnappliedChanges}
+                  size="sm"
+                >
+                  <X className="mr-2 h-4 w-4" />
+                  Clear Filters
+                </Button>
               </div>
             </CardContent>
           </Card>
@@ -288,11 +525,11 @@ export const PracticeHistory: React.FC<PracticeHistoryProps> = memo(function Pra
             <CardHeader>
               <CardTitle>Practice Sessions</CardTitle>
               <CardDescription>
-                {sessions.length} session{sessions.length !== 1 ? 's' : ''} found
+                {filteredSessions.length} session{filteredSessions.length !== 1 ? 's' : ''} found
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {sessions.length === 0 ? (
+              {filteredSessions.length === 0 ? (
                 <EmptyState
                   icon={Music}
                   title="No Practice Sessions"
@@ -304,16 +541,44 @@ export const PracticeHistory: React.FC<PracticeHistoryProps> = memo(function Pra
                     <thead>
                       <tr className="border-b border-border">
                         <th className="text-left py-3 px-4 text-sm font-semibold text-muted-foreground">
-                          Date
+                          <button
+                            type="button"
+                            onClick={() => handleSortClick('date')}
+                            className="flex items-center hover:text-foreground transition-colors"
+                          >
+                            Date
+                            {getSortIcon('date')}
+                          </button>
                         </th>
                         <th className="text-left py-3 px-4 text-sm font-semibold text-muted-foreground">
-                          Song
+                          <button
+                            type="button"
+                            onClick={() => handleSortClick('songId')}
+                            className="flex items-center hover:text-foreground transition-colors"
+                          >
+                            Song
+                            {getSortIcon('songId')}
+                          </button>
                         </th>
                         <th className="text-left py-3 px-4 text-sm font-semibold text-muted-foreground">
-                          Duration
+                          <button
+                            type="button"
+                            onClick={() => handleSortClick('durationMinutes')}
+                            className="flex items-center hover:text-foreground transition-colors"
+                          >
+                            Duration
+                            {getSortIcon('durationMinutes')}
+                          </button>
                         </th>
                         <th className="text-left py-3 px-4 text-sm font-semibold text-muted-foreground hidden sm:table-cell">
-                          Tempo
+                          <button
+                            type="button"
+                            onClick={() => handleSortClick('tempoBpm')}
+                            className="flex items-center hover:text-foreground transition-colors"
+                          >
+                            Tempo
+                            {getSortIcon('tempoBpm')}
+                          </button>
                         </th>
                         <th className="text-left py-3 px-4 text-sm font-semibold text-muted-foreground hidden md:table-cell">
                           Sections
@@ -324,10 +589,13 @@ export const PracticeHistory: React.FC<PracticeHistoryProps> = memo(function Pra
                         <th className="text-left py-3 px-4 text-sm font-semibold text-muted-foreground hidden lg:table-cell">
                           Notes
                         </th>
+                        <th className="text-right py-3 px-4 text-sm font-semibold text-muted-foreground w-16">
+                          <span className="sr-only">Actions</span>
+                        </th>
                       </tr>
                     </thead>
                     <tbody>
-                      {sessions.map(session => {
+                      {filteredSessions.map(session => {
                         const song = songMap.get(session.songId);
                         const songStatus = statuses.get(session.songId);
 
@@ -358,6 +626,29 @@ export const PracticeHistory: React.FC<PracticeHistoryProps> = memo(function Pra
                             <td className="py-3 px-4 text-sm text-muted-foreground hidden lg:table-cell max-w-xs truncate">
                               {session.notes || '—'}
                             </td>
+                            <td className="py-3 px-4 text-right">
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                    <span className="sr-only">Open menu</span>
+                                    <MoreHorizontal className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem onClick={() => handleOpenEditModal(session)}>
+                                    <Pencil className="mr-2 h-4 w-4" />
+                                    Edit
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={() => handleDeleteClick(session.id)}
+                                    className="text-destructive focus:text-destructive"
+                                  >
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    Delete
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </td>
                           </tr>
                         );
                       })}
@@ -369,6 +660,27 @@ export const PracticeHistory: React.FC<PracticeHistoryProps> = memo(function Pra
           </Card>
         </>
       )}
+
+      {/* Log/Edit Practice Modal */}
+      <LogPracticeModal
+        isOpen={isLogModalOpen}
+        onClose={handleCloseModal}
+        songs={songs}
+        editSession={editingSession}
+        onSubmit={handleSubmitSession}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={deleteSessionId !== null}
+        title="Delete Practice Session"
+        message="Are you sure you want to delete this practice session? This action cannot be undone."
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        onConfirm={handleConfirmDelete}
+        onCancel={handleCancelDelete}
+        variant="danger"
+      />
     </div>
   );
 });

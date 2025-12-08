@@ -56,6 +56,41 @@ export function getLocalToday(): Date {
 }
 
 /**
+ * Format a Date to YYYY-MM-DD string in local timezone.
+ *
+ * @example
+ * formatToDateString(new Date(2024, 10, 29)) // "2024-11-29"
+ */
+export function formatToDateString(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+/**
+ * Get today's date as a YYYY-MM-DD string in local timezone.
+ *
+ * @example
+ * getTodayDateString() // "2024-11-29"
+ */
+export function getTodayDateString(): string {
+  return formatToDateString(new Date());
+}
+
+/**
+ * Get the date N days ago as a YYYY-MM-DD string in local timezone.
+ *
+ * @example
+ * getDateDaysAgo(30) // Date 30 days ago
+ */
+export function getDateDaysAgo(days: number): string {
+  const date = new Date();
+  date.setDate(date.getDate() - days);
+  return formatToDateString(date);
+}
+
+/**
  * Calculate whole days between two dates (ignoring time component).
  *
  * Both dates are normalized to midnight, so the millisecond difference

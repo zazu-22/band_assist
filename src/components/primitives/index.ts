@@ -64,6 +64,7 @@ export {
 } from './dropdown-menu';
 export { Switch } from './switch';
 export { Input } from './input';
+export { Textarea } from './textarea';
 export { Label } from './label';
 export {
   Select,

@@ -5,6 +5,7 @@ export { LoadingScreen } from './LoadingScreen';
 export { EmptyState } from './EmptyState';
 export { ConfirmDialog } from './ConfirmDialog';
 export { DangerousActionDialog } from './DangerousActionDialog';
+export { LogPracticeModal, type PracticeFormData } from './LogPracticeModal';
 export { ErrorBoundary } from './ErrorBoundary';
 export { ResizablePanel } from './ResizablePanel';
 export { Alert, AlertTitle, AlertDescription } from './Alert';

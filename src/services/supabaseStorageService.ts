@@ -1,4 +1,4 @@
-import { Song, BandMember, BandEvent, SongChart, Assignment, SongPart, PracticeSession, PracticeFilters, UserSongProgress, UserSongStatus, PracticeStats } from '../types';
+import { Song, BandMember, BandEvent, SongChart, Assignment, SongPart, PracticeSession, PracticeFilters, UserSongProgress, UserSongStatus, PracticeStats, UpdatePracticeSessionInput } from '../types';
 import { IStorageService, LoadResult } from './IStorageService';
 import { getSupabaseClient, isSupabaseConfigured } from './supabaseClient';
 import { validateAvatarColor } from '@/lib/avatar';
@@ -35,6 +35,17 @@ export function generateUUID(): string {
     return v.toString(16);
   });
 }
+
+/**
+ * Sort field mapping for practice sessions query
+ * Maps camelCase field names to snake_case database columns
+ */
+const PRACTICE_SESSION_SORT_FIELD_MAP: Record<string, string> = {
+  date: 'date',
+  durationMinutes: 'duration_minutes',
+  tempoBpm: 'tempo_bpm',
+  songId: 'song_id',
+};
 
 /**
  * Supabase-based persistence service
@@ -1384,8 +1395,7 @@ export class SupabaseStorageService implements IStorageService {
         .from('practice_sessions')
         .select('*')
         .eq('user_id', userId)
-        .eq('band_id', bandId)
-        .order('date', { ascending: false });
+        .eq('band_id', bandId);
 
       if (filters?.songId) {
         query = query.eq('song_id', filters.songId);
@@ -1402,6 +1412,11 @@ export class SupabaseStorageService implements IStorageService {
       if (filters?.limit) {
         query = query.limit(filters.limit);
       }
+
+      // Apply sorting
+      const sortField = PRACTICE_SESSION_SORT_FIELD_MAP[filters?.sortBy || 'date'] || 'date';
+      const ascending = filters?.sortDirection === 'asc';
+      query = query.order(sortField, { ascending });
 
       const { data, error } = await query;
 
@@ -1436,6 +1451,103 @@ export class SupabaseStorageService implements IStorageService {
       createdAt: row.created_at,
       updatedAt: row.updated_at,
     };
+  }
+
+  /**
+   * Update an existing practice session
+   * @throws Error if session not found or update fails
+   */
+  async updatePracticeSession(
+    sessionId: string,
+    userId: string,
+    updates: UpdatePracticeSessionInput
+  ): Promise<PracticeSession> {
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      throw new Error('Supabase is not configured. Check environment variables.');
+    }
+
+    if (!this.currentBandId) {
+      throw new Error('No band selected. Call setCurrentBand() first.');
+    }
+
+    // Validate duration if provided
+    if (updates.durationMinutes !== undefined && updates.durationMinutes <= 0) {
+      throw new Error('Practice duration must be greater than 0 minutes');
+    }
+
+    try {
+      // Use 'in' operator to detect property presence, allowing null/undefined to clear fields
+      const updatePayload: Record<string, unknown> = {};
+      if ('durationMinutes' in updates) updatePayload.duration_minutes = updates.durationMinutes;
+      if ('tempoBpm' in updates) updatePayload.tempo_bpm = updates.tempoBpm ?? null;
+      if ('sectionsPracticed' in updates) updatePayload.sections_practiced = updates.sectionsPracticed ?? null;
+      if ('notes' in updates) updatePayload.notes = updates.notes ?? null;
+      if ('date' in updates) updatePayload.date = updates.date;
+      if ('songId' in updates) updatePayload.song_id = updates.songId;
+
+      const { data, error } = await supabase
+        .from('practice_sessions')
+        .update(updatePayload)
+        .eq('id', sessionId)
+        .eq('band_id', this.currentBandId)
+        .eq('user_id', userId) // Ensure user can only update their own sessions
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error updating practice session:', error);
+        throw new Error('Failed to update practice session');
+      }
+
+      if (!data) {
+        throw new Error('Practice session not found');
+      }
+
+      return this.transformPracticeSession(data);
+    } catch (error) {
+      console.error('Error in updatePracticeSession:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Delete a practice session
+   * @throws Error if session not found or deletion fails
+   */
+  async deletePracticeSession(sessionId: string, userId: string): Promise<void> {
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      throw new Error('Supabase is not configured. Check environment variables.');
+    }
+
+    if (!this.currentBandId) {
+      throw new Error('No band selected. Call setCurrentBand() first.');
+    }
+
+    try {
+      // Use select() to get deleted rows and verify deletion occurred
+      const { data, error } = await supabase
+        .from('practice_sessions')
+        .delete()
+        .eq('id', sessionId)
+        .eq('band_id', this.currentBandId)
+        .eq('user_id', userId) // Ensure user can only delete their own sessions
+        .select();
+
+      if (error) {
+        console.error('Error deleting practice session:', error);
+        throw new Error('Failed to delete practice session');
+      }
+
+      // Check if any rows were actually deleted
+      if (!data || data.length === 0) {
+        throw new Error('Practice session not found or you do not have permission to delete it');
+      }
+    } catch (error) {
+      console.error('Error in deletePracticeSession:', error);
+      throw error;
+    }
   }
 
   /**
