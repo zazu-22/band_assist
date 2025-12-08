@@ -1,0 +1,323 @@
+import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { render, screen, waitFor } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { LogPracticeModal } from '../LogPracticeModal';
+import type { Song, PracticeSession } from '@/types';
+
+// Mock getTodayDateString to return a consistent date for testing
+vi.mock('@/lib/dateUtils', () => ({
+  getTodayDateString: () => '2025-12-08',
+}));
+
+const mockSongs: Song[] = [
+  {
+    id: 'song-1',
+    title: 'Test Song 1',
+    artist: 'Test Artist 1',
+    isOriginal: false,
+    status: 'In Progress',
+    duration: '3:30',
+    bpm: 120,
+    key: 'C Major',
+    charts: [],
+    assignments: [],
+    parts: [],
+  },
+  {
+    id: 'song-2',
+    title: 'Test Song 2',
+    artist: 'Test Artist 2',
+    isOriginal: false,
+    status: 'Performance Ready',
+    duration: '4:00',
+    bpm: 140,
+    key: 'G Minor',
+    charts: [],
+    assignments: [],
+    parts: [],
+  },
+];
+
+// Single song for auto-selection tests
+const singleSong: Song[] = [mockSongs[0]];
+
+const mockEditSession: PracticeSession = {
+  id: 'session-1',
+  userId: 'user-1',
+  bandId: 'band-1',
+  songId: 'song-1',
+  date: '2025-12-05',
+  durationMinutes: 45,
+  tempoBpm: 120,
+  sectionsPracticed: ['Intro', 'Verse 1'],
+  notes: 'Great progress today',
+  createdAt: '2025-12-05T10:00:00Z',
+  updatedAt: '2025-12-05T10:00:00Z',
+};
+
+describe('LogPracticeModal', () => {
+  const defaultProps = {
+    isOpen: true,
+    onClose: vi.fn(),
+    songs: mockSongs,
+    onSubmit: vi.fn(),
+  };
+
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  describe('rendering', () => {
+    it('should render the modal when open', () => {
+      render(<LogPracticeModal {...defaultProps} />);
+
+      expect(screen.getByText('Log Practice Session')).toBeInTheDocument();
+      expect(screen.getByText('Record a practice session for tracking')).toBeInTheDocument();
+    });
+
+    it('should not render content when closed', () => {
+      render(<LogPracticeModal {...defaultProps} isOpen={false} />);
+
+      expect(screen.queryByText('Log Practice Session')).not.toBeInTheDocument();
+    });
+
+    it('should show edit mode title when editSession is provided', () => {
+      render(<LogPracticeModal {...defaultProps} editSession={mockEditSession} />);
+
+      expect(screen.getByText('Edit Practice Session')).toBeInTheDocument();
+      expect(screen.getByText('Update the details of your practice session')).toBeInTheDocument();
+    });
+
+    it('should render all form fields', () => {
+      render(<LogPracticeModal {...defaultProps} />);
+
+      expect(screen.getByLabelText(/song/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/date/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/duration/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/tempo/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/sections/i)).toBeInTheDocument();
+      expect(screen.getByLabelText(/notes/i)).toBeInTheDocument();
+    });
+
+    it('should auto-select song when only one song is available', () => {
+      render(<LogPracticeModal {...defaultProps} songs={singleSong} />);
+
+      // The select trigger should show the song title when auto-selected
+      expect(screen.getByRole('combobox', { name: /song/i })).toHaveTextContent('Test Song 1');
+    });
+
+    it('should render notes field as a textarea', () => {
+      render(<LogPracticeModal {...defaultProps} />);
+
+      const notesField = screen.getByLabelText(/notes/i);
+      expect(notesField.tagName.toLowerCase()).toBe('textarea');
+    });
+  });
+
+  describe('edit mode pre-population', () => {
+    it('should pre-populate form fields with editSession data', () => {
+      render(<LogPracticeModal {...defaultProps} editSession={mockEditSession} />);
+
+      // Check song is selected
+      expect(screen.getByRole('combobox', { name: /song/i })).toHaveTextContent('Test Song 1');
+
+      // Check other fields
+      expect(screen.getByLabelText(/date/i)).toHaveValue('2025-12-05');
+      expect(screen.getByLabelText(/duration/i)).toHaveValue(45);
+      expect(screen.getByLabelText(/tempo/i)).toHaveValue(120);
+      expect(screen.getByLabelText(/sections/i)).toHaveValue('Intro, Verse 1');
+      expect(screen.getByLabelText(/notes/i)).toHaveValue('Great progress today');
+    });
+
+    it('should show Save Changes button in edit mode', () => {
+      render(<LogPracticeModal {...defaultProps} editSession={mockEditSession} />);
+
+      expect(screen.getByRole('button', { name: /save changes/i })).toBeInTheDocument();
+    });
+
+    it('should show Log Session button in create mode', () => {
+      render(<LogPracticeModal {...defaultProps} />);
+
+      expect(screen.getByRole('button', { name: /log session/i })).toBeInTheDocument();
+    });
+  });
+
+  describe('validation errors', () => {
+    it('should show error when song is not selected', async () => {
+      const user = userEvent.setup();
+      render(<LogPracticeModal {...defaultProps} />);
+
+      const submitButton = screen.getByRole('button', { name: /log session/i });
+      await user.click(submitButton);
+
+      expect(screen.getByText('Please select a song')).toBeInTheDocument();
+      expect(defaultProps.onSubmit).not.toHaveBeenCalled();
+    });
+
+    // Use single song to auto-select and test other validations
+    it('should show error when duration is empty', async () => {
+      const user = userEvent.setup();
+      render(<LogPracticeModal {...defaultProps} songs={singleSong} />);
+
+      // Clear duration
+      const durationInput = screen.getByLabelText(/duration/i);
+      await user.clear(durationInput);
+
+      const submitButton = screen.getByRole('button', { name: /log session/i });
+      await user.click(submitButton);
+
+      expect(screen.getByText('Duration must be greater than 0 minutes')).toBeInTheDocument();
+      expect(defaultProps.onSubmit).not.toHaveBeenCalled();
+    });
+
+    it('should validate duration is required and positive', () => {
+      render(<LogPracticeModal {...defaultProps} />);
+
+      // Check duration input has proper attributes for HTML validation
+      const durationInput = screen.getByLabelText(/duration/i);
+      expect(durationInput).toHaveAttribute('type', 'number');
+      expect(durationInput).toHaveAttribute('min', '1');
+      // Default value should be 30
+      expect(durationInput).toHaveValue(30);
+    });
+
+    it('should have min/max attributes on duration input', () => {
+      render(<LogPracticeModal {...defaultProps} />);
+
+      const durationInput = screen.getByLabelText(/duration/i);
+      expect(durationInput).toHaveAttribute('min', '1');
+      expect(durationInput).toHaveAttribute('max', '480');
+    });
+
+    it('should have min/max attributes on tempo input', () => {
+      render(<LogPracticeModal {...defaultProps} />);
+
+      const tempoInput = screen.getByLabelText(/tempo/i);
+      expect(tempoInput).toHaveAttribute('min', '1');
+      expect(tempoInput).toHaveAttribute('max', '300');
+    });
+
+    it('should have max attribute on date input', () => {
+      render(<LogPracticeModal {...defaultProps} />);
+
+      const dateInput = screen.getByLabelText(/date/i);
+      expect(dateInput).toHaveAttribute('max', '2025-12-08'); // mocked today
+    });
+  });
+
+  describe('successful submission', () => {
+    it('should call onSubmit with correct data for new session', async () => {
+      const user = userEvent.setup();
+      const onSubmit = vi.fn().mockResolvedValue(undefined);
+      render(<LogPracticeModal {...defaultProps} songs={singleSong} onSubmit={onSubmit} />);
+
+      // Fill in optional fields
+      const tempoInput = screen.getByLabelText(/tempo/i);
+      await user.type(tempoInput, '120');
+
+      const sectionsInput = screen.getByLabelText(/sections/i);
+      await user.type(sectionsInput, 'Intro, Chorus');
+
+      const notesInput = screen.getByLabelText(/notes/i);
+      await user.type(notesInput, 'Good session');
+
+      // Submit
+      const submitButton = screen.getByRole('button', { name: /log session/i });
+      await user.click(submitButton);
+
+      await waitFor(() => {
+        expect(onSubmit).toHaveBeenCalledWith({
+          songId: 'song-1',
+          durationMinutes: 30, // default value
+          tempoBpm: 120,
+          sectionsPracticed: ['Intro', 'Chorus'],
+          notes: 'Good session',
+          date: '2025-12-08', // mocked today
+        });
+      });
+    });
+
+    it('should call onSubmit without optional fields when empty', async () => {
+      const user = userEvent.setup();
+      const onSubmit = vi.fn().mockResolvedValue(undefined);
+      render(<LogPracticeModal {...defaultProps} songs={singleSong} onSubmit={onSubmit} />);
+
+      // Submit without filling optional fields
+      const submitButton = screen.getByRole('button', { name: /log session/i });
+      await user.click(submitButton);
+
+      await waitFor(() => {
+        expect(onSubmit).toHaveBeenCalledWith({
+          songId: 'song-1',
+          durationMinutes: 30,
+          tempoBpm: undefined,
+          sectionsPracticed: undefined,
+          notes: undefined,
+          date: '2025-12-08',
+        });
+      });
+    });
+
+    it('should call onClose after successful submission', async () => {
+      const user = userEvent.setup();
+      const onSubmit = vi.fn().mockResolvedValue(undefined);
+      const onClose = vi.fn();
+      render(<LogPracticeModal {...defaultProps} songs={singleSong} onSubmit={onSubmit} onClose={onClose} />);
+
+      // Submit
+      const submitButton = screen.getByRole('button', { name: /log session/i });
+      await user.click(submitButton);
+
+      await waitFor(() => {
+        expect(onClose).toHaveBeenCalled();
+      });
+    });
+
+    it('should show error message when submission fails', async () => {
+      const user = userEvent.setup();
+      const onSubmit = vi.fn().mockRejectedValue(new Error('Network error'));
+      render(<LogPracticeModal {...defaultProps} songs={singleSong} onSubmit={onSubmit} />);
+
+      // Submit
+      const submitButton = screen.getByRole('button', { name: /log session/i });
+      await user.click(submitButton);
+
+      await waitFor(() => {
+        expect(screen.getByText('Network error')).toBeInTheDocument();
+      });
+    });
+
+    it('should show generic error message when submission fails without error message', async () => {
+      const user = userEvent.setup();
+      const onSubmit = vi.fn().mockRejectedValue('unknown error');
+      render(<LogPracticeModal {...defaultProps} songs={singleSong} onSubmit={onSubmit} />);
+
+      // Submit
+      const submitButton = screen.getByRole('button', { name: /log session/i });
+      await user.click(submitButton);
+
+      await waitFor(() => {
+        expect(screen.getByText('Failed to save practice session')).toBeInTheDocument();
+      });
+    });
+  });
+
+  describe('cancel behavior', () => {
+    it('should call onClose when Cancel button is clicked', async () => {
+      const user = userEvent.setup();
+      const onClose = vi.fn();
+      render(<LogPracticeModal {...defaultProps} onClose={onClose} />);
+
+      const cancelButton = screen.getByRole('button', { name: /cancel/i });
+      await user.click(cancelButton);
+
+      expect(onClose).toHaveBeenCalled();
+    });
+  });
+
+  describe('displayName', () => {
+    it('should have displayName set', () => {
+      expect(LogPracticeModal.displayName).toBe('LogPracticeModal');
+    });
+  });
+});

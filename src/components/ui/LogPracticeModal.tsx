@@ -1,5 +1,5 @@
 import React, { memo, useState, useEffect, useCallback } from 'react';
-import { Plus, Pencil } from 'lucide-react';
+import { Plus, Pencil, Loader2 } from 'lucide-react';
 import {
   Dialog,
   DialogContent,
@@ -9,6 +9,7 @@ import {
   DialogDescription,
   Button,
   Input,
+  Textarea,
   Label,
   Select,
   SelectContent,
@@ -272,12 +273,12 @@ export const LogPracticeModal: React.FC<LogPracticeModalProps> = memo(function L
           {/* Notes (optional) */}
           <div className="space-y-2">
             <Label htmlFor="notes">Notes</Label>
-            <Input
+            <Textarea
               id="notes"
-              type="text"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Any observations or reminders"
+              rows={3}
             />
           </div>
 
@@ -286,6 +287,7 @@ export const LogPracticeModal: React.FC<LogPracticeModalProps> = memo(function L
               Cancel
             </Button>
             <Button type="submit" disabled={isSubmitting}>
+              {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
               {isSubmitting ? 'Saving...' : isEditMode ? 'Save Changes' : 'Log Session'}
             </Button>
           </DialogFooter>

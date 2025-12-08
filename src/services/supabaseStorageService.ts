@@ -1521,16 +1521,23 @@ export class SupabaseStorageService implements IStorageService {
     }
 
     try {
-      const { error } = await supabase
+      // Use select() to get deleted rows and verify deletion occurred
+      const { data, error } = await supabase
         .from('practice_sessions')
         .delete()
         .eq('id', sessionId)
         .eq('band_id', this.currentBandId)
-        .eq('user_id', userId); // Ensure user can only delete their own sessions
+        .eq('user_id', userId) // Ensure user can only delete their own sessions
+        .select();
 
       if (error) {
         console.error('Error deleting practice session:', error);
         throw new Error('Failed to delete practice session');
+      }
+
+      // Check if any rows were actually deleted
+      if (!data || data.length === 0) {
+        throw new Error('Practice session not found or you do not have permission to delete it');
       }
     } catch (error) {
       console.error('Error in deletePracticeSession:', error);
