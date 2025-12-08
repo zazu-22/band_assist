@@ -165,3 +165,8 @@ export interface PracticeFilters {
   sortBy?: PracticeSortField;
   sortDirection?: SortDirection;
 }
+
+/** Input data for updating an existing practice session */
+export type UpdatePracticeSessionInput = Partial<
+  Pick<PracticeSession, 'durationMinutes' | 'tempoBpm' | 'sectionsPracticed' | 'notes' | 'date' | 'songId'>
+>;

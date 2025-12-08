@@ -1,4 +1,4 @@
-import { Song, BandMember, BandEvent, SongChart, Assignment, SongPart, PracticeSession, PracticeFilters, UserSongProgress, UserSongStatus, PracticeStats } from '../types';
+import { Song, BandMember, BandEvent, SongChart, Assignment, SongPart, PracticeSession, PracticeFilters, UserSongProgress, UserSongStatus, PracticeStats, UpdatePracticeSessionInput } from '../types';
 import { IStorageService, LoadResult } from './IStorageService';
 import { getSupabaseClient, isSupabaseConfigured } from './supabaseClient';
 import { validateAvatarColor } from '@/lib/avatar';
@@ -35,6 +35,17 @@ export function generateUUID(): string {
     return v.toString(16);
   });
 }
+
+/**
+ * Sort field mapping for practice sessions query
+ * Maps camelCase field names to snake_case database columns
+ */
+const PRACTICE_SESSION_SORT_FIELD_MAP: Record<string, string> = {
+  date: 'date',
+  durationMinutes: 'duration_minutes',
+  tempoBpm: 'tempo_bpm',
+  songId: 'song_id',
+};
 
 /**
  * Supabase-based persistence service
@@ -1402,14 +1413,8 @@ export class SupabaseStorageService implements IStorageService {
         query = query.limit(filters.limit);
       }
 
-      // Apply sorting - map camelCase to snake_case column names
-      const sortFieldMap: Record<string, string> = {
-        date: 'date',
-        durationMinutes: 'duration_minutes',
-        tempoBpm: 'tempo_bpm',
-        songId: 'song_id',
-      };
-      const sortField = sortFieldMap[filters?.sortBy || 'date'] || 'date';
+      // Apply sorting
+      const sortField = PRACTICE_SESSION_SORT_FIELD_MAP[filters?.sortBy || 'date'] || 'date';
       const ascending = filters?.sortDirection === 'asc';
       query = query.order(sortField, { ascending });
 
@@ -1455,7 +1460,7 @@ export class SupabaseStorageService implements IStorageService {
   async updatePracticeSession(
     sessionId: string,
     userId: string,
-    updates: Partial<Pick<PracticeSession, 'durationMinutes' | 'tempoBpm' | 'sectionsPracticed' | 'notes' | 'date' | 'songId'>>
+    updates: UpdatePracticeSessionInput
   ): Promise<PracticeSession> {
     const supabase = getSupabaseClient();
     if (!supabase) {

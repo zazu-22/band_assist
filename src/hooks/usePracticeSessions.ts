@@ -1,6 +1,9 @@
 import { useState, useEffect, useCallback } from 'react';
-import type { PracticeSession, PracticeFilters } from '../types';
+import type { PracticeSession, PracticeFilters, UpdatePracticeSessionInput } from '../types';
 import { supabaseStorageService } from '../services/supabaseStorageService';
+
+// Re-export for consumers that import from this hook
+export type { UpdatePracticeSessionInput } from '../types';
 
 /** Input data for logging a new practice session */
 export interface LogPracticeSessionInput {
@@ -10,16 +13,6 @@ export interface LogPracticeSessionInput {
   sectionsPracticed?: string[];
   notes?: string;
   date: string;
-}
-
-/** Input data for updating an existing practice session */
-export interface UpdatePracticeSessionInput {
-  durationMinutes?: number;
-  tempoBpm?: number;
-  sectionsPracticed?: string[];
-  notes?: string;
-  date?: string;
-  songId?: string;
 }
 
 interface UsePracticeSessionsResult {
