@@ -93,68 +93,45 @@ export function useBandCreation({
       isLoadingBandRef.current = true;
 
       try {
-        // Create the new band
-        const { data: newBand, error: createError } = await supabase
-          .from('bands')
-          .insert({
-            name: bandName,
-            created_by: session.user.id,
-          })
-          .select()
-          .single();
+        // Create band and add user as admin atomically using RPC function
+        // This prevents orphaned bands if user_bands insert would fail
+        // Note: Type assertion used because migration may not be applied yet
+        type CreateBandResult = { band_id: string; band_name: string; created_at: string };
+        const { data: rpcResult, error: createError } = await supabase.rpc(
+          'create_band_with_admin' as never,
+          { p_band_name: bandName } as never
+        ) as { data: CreateBandResult[] | null; error: { message: string } | null };
 
-        if (createError || !newBand) {
+        if (createError || !rpcResult || rpcResult.length === 0) {
           console.error('Error creating band:', createError);
           throw new Error(createError?.message || 'Failed to create band');
         }
 
-        // Add user to the band as admin
-        const { error: joinError } = await supabase
-          .from('user_bands')
-          .insert({
-            user_id: session.user.id,
-            band_id: newBand.id,
-            role: 'admin',
-          });
-
-        if (joinError) {
-          console.error('Error joining band:', joinError);
-          // Try to clean up the band we just created
-          const { error: cleanupError } = await supabase
-            .from('bands')
-            .delete()
-            .eq('id', newBand.id);
-
-          if (cleanupError) {
-            console.error('Failed to cleanup orphaned band:', cleanupError);
-          }
-
-          throw new Error('Failed to join the new band');
-        }
+        const newBand = rpcResult[0];
 
         // Update local state with new band
-        const newBandEntry = { id: newBand.id, name: newBand.name };
+        const newBandEntry = { id: newBand.band_id, name: newBand.band_name };
         setUserBands(prev => [...prev, newBandEntry]);
 
         // Switch to the new band
-        currentBandIdRef.current = newBand.id;
-        setCurrentBandId(newBand.id);
-        setCurrentBandName(newBand.name);
+        currentBandIdRef.current = newBand.band_id;
+        setCurrentBandId(newBand.band_id);
+        setCurrentBandName(newBand.band_name);
         setIsAdmin(true); // Creator is always admin
 
         // Update storage service context
-        StorageService.setCurrentBand?.(newBand.id);
+        StorageService.setCurrentBand?.(newBand.band_id);
 
         // Persist to localStorage (with Safari private browsing protection)
         try {
-          localStorage.setItem(STORAGE_KEYS.SELECTED_BAND, newBand.id);
+          localStorage.setItem(STORAGE_KEYS.SELECTED_BAND, newBand.band_id);
         } catch {
           // Graceful fallback - persistence won't work but app continues
         }
 
         // Reload data for the new band (will be empty initially)
         // Check if user switched bands during creation before loading
-        if (currentBandIdRef.current !== newBand.id) {
+        if (currentBandIdRef.current !== newBand.band_id) {
           return;
         }
 
@@ -163,7 +140,7 @@ export function useBandCreation({
           const data = await StorageService.load();
 
           // Verify band context hasn't changed during async load
-          if (currentBandIdRef.current !== newBand.id) {
+          if (currentBandIdRef.current !== newBand.band_id) {
             return;
           }
 
@@ -174,7 +151,7 @@ export function useBandCreation({
           setEvents(appData.events);
 
           // Track which band this data belongs to (Layer 3)
-          loadedBandIdRef.current = newBand.id;
+          loadedBandIdRef.current = newBand.band_id;
 
           toast.success(`Created "${bandName}" successfully!`);
         } catch (loadError) {
@@ -186,7 +163,7 @@ export function useBandCreation({
           setEvents(DEFAULT_EVENTS);
 
           // Track the band even on error (defaults are still for this band)
-          loadedBandIdRef.current = newBand.id;
+          loadedBandIdRef.current = newBand.band_id;
 
           toast.success(`Created "${bandName}"! Some data may need to refresh.`);
         } finally {
@@ -196,7 +173,8 @@ export function useBandCreation({
         }
       } finally {
         isCreatingBandRef.current = false;
-        // If we never got to loading data, reset the loading guard
+        // Reset loading guard if error occurred before data loading started
+        // (isLoadingBandRef is set true at line 93, reset in inner finally at line 195)
         if (isLoadingBandRef.current) {
           isLoadingBandRef.current = false;
         }
