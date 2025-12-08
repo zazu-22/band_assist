@@ -137,6 +137,47 @@ describe('useBandCreation', () => {
         'Database connection unavailable'
       );
     });
+
+    it('should throw error for empty band name', async () => {
+      const { result } = renderHook(() => useBandCreation(defaultParams));
+
+      await expect(result.current.createBand('')).rejects.toThrow(
+        'Band name is required'
+      );
+    });
+
+    it('should throw error for whitespace-only band name', async () => {
+      const { result } = renderHook(() => useBandCreation(defaultParams));
+
+      await expect(result.current.createBand('   ')).rejects.toThrow(
+        'Band name is required'
+      );
+    });
+
+    it('should throw error for band name exceeding max length', async () => {
+      const { result } = renderHook(() => useBandCreation(defaultParams));
+
+      const longName = 'a'.repeat(101);
+      await expect(result.current.createBand(longName)).rejects.toThrow(
+        'Band name cannot exceed 100 characters'
+      );
+    });
+
+    it('should accept band name at exactly max length', async () => {
+      mockRpc.mockResolvedValue({
+        data: [{ band_id: 'band-123', band_name: 'a'.repeat(100), created_at: new Date().toISOString() }],
+        error: null,
+      });
+
+      const { result } = renderHook(() => useBandCreation(defaultParams));
+
+      const maxLengthName = 'a'.repeat(100);
+      await act(async () => {
+        await result.current.createBand(maxLengthName);
+      });
+
+      expect(mockRpc).toHaveBeenCalled();
+    });
   });
 
   describe('createBand - successful flow', () => {

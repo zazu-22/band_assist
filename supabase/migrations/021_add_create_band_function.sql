@@ -1,6 +1,6 @@
 -- Band Assist: Atomic Band Creation Function
 -- Creates band and user_bands entries in a single transaction to avoid orphaned bands
--- Uses SECURITY DEFINER to bypass RLS during rollback cleanup
+-- Uses SECURITY DEFINER to bypass RLS, ensuring both band and user_bands inserts succeed or fail together
 
 -- =============================================================================
 -- CREATE BAND FUNCTION

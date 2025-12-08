@@ -13,6 +13,10 @@ import {
 } from '@/constants';
 import type { Song, BandMember, BandEvent } from '@/types';
 
+// Max band name length - must match SQL function create_band_with_admin (c_max_name_length)
+// and CreateBandDialog (MAX_BAND_NAME_LENGTH)
+const MAX_BAND_NAME_LENGTH = 100;
+
 interface UseBandCreationParams {
   session: Session | null;
   cancelPendingSave: () => void;
@@ -84,6 +88,15 @@ export function useBandCreation({
         throw new Error('Database connection unavailable');
       }
 
+      // Client-side validation (mirrors server-side validation in create_band_with_admin RPC)
+      const trimmedName = bandName.trim();
+      if (!trimmedName) {
+        throw new Error('Band name is required');
+      }
+      if (trimmedName.length > MAX_BAND_NAME_LENGTH) {
+        throw new Error(`Band name cannot exceed ${MAX_BAND_NAME_LENGTH} characters`);
+      }
+
       isCreatingBandRef.current = true;
 
       // LAYER 1: Cancel pending auto-save BEFORE changing band context
@@ -102,9 +115,14 @@ export function useBandCreation({
           { p_band_name: bandName } as never
         ) as { data: CreateBandResult[] | null; error: { message: string } | null };
 
-        if (createError || !rpcResult || rpcResult.length === 0) {
+        if (createError) {
           console.error('Error creating band:', createError);
-          throw new Error(createError?.message || 'Failed to create band');
+          throw new Error(createError.message || 'Failed to create band');
+        }
+
+        if (!rpcResult || rpcResult.length === 0) {
+          console.error('Error creating band: RPC returned empty result', { rpcResult });
+          throw new Error('Failed to create band: no data returned');
         }
 
         const newBand = rpcResult[0];
@@ -173,8 +191,9 @@ export function useBandCreation({
         }
       } finally {
         isCreatingBandRef.current = false;
-        // Reset loading guard if error occurred before data loading started
-        // (isLoadingBandRef is set true at line 93, reset in inner finally at line 195)
+        // Edge case: Reset loading guard if error occurred between lines 105-150
+        // (after isLoadingBandRef.current = true but before entering inner try block).
+        // The inner finally resets it on success/load-error; this handles RPC errors.
         if (isLoadingBandRef.current) {
           isLoadingBandRef.current = false;
         }
