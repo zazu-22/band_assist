@@ -19,6 +19,17 @@ interface MobileNavProps {
   onCreateBand?: () => void;
 }
 
+/**
+ * Render a fixed mobile header with a slide-out navigation drawer, current band and page indicators, and a theme toggle.
+ *
+ * @param onLogout - Optional callback invoked when the user requests logout.
+ * @param showLogout - Whether to show the logout option in the navigation.
+ * @param currentBandName - Name of the currently selected band to display in the header.
+ * @param userBands - Array of available bands (each with `id` and `name`) passed through to the sidebar.
+ * @param onSelectBand - Optional callback called with a band ID when a band is selected from the sidebar.
+ * @param onCreateBand - Optional callback invoked to create a new band from the sidebar.
+ * @returns The mobile navigation header element containing the menu trigger, band/page labels, and theme toggle.
+ */
 export function MobileNav({
   onLogout,
   showLogout = false,
