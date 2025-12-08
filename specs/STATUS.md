@@ -41,7 +41,7 @@ Specs queued for implementation **in priority order**. Work through these sequen
 
 ---
 
-## 🔵 GitHub Issues (5 open)
+## 🔵 GitHub Issues (4 open)
 
 Smaller features, bug fixes, and follow-up work tracked in GitHub rather than full specs.
 

@@ -40,12 +40,13 @@ export function createDeferredPromise<T = void>(): DeferredPromise<T> {
 }
 
 // Make it available globally for tests
+// Note: Using `var` in declare global is the standard TypeScript pattern for global augmentation
 declare global {
   // eslint-disable-next-line no-var
   var createDeferredPromise: <T = void>() => DeferredPromise<T>;
 }
 
-globalThis.createDeferredPromise = createDeferredPromise;
+(globalThis as typeof globalThis & { createDeferredPromise: typeof createDeferredPromise }).createDeferredPromise = createDeferredPromise;
 
 // Mock ResizeObserver for jsdom environment
 class ResizeObserverMock {
