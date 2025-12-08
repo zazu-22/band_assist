@@ -1384,8 +1384,7 @@ export class SupabaseStorageService implements IStorageService {
         .from('practice_sessions')
         .select('*')
         .eq('user_id', userId)
-        .eq('band_id', bandId)
-        .order('date', { ascending: false });
+        .eq('band_id', bandId);
 
       if (filters?.songId) {
         query = query.eq('song_id', filters.songId);
@@ -1402,6 +1401,17 @@ export class SupabaseStorageService implements IStorageService {
       if (filters?.limit) {
         query = query.limit(filters.limit);
       }
+
+      // Apply sorting - map camelCase to snake_case column names
+      const sortFieldMap: Record<string, string> = {
+        date: 'date',
+        durationMinutes: 'duration_minutes',
+        tempoBpm: 'tempo_bpm',
+        songId: 'song_id',
+      };
+      const sortField = sortFieldMap[filters?.sortBy || 'date'] || 'date';
+      const ascending = filters?.sortDirection === 'asc';
+      query = query.order(sortField, { ascending });
 
       const { data, error } = await query;
 
@@ -1436,6 +1446,92 @@ export class SupabaseStorageService implements IStorageService {
       createdAt: row.created_at,
       updatedAt: row.updated_at,
     };
+  }
+
+  /**
+   * Update an existing practice session
+   * @throws Error if session not found or update fails
+   */
+  async updatePracticeSession(
+    sessionId: string,
+    updates: Partial<Pick<PracticeSession, 'durationMinutes' | 'tempoBpm' | 'sectionsPracticed' | 'notes' | 'date' | 'songId'>>
+  ): Promise<PracticeSession> {
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      throw new Error('Supabase is not configured. Check environment variables.');
+    }
+
+    if (!this.currentBandId) {
+      throw new Error('No band selected. Call setCurrentBand() first.');
+    }
+
+    // Validate duration if provided
+    if (updates.durationMinutes !== undefined && updates.durationMinutes <= 0) {
+      throw new Error('Practice duration must be greater than 0 minutes');
+    }
+
+    try {
+      const updatePayload: Record<string, unknown> = {};
+      if (updates.durationMinutes !== undefined) updatePayload.duration_minutes = updates.durationMinutes;
+      if (updates.tempoBpm !== undefined) updatePayload.tempo_bpm = updates.tempoBpm;
+      if (updates.sectionsPracticed !== undefined) updatePayload.sections_practiced = updates.sectionsPracticed;
+      if (updates.notes !== undefined) updatePayload.notes = updates.notes;
+      if (updates.date !== undefined) updatePayload.date = updates.date;
+      if (updates.songId !== undefined) updatePayload.song_id = updates.songId;
+
+      const { data, error } = await supabase
+        .from('practice_sessions')
+        .update(updatePayload)
+        .eq('id', sessionId)
+        .eq('band_id', this.currentBandId) // Ensure RLS compliance
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error updating practice session:', error);
+        throw new Error('Failed to update practice session');
+      }
+
+      if (!data) {
+        throw new Error('Practice session not found');
+      }
+
+      return this.transformPracticeSession(data);
+    } catch (error) {
+      console.error('Error in updatePracticeSession:', error);
+      throw error;
+    }
+  }
+
+  /**
+   * Delete a practice session
+   * @throws Error if session not found or deletion fails
+   */
+  async deletePracticeSession(sessionId: string): Promise<void> {
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      throw new Error('Supabase is not configured. Check environment variables.');
+    }
+
+    if (!this.currentBandId) {
+      throw new Error('No band selected. Call setCurrentBand() first.');
+    }
+
+    try {
+      const { error } = await supabase
+        .from('practice_sessions')
+        .delete()
+        .eq('id', sessionId)
+        .eq('band_id', this.currentBandId); // Ensure RLS compliance
+
+      if (error) {
+        console.error('Error deleting practice session:', error);
+        throw new Error('Failed to delete practice session');
+      }
+    } catch (error) {
+      console.error('Error in deletePracticeSession:', error);
+      throw error;
+    }
   }
 
   /**

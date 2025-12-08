@@ -150,10 +150,18 @@ export interface PracticeStats {
   recentSessions: PracticeSession[];
 }
 
+// Sort field options for practice sessions
+export type PracticeSortField = 'date' | 'durationMinutes' | 'tempoBpm' | 'songId';
+
+// Sort direction
+export type SortDirection = 'asc' | 'desc';
+
 // Filter options for querying practice sessions
 export interface PracticeFilters {
   songId?: string;
   startDate?: string;
   endDate?: string;
   limit?: number;
+  sortBy?: PracticeSortField;
+  sortDirection?: SortDirection;
 }

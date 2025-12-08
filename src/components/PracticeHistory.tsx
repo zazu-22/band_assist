@@ -1,5 +1,18 @@
-import React, { memo, useMemo, useState } from 'react';
-import { CalendarDays, Clock, Target, Trophy, Music } from 'lucide-react';
+import React, { memo, useMemo, useState, useCallback } from 'react';
+import {
+  CalendarDays,
+  Clock,
+  Target,
+  Trophy,
+  Music,
+  Plus,
+  ArrowUpDown,
+  ArrowUp,
+  ArrowDown,
+  Pencil,
+  Trash2,
+  MoreHorizontal,
+} from 'lucide-react';
 import {
   Card,
   CardContent,
@@ -14,12 +27,25 @@ import {
   Input,
   Label,
   Badge,
+  Button,
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
 } from '@/components/primitives';
-import { StatCard, LoadingSpinner, EmptyState } from '@/components/ui';
+import {
+  StatCard,
+  LoadingSpinner,
+  EmptyState,
+  LogPracticeModal,
+  ConfirmDialog,
+  toast,
+} from '@/components/ui';
+import type { PracticeFormData } from '@/components/ui';
 import { usePracticeSessions } from '@/hooks/usePracticeSessions';
 import { usePracticeStats } from '@/hooks/usePracticeStats';
 import { useAllUserSongStatuses } from '@/hooks/useUserSongStatus';
-import type { Song, PracticeFilters, UserSongStatus } from '@/types';
+import type { Song, PracticeFilters, UserSongStatus, PracticeSortField, SortDirection, PracticeSession } from '@/types';
 
 // =============================================================================
 // TYPES
@@ -113,14 +139,27 @@ export const PracticeHistory: React.FC<PracticeHistoryProps> = memo(function Pra
   const [endDate, setEndDate] = useState(getTodayDate());
   const [selectedSongId, setSelectedSongId] = useState<string>('all');
 
+  // Sort state
+  const [sortBy, setSortBy] = useState<PracticeSortField>('date');
+  const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
+
+  // Modal state
+  const [isLogModalOpen, setIsLogModalOpen] = useState(false);
+  const [editingSession, setEditingSession] = useState<PracticeSession | undefined>();
+
+  // Delete confirmation state
+  const [deleteSessionId, setDeleteSessionId] = useState<string | null>(null);
+
   // Memoize filters to prevent unnecessary refetches
   const filters = useMemo<PracticeFilters>(
     () => ({
       songId: selectedSongId === 'all' ? undefined : selectedSongId,
       startDate,
       endDate,
+      sortBy,
+      sortDirection,
     }),
-    [selectedSongId, startDate, endDate]
+    [selectedSongId, startDate, endDate, sortBy, sortDirection]
   );
 
   const dateRange = useMemo(
@@ -129,11 +168,14 @@ export const PracticeHistory: React.FC<PracticeHistoryProps> = memo(function Pra
   );
 
   // Fetch data using hooks
-  const { sessions, isLoading: sessionsLoading, error: sessionsError } = usePracticeSessions(
-    currentUserId,
-    currentBandId,
-    filters
-  );
+  const {
+    sessions,
+    isLoading: sessionsLoading,
+    error: sessionsError,
+    logSession,
+    updateSession,
+    deleteSession,
+  } = usePracticeSessions(currentUserId, currentBandId, filters);
 
   const { stats, isLoading: statsLoading, error: statsError } = usePracticeStats(
     currentUserId,
@@ -154,6 +196,80 @@ export const PracticeHistory: React.FC<PracticeHistoryProps> = memo(function Pra
   // Combined loading state
   const isLoading = sessionsLoading || statsLoading || statusesLoading;
   const error = sessionsError || statsError;
+
+  // Sort column click handler
+  const handleSortClick = useCallback((field: PracticeSortField) => {
+    if (sortBy === field) {
+      // Toggle direction if same field
+      setSortDirection(prev => (prev === 'asc' ? 'desc' : 'asc'));
+    } else {
+      // New field, default to descending
+      setSortBy(field);
+      setSortDirection('desc');
+    }
+  }, [sortBy]);
+
+  // Get sort icon for column header
+  const getSortIcon = (field: PracticeSortField) => {
+    if (sortBy !== field) {
+      return <ArrowUpDown className="ml-1 h-4 w-4 text-muted-foreground/50" />;
+    }
+    return sortDirection === 'asc' ? (
+      <ArrowUp className="ml-1 h-4 w-4" />
+    ) : (
+      <ArrowDown className="ml-1 h-4 w-4" />
+    );
+  };
+
+  // Modal handlers
+  const handleOpenLogModal = useCallback(() => {
+    setEditingSession(undefined);
+    setIsLogModalOpen(true);
+  }, []);
+
+  const handleOpenEditModal = useCallback((session: PracticeSession) => {
+    setEditingSession(session);
+    setIsLogModalOpen(true);
+  }, []);
+
+  const handleCloseModal = useCallback(() => {
+    setIsLogModalOpen(false);
+    setEditingSession(undefined);
+  }, []);
+
+  const handleSubmitSession = useCallback(
+    async (data: PracticeFormData) => {
+      if (editingSession) {
+        await updateSession(editingSession.id, data);
+        toast.success('Practice session updated');
+      } else {
+        await logSession(data);
+        toast.success('Practice session logged');
+      }
+    },
+    [editingSession, logSession, updateSession]
+  );
+
+  // Delete handlers
+  const handleDeleteClick = useCallback((sessionId: string) => {
+    setDeleteSessionId(sessionId);
+  }, []);
+
+  const handleConfirmDelete = useCallback(async () => {
+    if (deleteSessionId) {
+      try {
+        await deleteSession(deleteSessionId);
+        toast.success('Practice session deleted');
+      } catch {
+        toast.error('Failed to delete practice session');
+      }
+      setDeleteSessionId(null);
+    }
+  }, [deleteSessionId, deleteSession]);
+
+  const handleCancelDelete = useCallback(() => {
+    setDeleteSessionId(null);
+  }, []);
 
   // Show link account message when not authenticated
   if (!currentUserId) {
@@ -177,11 +293,17 @@ export const PracticeHistory: React.FC<PracticeHistoryProps> = memo(function Pra
   return (
     <div className="container mx-auto p-4 sm:p-6 lg:p-8 max-w-7xl">
       {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-foreground mb-2">Practice History</h1>
-        <p className="text-muted-foreground">
-          Track your practice sessions and progress over time
-        </p>
+      <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-bold text-foreground mb-2">Practice History</h1>
+          <p className="text-muted-foreground">
+            Track your practice sessions and progress over time
+          </p>
+        </div>
+        <Button onClick={handleOpenLogModal} className="self-start sm:self-auto">
+          <Plus className="mr-2 h-4 w-4" />
+          Log Practice
+        </Button>
       </div>
 
       {/* Loading State */}
@@ -304,16 +426,44 @@ export const PracticeHistory: React.FC<PracticeHistoryProps> = memo(function Pra
                     <thead>
                       <tr className="border-b border-border">
                         <th className="text-left py-3 px-4 text-sm font-semibold text-muted-foreground">
-                          Date
+                          <button
+                            type="button"
+                            onClick={() => handleSortClick('date')}
+                            className="flex items-center hover:text-foreground transition-colors"
+                          >
+                            Date
+                            {getSortIcon('date')}
+                          </button>
                         </th>
                         <th className="text-left py-3 px-4 text-sm font-semibold text-muted-foreground">
-                          Song
+                          <button
+                            type="button"
+                            onClick={() => handleSortClick('songId')}
+                            className="flex items-center hover:text-foreground transition-colors"
+                          >
+                            Song
+                            {getSortIcon('songId')}
+                          </button>
                         </th>
                         <th className="text-left py-3 px-4 text-sm font-semibold text-muted-foreground">
-                          Duration
+                          <button
+                            type="button"
+                            onClick={() => handleSortClick('durationMinutes')}
+                            className="flex items-center hover:text-foreground transition-colors"
+                          >
+                            Duration
+                            {getSortIcon('durationMinutes')}
+                          </button>
                         </th>
                         <th className="text-left py-3 px-4 text-sm font-semibold text-muted-foreground hidden sm:table-cell">
-                          Tempo
+                          <button
+                            type="button"
+                            onClick={() => handleSortClick('tempoBpm')}
+                            className="flex items-center hover:text-foreground transition-colors"
+                          >
+                            Tempo
+                            {getSortIcon('tempoBpm')}
+                          </button>
                         </th>
                         <th className="text-left py-3 px-4 text-sm font-semibold text-muted-foreground hidden md:table-cell">
                           Sections
@@ -323,6 +473,9 @@ export const PracticeHistory: React.FC<PracticeHistoryProps> = memo(function Pra
                         </th>
                         <th className="text-left py-3 px-4 text-sm font-semibold text-muted-foreground hidden lg:table-cell">
                           Notes
+                        </th>
+                        <th className="text-right py-3 px-4 text-sm font-semibold text-muted-foreground w-16">
+                          <span className="sr-only">Actions</span>
                         </th>
                       </tr>
                     </thead>
@@ -358,6 +511,29 @@ export const PracticeHistory: React.FC<PracticeHistoryProps> = memo(function Pra
                             <td className="py-3 px-4 text-sm text-muted-foreground hidden lg:table-cell max-w-xs truncate">
                               {session.notes || '—'}
                             </td>
+                            <td className="py-3 px-4 text-right">
+                              <DropdownMenu>
+                                <DropdownMenuTrigger asChild>
+                                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                                    <span className="sr-only">Open menu</span>
+                                    <MoreHorizontal className="h-4 w-4" />
+                                  </Button>
+                                </DropdownMenuTrigger>
+                                <DropdownMenuContent align="end">
+                                  <DropdownMenuItem onClick={() => handleOpenEditModal(session)}>
+                                    <Pencil className="mr-2 h-4 w-4" />
+                                    Edit
+                                  </DropdownMenuItem>
+                                  <DropdownMenuItem
+                                    onClick={() => handleDeleteClick(session.id)}
+                                    className="text-destructive focus:text-destructive"
+                                  >
+                                    <Trash2 className="mr-2 h-4 w-4" />
+                                    Delete
+                                  </DropdownMenuItem>
+                                </DropdownMenuContent>
+                              </DropdownMenu>
+                            </td>
                           </tr>
                         );
                       })}
@@ -369,6 +545,27 @@ export const PracticeHistory: React.FC<PracticeHistoryProps> = memo(function Pra
           </Card>
         </>
       )}
+
+      {/* Log/Edit Practice Modal */}
+      <LogPracticeModal
+        isOpen={isLogModalOpen}
+        onClose={handleCloseModal}
+        songs={songs}
+        editSession={editingSession}
+        onSubmit={handleSubmitSession}
+      />
+
+      {/* Delete Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={deleteSessionId !== null}
+        title="Delete Practice Session"
+        message="Are you sure you want to delete this practice session? This action cannot be undone."
+        confirmLabel="Delete"
+        cancelLabel="Cancel"
+        onConfirm={handleConfirmDelete}
+        onCancel={handleCancelDelete}
+        variant="danger"
+      />
     </div>
   );
 });
