@@ -54,6 +54,7 @@ import { STORAGE_KEYS } from './services/localStorageService';
 import { getSupabaseClient, isSupabaseConfigured } from './services/supabaseClient';
 import { ROUTES, getSongDetailRoute } from './routes';
 import { useLayoutShortcuts } from './hooks/useLayoutShortcuts';
+import { useBandCreation } from './hooks/useBandCreation';
 import { ThemeProvider } from './components/ui/ThemeProvider';
 import { SidebarProvider, AppShell } from './components/layout';
 
@@ -179,17 +180,12 @@ const App: React.FC = () => {
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
   // Track if user is in password recovery mode (from reset email link)
   const [isRecoveryMode, setIsRecoveryMode] = useState<boolean>(false);
-  // Track if create band dialog is open
-  const [isCreateBandDialogOpen, setIsCreateBandDialogOpen] = useState<boolean>(false);
 
   // Ref to track current band ID for race condition prevention
   const currentBandIdRef = useRef<string | null>(null);
 
   // Ref to store auth subscription unsubscribe function
   const authUnsubscribeRef = useRef<(() => void) | null>(null);
-
-  // Ref to prevent race conditions during band creation
-  const isCreatingBandRef = useRef(false);
 
   // -- State Initialization --
   const [songs, setSongs] = useState<Song[]>([]);
@@ -565,6 +561,29 @@ const App: React.FC = () => {
     pendingSaveRef.current = null;
   }, []);
 
+  // Band creation hook - manages dialog state and creation logic
+  const {
+    isDialogOpen: isCreateBandDialogOpen,
+    openDialog: handleOpenCreateBandDialog,
+    closeDialog: handleCloseCreateBandDialog,
+    createBand: handleCreateBand,
+  } = useBandCreation({
+    session,
+    cancelPendingSave,
+    isLoadingBandRef,
+    currentBandIdRef,
+    loadedBandIdRef,
+    setUserBands,
+    setCurrentBandId,
+    setCurrentBandName,
+    setIsAdmin,
+    setIsLoading,
+    setSongs,
+    setMembers,
+    setAvailableRoles,
+    setEvents,
+  });
+
   /**
    * Save function that can be called immediately (for beforeunload) or debounced.
    * Empty dependency array is intentional: this callback only uses setState functions
@@ -749,144 +768,6 @@ const App: React.FC = () => {
       navigate(ROUTES.LOGIN);
     } catch (error) {
       console.error('Error logging out:', error);
-    }
-  };
-
-  const handleOpenCreateBandDialog = useCallback(() => {
-    setIsCreateBandDialogOpen(true);
-  }, []);
-
-  const handleCloseCreateBandDialog = useCallback(() => {
-    setIsCreateBandDialogOpen(false);
-  }, []);
-
-  const handleCreateBand = async (bandName: string) => {
-    // Prevent concurrent band creation attempts
-    if (isCreatingBandRef.current) {
-      return;
-    }
-
-    if (!session) {
-      throw new Error('You must be logged in to create a band');
-    }
-
-    const supabase = getSupabaseClient();
-    if (!supabase) {
-      throw new Error('Database connection unavailable');
-    }
-
-    isCreatingBandRef.current = true;
-
-    // LAYER 1: Cancel pending auto-save BEFORE changing band context
-    cancelPendingSave();
-
-    // LAYER 2: Set loading guard to block new auto-saves
-    isLoadingBandRef.current = true;
-
-    try {
-      // Create the new band
-      const { data: newBand, error: createError } = await supabase
-        .from('bands')
-        .insert({
-          name: bandName,
-          created_by: session.user.id,
-        })
-        .select()
-        .single();
-
-      if (createError || !newBand) {
-        console.error('Error creating band:', createError);
-        throw new Error(createError?.message || 'Failed to create band');
-      }
-
-      // Add user to the band as admin
-      const { error: joinError } = await supabase
-        .from('user_bands')
-        .insert({
-          user_id: session.user.id,
-          band_id: newBand.id,
-          role: 'admin',
-        });
-
-      if (joinError) {
-        console.error('Error joining band:', joinError);
-        // Try to clean up the band we just created
-        const { error: cleanupError } = await supabase
-          .from('bands')
-          .delete()
-          .eq('id', newBand.id);
-
-        if (cleanupError) {
-          console.error('Failed to cleanup orphaned band:', cleanupError);
-        }
-
-        throw new Error('Failed to join the new band');
-      }
-
-      // Update local state with new band
-      const newBandEntry = { id: newBand.id, name: newBand.name };
-      setUserBands(prev => [...prev, newBandEntry]);
-
-      // Switch to the new band
-      currentBandIdRef.current = newBand.id;
-      setCurrentBandId(newBand.id);
-      setCurrentBandName(newBand.name);
-      setIsAdmin(true); // Creator is always admin
-
-      // Update storage service context
-      StorageService.setCurrentBand?.(newBand.id);
-
-      // Persist to localStorage (with Safari private browsing protection)
-      try {
-        localStorage.setItem(STORAGE_KEYS.SELECTED_BAND, newBand.id);
-      } catch {
-        // Graceful fallback - persistence won't work but app continues
-      }
-
-      // Reload data for the new band (will be empty initially)
-      // Check if user switched bands during creation before loading
-      if (currentBandIdRef.current !== newBand.id) {
-        return;
-      }
-
-      setIsLoading(true);
-      try {
-        const data = await StorageService.load();
-
-        // Verify band context hasn't changed during async load
-        if (currentBandIdRef.current !== newBand.id) {
-          return;
-        }
-
-        const appData = withDefaults(data);
-        setSongs(appData.songs);
-        setMembers(appData.members);
-        setAvailableRoles(appData.roles);
-        setEvents(appData.events);
-
-        // Track which band this data belongs to (Layer 3)
-        loadedBandIdRef.current = newBand.id;
-
-        toast.success(`Created "${bandName}" successfully!`);
-      } catch (loadError) {
-        console.error('Error loading new band data:', loadError);
-        // Reset to defaults to avoid leaking previous band's data
-        setSongs(INITIAL_SONGS);
-        setMembers(DEFAULT_MEMBERS);
-        setAvailableRoles(DEFAULT_ROLES);
-        setEvents(DEFAULT_EVENTS);
-
-        // Track the band even on error (defaults are still for this band)
-        loadedBandIdRef.current = newBand.id;
-
-        toast.success(`Created "${bandName}"! Some data may need to refresh.`);
-      } finally {
-        setIsLoading(false);
-        // Clear loading guard only after load completes
-        isLoadingBandRef.current = false;
-      }
-    } finally {
-      isCreatingBandRef.current = false;
     }
   };
 
