@@ -59,6 +59,16 @@ interface PracticeHistoryProps {
 
 type BadgeVariant = 'success' | 'info' | 'warning' | 'default';
 
+// Status filter options including 'all'
+type StatusFilterValue = UserSongStatus | 'all';
+const STATUS_OPTIONS: { value: StatusFilterValue; label: string }[] = [
+  { value: 'all', label: 'All Statuses' },
+  { value: 'Not Started', label: 'Not Started' },
+  { value: 'Learning', label: 'Learning' },
+  { value: 'Learned', label: 'Learned' },
+  { value: 'Mastered', label: 'Mastered' },
+];
+
 // =============================================================================
 // HELPER FUNCTIONS
 // =============================================================================
@@ -138,6 +148,7 @@ export const PracticeHistory: React.FC<PracticeHistoryProps> = memo(function Pra
   const [startDate, setStartDate] = useState(getDateDaysAgo(30));
   const [endDate, setEndDate] = useState(getTodayDate());
   const [selectedSongId, setSelectedSongId] = useState<string>('all');
+  const [selectedStatus, setSelectedStatus] = useState<StatusFilterValue>('all');
 
   // Sort state
   const [sortBy, setSortBy] = useState<PracticeSortField>('date');
@@ -192,6 +203,20 @@ export const PracticeHistory: React.FC<PracticeHistoryProps> = memo(function Pra
   const songMap = useMemo(() => {
     return new Map(songs.map(song => [song.id, song]));
   }, [songs]);
+
+  // Apply client-side status filter
+  // Status is per-song (from user_song_status), so we filter sessions by their song's status
+  const filteredSessions = useMemo(() => {
+    if (selectedStatus === 'all') {
+      return sessions;
+    }
+    return sessions.filter(session => {
+      const songStatus = statuses.get(session.songId);
+      // If no status exists, treat as 'Not Started'
+      const effectiveStatus = songStatus?.status || 'Not Started';
+      return effectiveStatus === selectedStatus;
+    });
+  }, [sessions, statuses, selectedStatus]);
 
   // Combined loading state
   const isLoading = sessionsLoading || statsLoading || statusesLoading;
@@ -361,7 +386,7 @@ export const PracticeHistory: React.FC<PracticeHistoryProps> = memo(function Pra
               <CardTitle>Filters</CardTitle>
             </CardHeader>
             <CardContent>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {/* Song Filter */}
                 <div className="space-y-2">
                   <Label htmlFor="song-filter">Song</Label>
@@ -374,6 +399,23 @@ export const PracticeHistory: React.FC<PracticeHistoryProps> = memo(function Pra
                       {songs.map(song => (
                         <SelectItem key={song.id} value={song.id}>
                           {song.title}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Status Filter */}
+                <div className="space-y-2">
+                  <Label htmlFor="status-filter">Status</Label>
+                  <Select value={selectedStatus} onValueChange={(value) => setSelectedStatus(value as StatusFilterValue)}>
+                    <SelectTrigger id="status-filter">
+                      <SelectValue placeholder="All Statuses" />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {STATUS_OPTIONS.map(option => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {option.label}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -410,11 +452,11 @@ export const PracticeHistory: React.FC<PracticeHistoryProps> = memo(function Pra
             <CardHeader>
               <CardTitle>Practice Sessions</CardTitle>
               <CardDescription>
-                {sessions.length} session{sessions.length !== 1 ? 's' : ''} found
+                {filteredSessions.length} session{filteredSessions.length !== 1 ? 's' : ''} found
               </CardDescription>
             </CardHeader>
             <CardContent>
-              {sessions.length === 0 ? (
+              {filteredSessions.length === 0 ? (
                 <EmptyState
                   icon={Music}
                   title="No Practice Sessions"
@@ -480,7 +522,7 @@ export const PracticeHistory: React.FC<PracticeHistoryProps> = memo(function Pra
                       </tr>
                     </thead>
                     <tbody>
-                      {sessions.map(session => {
+                      {filteredSessions.map(session => {
                         const song = songMap.get(session.songId);
                         const songStatus = statuses.get(session.songId);
 

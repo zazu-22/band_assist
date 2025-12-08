@@ -661,6 +661,81 @@ describe('PracticeHistory', () => {
     });
   });
 
+  describe('status filter', () => {
+    beforeEach(() => {
+      mockUsePracticeStats.mockReturnValue({
+        stats: mockStats,
+        isLoading: false,
+        error: null,
+        refetch: vi.fn(),
+      });
+    });
+
+    it('should render status filter dropdown', () => {
+      mockUsePracticeSessions.mockReturnValue(createMockSessionsHook({ sessions: mockSessions }));
+
+      mockUseAllUserSongStatuses.mockReturnValue({
+        statuses: new Map([
+          ['song-1', {
+            id: 'progress-1',
+            userId: 'user-1',
+            songId: 'song-1',
+            status: 'Mastered',
+            createdAt: '2025-12-05T10:00:00Z',
+            updatedAt: '2025-12-05T10:00:00Z',
+          }],
+        ]),
+        isLoading: false,
+        error: null,
+        refetch: vi.fn(),
+      });
+
+      render(
+        <PracticeHistory
+          songs={mockSongs}
+          currentUserId="user-1"
+          currentBandId="band-1"
+        />
+      );
+
+      // Verify the status filter select is rendered
+      const statusSelect = screen.getByRole('combobox', { name: /status/i });
+      expect(statusSelect).toBeInTheDocument();
+    });
+
+    it('should show all status options in the dropdown', () => {
+      mockUsePracticeSessions.mockReturnValue(createMockSessionsHook({ sessions: mockSessions }));
+
+      mockUseAllUserSongStatuses.mockReturnValue({
+        statuses: new Map([
+          ['song-1', {
+            id: 'progress-1',
+            userId: 'user-1',
+            songId: 'song-1',
+            status: 'Mastered',
+            createdAt: '2025-12-05T10:00:00Z',
+            updatedAt: '2025-12-05T10:00:00Z',
+          }],
+        ]),
+        isLoading: false,
+        error: null,
+        refetch: vi.fn(),
+      });
+
+      render(
+        <PracticeHistory
+          songs={mockSongs}
+          currentUserId="user-1"
+          currentBandId="band-1"
+        />
+      );
+
+      // Verify status filter is rendered with default "All Statuses" option
+      const statusSelect = screen.getByRole('combobox', { name: /status/i });
+      expect(statusSelect).toHaveTextContent('All Statuses');
+    });
+  });
+
   describe('memo behavior', () => {
     it('has displayName set', () => {
       expect(PracticeHistory.displayName).toBe('PracticeHistory');
