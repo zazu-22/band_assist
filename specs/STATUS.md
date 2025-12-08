@@ -2,7 +2,7 @@
 
 > Quick reference for all specs, GitHub issues, and current status.
 >
-> Last updated: 2025-12-07
+> Last updated: 2025-12-08
 
 ---
 
@@ -21,7 +21,7 @@
 | 🟢 Done | 16 | Completed and merged |
 | 🟡 Pending | 1 | Queued for implementation (in sequence order) |
 | ⚪ Backlog | 16 | Planned but not yet prioritized |
-| 🔵 GitHub Issues | 8 | Tracked in GitHub (bugs, smaller features) |
+| 🔵 GitHub Issues | 5 | Tracked in GitHub (bugs, smaller features) |
 
 ---
 
@@ -41,7 +41,7 @@ Specs queued for implementation **in priority order**. Work through these sequen
 
 ---
 
-## 🔵 GitHub Issues (8 open)
+## 🔵 GitHub Issues (5 open)
 
 Smaller features, bug fixes, and follow-up work tracked in GitHub rather than full specs.
 
@@ -55,9 +55,9 @@ Smaller features, bug fixes, and follow-up work tracked in GitHub rather than fu
 
 | # | Title | Effort | Dependencies |
 |---|-------|--------|--------------|
-| [#125](https://github.com/zazu-22/band_assist/issues/125) | Practice Logging: Date Selection & Edit | Medium | None |
-| [#126](https://github.com/zazu-22/band_assist/issues/126) | Practice History Filtering & Sorting | Medium | None |
-| [#121](https://github.com/zazu-22/band_assist/issues/121) | Virtualize PracticeHistory table | Medium | **After #125, #126** |
+| [#125](https://github.com/zazu-22/band_assist/issues/125) | Practice Logging: Date Selection & Edit | Medium | ✅ Closed |
+| [#126](https://github.com/zazu-22/band_assist/issues/126) | Practice History Filtering & Sorting | Medium | ✅ Closed |
+| [#121](https://github.com/zazu-22/band_assist/issues/121) | Virtualize PracticeHistory table | Medium | Ready (deps complete) |
 
 ### Band Management Cluster
 
@@ -71,7 +71,7 @@ Smaller features, bug fixes, and follow-up work tracked in GitHub rather than fu
 
 | # | Title | Effort | Notes |
 |---|-------|--------|-------|
-| [#107](https://github.com/zazu-22/band_assist/issues/107) | Add song naming to files (PDFs) | Small | ✅ Implemented - pending close |
+| [#107](https://github.com/zazu-22/band_assist/issues/107) | Add song naming to files (PDFs) | Small | ✅ Closed |
 | [#101](https://github.com/zazu-22/band_assist/issues/101) | Mobile layout for iOS Safari | Large | Major refactor, needs device testing |
 
 ---
@@ -149,8 +149,9 @@ Smaller features, bug fixes, and follow-up work tracked in GitHub rather than fu
 
 | Date | Item | Change |
 |------|------|--------|
-| 2025-12-07 | [#107](https://github.com/zazu-22/band_assist/issues/107) Song file naming | ✅ Implemented (pending issue close) |
-| 2025-12-07 | [#100](https://github.com/zazu-22/band_assist/issues/100) Password reset bug | ✅ Resolved (merged in #130) |
+| 2025-12-08 | [#125](https://github.com/zazu-22/band_assist/issues/125), [#126](https://github.com/zazu-22/band_assist/issues/126) | ✅ Closed (merged in PR #135) |
+| 2025-12-07 | [#107](https://github.com/zazu-22/band_assist/issues/107) Song file naming | ✅ Closed (merged in PR #132) |
+| 2025-12-07 | [#100](https://github.com/zazu-22/band_assist/issues/100) Password reset bug | ✅ Closed (merged in PR #130) |
 | 2025-12-07 | GitHub Issues | 📋 Added 9 open issues to STATUS.md with dependency graph |
 | 2025-12-07 | Proposed Sequence | 📋 Added recommended implementation order |
 | 2025-12-07 | feat-user-member-linking-phase-4-practice-history-design | ➕ Added to backlog |
@@ -197,12 +198,12 @@ infra-test-environment-setup (backlog)
 ### GitHub Issues
 
 ```
-#100 (password reset bug) ─── ✅ RESOLVED
+#100 (password reset bug) ─── ✅ CLOSED
+#107 (file naming) ─── ✅ CLOSED
+#125 (practice edit) ─── ✅ CLOSED
+#126 (filtering/sort) ─── ✅ CLOSED
 
-#107 (file naming) ─── ✅ IMPLEMENTED (pending close)
-
-#125 (practice edit) ───┬──► #121 (virtualization)
-#126 (filtering/sort) ──┘
+#121 (virtualization) ─── ready (deps complete)
 
 #127 (band selector) ───┬──► #124 (close parent)
 #128 (band settings) ───┘
@@ -223,13 +224,13 @@ Recommended order considering dependencies and effort:
 | 1 | [#100](https://github.com/zazu-22/band_assist/issues/100) Password reset bug | Bug | ✅ Resolved 2025-12-07 |
 | 2 | [#107](https://github.com/zazu-22/band_assist/issues/107) Song naming for files | Issue | ✅ Implemented 2025-12-07 |
 
-### Phase 2: Practice Tracking
+### Phase 2: Practice Tracking ✅ COMPLETE
 
 | Order | Item | Type | Rationale |
 |-------|------|------|-----------|
-| 3 | [#125](https://github.com/zazu-22/band_assist/issues/125) Practice logging | Issue | Foundation for #121 |
-| 4 | [#126](https://github.com/zazu-22/band_assist/issues/126) Filtering & sorting | Issue | Foundation for #121 |
-| 5 | [#121](https://github.com/zazu-22/band_assist/issues/121) Virtualize table | Issue | Now safe after #125/#126 |
+| 3 | [#125](https://github.com/zazu-22/band_assist/issues/125) Practice logging | Issue | ✅ Closed (PR #135) |
+| 4 | [#126](https://github.com/zazu-22/band_assist/issues/126) Filtering & sorting | Issue | ✅ Closed (PR #135) |
+| 5 | [#121](https://github.com/zazu-22/band_assist/issues/121) Virtualize table | Issue | Ready - deps complete |
 
 ### Phase 3: Band Management
 
