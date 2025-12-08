@@ -63,6 +63,9 @@ export { useAppContext } from './contexts';
 // Import hooks for internal use in route components
 import { useAppActions, useAppData } from './contexts';
 
+// LocalStorage key for persisting selected band (module-level to avoid recreation)
+const SELECTED_BAND_STORAGE_KEY = 'band-assist-selected-band';
+
 /**
  * Route wrapper component for SongDetail.
  * Extracts songId from URL params and connects to AppContext.
@@ -192,9 +195,6 @@ const App: React.FC = () => {
 
   // Ref to track manual band switches - prevents loadData effect from running concurrently
   const isManualBandSwitchRef = useRef(false);
-
-  // LocalStorage key for persisting selected band
-  const SELECTED_BAND_STORAGE_KEY = 'band-assist-selected-band';
 
   // -- State Initialization --
   const [songs, setSongs] = useState<Song[]>([]);
@@ -759,7 +759,7 @@ const App: React.FC = () => {
           console.error('Failed to cleanup orphaned band:', cleanupError);
         }
 
-        throw new Error('Failed to join the new band');
+        throw new Error(`Failed to join the new band: ${joinError.message}`);
       }
 
       // Update local state with new band
@@ -809,7 +809,7 @@ const App: React.FC = () => {
         setMembers(DEFAULT_MEMBERS);
         setAvailableRoles(DEFAULT_ROLES);
         setEvents(DEFAULT_EVENTS);
-        toast.success(`Created "${bandName}"! Some data may need to refresh.`);
+        toast.warning(`Created "${bandName}", but some data may need to refresh.`);
       } finally {
         setIsLoading(false);
       }
