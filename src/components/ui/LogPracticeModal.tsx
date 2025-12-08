@@ -42,7 +42,11 @@ export interface PracticeFormData {
 
 // =============================================================================
 // HELPER FUNCTIONS
-// =============================================================================
+/**
+ * Get today's date in YYYY-MM-DD format.
+ *
+ * @returns Today's date as a string in `YYYY-MM-DD` format.
+ */
 
 function getTodayDate(): string {
   return new Date().toISOString().split('T')[0];

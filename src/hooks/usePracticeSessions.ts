@@ -33,43 +33,14 @@ interface UsePracticeSessionsResult {
 }
 
 /**
- * Custom hook to fetch and manage practice sessions
+ * Manage and provide practice sessions for a user within a band.
  *
- * Fetches practice sessions for a user in a band with optional filtering.
- * Automatically refetches when userId, bandId, or filters change.
- * Returns empty sessions when userId or bandId is null.
+ * Automatically fetches sessions and refetches when `userId`, `bandId`, or `filters` change.
  *
- * Note: filters object should be memoized in the calling component to avoid
- * unnecessary refetches on every render.
- *
- * @param userId - User ID to fetch sessions for
- * @param bandId - Band ID to filter sessions by
- * @param filters - Optional filters (songId, date range, limit)
- * @returns Practice sessions, loading state, error, and refetch function
- *
- * @example
- * ```tsx
- * function PracticeLog() {
- *   const filters = useMemo(() => ({ limit: 10, startDate: '2025-01-01' }), []);
- *   const { sessions, isLoading, error, refetch } = usePracticeSessions(
- *     user?.id || null,
- *     currentBandId,
- *     filters
- *   );
- *
- *   if (isLoading) return <div>Loading...</div>;
- *   if (error) return <div>Error: {error.message}</div>;
- *
- *   return (
- *     <div>
- *       {sessions.map(session => (
- *         <div key={session.id}>{session.durationMinutes} mins</div>
- *       ))}
- *       <button onClick={refetch}>Refresh</button>
- *     </div>
- *   );
- * }
- * ```
+ * @param userId - The user ID to scope fetched sessions, or `null` to indicate no user selected
+ * @param bandId - The band ID to scope fetched sessions, or `null` to indicate no band selected
+ * @param filters - Optional query filters (e.g., songId, date range, limit); memoize to avoid unnecessary refetches
+ * @returns An object with `sessions`, `isLoading`, `error`, `refetch`, `logSession`, `updateSession`, and `deleteSession`
  */
 export function usePracticeSessions(
   userId: string | null,
