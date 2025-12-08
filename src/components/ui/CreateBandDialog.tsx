@@ -163,7 +163,7 @@ export const CreateBandDialog: React.FC<CreateBandDialogProps> = memo(function C
               aria-describedby={error ? 'band-name-error' : undefined}
             />
             <p className="text-xs text-muted-foreground">
-              {bandName.length}/{MAX_BAND_NAME_LENGTH} characters
+              {bandName.trim().length}/{MAX_BAND_NAME_LENGTH} characters
             </p>
           </div>
 

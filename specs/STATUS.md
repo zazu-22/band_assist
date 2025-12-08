@@ -21,7 +21,7 @@
 | 🟢 Done | 16 | Completed and merged |
 | 🟡 Pending | 1 | Queued for implementation (in sequence order) |
 | ⚪ Backlog | 16 | Planned but not yet prioritized |
-| 🔵 GitHub Issues | 5 | Tracked in GitHub (bugs, smaller features) |
+| 🔵 GitHub Issues | 4 | Tracked in GitHub (bugs, smaller features) |
 
 ---
 
@@ -63,9 +63,9 @@ Smaller features, bug fixes, and follow-up work tracked in GitHub rather than fu
 
 | # | Title | Effort | Dependencies |
 |---|-------|--------|--------------|
-| [#124](https://github.com/zazu-22/band_assist/issues/124) | Band management UI (parent tracking) | - | Close after #127, #128 |
-| [#127](https://github.com/zazu-22/band_assist/issues/127) | Enhanced band selector with creation flow | Medium | None |
-| [#128](https://github.com/zazu-22/band_assist/issues/128) | Band settings/management UI | Medium | None |
+| [#124](https://github.com/zazu-22/band_assist/issues/124) | Band management UI (parent tracking) | - | Close after #128 |
+| [#127](https://github.com/zazu-22/band_assist/issues/127) | Enhanced band selector with creation flow | Medium | ✅ Closed |
+| [#128](https://github.com/zazu-22/band_assist/issues/128) | Band settings/management UI | Medium | Ready (deps complete) |
 
 ### Standalone Enhancements
 
@@ -149,6 +149,7 @@ Smaller features, bug fixes, and follow-up work tracked in GitHub rather than fu
 
 | Date | Item | Change |
 |------|------|--------|
+| 2025-12-08 | [#127](https://github.com/zazu-22/band_assist/issues/127) Enhanced band selector | ✅ Closed (merged in PR #139) |
 | 2025-12-08 | [#125](https://github.com/zazu-22/band_assist/issues/125), [#126](https://github.com/zazu-22/band_assist/issues/126) | ✅ Closed (merged in PR #135) |
 | 2025-12-07 | [#107](https://github.com/zazu-22/band_assist/issues/107) Song file naming | ✅ Closed (merged in PR #132) |
 | 2025-12-07 | [#100](https://github.com/zazu-22/band_assist/issues/100) Password reset bug | ✅ Closed (merged in PR #130) |
@@ -202,11 +203,11 @@ infra-test-environment-setup (backlog)
 #107 (file naming) ─── ✅ CLOSED
 #125 (practice edit) ─── ✅ CLOSED
 #126 (filtering/sort) ─── ✅ CLOSED
+#127 (band selector) ─── ✅ CLOSED
 
 #121 (virtualization) ─── ready (deps complete)
 
-#127 (band selector) ───┬──► #124 (close parent)
-#128 (band settings) ───┘
+#128 (band settings) ──► #124 (close parent)
 
 #101 (mobile iOS) ─── standalone, large scope
 ```
@@ -232,11 +233,11 @@ Recommended order considering dependencies and effort:
 | 4 | [#126](https://github.com/zazu-22/band_assist/issues/126) Filtering & sorting | Issue | ✅ Closed (PR #135) |
 | 5 | [#121](https://github.com/zazu-22/band_assist/issues/121) Virtualize table | Issue | Ready - deps complete |
 
-### Phase 3: Band Management
+### Phase 3: Band Management (In Progress)
 
 | Order | Item | Type | Rationale |
 |-------|------|------|-----------|
-| 6 | [#127](https://github.com/zazu-22/band_assist/issues/127) Band selector | Issue | Foundation for multi-band UX |
+| 6 | [#127](https://github.com/zazu-22/band_assist/issues/127) Band selector | Issue | ✅ Closed (PR #139) |
 | 7 | [#128](https://github.com/zazu-22/band_assist/issues/128) Band settings | Issue | Completes band management |
 | 8 | Close [#124](https://github.com/zazu-22/band_assist/issues/124) | Issue | Parent tracking issue done |
 
@@ -251,8 +252,8 @@ Recommended order considering dependencies and effort:
 
 These can run concurrently with minimal conflict:
 
-- **#127** + **#128** — same feature area, can be done together
-- **#101** (mobile) can run in parallel with Phase 2/3 if resources allow
+- **#128** (band settings) — ready to start, #127 complete
+- **#101** (mobile) can run in parallel with Phase 3/4 if resources allow
 
 ---
 

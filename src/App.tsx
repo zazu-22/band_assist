@@ -757,9 +757,20 @@ const App: React.FC = () => {
       StorageService.setCurrentBand?.(newBand.id);
 
       // Reload data for the new band (will be empty initially)
+      // Check if user switched bands during creation before loading
+      if (currentBandIdRef.current !== newBand.id) {
+        return;
+      }
+
       setIsLoading(true);
       try {
         const data = await StorageService.load();
+
+        // Verify band context hasn't changed during async load
+        if (currentBandIdRef.current !== newBand.id) {
+          return;
+        }
+
         const appData = withDefaults(data);
         setSongs(appData.songs);
         setMembers(appData.members);
@@ -768,7 +779,11 @@ const App: React.FC = () => {
         toast.success(`Created "${bandName}" successfully!`);
       } catch (loadError) {
         console.error('Error loading new band data:', loadError);
-        // Band was created successfully, but data load failed
+        // Reset to defaults to avoid leaking previous band's data
+        setSongs(INITIAL_SONGS);
+        setMembers(DEFAULT_MEMBERS);
+        setAvailableRoles(DEFAULT_ROLES);
+        setEvents(DEFAULT_EVENTS);
         toast.success(`Created "${bandName}"! Some data may need to refresh.`);
       } finally {
         setIsLoading(false);

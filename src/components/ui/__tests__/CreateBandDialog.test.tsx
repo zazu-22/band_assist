@@ -72,13 +72,17 @@ describe('CreateBandDialog', () => {
       expect(input).toHaveValue('');
     });
 
-    it('should update character count as user types', async () => {
+    it('should update character count as user types (using trimmed length)', async () => {
       const user = userEvent.setup();
       render(<CreateBandDialog {...defaultProps} />);
 
       const input = screen.getByLabelText(/band name/i);
       await user.type(input, 'Test Band');
 
+      expect(screen.getByText('9/100 characters')).toBeInTheDocument();
+
+      // Verify trailing spaces don't increase count
+      await user.type(input, '   ');
       expect(screen.getByText('9/100 characters')).toBeInTheDocument();
     });
 
@@ -169,13 +173,8 @@ describe('CreateBandDialog', () => {
 
     it('should show loading state during submission', async () => {
       const user = userEvent.setup();
-      let resolveSubmit: () => void;
-      const onSubmit = vi.fn().mockImplementation(
-        () =>
-          new Promise<void>(resolve => {
-            resolveSubmit = resolve;
-          })
-      );
+      const deferred = createDeferredPromise<void>();
+      const onSubmit = vi.fn().mockImplementation(() => deferred.promise);
       render(<CreateBandDialog {...defaultProps} onSubmit={onSubmit} />);
 
       const input = screen.getByLabelText(/band name/i);
@@ -189,7 +188,7 @@ describe('CreateBandDialog', () => {
       expect(screen.getByRole('button', { name: /creating/i })).toBeDisabled();
 
       // Resolve and check loading state is cleared
-      resolveSubmit!();
+      deferred.resolve();
       await waitFor(() => {
         expect(screen.queryByRole('button', { name: /creating/i })).not.toBeInTheDocument();
       });
@@ -197,13 +196,8 @@ describe('CreateBandDialog', () => {
 
     it('should disable input and buttons during submission', async () => {
       const user = userEvent.setup();
-      let resolveSubmit: () => void;
-      const onSubmit = vi.fn().mockImplementation(
-        () =>
-          new Promise<void>(resolve => {
-            resolveSubmit = resolve;
-          })
-      );
+      const deferred = createDeferredPromise<void>();
+      const onSubmit = vi.fn().mockImplementation(() => deferred.promise);
       render(<CreateBandDialog {...defaultProps} onSubmit={onSubmit} />);
 
       const input = screen.getByLabelText(/band name/i);
@@ -216,7 +210,7 @@ describe('CreateBandDialog', () => {
       expect(input).toBeDisabled();
       expect(screen.getByRole('button', { name: /cancel/i })).toBeDisabled();
 
-      resolveSubmit!();
+      deferred.resolve();
       await waitFor(() => {
         expect(input).not.toBeDisabled();
       });
@@ -290,13 +284,8 @@ describe('CreateBandDialog', () => {
 
     it('should not close dialog when submitting', async () => {
       const user = userEvent.setup();
-      let resolveSubmit: () => void;
-      const onSubmit = vi.fn().mockImplementation(
-        () =>
-          new Promise<void>(resolve => {
-            resolveSubmit = resolve;
-          })
-      );
+      const deferred = createDeferredPromise<void>();
+      const onSubmit = vi.fn().mockImplementation(() => deferred.promise);
       const onClose = vi.fn();
       render(<CreateBandDialog {...defaultProps} onSubmit={onSubmit} onClose={onClose} />);
 
@@ -314,7 +303,7 @@ describe('CreateBandDialog', () => {
       // Note: Cancel button is disabled during submission, so this click should be ignored
       expect(onClose).not.toHaveBeenCalled();
 
-      resolveSubmit!();
+      deferred.resolve();
     });
   });
 

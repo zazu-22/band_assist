@@ -1,5 +1,52 @@
 import '@testing-library/jest-dom';
 
+// =============================================================================
+// TEST UTILITIES
+// =============================================================================
+
+/**
+ * Deferred promise type for controlling async test behavior.
+ */
+export interface DeferredPromise<T = void> {
+  promise: Promise<T>;
+  resolve: (value: T | PromiseLike<T>) => void;
+  reject: (reason?: unknown) => void;
+}
+
+/**
+ * Creates a deferred promise that can be resolved or rejected externally.
+ * Useful for testing async behavior where you need to control when a promise settles.
+ *
+ * @example
+ * const deferred = createDeferredPromise<void>();
+ * const onSubmit = vi.fn().mockImplementation(() => deferred.promise);
+ * // ... trigger submission ...
+ * deferred.resolve(); // or deferred.reject(new Error('...'))
+ */
+export function createDeferredPromise<T = void>(): DeferredPromise<T> {
+  let resolve: (value: T | PromiseLike<T>) => void;
+  let reject: (reason?: unknown) => void;
+
+  const promise = new Promise<T>((res, rej) => {
+    resolve = res;
+    reject = rej;
+  });
+
+  return {
+    promise,
+    resolve: resolve!,
+    reject: reject!,
+  };
+}
+
+// Make it available globally for tests
+declare global {
+  // eslint-disable-next-line no-var
+  var createDeferredPromise: <T = void>() => DeferredPromise<T>;
+}
+
+globalThis.createDeferredPromise = createDeferredPromise;
+
 // Mock ResizeObserver for jsdom environment
 class ResizeObserverMock {
   callback: ResizeObserverCallback;
