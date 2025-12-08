@@ -1471,13 +1471,14 @@ export class SupabaseStorageService implements IStorageService {
     }
 
     try {
+      // Use 'in' operator to detect property presence, allowing null/undefined to clear fields
       const updatePayload: Record<string, unknown> = {};
-      if (updates.durationMinutes !== undefined) updatePayload.duration_minutes = updates.durationMinutes;
-      if (updates.tempoBpm !== undefined) updatePayload.tempo_bpm = updates.tempoBpm;
-      if (updates.sectionsPracticed !== undefined) updatePayload.sections_practiced = updates.sectionsPracticed;
-      if (updates.notes !== undefined) updatePayload.notes = updates.notes;
-      if (updates.date !== undefined) updatePayload.date = updates.date;
-      if (updates.songId !== undefined) updatePayload.song_id = updates.songId;
+      if ('durationMinutes' in updates) updatePayload.duration_minutes = updates.durationMinutes;
+      if ('tempoBpm' in updates) updatePayload.tempo_bpm = updates.tempoBpm ?? null;
+      if ('sectionsPracticed' in updates) updatePayload.sections_practiced = updates.sectionsPracticed ?? null;
+      if ('notes' in updates) updatePayload.notes = updates.notes ?? null;
+      if ('date' in updates) updatePayload.date = updates.date;
+      if ('songId' in updates) updatePayload.song_id = updates.songId;
 
       const { data, error } = await supabase
         .from('practice_sessions')

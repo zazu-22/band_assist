@@ -102,21 +102,31 @@ function formatDate(dateStr: string): string {
 }
 
 /**
- * Get date N days ago in YYYY-MM-DD format
+ * Format date to YYYY-MM-DD using local timezone
+ */
+function formatToDateString(date: Date): string {
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
+}
+
+/**
+ * Get date N days ago in YYYY-MM-DD format (local timezone)
  * @example getDateDaysAgo(30) // "2025-11-05" (if today is 2025-12-05)
  */
 function getDateDaysAgo(days: number): string {
   const date = new Date();
   date.setDate(date.getDate() - days);
-  return date.toISOString().split('T')[0];
+  return formatToDateString(date);
 }
 
 /**
- * Get today's date in YYYY-MM-DD format
+ * Get today's date in YYYY-MM-DD format (local timezone)
  * @example getTodayDate() // "2025-12-05"
  */
 function getTodayDate(): string {
-  return new Date().toISOString().split('T')[0];
+  return formatToDateString(new Date());
 }
 
 /**
@@ -264,12 +274,18 @@ export const PracticeHistory: React.FC<PracticeHistoryProps> = memo(function Pra
 
   const handleSubmitSession = useCallback(
     async (data: PracticeFormData) => {
-      if (editingSession) {
-        await updateSession(editingSession.id, data);
-        toast.success('Practice session updated');
-      } else {
-        await logSession(data);
-        toast.success('Practice session logged');
+      try {
+        if (editingSession) {
+          await updateSession(editingSession.id, data);
+          toast.success('Practice session updated');
+        } else {
+          await logSession(data);
+          toast.success('Practice session logged');
+        }
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'An error occurred';
+        toast.error(editingSession ? `Failed to update session: ${message}` : `Failed to log session: ${message}`);
+        throw err; // Re-throw so modal can handle it
       }
     },
     [editingSession, logSession, updateSession]

@@ -101,6 +101,10 @@ export function usePracticeSessions(
 
   const updateSession = useCallback(
     async (sessionId: string, updates: UpdatePracticeSessionInput): Promise<PracticeSession> => {
+      if (!userId || !bandId) {
+        throw new Error('User and band must be selected to update a practice session');
+      }
+
       const updated = await supabaseStorageService.updatePracticeSession(sessionId, updates);
 
       // Update local state
@@ -108,17 +112,21 @@ export function usePracticeSessions(
 
       return updated;
     },
-    []
+    [userId, bandId]
   );
 
   const deleteSession = useCallback(
     async (sessionId: string): Promise<void> => {
+      if (!userId || !bandId) {
+        throw new Error('User and band must be selected to delete a practice session');
+      }
+
       await supabaseStorageService.deletePracticeSession(sessionId);
 
       // Remove from local state
       setSessions(prev => prev.filter(s => s.id !== sessionId));
     },
-    []
+    [userId, bandId]
   );
 
   return {
