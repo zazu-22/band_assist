@@ -548,7 +548,7 @@ describe('PracticeHistory', () => {
       });
     });
 
-    it('should filter sessions when start date changed', async () => {
+    it('should filter sessions when start date changed and Apply Filters clicked', async () => {
       const user = userEvent.setup();
 
       mockUsePracticeSessions.mockReturnValue(createMockSessionsHook());
@@ -565,6 +565,10 @@ describe('PracticeHistory', () => {
       await user.clear(startDateInput);
       await user.type(startDateInput, '2025-11-01');
 
+      // Click Apply Filters button to apply the staged filter
+      const applyButton = screen.getByRole('button', { name: /apply filters/i });
+      await user.click(applyButton);
+
       // Verify hook was called with updated date
       await waitFor(() => {
         const lastCall = mockUsePracticeSessions.mock.calls[mockUsePracticeSessions.mock.calls.length - 1];
@@ -572,7 +576,7 @@ describe('PracticeHistory', () => {
       });
     });
 
-    it('should filter sessions when end date changed', async () => {
+    it('should filter sessions when end date changed and Apply Filters clicked', async () => {
       const user = userEvent.setup();
 
       mockUsePracticeSessions.mockReturnValue(createMockSessionsHook());
@@ -588,6 +592,10 @@ describe('PracticeHistory', () => {
       const endDateInput = screen.getByLabelText('End Date');
       await user.clear(endDateInput);
       await user.type(endDateInput, '2025-12-31');
+
+      // Click Apply Filters button to apply the staged filter
+      const applyButton = screen.getByRole('button', { name: /apply filters/i });
+      await user.click(applyButton);
 
       // Verify hook was called with updated date
       await waitFor(() => {

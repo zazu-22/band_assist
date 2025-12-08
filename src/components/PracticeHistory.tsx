@@ -12,6 +12,8 @@ import {
   Pencil,
   Trash2,
   MoreHorizontal,
+  Filter,
+  X,
 } from 'lucide-react';
 import {
   Card,
@@ -123,18 +125,32 @@ function getStatusVariant(status: UserSongStatus | undefined): BadgeVariant {
 // COMPONENT
 // =============================================================================
 
+// Default filter values
+const DEFAULT_FILTERS = {
+  songId: 'all' as string,
+  status: 'all' as StatusFilterValue,
+  startDate: getDateDaysAgo(30),
+  endDate: getTodayDateString(),
+};
+
 export const PracticeHistory: React.FC<PracticeHistoryProps> = memo(function PracticeHistory({
   songs,
   currentUserId,
   currentBandId,
 }) {
-  // Date range state - default to last 30 days
-  const [startDate, setStartDate] = useState(getDateDaysAgo(30));
-  const [endDate, setEndDate] = useState(getTodayDateString());
-  const [selectedSongId, setSelectedSongId] = useState<string>('all');
-  const [selectedStatus, setSelectedStatus] = useState<StatusFilterValue>('all');
+  // Staged filter state (UI edits these)
+  const [stagedSongId, setStagedSongId] = useState<string>(DEFAULT_FILTERS.songId);
+  const [stagedStatus, setStagedStatus] = useState<StatusFilterValue>(DEFAULT_FILTERS.status);
+  const [stagedStartDate, setStagedStartDate] = useState(DEFAULT_FILTERS.startDate);
+  const [stagedEndDate, setStagedEndDate] = useState(DEFAULT_FILTERS.endDate);
 
-  // Sort state
+  // Applied filter state (used for actual queries)
+  const [appliedSongId, setAppliedSongId] = useState<string>(DEFAULT_FILTERS.songId);
+  const [appliedStatus, setAppliedStatus] = useState<StatusFilterValue>(DEFAULT_FILTERS.status);
+  const [appliedStartDate, setAppliedStartDate] = useState(DEFAULT_FILTERS.startDate);
+  const [appliedEndDate, setAppliedEndDate] = useState(DEFAULT_FILTERS.endDate);
+
+  // Sort state (applies immediately, not staged)
   const [sortBy, setSortBy] = useState<PracticeSortField>('date');
   const [sortDirection, setSortDirection] = useState<SortDirection>('desc');
 
@@ -145,22 +161,42 @@ export const PracticeHistory: React.FC<PracticeHistoryProps> = memo(function Pra
   // Delete confirmation state
   const [deleteSessionId, setDeleteSessionId] = useState<string | null>(null);
 
-  // Memoize filters to prevent unnecessary refetches
+  // Memoize filters to prevent unnecessary refetches (uses applied state)
   const filters = useMemo<PracticeFilters>(
     () => ({
-      songId: selectedSongId === 'all' ? undefined : selectedSongId,
-      startDate,
-      endDate,
+      songId: appliedSongId === 'all' ? undefined : appliedSongId,
+      startDate: appliedStartDate,
+      endDate: appliedEndDate,
       sortBy,
       sortDirection,
     }),
-    [selectedSongId, startDate, endDate, sortBy, sortDirection]
+    [appliedSongId, appliedStartDate, appliedEndDate, sortBy, sortDirection]
   );
 
   const dateRange = useMemo(
-    () => ({ start: startDate, end: endDate }),
-    [startDate, endDate]
+    () => ({ start: appliedStartDate, end: appliedEndDate }),
+    [appliedStartDate, appliedEndDate]
   );
+
+  // Check if staged filters differ from applied filters
+  const hasUnappliedChanges = useMemo(() => {
+    return (
+      stagedSongId !== appliedSongId ||
+      stagedStatus !== appliedStatus ||
+      stagedStartDate !== appliedStartDate ||
+      stagedEndDate !== appliedEndDate
+    );
+  }, [stagedSongId, appliedSongId, stagedStatus, appliedStatus, stagedStartDate, appliedStartDate, stagedEndDate, appliedEndDate]);
+
+  // Check if filters are at default values
+  const isDefaultFilters = useMemo(() => {
+    return (
+      appliedSongId === DEFAULT_FILTERS.songId &&
+      appliedStatus === DEFAULT_FILTERS.status &&
+      appliedStartDate === DEFAULT_FILTERS.startDate &&
+      appliedEndDate === DEFAULT_FILTERS.endDate
+    );
+  }, [appliedSongId, appliedStatus, appliedStartDate, appliedEndDate]);
 
   // Fetch data using hooks
   const {
@@ -188,23 +224,44 @@ export const PracticeHistory: React.FC<PracticeHistoryProps> = memo(function Pra
     return new Map(songs.map(song => [song.id, song]));
   }, [songs]);
 
-  // Apply client-side status filter
+  // Apply client-side status filter (uses applied status)
   // Status is per-song (from user_song_status), so we filter sessions by their song's status
   const filteredSessions = useMemo(() => {
-    if (selectedStatus === 'all') {
+    if (appliedStatus === 'all') {
       return sessions;
     }
     return sessions.filter(session => {
       const songStatus = statuses.get(session.songId);
       // If no status exists, treat as 'Not Started'
       const effectiveStatus = songStatus?.status || 'Not Started';
-      return effectiveStatus === selectedStatus;
+      return effectiveStatus === appliedStatus;
     });
-  }, [sessions, statuses, selectedStatus]);
+  }, [sessions, statuses, appliedStatus]);
 
   // Combined loading state
   const isLoading = sessionsLoading || statsLoading || statusesLoading;
   const error = sessionsError || statsError;
+
+  // Filter handlers
+  const handleApplyFilters = useCallback(() => {
+    setAppliedSongId(stagedSongId);
+    setAppliedStatus(stagedStatus);
+    setAppliedStartDate(stagedStartDate);
+    setAppliedEndDate(stagedEndDate);
+  }, [stagedSongId, stagedStatus, stagedStartDate, stagedEndDate]);
+
+  const handleClearFilters = useCallback(() => {
+    // Reset staged to defaults
+    setStagedSongId(DEFAULT_FILTERS.songId);
+    setStagedStatus(DEFAULT_FILTERS.status);
+    setStagedStartDate(DEFAULT_FILTERS.startDate);
+    setStagedEndDate(DEFAULT_FILTERS.endDate);
+    // Reset applied to defaults
+    setAppliedSongId(DEFAULT_FILTERS.songId);
+    setAppliedStatus(DEFAULT_FILTERS.status);
+    setAppliedStartDate(DEFAULT_FILTERS.startDate);
+    setAppliedEndDate(DEFAULT_FILTERS.endDate);
+  }, []);
 
   // Sort column click handler
   const handleSortClick = useCallback((field: PracticeSortField) => {
@@ -374,13 +431,18 @@ export const PracticeHistory: React.FC<PracticeHistoryProps> = memo(function Pra
           <Card className="mb-6">
             <CardHeader>
               <CardTitle>Filters</CardTitle>
+              {hasUnappliedChanges && (
+                <CardDescription className="text-warning">
+                  You have unapplied filter changes
+                </CardDescription>
+              )}
             </CardHeader>
-            <CardContent>
+            <CardContent className="space-y-4">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {/* Song Filter */}
                 <div className="space-y-2">
                   <Label htmlFor="song-filter">Song</Label>
-                  <Select value={selectedSongId} onValueChange={setSelectedSongId}>
+                  <Select value={stagedSongId} onValueChange={setStagedSongId}>
                     <SelectTrigger id="song-filter">
                       <SelectValue placeholder="All Songs" />
                     </SelectTrigger>
@@ -398,7 +460,7 @@ export const PracticeHistory: React.FC<PracticeHistoryProps> = memo(function Pra
                 {/* Status Filter */}
                 <div className="space-y-2">
                   <Label htmlFor="status-filter">Status</Label>
-                  <Select value={selectedStatus} onValueChange={(value) => setSelectedStatus(value as StatusFilterValue)}>
+                  <Select value={stagedStatus} onValueChange={(value) => setStagedStatus(value as StatusFilterValue)}>
                     <SelectTrigger id="status-filter">
                       <SelectValue placeholder="All Statuses" />
                     </SelectTrigger>
@@ -418,8 +480,8 @@ export const PracticeHistory: React.FC<PracticeHistoryProps> = memo(function Pra
                   <Input
                     id="start-date"
                     type="date"
-                    value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
+                    value={stagedStartDate}
+                    onChange={(e) => setStagedStartDate(e.target.value)}
                   />
                 </div>
 
@@ -429,10 +491,31 @@ export const PracticeHistory: React.FC<PracticeHistoryProps> = memo(function Pra
                   <Input
                     id="end-date"
                     type="date"
-                    value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
+                    value={stagedEndDate}
+                    onChange={(e) => setStagedEndDate(e.target.value)}
                   />
                 </div>
+              </div>
+
+              {/* Filter Actions */}
+              <div className="flex flex-wrap gap-2 pt-2">
+                <Button
+                  onClick={handleApplyFilters}
+                  disabled={!hasUnappliedChanges}
+                  size="sm"
+                >
+                  <Filter className="mr-2 h-4 w-4" />
+                  Apply Filters
+                </Button>
+                <Button
+                  variant="outline"
+                  onClick={handleClearFilters}
+                  disabled={isDefaultFilters && !hasUnappliedChanges}
+                  size="sm"
+                >
+                  <X className="mr-2 h-4 w-4" />
+                  Clear Filters
+                </Button>
               </div>
             </CardContent>
           </Card>
