@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Outlet } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useIsDesktop } from '@/hooks/useMediaQuery';
@@ -52,7 +53,7 @@ function SkipLink() {
  * @param onCreateBand - Optional callback invoked to initiate creating a new band.
  * @returns A React element rendering the application shell with navigation and the main content region.
  */
-export function AppShell({
+export const AppShell = memo(function AppShell({
   onLogout,
   showLogout = false,
   currentBandName,
@@ -108,4 +109,6 @@ export function AppShell({
       </div>
     </TooltipProvider>
   );
-}
+});
+
+AppShell.displayName = 'AppShell';

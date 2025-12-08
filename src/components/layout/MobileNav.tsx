@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { memo, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Menu } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -30,7 +30,7 @@ interface MobileNavProps {
  * @param onCreateBand - Optional callback invoked to create a new band from the sidebar.
  * @returns The mobile navigation header element containing the menu trigger, band/page labels, and theme toggle.
  */
-export function MobileNav({
+export const MobileNav = memo(function MobileNav({
   onLogout,
   showLogout = false,
   currentBandName,
@@ -105,4 +105,6 @@ export function MobileNav({
       </div>
     </>
   );
-}
+});
+
+MobileNav.displayName = 'MobileNav';
