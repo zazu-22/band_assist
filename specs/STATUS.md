@@ -21,7 +21,7 @@
 | 🟢 Done | 16 | Completed and merged |
 | 🟡 Pending | 1 | Queued for implementation (in sequence order) |
 | ⚪ Backlog | 16 | Planned but not yet prioritized |
-| 🔵 GitHub Issues | 4 | Tracked in GitHub (bugs, smaller features) |
+| 🔵 GitHub Issues | 5 | Tracked in GitHub (bugs, smaller features) |
 
 ---
 
@@ -41,7 +41,7 @@ Specs queued for implementation **in priority order**. Work through these sequen
 
 ---
 
-## 🔵 GitHub Issues (4 open)
+## 🔵 GitHub Issues (5 open)
 
 Smaller features, bug fixes, and follow-up work tracked in GitHub rather than full specs.
 
@@ -65,7 +65,8 @@ Smaller features, bug fixes, and follow-up work tracked in GitHub rather than fu
 |---|-------|--------|--------------|
 | [#124](https://github.com/zazu-22/band_assist/issues/124) | Band management UI (parent tracking) | - | Close after #128 |
 | [#127](https://github.com/zazu-22/band_assist/issues/127) | Enhanced band selector with creation flow | Medium | ✅ Closed |
-| [#128](https://github.com/zazu-22/band_assist/issues/128) | Band settings/management UI | Medium | Ready (deps complete) |
+| [#141](https://github.com/zazu-22/band_assist/issues/141) | Fix band selection persistence & auto-save race condition | Medium | **Blocks PR #139** |
+| [#128](https://github.com/zazu-22/band_assist/issues/128) | Band settings/management UI | Medium | Blocked by #141 |
 
 ### Standalone Enhancements
 
@@ -149,6 +150,8 @@ Smaller features, bug fixes, and follow-up work tracked in GitHub rather than fu
 
 | Date | Item | Change |
 |------|------|--------|
+| 2025-12-08 | [#141](https://github.com/zazu-22/band_assist/issues/141) Auto-save race condition | ➕ Created (blocks PR #139, #128 depends on it) |
+| 2025-12-08 | PR #139 | ⚠️ Blocked pending #141 resolution (data corruption discovered) |
 | 2025-12-08 | [#127](https://github.com/zazu-22/band_assist/issues/127) Enhanced band selector | ✅ Closed (merged in PR #139) |
 | 2025-12-08 | [#125](https://github.com/zazu-22/band_assist/issues/125), [#126](https://github.com/zazu-22/band_assist/issues/126) | ✅ Closed (merged in PR #135) |
 | 2025-12-07 | [#107](https://github.com/zazu-22/band_assist/issues/107) Song file naming | ✅ Closed (merged in PR #132) |
@@ -207,7 +210,8 @@ infra-test-environment-setup (backlog)
 
 #121 (virtualization) ─── ready (deps complete)
 
-#128 (band settings) ──► #124 (close parent)
+#141 (auto-save race condition) ──► blocks PR #139
+    └── #128 (band settings) ──► #124 (close parent)
 
 #101 (mobile iOS) ─── standalone, large scope
 ```
@@ -233,12 +237,13 @@ Recommended order considering dependencies and effort:
 | 4 | [#126](https://github.com/zazu-22/band_assist/issues/126) Filtering & sorting | Issue | ✅ Closed (PR #135) |
 | 5 | [#121](https://github.com/zazu-22/band_assist/issues/121) Virtualize table | Issue | Ready - deps complete |
 
-### Phase 3: Band Management (In Progress)
+### Phase 3: Band Management (In Progress - Blocked)
 
 | Order | Item | Type | Rationale |
 |-------|------|------|-----------|
-| 6 | [#127](https://github.com/zazu-22/band_assist/issues/127) Band selector | Issue | ✅ Closed (PR #139) |
-| 7 | [#128](https://github.com/zazu-22/band_assist/issues/128) Band settings | Issue | Completes band management |
+| 6 | [#127](https://github.com/zazu-22/band_assist/issues/127) Band selector | Issue | ✅ Closed (PR #139 blocked) |
+| 6a | [#141](https://github.com/zazu-22/band_assist/issues/141) Fix auto-save race condition | Issue | ⚠️ **Blocks PR #139 merge** |
+| 7 | [#128](https://github.com/zazu-22/band_assist/issues/128) Band settings | Issue | Blocked by #141 |
 | 8 | Close [#124](https://github.com/zazu-22/band_assist/issues/124) | Issue | Parent tracking issue done |
 
 ### Phase 4: Larger Efforts
@@ -252,8 +257,10 @@ Recommended order considering dependencies and effort:
 
 These can run concurrently with minimal conflict:
 
-- **#128** (band settings) — ready to start, #127 complete
+- **#141** (auto-save race condition) — **high priority**, blocks PR #139 merge
 - **#101** (mobile) can run in parallel with Phase 3/4 if resources allow
+
+> ⚠️ **Note:** #128 (band settings) is blocked until #141 is resolved.
 
 ---
 
