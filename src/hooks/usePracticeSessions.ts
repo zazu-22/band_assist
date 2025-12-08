@@ -91,12 +91,12 @@ export function usePracticeSessions(
         ...input,
       });
 
-      // Add to local state at the beginning (assuming date DESC sort by default)
-      setSessions(prev => [session, ...prev]);
+      // Refetch to ensure correct ordering based on current sort settings
+      await load();
 
       return session;
     },
-    [userId, bandId]
+    [userId, bandId, load]
   );
 
   const updateSession = useCallback(
@@ -105,14 +105,14 @@ export function usePracticeSessions(
         throw new Error('User and band must be selected to update a practice session');
       }
 
-      const updated = await supabaseStorageService.updatePracticeSession(sessionId, updates);
+      const updated = await supabaseStorageService.updatePracticeSession(sessionId, userId, updates);
 
-      // Update local state
-      setSessions(prev => prev.map(s => (s.id === sessionId ? updated : s)));
+      // Refetch to ensure correct ordering if date changed
+      await load();
 
       return updated;
     },
-    [userId, bandId]
+    [userId, bandId, load]
   );
 
   const deleteSession = useCallback(
@@ -121,12 +121,12 @@ export function usePracticeSessions(
         throw new Error('User and band must be selected to delete a practice session');
       }
 
-      await supabaseStorageService.deletePracticeSession(sessionId);
+      await supabaseStorageService.deletePracticeSession(sessionId, userId);
 
-      // Remove from local state
-      setSessions(prev => prev.filter(s => s.id !== sessionId));
+      // Refetch to update the list
+      await load();
     },
-    [userId, bandId]
+    [userId, bandId, load]
   );
 
   return {

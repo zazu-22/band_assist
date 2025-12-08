@@ -45,6 +45,7 @@ import type { PracticeFormData } from '@/components/ui';
 import { usePracticeSessions } from '@/hooks/usePracticeSessions';
 import { usePracticeStats } from '@/hooks/usePracticeStats';
 import { useAllUserSongStatuses } from '@/hooks/useUserSongStatus';
+import { getTodayDateString, getDateDaysAgo } from '@/lib/dateUtils';
 import type { Song, PracticeFilters, UserSongStatus, PracticeSortField, SortDirection, PracticeSession } from '@/types';
 
 // =============================================================================
@@ -101,33 +102,6 @@ function formatDate(dateStr: string): string {
   });
 }
 
-/**
- * Format date to YYYY-MM-DD using local timezone
- */
-function formatToDateString(date: Date): string {
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
-
-/**
- * Get date N days ago in YYYY-MM-DD format (local timezone)
- * @example getDateDaysAgo(30) // "2025-11-05" (if today is 2025-12-05)
- */
-function getDateDaysAgo(days: number): string {
-  const date = new Date();
-  date.setDate(date.getDate() - days);
-  return formatToDateString(date);
-}
-
-/**
- * Get today's date in YYYY-MM-DD format (local timezone)
- * @example getTodayDate() // "2025-12-05"
- */
-function getTodayDate(): string {
-  return formatToDateString(new Date());
-}
 
 /**
  * Map UserSongStatus to Badge variant
@@ -156,7 +130,7 @@ export const PracticeHistory: React.FC<PracticeHistoryProps> = memo(function Pra
 }) {
   // Date range state - default to last 30 days
   const [startDate, setStartDate] = useState(getDateDaysAgo(30));
-  const [endDate, setEndDate] = useState(getTodayDate());
+  const [endDate, setEndDate] = useState(getTodayDateString());
   const [selectedSongId, setSelectedSongId] = useState<string>('all');
   const [selectedStatus, setSelectedStatus] = useState<StatusFilterValue>('all');
 

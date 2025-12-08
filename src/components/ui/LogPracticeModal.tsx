@@ -16,6 +16,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/primitives';
+import { getTodayDateString } from '@/lib/dateUtils';
 import type { Song, PracticeSession } from '@/types';
 
 // =============================================================================
@@ -41,22 +42,6 @@ export interface PracticeFormData {
 }
 
 // =============================================================================
-// HELPER FUNCTIONS
-/**
- * Get today's date in YYYY-MM-DD format.
- *
- * @returns Today's date as a string in `YYYY-MM-DD` format.
- */
-
-function getTodayDate(): string {
-  const date = new Date();
-  const year = date.getFullYear();
-  const month = String(date.getMonth() + 1).padStart(2, '0');
-  const day = String(date.getDate()).padStart(2, '0');
-  return `${year}-${month}-${day}`;
-}
-
-// =============================================================================
 // COMPONENT
 // =============================================================================
 
@@ -71,7 +56,7 @@ export const LogPracticeModal: React.FC<LogPracticeModalProps> = memo(function L
 
   // Form state
   const [songId, setSongId] = useState('');
-  const [date, setDate] = useState(getTodayDate());
+  const [date, setDate] = useState(getTodayDateString());
   const [durationMinutes, setDurationMinutes] = useState('30');
   const [tempoBpm, setTempoBpm] = useState('');
   const [sections, setSections] = useState('');
@@ -92,7 +77,7 @@ export const LogPracticeModal: React.FC<LogPracticeModalProps> = memo(function L
       } else {
         // Reset to defaults for new session
         setSongId(songs.length === 1 ? songs[0].id : '');
-        setDate(getTodayDate());
+        setDate(getTodayDateString());
         setDurationMinutes('30');
         setTempoBpm('');
         setSections('');
@@ -126,6 +111,10 @@ export const LogPracticeModal: React.FC<LogPracticeModalProps> = memo(function L
         setError('Duration must be greater than 0 minutes');
         return;
       }
+      if (duration > 480) {
+        setError('Duration cannot exceed 480 minutes (8 hours)');
+        return;
+      }
 
       if (!date) {
         setError('Please select a date');
@@ -138,6 +127,10 @@ export const LogPracticeModal: React.FC<LogPracticeModalProps> = memo(function L
         tempo = parseInt(tempoBpm, 10);
         if (isNaN(tempo) || tempo <= 0) {
           setError('Tempo must be a positive number');
+          return;
+        }
+        if (tempo > 300) {
+          setError('Tempo cannot exceed 300 BPM');
           return;
         }
       }
@@ -226,7 +219,7 @@ export const LogPracticeModal: React.FC<LogPracticeModalProps> = memo(function L
               type="date"
               value={date}
               onChange={(e) => setDate(e.target.value)}
-              max={getTodayDate()}
+              max={getTodayDateString()}
             />
           </div>
 
@@ -237,6 +230,7 @@ export const LogPracticeModal: React.FC<LogPracticeModalProps> = memo(function L
               id="duration"
               type="number"
               min="1"
+              max="480"
               value={durationMinutes}
               onChange={(e) => setDurationMinutes(e.target.value)}
               placeholder="30"
@@ -250,6 +244,7 @@ export const LogPracticeModal: React.FC<LogPracticeModalProps> = memo(function L
               id="tempo"
               type="number"
               min="1"
+              max="300"
               value={tempoBpm}
               onChange={(e) => setTempoBpm(e.target.value)}
               placeholder="120"

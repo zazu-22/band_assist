@@ -1454,6 +1454,7 @@ export class SupabaseStorageService implements IStorageService {
    */
   async updatePracticeSession(
     sessionId: string,
+    userId: string,
     updates: Partial<Pick<PracticeSession, 'durationMinutes' | 'tempoBpm' | 'sectionsPracticed' | 'notes' | 'date' | 'songId'>>
   ): Promise<PracticeSession> {
     const supabase = getSupabaseClient();
@@ -1484,7 +1485,8 @@ export class SupabaseStorageService implements IStorageService {
         .from('practice_sessions')
         .update(updatePayload)
         .eq('id', sessionId)
-        .eq('band_id', this.currentBandId) // Ensure RLS compliance
+        .eq('band_id', this.currentBandId)
+        .eq('user_id', userId) // Ensure user can only update their own sessions
         .select()
         .single();
 
@@ -1508,7 +1510,7 @@ export class SupabaseStorageService implements IStorageService {
    * Delete a practice session
    * @throws Error if session not found or deletion fails
    */
-  async deletePracticeSession(sessionId: string): Promise<void> {
+  async deletePracticeSession(sessionId: string, userId: string): Promise<void> {
     const supabase = getSupabaseClient();
     if (!supabase) {
       throw new Error('Supabase is not configured. Check environment variables.');
@@ -1523,7 +1525,8 @@ export class SupabaseStorageService implements IStorageService {
         .from('practice_sessions')
         .delete()
         .eq('id', sessionId)
-        .eq('band_id', this.currentBandId); // Ensure RLS compliance
+        .eq('band_id', this.currentBandId)
+        .eq('user_id', userId); // Ensure user can only delete their own sessions
 
       if (error) {
         console.error('Error deleting practice session:', error);
