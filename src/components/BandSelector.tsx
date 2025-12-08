@@ -58,7 +58,10 @@ export const BandSelector: React.FC<BandSelectorProps> = memo(function BandSelec
   }, []);
 
   // Subtitle text based on band count
-  const subtitleText = bands.length === 1 ? 'Current Band' : `${bands.length} bands`;
+  const subtitleText = useMemo(
+    () => (bands.length === 1 ? 'Current Band' : `${bands.length} bands`),
+    [bands.length]
+  );
 
   return (
     <DropdownMenu open={isOpen} onOpenChange={handleOpenChange}>

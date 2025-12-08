@@ -318,6 +318,67 @@ describe('CreateBandDialog', () => {
     });
   });
 
+  describe('keyboard interaction', () => {
+    it('should submit form when pressing Enter in input field', async () => {
+      const user = userEvent.setup();
+      const onSubmit = vi.fn().mockResolvedValue(undefined);
+      render(<CreateBandDialog {...defaultProps} onSubmit={onSubmit} />);
+
+      const input = screen.getByLabelText(/band name/i);
+      await user.type(input, 'Test Band{enter}');
+
+      await waitFor(() => {
+        expect(onSubmit).toHaveBeenCalledWith('Test Band');
+      });
+    });
+
+    it('should not submit when pressing Enter with empty input', async () => {
+      const user = userEvent.setup();
+      const onSubmit = vi.fn().mockResolvedValue(undefined);
+      render(<CreateBandDialog {...defaultProps} onSubmit={onSubmit} />);
+
+      const input = screen.getByLabelText(/band name/i);
+      await user.type(input, '{enter}');
+
+      expect(onSubmit).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('character validation', () => {
+    it('should show error for invalid characters', async () => {
+      const user = userEvent.setup();
+      const onSubmit = vi.fn().mockResolvedValue(undefined);
+      render(<CreateBandDialog {...defaultProps} onSubmit={onSubmit} />);
+
+      const input = screen.getByLabelText(/band name/i);
+      await user.type(input, 'Test<script>');
+
+      const submitButton = screen.getByRole('button', { name: /create band/i });
+      await user.click(submitButton);
+
+      await waitFor(() => {
+        expect(screen.getByText('Band name contains invalid characters')).toBeInTheDocument();
+      });
+      expect(onSubmit).not.toHaveBeenCalled();
+    });
+
+    it('should allow valid special characters', async () => {
+      const user = userEvent.setup();
+      const onSubmit = vi.fn().mockResolvedValue(undefined);
+      render(<CreateBandDialog {...defaultProps} onSubmit={onSubmit} />);
+
+      const input = screen.getByLabelText(/band name/i);
+      await user.type(input, "The Band's #1 Hit!");
+
+      const submitButton = screen.getByRole('button', { name: /create band/i });
+      await user.click(submitButton);
+
+      await waitFor(() => {
+        expect(onSubmit).toHaveBeenCalledWith("The Band's #1 Hit!");
+      });
+    });
+  });
+
   describe('displayName', () => {
     it('should have displayName set', () => {
       expect(CreateBandDialog.displayName).toBe('CreateBandDialog');

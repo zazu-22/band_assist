@@ -19,6 +19,10 @@ import {
 const MAX_BAND_NAME_LENGTH = 100;
 const MIN_BAND_NAME_LENGTH = 1;
 
+// Allow letters, numbers, spaces, and common punctuation for band names
+// Disallow: < > { } [ ] \ | ^ ` and control characters
+const BAND_NAME_PATTERN = /^[a-zA-Z0-9\s\-_'".!?&@#$%*()+=,;:/]+$/;
+
 // =============================================================================
 // TYPES
 // =============================================================================
@@ -84,6 +88,11 @@ export const CreateBandDialog: React.FC<CreateBandDialogProps> = memo(function C
 
       if (trimmedName.length > MAX_BAND_NAME_LENGTH) {
         setError(`Band name cannot exceed ${MAX_BAND_NAME_LENGTH} characters`);
+        return;
+      }
+
+      if (!BAND_NAME_PATTERN.test(trimmedName)) {
+        setError('Band name contains invalid characters');
         return;
       }
 

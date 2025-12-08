@@ -187,6 +187,9 @@ const App: React.FC = () => {
   // Ref to store auth subscription unsubscribe function
   const authUnsubscribeRef = useRef<(() => void) | null>(null);
 
+  // Ref to prevent race conditions during band creation
+  const isCreatingBandRef = useRef(false);
+
   // -- State Initialization --
   const [songs, setSongs] = useState<Song[]>([]);
   const [members, setMembers] = useState<BandMember[]>([]);
@@ -684,6 +687,11 @@ const App: React.FC = () => {
   }, []);
 
   const handleCreateBand = async (bandName: string) => {
+    // Prevent concurrent band creation attempts
+    if (isCreatingBandRef.current) {
+      return;
+    }
+
     if (!session) {
       throw new Error('You must be logged in to create a band');
     }
@@ -693,66 +701,81 @@ const App: React.FC = () => {
       throw new Error('Database connection unavailable');
     }
 
-    // Create the new band
-    const { data: newBand, error: createError } = await supabase
-      .from('bands')
-      .insert({
-        name: bandName,
-        created_by: session.user.id,
-      })
-      .select()
-      .single();
+    isCreatingBandRef.current = true;
 
-    if (createError || !newBand) {
-      console.error('Error creating band:', createError);
-      throw new Error(createError?.message || 'Failed to create band');
-    }
-
-    // Add user to the band as admin
-    const { error: joinError } = await supabase
-      .from('user_bands')
-      .insert({
-        user_id: session.user.id,
-        band_id: newBand.id,
-        role: 'admin',
-      } as never);
-
-    if (joinError) {
-      console.error('Error joining band:', joinError);
-      // Try to clean up the band we just created
-      await supabase.from('bands').delete().eq('id', newBand.id);
-      throw new Error('Failed to join the new band');
-    }
-
-    // Update local state with new band
-    const newBandEntry = { id: newBand.id, name: newBand.name };
-    setUserBands(prev => [...prev, newBandEntry]);
-
-    // Switch to the new band
-    currentBandIdRef.current = newBand.id;
-    setCurrentBandId(newBand.id);
-    setCurrentBandName(newBand.name);
-    setIsAdmin(true); // Creator is always admin
-
-    // Update storage service context
-    StorageService.setCurrentBand?.(newBand.id);
-
-    // Reload data for the new band (will be empty initially)
-    setIsLoading(true);
     try {
-      const data = await StorageService.load();
-      const appData = withDefaults(data);
-      setSongs(appData.songs);
-      setMembers(appData.members);
-      setAvailableRoles(appData.roles);
-      setEvents(appData.events);
-    } catch (error) {
-      console.error('Error loading new band data:', error);
-    } finally {
-      setIsLoading(false);
-    }
+      // Create the new band
+      const { data: newBand, error: createError } = await supabase
+        .from('bands')
+        .insert({
+          name: bandName,
+          created_by: session.user.id,
+        })
+        .select()
+        .single();
 
-    toast.success(`Created "${bandName}" successfully!`);
+      if (createError || !newBand) {
+        console.error('Error creating band:', createError);
+        throw new Error(createError?.message || 'Failed to create band');
+      }
+
+      // Add user to the band as admin
+      const { error: joinError } = await supabase
+        .from('user_bands')
+        .insert({
+          user_id: session.user.id,
+          band_id: newBand.id,
+          role: 'admin',
+        });
+
+      if (joinError) {
+        console.error('Error joining band:', joinError);
+        // Try to clean up the band we just created
+        const { error: cleanupError } = await supabase
+          .from('bands')
+          .delete()
+          .eq('id', newBand.id);
+
+        if (cleanupError) {
+          console.error('Failed to cleanup orphaned band:', cleanupError);
+        }
+
+        throw new Error('Failed to join the new band');
+      }
+
+      // Update local state with new band
+      const newBandEntry = { id: newBand.id, name: newBand.name };
+      setUserBands(prev => [...prev, newBandEntry]);
+
+      // Switch to the new band
+      currentBandIdRef.current = newBand.id;
+      setCurrentBandId(newBand.id);
+      setCurrentBandName(newBand.name);
+      setIsAdmin(true); // Creator is always admin
+
+      // Update storage service context
+      StorageService.setCurrentBand?.(newBand.id);
+
+      // Reload data for the new band (will be empty initially)
+      setIsLoading(true);
+      try {
+        const data = await StorageService.load();
+        const appData = withDefaults(data);
+        setSongs(appData.songs);
+        setMembers(appData.members);
+        setAvailableRoles(appData.roles);
+        setEvents(appData.events);
+        toast.success(`Created "${bandName}" successfully!`);
+      } catch (loadError) {
+        console.error('Error loading new band data:', loadError);
+        // Band was created successfully, but data load failed
+        toast.success(`Created "${bandName}"! Some data may need to refresh.`);
+      } finally {
+        setIsLoading(false);
+      }
+    } finally {
+      isCreatingBandRef.current = false;
+    }
   };
 
   const handleSelectBand = async (bandId: string) => {
