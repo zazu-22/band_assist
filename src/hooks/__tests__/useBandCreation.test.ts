@@ -410,10 +410,15 @@ describe('useBandCreation', () => {
         await result.current.createBand('Test Band');
       });
 
-      // Should not update songs/members since band changed
-      // (The check happens after StorageService.load returns)
-      // setCurrentBandId is called before load, so it will be called
+      // setCurrentBandId is called before load starts
       expect(mockSetCurrentBandId).toHaveBeenCalledWith(mockBandId);
+
+      // These setters should NOT be called because band changed during load
+      // and the hook returns early on line 161-163
+      expect(mockSetSongs).not.toHaveBeenCalled();
+      expect(mockSetMembers).not.toHaveBeenCalled();
+      expect(mockSetAvailableRoles).not.toHaveBeenCalled();
+      expect(mockSetEvents).not.toHaveBeenCalled();
     });
   });
 });

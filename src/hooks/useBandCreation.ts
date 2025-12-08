@@ -112,7 +112,7 @@ export function useBandCreation({
         type CreateBandResult = { band_id: string; band_name: string; created_at: string };
         const { data: rpcResult, error: createError } = await supabase.rpc(
           'create_band_with_admin' as never,
-          { p_band_name: bandName } as never
+          { p_band_name: trimmedName } as never
         ) as { data: CreateBandResult[] | null; error: { message: string } | null };
 
         if (createError) {
@@ -171,7 +171,7 @@ export function useBandCreation({
           // Track which band this data belongs to (Layer 3)
           loadedBandIdRef.current = newBand.band_id;
 
-          toast.success(`Created "${bandName}" successfully!`);
+          toast.success(`Created "${trimmedName}" successfully!`);
         } catch (loadError) {
           console.error('Error loading new band data:', loadError);
           // Reset to defaults to avoid leaking previous band's data
@@ -183,7 +183,7 @@ export function useBandCreation({
           // Track the band even on error (defaults are still for this band)
           loadedBandIdRef.current = newBand.band_id;
 
-          toast.success(`Created "${bandName}"! Some data may need to refresh.`);
+          toast.success(`Created "${trimmedName}"! Some data may need to refresh.`);
         } finally {
           setIsLoading(false);
           // Clear loading guard only after load completes
