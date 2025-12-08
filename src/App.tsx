@@ -63,9 +63,6 @@ export { useAppContext } from './contexts';
 // Import hooks for internal use in route components
 import { useAppActions, useAppData } from './contexts';
 
-// LocalStorage key for persisting selected band (module-level to avoid recreation)
-const SELECTED_BAND_STORAGE_KEY = 'band-assist-selected-band';
-
 /**
  * Route wrapper component for SongDetail.
  * Extracts songId from URL params and connects to AppContext.
@@ -192,9 +189,6 @@ const App: React.FC = () => {
 
   // Ref to prevent race conditions during band creation
   const isCreatingBandRef = useRef(false);
-
-  // Ref to track manual band switches - prevents loadData effect from running concurrently
-  const isManualBandSwitchRef = useRef(false);
 
   // -- State Initialization --
   const [songs, setSongs] = useState<Song[]>([]);
@@ -385,7 +379,7 @@ const App: React.FC = () => {
           return;
         }
 
-        // If user has bands, use previously selected or first one
+        // If user has bands, use the first one
         if (userBandsData && userBandsData.length > 0) {
           const bands = userBandsData
             .filter(ub => ub.bands !== null)
@@ -403,27 +397,17 @@ const App: React.FC = () => {
 
           if (cancelled) return;
 
-          // Check localStorage for previously selected band
-          const savedBandId = localStorage.getItem(SELECTED_BAND_STORAGE_KEY);
-          const savedBand = savedBandId ? bands.find(b => b.id === savedBandId) : null;
-
-          // Use saved band if valid, otherwise default to first band
-          const selectedBand = savedBand || bands[0];
-          const selectedBandData = userBandsData.find(ub => ub.band_id === selectedBand.id);
-
           setUserBands(bands);
-          setCurrentBandId(selectedBand.id);
-          setCurrentBandName(selectedBand.name);
-
-          // Persist selection (in case we fell back to first band)
-          localStorage.setItem(SELECTED_BAND_STORAGE_KEY, selectedBand.id);
+          setCurrentBandId(bands[0].id);
+          setCurrentBandName(bands[0].name);
 
           // Fetch user's role in this band
-          const userRole = selectedBandData?.role || 'member';
+          const firstBandData = userBandsData[0];
+          const userRole = firstBandData.role || 'member';
           setIsAdmin(userRole === 'admin');
 
           // Set band context in storage service
-          StorageService.setCurrentBand?.(selectedBand.id);
+          StorageService.setCurrentBand?.(bands[0].id);
         } else {
           // No bands found - create a new one for this user
           const { data: newBand, error: createError } = await supabase
@@ -495,9 +479,6 @@ const App: React.FC = () => {
 
     // If using Supabase, wait for band to be set
     if (isSupabaseConfigured() && session && !currentBandId) return;
-
-    // Skip if a manual band switch is in progress (handleSelectBand/handleCreateBand handles loading)
-    if (isManualBandSwitchRef.current) return;
 
     // Cancellation flag to prevent race conditions
     let isCancelled = false;
@@ -759,24 +740,18 @@ const App: React.FC = () => {
           console.error('Failed to cleanup orphaned band:', cleanupError);
         }
 
-        throw new Error(`Failed to join the new band: ${joinError.message}`);
+        throw new Error('Failed to join the new band');
       }
 
       // Update local state with new band
       const newBandEntry = { id: newBand.id, name: newBand.name };
       setUserBands(prev => [...prev, newBandEntry]);
 
-      // Mark manual switch in progress to prevent loadData effect from running
-      isManualBandSwitchRef.current = true;
-
       // Switch to the new band
       currentBandIdRef.current = newBand.id;
       setCurrentBandId(newBand.id);
       setCurrentBandName(newBand.name);
       setIsAdmin(true); // Creator is always admin
-
-      // Persist band selection to localStorage
-      localStorage.setItem(SELECTED_BAND_STORAGE_KEY, newBand.id);
 
       // Update storage service context
       StorageService.setCurrentBand?.(newBand.id);
@@ -809,14 +784,12 @@ const App: React.FC = () => {
         setMembers(DEFAULT_MEMBERS);
         setAvailableRoles(DEFAULT_ROLES);
         setEvents(DEFAULT_EVENTS);
-        toast.warning(`Created "${bandName}", but some data may need to refresh.`);
+        toast.success(`Created "${bandName}"! Some data may need to refresh.`);
       } finally {
         setIsLoading(false);
       }
     } finally {
       isCreatingBandRef.current = false;
-      // Clear manual switch flag so future effect runs can load
-      isManualBandSwitchRef.current = false;
     }
   };
 
@@ -824,16 +797,10 @@ const App: React.FC = () => {
     const selectedBand = userBands.find(b => b.id === bandId);
     if (!selectedBand) return;
 
-    // Mark manual switch in progress to prevent loadData effect from running
-    isManualBandSwitchRef.current = true;
-
     // Update ref BEFORE state to prevent race conditions
     currentBandIdRef.current = bandId;
     setCurrentBandId(bandId);
     setCurrentBandName(selectedBand.name);
-
-    // Persist band selection to localStorage
-    localStorage.setItem(SELECTED_BAND_STORAGE_KEY, bandId);
 
     // Update storage service context
     StorageService.setCurrentBand?.(bandId);
@@ -882,8 +849,6 @@ const App: React.FC = () => {
       if (currentBandIdRef.current === bandId) {
         setIsLoading(false);
       }
-      // Clear manual switch flag so future effect runs can load
-      isManualBandSwitchRef.current = false;
     }
   };
 
