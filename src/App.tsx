@@ -50,6 +50,7 @@ import {
   withDefaults,
 } from './constants';
 import { StorageService } from './services/storageService';
+import { STORAGE_KEYS } from './services/localStorageService';
 import { getSupabaseClient, isSupabaseConfigured } from './services/supabaseClient';
 import { ROUTES, getSongDetailRoute } from './routes';
 import { useLayoutShortcuts } from './hooks/useLayoutShortcuts';
@@ -214,6 +215,12 @@ const App: React.FC = () => {
   const pendingSaveRef = useRef<SaveData | null>(null);
   /** Ref to track in-progress saves, preventing concurrent save operations */
   const isSavingRef = useRef(false);
+
+  /** Guards auto-save during band switch operations (Layer 2) */
+  const isLoadingBandRef = useRef(false);
+
+  /** Band ID at time of last data load - final integrity check (Layer 3) */
+  const loadedBandIdRef = useRef<string | null>(null);
 
   // Keep ref in sync with currentBandId state
   useEffect(() => {
@@ -398,16 +405,33 @@ const App: React.FC = () => {
           if (cancelled) return;
 
           setUserBands(bands);
-          setCurrentBandId(bands[0].id);
-          setCurrentBandName(bands[0].name);
+
+          // Check localStorage for previously selected band
+          let selectedBand = bands[0];
+          let selectedBandData = userBandsData[0];
+          try {
+            const savedBandId = localStorage.getItem(STORAGE_KEYS.SELECTED_BAND);
+            if (savedBandId) {
+              const savedBandIndex = bands.findIndex(b => b.id === savedBandId);
+              if (savedBandIndex !== -1) {
+                selectedBand = bands[savedBandIndex];
+                selectedBandData = userBandsData[savedBandIndex];
+              }
+            }
+          } catch {
+            // localStorage unavailable, use first band
+          }
+
+          setCurrentBandId(selectedBand.id);
+          setCurrentBandName(selectedBand.name);
+          loadedBandIdRef.current = selectedBand.id;
 
           // Fetch user's role in this band
-          const firstBandData = userBandsData[0];
-          const userRole = firstBandData.role || 'member';
+          const userRole = selectedBandData.role || 'member';
           setIsAdmin(userRole === 'admin');
 
           // Set band context in storage service
-          StorageService.setCurrentBand?.(bands[0].id);
+          StorageService.setCurrentBand?.(selectedBand.id);
         } else {
           // No bands found - create a new one for this user
           const { data: newBand, error: createError } = await supabase
@@ -449,9 +473,17 @@ const App: React.FC = () => {
           setCurrentBandId(newBand.id);
           setCurrentBandName(newBand.name);
           setIsAdmin(true); // Creator is always admin
+          loadedBandIdRef.current = newBand.id;
 
           // Set band context in storage service
           StorageService.setCurrentBand?.(newBand.id);
+
+          // Persist to localStorage (with Safari private browsing protection)
+          try {
+            localStorage.setItem(STORAGE_KEYS.SELECTED_BAND, newBand.id);
+          } catch {
+            // Graceful fallback - persistence won't work but app continues
+          }
         }
       } catch (error) {
         if (!cancelled) {
@@ -520,6 +552,19 @@ const App: React.FC = () => {
   }, [isCheckingAuth, currentBandId, session]);
 
   // -- Debounced Auto-Save Effect --
+
+  /**
+   * Cancel any pending auto-save operation (Layer 1).
+   * Called before band switch to prevent stale data from being saved.
+   */
+  const cancelPendingSave = useCallback(() => {
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+      saveTimeoutRef.current = null;
+    }
+    pendingSaveRef.current = null;
+  }, []);
+
   /**
    * Save function that can be called immediately (for beforeunload) or debounced.
    * Empty dependency array is intentional: this callback only uses setState functions
@@ -560,7 +605,14 @@ const App: React.FC = () => {
 
   // Debounced auto-save effect
   useEffect(() => {
-    if (isLoading) return; // Don't save during initial load
+    // Don't save during initial load
+    if (isLoading) return;
+
+    // LAYER 2: Don't save during band switch
+    if (isLoadingBandRef.current) return;
+
+    // LAYER 3: Don't save if loaded band doesn't match current band
+    if (loadedBandIdRef.current !== currentBandIdRef.current) return;
 
     // Store pending data for beforeunload handler
     pendingSaveRef.current = {
@@ -577,6 +629,10 @@ const App: React.FC = () => {
 
     // Set new timeout with configurable debounce
     saveTimeoutRef.current = setTimeout(() => {
+      // Double-check guards before executing save
+      if (isLoadingBandRef.current) return;
+      if (loadedBandIdRef.current !== currentBandIdRef.current) return;
+
       if (pendingSaveRef.current) {
         performSave(pendingSaveRef.current);
       }
@@ -589,7 +645,13 @@ const App: React.FC = () => {
       }
       // Save pending data immediately on cleanup (e.g., auth expiration, unmount)
       // Skip if a save is already in progress to prevent concurrent saves
-      if (!isSavingRef.current && pendingSaveRef.current) {
+      // Also skip if band switch is in progress or band mismatch (Layer 2 & 3)
+      if (
+        !isSavingRef.current &&
+        pendingSaveRef.current &&
+        !isLoadingBandRef.current &&
+        loadedBandIdRef.current === currentBandIdRef.current
+      ) {
         // Fire and forget - attempt to save before component unmounts
         StorageService.save(
           pendingSaveRef.current.songs,
@@ -620,7 +682,13 @@ const App: React.FC = () => {
   useEffect(() => {
     const handleBeforeUnload = () => {
       // Skip if a save is already in progress to prevent concurrent saves
-      if (!isSavingRef.current && pendingSaveRef.current) {
+      // Also skip if band switch is in progress or band mismatch (Layer 2 & 3)
+      if (
+        !isSavingRef.current &&
+        pendingSaveRef.current &&
+        !isLoadingBandRef.current &&
+        loadedBandIdRef.current === currentBandIdRef.current
+      ) {
         if (saveTimeoutRef.current) {
           clearTimeout(saveTimeoutRef.current);
         }
@@ -644,7 +712,13 @@ const App: React.FC = () => {
   // Save when tab becomes hidden (more reliable than beforeunload for async saves)
   useEffect(() => {
     const handleVisibilityChange = () => {
-      if (document.visibilityState === 'hidden' && pendingSaveRef.current) {
+      // Skip if band switch is in progress or band mismatch (Layer 2 & 3)
+      if (
+        document.visibilityState === 'hidden' &&
+        pendingSaveRef.current &&
+        !isLoadingBandRef.current &&
+        loadedBandIdRef.current === currentBandIdRef.current
+      ) {
         // Clear debounce and save immediately when tab becomes hidden
         if (saveTimeoutRef.current) {
           clearTimeout(saveTimeoutRef.current);
@@ -703,6 +777,12 @@ const App: React.FC = () => {
 
     isCreatingBandRef.current = true;
 
+    // LAYER 1: Cancel pending auto-save BEFORE changing band context
+    cancelPendingSave();
+
+    // LAYER 2: Set loading guard to block new auto-saves
+    isLoadingBandRef.current = true;
+
     try {
       // Create the new band
       const { data: newBand, error: createError } = await supabase
@@ -756,6 +836,13 @@ const App: React.FC = () => {
       // Update storage service context
       StorageService.setCurrentBand?.(newBand.id);
 
+      // Persist to localStorage (with Safari private browsing protection)
+      try {
+        localStorage.setItem(STORAGE_KEYS.SELECTED_BAND, newBand.id);
+      } catch {
+        // Graceful fallback - persistence won't work but app continues
+      }
+
       // Reload data for the new band (will be empty initially)
       // Check if user switched bands during creation before loading
       if (currentBandIdRef.current !== newBand.id) {
@@ -776,6 +863,10 @@ const App: React.FC = () => {
         setMembers(appData.members);
         setAvailableRoles(appData.roles);
         setEvents(appData.events);
+
+        // Track which band this data belongs to (Layer 3)
+        loadedBandIdRef.current = newBand.id;
+
         toast.success(`Created "${bandName}" successfully!`);
       } catch (loadError) {
         console.error('Error loading new band data:', loadError);
@@ -784,9 +875,15 @@ const App: React.FC = () => {
         setMembers(DEFAULT_MEMBERS);
         setAvailableRoles(DEFAULT_ROLES);
         setEvents(DEFAULT_EVENTS);
+
+        // Track the band even on error (defaults are still for this band)
+        loadedBandIdRef.current = newBand.id;
+
         toast.success(`Created "${bandName}"! Some data may need to refresh.`);
       } finally {
         setIsLoading(false);
+        // Clear loading guard only after load completes
+        isLoadingBandRef.current = false;
       }
     } finally {
       isCreatingBandRef.current = false;
@@ -797,10 +894,23 @@ const App: React.FC = () => {
     const selectedBand = userBands.find(b => b.id === bandId);
     if (!selectedBand) return;
 
+    // LAYER 1: Cancel pending auto-save BEFORE changing band context
+    cancelPendingSave();
+
+    // LAYER 2: Set loading guard to block new auto-saves
+    isLoadingBandRef.current = true;
+
     // Update ref BEFORE state to prevent race conditions
     currentBandIdRef.current = bandId;
     setCurrentBandId(bandId);
     setCurrentBandName(selectedBand.name);
+
+    // Persist to localStorage (with Safari private browsing protection)
+    try {
+      localStorage.setItem(STORAGE_KEYS.SELECTED_BAND, bandId);
+    } catch {
+      // Graceful fallback - persistence won't work but app continues
+    }
 
     // Update storage service context
     StorageService.setCurrentBand?.(bandId);
@@ -820,6 +930,9 @@ const App: React.FC = () => {
       setMembers(appData.members);
       setAvailableRoles(appData.roles);
       setEvents(appData.events);
+
+      // Track which band this data belongs to (Layer 3)
+      loadedBandIdRef.current = bandId;
 
       // Fetch user's role in this band
       const supabase = getSupabaseClient();
@@ -848,6 +961,8 @@ const App: React.FC = () => {
       // Only clear loading if this is still the current band
       if (currentBandIdRef.current === bandId) {
         setIsLoading(false);
+        // Clear loading guard only after load completes
+        isLoadingBandRef.current = false;
       }
     }
   };
