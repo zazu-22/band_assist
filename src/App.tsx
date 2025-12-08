@@ -8,7 +8,7 @@ import {
   useLocation,
   useSearchParams,
 } from 'react-router-dom';
-import { toast, LoadingScreen } from './components/ui';
+import { toast, LoadingScreen, CreateBandDialog } from './components/ui';
 import { Session } from '@supabase/supabase-js';
 import {
   AppActionsContext,
@@ -148,7 +148,8 @@ const AppLayout: React.FC<{
   currentBandName: string;
   userBands: Array<{ id: string; name: string }>;
   onSelectBand: (bandId: string) => void;
-}> = ({ onLogout, showLogout, currentBandName, userBands, onSelectBand }) => {
+  onCreateBand?: () => void;
+}> = ({ onLogout, showLogout, currentBandName, userBands, onSelectBand, onCreateBand }) => {
   // Enable keyboard shortcuts for layout (Cmd/Ctrl+B to toggle sidebar)
   useLayoutShortcuts();
 
@@ -159,6 +160,7 @@ const AppLayout: React.FC<{
       currentBandName={currentBandName}
       userBands={userBands}
       onSelectBand={onSelectBand}
+      onCreateBand={onCreateBand}
     />
   );
 };
@@ -176,6 +178,8 @@ const App: React.FC = () => {
   const [isAdmin, setIsAdmin] = useState<boolean>(false);
   // Track if user is in password recovery mode (from reset email link)
   const [isRecoveryMode, setIsRecoveryMode] = useState<boolean>(false);
+  // Track if create band dialog is open
+  const [isCreateBandDialogOpen, setIsCreateBandDialogOpen] = useState<boolean>(false);
 
   // Ref to track current band ID for race condition prevention
   const currentBandIdRef = useRef<string | null>(null);
@@ -671,6 +675,86 @@ const App: React.FC = () => {
     }
   };
 
+  const handleOpenCreateBandDialog = useCallback(() => {
+    setIsCreateBandDialogOpen(true);
+  }, []);
+
+  const handleCloseCreateBandDialog = useCallback(() => {
+    setIsCreateBandDialogOpen(false);
+  }, []);
+
+  const handleCreateBand = async (bandName: string) => {
+    if (!session) {
+      throw new Error('You must be logged in to create a band');
+    }
+
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      throw new Error('Database connection unavailable');
+    }
+
+    // Create the new band
+    const { data: newBand, error: createError } = await supabase
+      .from('bands')
+      .insert({
+        name: bandName,
+        created_by: session.user.id,
+      })
+      .select()
+      .single();
+
+    if (createError || !newBand) {
+      console.error('Error creating band:', createError);
+      throw new Error(createError?.message || 'Failed to create band');
+    }
+
+    // Add user to the band as admin
+    const { error: joinError } = await supabase
+      .from('user_bands')
+      .insert({
+        user_id: session.user.id,
+        band_id: newBand.id,
+        role: 'admin',
+      } as never);
+
+    if (joinError) {
+      console.error('Error joining band:', joinError);
+      // Try to clean up the band we just created
+      await supabase.from('bands').delete().eq('id', newBand.id);
+      throw new Error('Failed to join the new band');
+    }
+
+    // Update local state with new band
+    const newBandEntry = { id: newBand.id, name: newBand.name };
+    setUserBands(prev => [...prev, newBandEntry]);
+
+    // Switch to the new band
+    currentBandIdRef.current = newBand.id;
+    setCurrentBandId(newBand.id);
+    setCurrentBandName(newBand.name);
+    setIsAdmin(true); // Creator is always admin
+
+    // Update storage service context
+    StorageService.setCurrentBand?.(newBand.id);
+
+    // Reload data for the new band (will be empty initially)
+    setIsLoading(true);
+    try {
+      const data = await StorageService.load();
+      const appData = withDefaults(data);
+      setSongs(appData.songs);
+      setMembers(appData.members);
+      setAvailableRoles(appData.roles);
+      setEvents(appData.events);
+    } catch (error) {
+      console.error('Error loading new band data:', error);
+    } finally {
+      setIsLoading(false);
+    }
+
+    toast.success(`Created "${bandName}" successfully!`);
+  };
+
   const handleSelectBand = async (bandId: string) => {
     const selectedBand = userBands.find(b => b.id === bandId);
     if (!selectedBand) return;
@@ -901,6 +985,7 @@ const App: React.FC = () => {
                     currentBandName={currentBandName}
                     userBands={userBands}
                     onSelectBand={handleSelectBand}
+                    onCreateBand={handleOpenCreateBandDialog}
                   />
                 }
               >
@@ -990,6 +1075,13 @@ const App: React.FC = () => {
                 <Route path="*" element={<Navigate to={ROUTES.DASHBOARD} replace />} />
               </Route>
               </Routes>
+
+              {/* Create Band Dialog */}
+              <CreateBandDialog
+                isOpen={isCreateBandDialogOpen}
+                onClose={handleCloseCreateBandDialog}
+                onSubmit={handleCreateBand}
+              />
             </AppStatusContext.Provider>
           </AppDataContext.Provider>
         </AppActionsContext.Provider>

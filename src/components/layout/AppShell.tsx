@@ -12,6 +12,7 @@ interface AppShellProps {
   currentBandName?: string;
   userBands?: Array<{ id: string; name: string }>;
   onSelectBand?: (bandId: string) => void;
+  onCreateBand?: () => void;
 }
 
 /**
@@ -42,6 +43,7 @@ export function AppShell({
   currentBandName,
   userBands = [],
   onSelectBand,
+  onCreateBand,
 }: AppShellProps) {
   const isDesktop = useIsDesktop();
 
@@ -57,6 +59,7 @@ export function AppShell({
             currentBandName={currentBandName}
             userBands={userBands}
             onSelectBand={onSelectBand}
+            onCreateBand={onCreateBand}
           />
         )}
 
@@ -68,6 +71,7 @@ export function AppShell({
             currentBandName={currentBandName}
             userBands={userBands}
             onSelectBand={onSelectBand}
+            onCreateBand={onCreateBand}
           />
         )}
 

@@ -16,6 +16,7 @@ interface MobileNavProps {
   currentBandName?: string;
   userBands?: Array<{ id: string; name: string }>;
   onSelectBand?: (bandId: string) => void;
+  onCreateBand?: () => void;
 }
 
 export function MobileNav({
@@ -24,6 +25,7 @@ export function MobileNav({
   currentBandName,
   userBands = [],
   onSelectBand,
+  onCreateBand,
 }: MobileNavProps) {
   const location = useLocation();
   const { mobileOpen, setMobileOpen } = useSidebar();
@@ -62,6 +64,7 @@ export function MobileNav({
               currentBandName={currentBandName}
               userBands={userBands}
               onSelectBand={onSelectBand}
+              onCreateBand={onCreateBand}
               isMobileDrawer
             />
           </SheetContent>
