@@ -22,6 +22,9 @@ DECLARE
   v_user_id UUID;
   v_band_id UUID;
   v_created_at TIMESTAMPTZ;
+  v_trimmed_name TEXT;
+  -- Max length matches client-side validation in CreateBandDialog
+  c_max_name_length CONSTANT INT := 100;
 BEGIN
   -- Get the authenticated user ID
   v_user_id := auth.uid();
@@ -30,17 +33,28 @@ BEGIN
     RAISE EXCEPTION 'Not authenticated';
   END IF;
 
-  -- Create the band
+  -- Validate and sanitize band name
+  v_trimmed_name := TRIM(p_band_name);
+
+  IF v_trimmed_name IS NULL OR v_trimmed_name = '' THEN
+    RAISE EXCEPTION 'Band name is required';
+  END IF;
+
+  IF LENGTH(v_trimmed_name) > c_max_name_length THEN
+    RAISE EXCEPTION 'Band name cannot exceed % characters', c_max_name_length;
+  END IF;
+
+  -- Create the band with trimmed name
   INSERT INTO bands (name, created_by)
-  VALUES (p_band_name, v_user_id)
+  VALUES (v_trimmed_name, v_user_id)
   RETURNING id, created_at INTO v_band_id, v_created_at;
 
   -- Add creator as admin (this is in the same transaction, so it atomically succeeds or fails)
   INSERT INTO user_bands (user_id, band_id, role)
   VALUES (v_user_id, v_band_id, 'admin');
 
-  -- Return the created band info
-  RETURN QUERY SELECT v_band_id, p_band_name, v_created_at;
+  -- Return the created band info (use trimmed name)
+  RETURN QUERY SELECT v_band_id, v_trimmed_name, v_created_at;
 END;
 $$;
 
