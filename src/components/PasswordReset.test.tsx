@@ -115,8 +115,10 @@ describe('PasswordReset', () => {
 
   describe('loading state', () => {
     it('disables input during submission', async () => {
+      // Use a promise that we control to ensure we can check loading state
+      let resolvePromise: (value: { error: null }) => void;
       mockResetPasswordForEmail.mockImplementation(
-        () => new Promise(resolve => setTimeout(() => resolve({ error: null }), 100))
+        () => new Promise(resolve => { resolvePromise = resolve; })
       );
 
       const user = userEvent.setup();
@@ -125,14 +127,20 @@ describe('PasswordReset', () => {
       await user.type(screen.getByLabelText('Email'), 'test@example.com');
       await user.click(screen.getByRole('button', { name: 'Send Reset Link' }));
 
+      // Now check loading state before resolving
       await waitFor(() => {
         expect(screen.getByLabelText('Email')).toBeDisabled();
       });
+
+      // Clean up: resolve the promise to avoid hanging
+      resolvePromise!({ error: null });
     });
 
     it('shows loading text during submission', async () => {
+      // Use a promise that we control to ensure we can check loading state
+      let resolvePromise: (value: { error: null }) => void;
       mockResetPasswordForEmail.mockImplementation(
-        () => new Promise(resolve => setTimeout(() => resolve({ error: null }), 100))
+        () => new Promise(resolve => { resolvePromise = resolve; })
       );
 
       const user = userEvent.setup();
@@ -144,6 +152,9 @@ describe('PasswordReset', () => {
       await waitFor(() => {
         expect(screen.getByText('Sending...')).toBeInTheDocument();
       });
+
+      // Clean up: resolve the promise to avoid hanging
+      resolvePromise!({ error: null });
     });
   });
 
