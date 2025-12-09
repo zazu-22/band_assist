@@ -107,17 +107,76 @@ export const BandSettingsSection: React.FC<BandSettingsSectionProps> = memo(
     const [isDeletingBand, setIsDeletingBand] = useState(false);
     const [isTransferringAdmin, setIsTransferringAdmin] = useState(false);
 
-    // Load band members
-    const loadMembers = useCallback(async () => {
+    // Load band members with cleanup to prevent state updates after unmount
+    useEffect(() => {
+      let isMounted = true;
+
+      const loadMembers = async () => {
+        const supabase = getSupabaseClient();
+        if (!supabase) {
+          if (isMounted) {
+            setMembers([]);
+            setIsLoadingMembers(false);
+          }
+          return;
+        }
+
+        try {
+          // Fetch user_bands - user emails are not accessible from client-side
+          const { data, error } = await supabase
+            .from('user_bands')
+            .select('user_id, role, joined_at')
+            .eq('band_id', bandId)
+            .order('joined_at', { ascending: true });
+
+          if (error) throw error;
+          if (!isMounted) return;
+
+          // Transform data with safe type handling
+          const transformedMembers: BandMemberWithRole[] = (data || []).map((row) => {
+            // Validate role - log unexpected values for debugging
+            let role: 'admin' | 'member' = 'member';
+            if (row.role === 'admin') {
+              role = 'admin';
+            } else if (row.role !== 'member') {
+              console.warn(`Unexpected role value for user ${row.user_id}: ${row.role}. Treating as 'member'.`);
+            }
+
+            return {
+              userId: row.user_id,
+              role,
+              joinedAt: row.joined_at,
+              isCurrentUser: row.user_id === currentUserId,
+            };
+          });
+
+          setMembers(transformedMembers);
+        } catch (err) {
+          console.error('Error loading band members:', err);
+          if (isMounted) {
+            setMembers([]);
+            toast.error('Failed to load band members');
+          }
+        } finally {
+          if (isMounted) {
+            setIsLoadingMembers(false);
+          }
+        }
+      };
+
+      loadMembers();
+
+      return () => {
+        isMounted = false;
+      };
+    }, [bandId, currentUserId]);
+
+    // Reload members function for use after admin transfer
+    const reloadMembers = useCallback(async () => {
       const supabase = getSupabaseClient();
-      if (!supabase) {
-        setMembers([]);
-        setIsLoadingMembers(false);
-        return;
-      }
+      if (!supabase) return;
 
       try {
-        // Fetch user_bands - user emails are not accessible from client-side
         const { data, error } = await supabase
           .from('user_bands')
           .select('user_id, role, joined_at')
@@ -126,16 +185,11 @@ export const BandSettingsSection: React.FC<BandSettingsSectionProps> = memo(
 
         if (error) throw error;
 
-        // Transform data with safe type handling
         const transformedMembers: BandMemberWithRole[] = (data || []).map((row) => {
-          // Validate role - log unexpected values for debugging
           let role: 'admin' | 'member' = 'member';
           if (row.role === 'admin') {
             role = 'admin';
-          } else if (row.role !== 'member') {
-            console.warn(`Unexpected role value for user ${row.user_id}: ${row.role}. Treating as 'member'.`);
           }
-
           return {
             userId: row.user_id,
             role,
@@ -146,17 +200,9 @@ export const BandSettingsSection: React.FC<BandSettingsSectionProps> = memo(
 
         setMembers(transformedMembers);
       } catch (err) {
-        console.error('Error loading band members:', err);
-        setMembers([]);
-        toast.error('Failed to load band members');
-      } finally {
-        setIsLoadingMembers(false);
+        console.error('Error reloading band members:', err);
       }
     }, [bandId, currentUserId]);
-
-    useEffect(() => {
-      loadMembers();
-    }, [loadMembers]);
 
     // Update editedName when bandName prop changes
     useEffect(() => {
@@ -289,22 +335,30 @@ export const BandSettingsSection: React.FC<BandSettingsSectionProps> = memo(
         if (demoteFailed && !promoteFailed) {
           // Promote succeeded but demote failed - rollback promote
           console.error('Demote failed, rolling back promote:', demoteResult.error);
-          await supabase
-            .from('user_bands')
-            .update({ role: 'member' })
-            .eq('user_id', selectedNewAdmin)
-            .eq('band_id', bandId);
+          try {
+            await supabase
+              .from('user_bands')
+              .update({ role: 'member' })
+              .eq('user_id', selectedNewAdmin)
+              .eq('band_id', bandId);
+          } catch (rollbackErr) {
+            console.error('Rollback of promote also failed:', rollbackErr);
+          }
           throw new Error('Failed to transfer admin role');
         }
 
         if (!demoteFailed && promoteFailed) {
           // Demote succeeded but promote failed - rollback demote
           console.error('Promote failed, rolling back demote:', promoteResult.error);
-          await supabase
-            .from('user_bands')
-            .update({ role: 'admin' })
-            .eq('user_id', currentUserId)
-            .eq('band_id', bandId);
+          try {
+            await supabase
+              .from('user_bands')
+              .update({ role: 'admin' })
+              .eq('user_id', currentUserId)
+              .eq('band_id', bandId);
+          } catch (rollbackErr) {
+            console.error('Rollback of demote also failed:', rollbackErr);
+          }
           throw new Error('Failed to transfer admin role');
         }
 
@@ -317,7 +371,7 @@ export const BandSettingsSection: React.FC<BandSettingsSectionProps> = memo(
         onAdminStatusChange?.(false);
 
         // Reload members in background (non-blocking) to reflect the change
-        loadMembers();
+        reloadMembers();
 
         // Show leave dialog immediately - the transfer succeeded so the user
         // is no longer the only admin. The leave dialog message will be correct
@@ -329,7 +383,7 @@ export const BandSettingsSection: React.FC<BandSettingsSectionProps> = memo(
       } finally {
         setIsTransferringAdmin(false);
       }
-    }, [selectedNewAdmin, bandId, currentUserId, loadMembers, onAdminStatusChange]);
+    }, [selectedNewAdmin, bandId, currentUserId, reloadMembers, onAdminStatusChange]);
 
     // Handle confirm leave band
     const handleConfirmLeave = useCallback(async () => {

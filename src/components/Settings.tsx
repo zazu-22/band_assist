@@ -106,6 +106,16 @@ export const Settings: React.FC<SettingsProps> = memo(function Settings({
   const showInvitations = isSupabaseConfigured() && currentBandId && currentUserId;
   const fileInputRef = useRef<HTMLInputElement>(null);
 
+  // Type guard for band settings - ensures required props are present
+  const canRenderBandSettings = !!(
+    showInvitations &&
+    currentBandId &&
+    currentUserId &&
+    onBandNameUpdate &&
+    onLeaveBand &&
+    onDeleteBand
+  );
+
   // --- Member State ---
   const [newMemberName, setNewMemberName] = useState('');
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -469,16 +479,16 @@ export const Settings: React.FC<SettingsProps> = memo(function Settings({
         )}
 
         {/* Band Tab - Only rendered when Supabase is configured */}
-        {showInvitations && currentBandId && currentUserId && onBandNameUpdate && onLeaveBand && onDeleteBand && (
+        {canRenderBandSettings && (
           <TabsContent value="BAND" className="space-y-6 animate-slide-in-from-bottom animation-forwards">
             <BandSettingsSection
-              bandId={currentBandId}
+              bandId={currentBandId!}
               bandName={currentBandName}
-              currentUserId={currentUserId}
+              currentUserId={currentUserId!}
               isAdmin={isAdmin}
-              onBandNameUpdate={onBandNameUpdate}
-              onLeaveBand={onLeaveBand}
-              onDeleteBand={onDeleteBand}
+              onBandNameUpdate={onBandNameUpdate!}
+              onLeaveBand={onLeaveBand!}
+              onDeleteBand={onDeleteBand!}
               onAdminStatusChange={onAdminStatusChange}
             />
           </TabsContent>
