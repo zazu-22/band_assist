@@ -2,7 +2,7 @@ import path from 'path';
 import { defineConfig } from 'vite';
 import react from '@vitejs/plugin-react';
 import tailwindcss from '@tailwindcss/vite';
-import { alphaTab } from '@coderline/alphatab/vite';
+import { alphaTab } from '@coderline/alphatab-vite';
 import pkg from './package.json';
 
 export default defineConfig(() => {
