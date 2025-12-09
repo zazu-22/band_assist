@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.1.8](https://github.com/zazu-22/band_assist/compare/v0.1.7...v0.1.8) (2025-12-09)
+
+
+### Features
+
+* **band:** add enhanced band selector with band creation flow ([#139](https://github.com/zazu-22/band_assist/issues/139)) ([900bd95](https://github.com/zazu-22/band_assist/commit/900bd952ed49857517ff289cedaa3f26333b1733))
+* **practice:** add status and confidence fields to LogPracticeModal ([#155](https://github.com/zazu-22/band_assist/issues/155)) ([a5c70f3](https://github.com/zazu-22/band_assist/commit/a5c70f3bc3ae12c2ab16dbb2915e5e5f4a289f22))
+
+
+### Bug Fixes
+
+* **build:** migrate to @coderline/alphatab-vite package ([#156](https://github.com/zazu-22/band_assist/issues/156)) ([0b94351](https://github.com/zazu-22/band_assist/commit/0b94351f3939b0ec9e3d6bd2b46b8a2296ce1ce4))
+* **test:** resolve flaky loading state test in PasswordReset ([dd4721d](https://github.com/zazu-22/band_assist/commit/dd4721d7ad5326f0d08d3cfbeb55ce7a6553e263))
+
 ## [0.1.7](https://github.com/zazu-22/band_assist/compare/v0.1.6...v0.1.7) (2025-12-08)
 
 
