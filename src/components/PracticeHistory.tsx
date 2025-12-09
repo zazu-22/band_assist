@@ -47,6 +47,7 @@ import type { PracticeFormData } from '@/components/ui';
 import { usePracticeSessions } from '@/hooks/usePracticeSessions';
 import { usePracticeStats } from '@/hooks/usePracticeStats';
 import { useAllUserSongStatuses } from '@/hooks/useUserSongStatus';
+import { supabaseStorageService } from '@/services/supabaseStorageService';
 import { getTodayDateString, getDateDaysAgo } from '@/lib/dateUtils';
 import type { Song, PracticeFilters, UserSongStatus, PracticeSortField, SortDirection, PracticeSession } from '@/types';
 
@@ -214,7 +215,7 @@ export const PracticeHistory: React.FC<PracticeHistoryProps> = memo(function Pra
     dateRange
   );
 
-  const { statuses, isLoading: statusesLoading } = useAllUserSongStatuses(
+  const { statuses, isLoading: statusesLoading, refetch: refetchStatuses } = useAllUserSongStatuses(
     currentUserId,
     currentBandId
   );
@@ -342,6 +343,30 @@ export const PracticeHistory: React.FC<PracticeHistoryProps> = memo(function Pra
   const handleCancelDelete = useCallback(() => {
     setDeleteSessionId(null);
   }, []);
+
+  // Handler for status changes from LogPracticeModal
+  const handleStatusChange = useCallback(
+    async (songId: string, newStatus: UserSongStatus, newConfidence?: number) => {
+      if (!currentUserId) return;
+
+      try {
+        await supabaseStorageService.updateUserSongStatus(
+          currentUserId,
+          songId,
+          newStatus,
+          newConfidence
+        );
+        toast.success('Learning status updated');
+        // Refresh the statuses cache so the UI updates
+        await refetchStatuses();
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'An error occurred';
+        toast.error(`Failed to update status: ${message}`);
+        throw err;
+      }
+    },
+    [currentUserId, refetchStatuses]
+  );
 
   // Show link account message when not authenticated
   if (!currentUserId) {
@@ -668,6 +693,8 @@ export const PracticeHistory: React.FC<PracticeHistoryProps> = memo(function Pra
         songs={songs}
         editSession={editingSession}
         onSubmit={handleSubmitSession}
+        songStatuses={statuses}
+        onStatusChange={handleStatusChange}
       />
 
       {/* Delete Confirmation Dialog */}
