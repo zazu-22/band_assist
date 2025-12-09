@@ -360,10 +360,12 @@ describe('LogPracticeModal', () => {
       render(<LogPracticeModal {...defaultProps} />);
 
       expect(screen.getByText('Confidence Level')).toBeInTheDocument();
-      // Check all 5 confidence buttons exist
-      for (let i = 1; i <= 5; i++) {
-        expect(screen.getByRole('button', { name: String(i) })).toBeInTheDocument();
-      }
+      // Check all 5 confidence buttons exist with accessible names
+      expect(screen.getByRole('button', { name: /confidence level 1/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /confidence level 2/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /confidence level 3/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /confidence level 4/i })).toBeInTheDocument();
+      expect(screen.getByRole('button', { name: /confidence level 5/i })).toBeInTheDocument();
     });
 
     it('should pre-populate status from songStatuses when song is auto-selected', () => {
@@ -396,7 +398,7 @@ describe('LogPracticeModal', () => {
       const user = userEvent.setup();
       render(<LogPracticeModal {...defaultProps} songs={singleSong} />);
 
-      const confidenceButton3 = screen.getByRole('button', { name: '3' });
+      const confidenceButton3 = screen.getByRole('button', { name: /confidence level 3/i });
       await user.click(confidenceButton3);
 
       // Button 3 should have the selected styling (scale-105 class indicates selection)
@@ -419,7 +421,7 @@ describe('LogPracticeModal', () => {
       );
 
       // Change confidence from 3 to 4 (simpler than changing dropdown)
-      const confidenceButton4 = screen.getByRole('button', { name: '4' });
+      const confidenceButton4 = screen.getByRole('button', { name: /confidence level 4/i });
       await user.click(confidenceButton4);
 
       // Submit the form
@@ -474,7 +476,7 @@ describe('LogPracticeModal', () => {
       );
 
       // Change confidence from 3 to 5
-      const confidenceButton5 = screen.getByRole('button', { name: '5' });
+      const confidenceButton5 = screen.getByRole('button', { name: /confidence level 5/i });
       await user.click(confidenceButton5);
 
       // Submit the form
