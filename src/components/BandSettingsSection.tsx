@@ -50,7 +50,14 @@ async function fetchBandMembers(
   currentUserId: string
 ): Promise<BandMemberWithRole[]> {
   const supabase = getSupabaseClient();
-  if (!supabase) return [];
+  if (!supabase) {
+    console.error('fetchBandMembers: Supabase client is not configured', {
+      bandId,
+      currentUserId,
+    });
+    toast.error('Supabase is not configured');
+    return [];
+  }
 
   // Fetch user_bands and linked member names in parallel
   const [userBandsResult, linkedMembersResult] = await Promise.all([
