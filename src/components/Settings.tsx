@@ -11,6 +11,7 @@ import {
   Upload,
   AlertTriangle,
   UserPlus,
+  Shield,
 } from 'lucide-react';
 import {
   Button,
@@ -28,16 +29,17 @@ import {
   AvatarFallback,
   Badge,
 } from '@/components/primitives';
-import { toast, ConfirmDialog, DangerousActionDialog } from '@/components/ui';
+import { toast, ConfirmDialog, DangerousActionDialog, ErrorBoundary, Alert, AlertTitle, AlertDescription } from '@/components/ui';
 import { StorageService } from '@/services/storageService';
 import { InvitationManager } from '@/components/InvitationManager';
 import { LinkAccountSection } from '@/components/LinkAccountSection';
+import { BandSettingsSection } from '@/components/BandSettingsSection';
 import { isSupabaseConfigured } from '@/services/supabaseClient';
 import { getAvatarColor, getNextAvatarColor } from '@/lib/avatar';
 import { cn } from '@/lib/utils';
 import type { BandMember, Song, BandEvent } from '@/types';
 
-type SettingsTab = 'ROSTER' | 'ROLES' | 'TEAM' | 'DATA';
+type SettingsTab = 'ROSTER' | 'ROLES' | 'TEAM' | 'BAND' | 'DATA';
 
 interface SettingsProps {
   members: BandMember[];
@@ -51,6 +53,16 @@ interface SettingsProps {
   currentBandId?: string;
   currentUserId?: string;
   isAdmin?: boolean;
+  /** Current band name for display and editing */
+  currentBandName?: string;
+  /** Callback when band name is updated */
+  onBandNameUpdate?: (newName: string) => void;
+  /** Callback when user leaves the band */
+  onLeaveBand?: () => Promise<void>;
+  /** Callback when band is deleted */
+  onDeleteBand?: () => Promise<void>;
+  /** Callback when user's admin status changes */
+  onAdminStatusChange?: (isAdmin: boolean) => void;
 }
 
 interface ConfirmDialogState {
@@ -84,10 +96,25 @@ export const Settings: React.FC<SettingsProps> = memo(function Settings({
   currentBandId,
   currentUserId,
   isAdmin = false,
+  currentBandName = '',
+  onBandNameUpdate,
+  onLeaveBand,
+  onDeleteBand,
+  onAdminStatusChange,
 }) {
   const [activeTab, setActiveTab] = useState<SettingsTab>('ROSTER');
   const showInvitations = isSupabaseConfigured() && currentBandId && currentUserId;
   const fileInputRef = useRef<HTMLInputElement>(null);
+
+  // Type guard for band settings - ensures required props are present
+  const canRenderBandSettings = !!(
+    showInvitations &&
+    currentBandId &&
+    currentUserId &&
+    onBandNameUpdate &&
+    onLeaveBand &&
+    onDeleteBand
+  );
 
   // --- Member State ---
   const [newMemberName, setNewMemberName] = useState('');
@@ -271,6 +298,12 @@ export const Settings: React.FC<SettingsProps> = memo(function Settings({
                 <span className="hidden sm:inline">Team</span>
               </TabsTrigger>
             )}
+            {canRenderBandSettings && (
+              <TabsTrigger value="BAND" className="gap-2">
+                <Shield className="h-4 w-4" />
+                <span className="hidden sm:inline">Band</span>
+              </TabsTrigger>
+            )}
             <TabsTrigger value="DATA" className="gap-2">
               <Database className="h-4 w-4" />
               <span className="hidden sm:inline">Data</span>
@@ -442,6 +475,45 @@ export const Settings: React.FC<SettingsProps> = memo(function Settings({
                 />
               </CardContent>
             </Card>
+          </TabsContent>
+        )}
+
+        {/* Band Tab - Only rendered when Supabase is configured */}
+        {canRenderBandSettings && (
+          <TabsContent value="BAND" className="space-y-6 animate-slide-in-from-bottom animation-forwards">
+            <ErrorBoundary
+              fallback={
+                <Alert variant="destructive">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertTitle>Something went wrong</AlertTitle>
+                  <AlertDescription>
+                    Failed to load band settings. Please refresh the page or try again later.
+                  </AlertDescription>
+                </Alert>
+              }
+            >
+              {(() => {
+                // Extract values to avoid non-null assertions in JSX
+                // These are guaranteed to be defined by the canRenderBandSettings guard
+                const bandId = currentBandId;
+                const userId = currentUserId;
+                const updateFn = onBandNameUpdate;
+                const leaveFn = onLeaveBand;
+                const deleteFn = onDeleteBand;
+                return (
+                  <BandSettingsSection
+                    bandId={bandId}
+                    bandName={currentBandName}
+                    currentUserId={userId}
+                    isAdmin={isAdmin}
+                    onBandNameUpdate={updateFn}
+                    onLeaveBand={leaveFn}
+                    onDeleteBand={deleteFn}
+                    onAdminStatusChange={onAdminStatusChange}
+                  />
+                );
+              })()}
+            </ErrorBoundary>
           </TabsContent>
         )}
 

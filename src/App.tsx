@@ -771,7 +771,7 @@ const App: React.FC = () => {
     }
   };
 
-  const handleSelectBand = async (bandId: string) => {
+  const handleSelectBand = useCallback(async (bandId: string) => {
     const selectedBand = userBands.find(b => b.id === bandId);
     if (!selectedBand) return;
 
@@ -837,6 +837,7 @@ const App: React.FC = () => {
       // Only show error if this is still the current band
       if (currentBandIdRef.current === bandId) {
         console.error('Error loading band data:', error);
+        toast.error('Failed to load band data');
       }
     } finally {
       // Only clear loading if this is still the current band
@@ -846,7 +847,83 @@ const App: React.FC = () => {
         isLoadingBandRef.current = false;
       }
     }
-  };
+  }, [userBands, cancelPendingSave, session]);
+
+  /**
+   * Handle band name update from BandSettingsSection
+   * Updates the band name in both userBands state and currentBandName
+   */
+  const handleBandNameUpdate = useCallback((newName: string) => {
+    // Update userBands state
+    setUserBands(prevBands =>
+      prevBands.map(band =>
+        band.id === currentBandId ? { ...band, name: newName } : band
+      )
+    );
+    // Update currentBandName
+    setCurrentBandName(newName);
+  }, [currentBandId]);
+
+  /**
+   * Handle user leaving the current band
+   * Switches to the next available band or shows create band dialog
+   */
+  const handleLeaveBand = useCallback(async () => {
+    // Guard against being called when no band is selected
+    if (!currentBandId) {
+      console.warn('handleLeaveBand called with no currentBandId');
+      return;
+    }
+
+    // Remove the current band from userBands
+    const remainingBands = userBands.filter(b => b.id !== currentBandId);
+    setUserBands(remainingBands);
+
+    // Clear from localStorage
+    try {
+      localStorage.removeItem(STORAGE_KEYS.SELECTED_BAND);
+    } catch {
+      // Graceful fallback
+    }
+
+    if (remainingBands.length > 0) {
+      // Switch to the first remaining band
+      await handleSelectBand(remainingBands[0].id);
+    } else {
+      // No bands left - open create band dialog
+      // Clear current band state first
+      cancelPendingSave();
+      setCurrentBandId(null);
+      setCurrentBandName('');
+      currentBandIdRef.current = null;
+      loadedBandIdRef.current = null;
+      setSongs([]);
+      setMembers([]);
+      setAvailableRoles([]);
+      setEvents([]);
+      setIsAdmin(false);
+
+      // Open the create band dialog
+      handleOpenCreateBandDialog();
+    }
+  }, [userBands, currentBandId, handleSelectBand, cancelPendingSave, handleOpenCreateBandDialog]);
+
+  /**
+   * Handle band deletion from BandSettingsSection
+   * Same as leaving but the band is already deleted from database
+   */
+  const handleDeleteBand = useCallback(async () => {
+    // Same logic as leaving - the band is already deleted from database
+    await handleLeaveBand();
+  }, [handleLeaveBand]);
+
+  /**
+   * Handle admin status change from BandSettingsSection
+   * Called when user transfers admin role to another member
+   */
+  const handleAdminStatusChange = useCallback((newIsAdmin: boolean) => {
+    setIsAdmin(newIsAdmin);
+  }, []);
 
   // Memoize actions context - only changes when action-related values change
   // This prevents re-renders of components that only consume actions when data changes
@@ -1102,6 +1179,11 @@ const App: React.FC = () => {
                       currentBandId={currentBandId || undefined}
                       currentUserId={session?.user?.id}
                       isAdmin={isAdmin}
+                      currentBandName={currentBandName}
+                      onBandNameUpdate={handleBandNameUpdate}
+                      onLeaveBand={handleLeaveBand}
+                      onDeleteBand={handleDeleteBand}
+                      onAdminStatusChange={handleAdminStatusChange}
                     />
                   }
                 />

@@ -10,6 +10,13 @@ export enum Instrument {
   BACKING_VOCALS = 'Backing Vocals',
 }
 
+/**
+ * User's role within a band (stored in user_bands table).
+ * - 'admin': Can manage band settings, members, and delete the band
+ * - 'member': Regular band member with read/write access to band data
+ */
+export type UserBandRole = 'admin' | 'member';
+
 export interface BandMember {
   id: string;
   name: string;
