@@ -598,7 +598,9 @@ export const BandSettingsSection: React.FC<BandSettingsSectionProps> = memo(
               Band Members
             </CardTitle>
             <CardDescription>
-              {members.length} {members.length === 1 ? 'member' : 'members'} in this band
+              {isLoadingMembers
+                ? 'Loading members...'
+                : `${members.length} ${members.length === 1 ? 'member' : 'members'} in this band`}
             </CardDescription>
           </CardHeader>
           <CardContent>
@@ -706,7 +708,7 @@ export const BandSettingsSection: React.FC<BandSettingsSectionProps> = memo(
           title="Leave Band"
           message={
             members.length === 1
-              ? `You are the only member of "${bandName}". Leaving will remove your access to this band.`
+              ? `You are the only member of "${bandName}". Leaving will permanently remove your access. The band data will remain but will be inaccessible without an admin.`
               : `Are you sure you want to leave "${bandName}"? You will lose access to this band's songs, events, and settings.`
           }
           variant="warning"
