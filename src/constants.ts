@@ -1,5 +1,20 @@
 import { Song, BandMember, BandEvent } from './types';
 
+// =============================================================================
+// BAND CONSTANTS
+// =============================================================================
+
+/**
+ * Maximum length for band names.
+ * IMPORTANT: This must match the SQL function create_band_with_admin (c_max_name_length).
+ * If you change this value, update the SQL migration accordingly.
+ */
+export const MAX_BAND_NAME_LENGTH = 100;
+
+// =============================================================================
+// DEFAULT DATA
+// =============================================================================
+
 export const INITIAL_SONGS: Song[] = [
   {
     id: '1763776320897',

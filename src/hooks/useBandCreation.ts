@@ -9,13 +9,10 @@ import {
   DEFAULT_MEMBERS,
   DEFAULT_ROLES,
   DEFAULT_EVENTS,
+  MAX_BAND_NAME_LENGTH,
   withDefaults,
 } from '@/constants';
-import type { Song, BandMember, BandEvent } from '@/types';
-
-// Max band name length - must match SQL function create_band_with_admin (c_max_name_length)
-// and CreateBandDialog (MAX_BAND_NAME_LENGTH)
-const MAX_BAND_NAME_LENGTH = 100;
+import type { Song, BandMember, BandEvent, BandSummary } from '@/types';
 
 interface UseBandCreationParams {
   session: Session | null;
@@ -23,7 +20,7 @@ interface UseBandCreationParams {
   isLoadingBandRef: React.MutableRefObject<boolean>;
   currentBandIdRef: React.MutableRefObject<string | null>;
   loadedBandIdRef: React.MutableRefObject<string | null>;
-  setUserBands: React.Dispatch<React.SetStateAction<Array<{ id: string; name: string }>>>;
+  setUserBands: React.Dispatch<React.SetStateAction<BandSummary[]>>;
   setCurrentBandId: React.Dispatch<React.SetStateAction<string | null>>;
   setCurrentBandName: React.Dispatch<React.SetStateAction<string>>;
   setIsAdmin: React.Dispatch<React.SetStateAction<boolean>>;
@@ -127,8 +124,14 @@ export function useBandCreation({
 
         const newBand = rpcResult[0];
 
+        // Runtime guard: verify RPC returned expected shape
+        if (!newBand.band_id || !newBand.band_name) {
+          console.error('Error creating band: RPC returned invalid data', { newBand });
+          throw new Error('Failed to create band: invalid data returned');
+        }
+
         // Update local state with new band
-        const newBandEntry = { id: newBand.band_id, name: newBand.band_name };
+        const newBandEntry: BandSummary = { id: newBand.band_id, name: newBand.band_name };
         setUserBands(prev => [...prev, newBandEntry]);
 
         // Switch to the new band
@@ -183,7 +186,8 @@ export function useBandCreation({
           // Track the band even on error (defaults are still for this band)
           loadedBandIdRef.current = newBand.band_id;
 
-          toast.success(`Created "${trimmedName}"! Some data may need to refresh.`);
+          // Use warning toast since creation succeeded but data load failed
+          toast.warning(`Created "${trimmedName}"! Some data may need to refresh.`);
         } finally {
           setIsLoading(false);
           // Clear loading guard only after load completes

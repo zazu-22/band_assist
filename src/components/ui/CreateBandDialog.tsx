@@ -11,12 +11,12 @@ import {
   Input,
   Label,
 } from '@/components/primitives';
+import { MAX_BAND_NAME_LENGTH } from '@/constants';
 
 // =============================================================================
 // CONSTANTS
 // =============================================================================
 
-const MAX_BAND_NAME_LENGTH = 100;
 const MIN_BAND_NAME_LENGTH = 1;
 
 // Allow letters, numbers, spaces, and common punctuation for band names

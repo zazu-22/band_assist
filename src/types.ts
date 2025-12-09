@@ -103,6 +103,16 @@ export interface BandEvent {
   notes?: string;
 }
 
+/**
+ * Lightweight band summary for selectors and lists.
+ * Used by BandSelector, useBandCreation, and similar contexts
+ * where only basic band identification is needed.
+ */
+export interface BandSummary {
+  id: string;
+  name: string;
+}
+
 export interface Setlist {
   id: string;
   name: string;
