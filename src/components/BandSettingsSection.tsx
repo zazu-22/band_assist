@@ -171,6 +171,10 @@ export const BandSettingsSection: React.FC<BandSettingsSectionProps> = memo(
     useEffect(() => {
       let isMounted = true;
 
+      // Reset loading state when bandId/currentUserId change to show loading UI
+      // and disable actions (Leave button) until fresh member data is loaded
+      setIsLoadingMembers(true);
+
       const loadMembers = async () => {
         try {
           const members = await fetchBandMembers(bandId, currentUserId);
