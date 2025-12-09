@@ -32,13 +32,66 @@ import {
 import { toast, ConfirmDialog, DangerousActionDialog } from '@/components/ui';
 import { getSupabaseClient } from '@/services/supabaseClient';
 import { cn } from '@/lib/utils';
+import type { UserBandRole } from '@/types';
 
 /** Band member with role information from user_bands table */
 interface BandMemberWithRole {
   userId: string;
-  role: 'admin' | 'member';
+  role: UserBandRole;
   joinedAt: string;
   isCurrentUser: boolean;
+  /** Member name if user is linked to a band_member record */
+  memberName?: string;
+}
+
+/** Fetch band members from Supabase - shared helper for initial load and reload */
+async function fetchBandMembers(
+  bandId: string,
+  currentUserId: string
+): Promise<BandMemberWithRole[]> {
+  const supabase = getSupabaseClient();
+  if (!supabase) return [];
+
+  // Fetch user_bands and linked member names in parallel
+  const [userBandsResult, linkedMembersResult] = await Promise.all([
+    supabase
+      .from('user_bands')
+      .select('user_id, role, joined_at')
+      .eq('band_id', bandId)
+      .order('joined_at', { ascending: true }),
+    supabase
+      .from('band_members')
+      .select('user_id, name')
+      .eq('band_id', bandId)
+      .not('user_id', 'is', null),
+  ]);
+
+  if (userBandsResult.error) throw userBandsResult.error;
+  // Don't throw on linkedMembers error - member names are optional
+  if (linkedMembersResult.error) {
+    console.warn('Failed to fetch linked member names:', linkedMembersResult.error);
+  }
+
+  // Create lookup map for member names
+  const nameMap = new Map<string, string>(
+    linkedMembersResult.data?.map(m => [m.user_id!, m.name]) || []
+  );
+
+  return (userBandsResult.data || []).map((row) => {
+    const role: UserBandRole = row.role === 'admin' ? 'admin' : 'member';
+    if (row.role !== 'admin' && row.role !== 'member') {
+      console.warn(
+        `Unexpected role value for user ${row.user_id}: ${row.role}. Treating as 'member'.`
+      );
+    }
+    return {
+      userId: row.user_id,
+      role,
+      joinedAt: row.joined_at,
+      isCurrentUser: row.user_id === currentUserId,
+      memberName: nameMap.get(row.user_id),
+    };
+  });
 }
 
 interface BandSettingsSectionProps {
@@ -112,45 +165,10 @@ export const BandSettingsSection: React.FC<BandSettingsSectionProps> = memo(
       let isMounted = true;
 
       const loadMembers = async () => {
-        const supabase = getSupabaseClient();
-        if (!supabase) {
-          if (isMounted) {
-            setMembers([]);
-            setIsLoadingMembers(false);
-          }
-          return;
-        }
-
         try {
-          // Fetch user_bands - user emails are not accessible from client-side
-          const { data, error } = await supabase
-            .from('user_bands')
-            .select('user_id, role, joined_at')
-            .eq('band_id', bandId)
-            .order('joined_at', { ascending: true });
-
-          if (error) throw error;
+          const members = await fetchBandMembers(bandId, currentUserId);
           if (!isMounted) return;
-
-          // Transform data with safe type handling
-          const transformedMembers: BandMemberWithRole[] = (data || []).map((row) => {
-            // Validate role - log unexpected values for debugging
-            let role: 'admin' | 'member' = 'member';
-            if (row.role === 'admin') {
-              role = 'admin';
-            } else if (row.role !== 'member') {
-              console.warn(`Unexpected role value for user ${row.user_id}: ${row.role}. Treating as 'member'.`);
-            }
-
-            return {
-              userId: row.user_id,
-              role,
-              joinedAt: row.joined_at,
-              isCurrentUser: row.user_id === currentUserId,
-            };
-          });
-
-          setMembers(transformedMembers);
+          setMembers(members);
         } catch (err) {
           console.error('Error loading band members:', err);
           if (isMounted) {
@@ -173,32 +191,9 @@ export const BandSettingsSection: React.FC<BandSettingsSectionProps> = memo(
 
     // Reload members function for use after admin transfer
     const reloadMembers = useCallback(async () => {
-      const supabase = getSupabaseClient();
-      if (!supabase) return;
-
       try {
-        const { data, error } = await supabase
-          .from('user_bands')
-          .select('user_id, role, joined_at')
-          .eq('band_id', bandId)
-          .order('joined_at', { ascending: true });
-
-        if (error) throw error;
-
-        const transformedMembers: BandMemberWithRole[] = (data || []).map((row) => {
-          let role: 'admin' | 'member' = 'member';
-          if (row.role === 'admin') {
-            role = 'admin';
-          }
-          return {
-            userId: row.user_id,
-            role,
-            joinedAt: row.joined_at,
-            isCurrentUser: row.user_id === currentUserId,
-          };
-        });
-
-        setMembers(transformedMembers);
+        const members = await fetchBandMembers(bandId, currentUserId);
+        setMembers(members);
       } catch (err) {
         console.error('Error reloading band members:', err);
       }
@@ -343,6 +338,7 @@ export const BandSettingsSection: React.FC<BandSettingsSectionProps> = memo(
               .eq('band_id', bandId);
           } catch (rollbackErr) {
             console.error('Rollback of promote also failed:', rollbackErr);
+            toast.error('Admin transfer failed and rollback failed. Please contact support.');
           }
           throw new Error('Failed to transfer admin role');
         }
@@ -358,6 +354,7 @@ export const BandSettingsSection: React.FC<BandSettingsSectionProps> = memo(
               .eq('band_id', bandId);
           } catch (rollbackErr) {
             console.error('Rollback of demote also failed:', rollbackErr);
+            toast.error('Admin transfer failed and rollback failed. Please contact support.');
           }
           throw new Error('Failed to transfer admin role');
         }
@@ -370,12 +367,9 @@ export const BandSettingsSection: React.FC<BandSettingsSectionProps> = memo(
         // Notify parent that user is no longer admin
         onAdminStatusChange?.(false);
 
-        // Reload members in background (non-blocking) to reflect the change
-        reloadMembers();
-
-        // Show leave dialog immediately - the transfer succeeded so the user
-        // is no longer the only admin. The leave dialog message will be correct
-        // because it checks the isOnlyAdmin derived state which will update.
+        // Wait for members to reload before showing leave dialog
+        // This ensures isOnlyAdmin derived state is fresh
+        await reloadMembers();
         setShowLeaveDialog(true);
       } catch (err) {
         console.error('Error transferring admin role:', err);
@@ -486,10 +480,13 @@ export const BandSettingsSection: React.FC<BandSettingsSectionProps> = memo(
           <CardContent className="space-y-4">
             {/* Band Name */}
             <div className="space-y-2">
-              <label className="text-sm font-medium text-muted-foreground">Band Name</label>
+              <label htmlFor="band-name-input" className="text-sm font-medium text-muted-foreground">
+                Band Name
+              </label>
               {isEditing && isAdmin ? (
                 <div className="flex items-center gap-2">
                   <Input
+                    id="band-name-input"
                     value={editedName}
                     onChange={e => setEditedName(e.target.value)}
                     onKeyDown={handleKeyDown}
@@ -497,6 +494,8 @@ export const BandSettingsSection: React.FC<BandSettingsSectionProps> = memo(
                     autoFocus
                     disabled={isUpdatingName}
                     maxLength={50}
+                    aria-invalid={!!nameError}
+                    aria-describedby={nameError ? 'band-name-error' : undefined}
                   />
                   <Button
                     variant="ghost"
@@ -538,7 +537,9 @@ export const BandSettingsSection: React.FC<BandSettingsSectionProps> = memo(
                 </div>
               )}
               {nameError && (
-                <p className="text-sm text-destructive">{nameError}</p>
+                <p id="band-name-error" className="text-sm text-destructive" role="alert">
+                  {nameError}
+                </p>
               )}
               {isEditing && (
                 <p className="text-xs text-muted-foreground">
@@ -604,7 +605,9 @@ export const BandSettingsSection: React.FC<BandSettingsSectionProps> = memo(
                     <div className="flex items-center gap-3">
                       <div className="flex flex-col">
                         <span className="font-medium text-foreground">
-                          {member.isCurrentUser ? 'You' : `Member ${index + 1}`}
+                          {member.isCurrentUser
+                            ? 'You'
+                            : member.memberName || `Member ${index + 1}`}
                         </span>
                       </div>
                     </div>
@@ -713,28 +716,38 @@ export const BandSettingsSection: React.FC<BandSettingsSectionProps> = memo(
                 </div>
               </div>
             </AlertDialogHeader>
-            <div className="mt-4 space-y-2">
-              {nonAdminMembers.map((member, index) => (
-                <div
-                  key={member.userId}
-                  className={cn(
-                    'flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors',
-                    selectedNewAdmin === member.userId
-                      ? 'border-primary bg-primary/10'
-                      : 'border-border bg-muted/30 hover:bg-muted/50'
-                  )}
-                  onClick={() => setSelectedNewAdmin(member.userId)}
-                >
-                  <input
-                    type="radio"
-                    name="new-admin"
-                    checked={selectedNewAdmin === member.userId}
-                    onChange={() => setSelectedNewAdmin(member.userId)}
-                    className="h-4 w-4 text-primary"
-                  />
-                  <span className="font-medium text-foreground">Member {index + 1}</span>
-                </div>
-              ))}
+            <div className="mt-4 space-y-2" role="radiogroup" aria-label="Select new admin">
+              {nonAdminMembers.map((member, index) => {
+                const radioId = `admin-transfer-${member.userId}`;
+                const displayName = member.memberName || `Member ${index + 1}`;
+                return (
+                  <div
+                    key={member.userId}
+                    className={cn(
+                      'flex items-center gap-3 p-3 rounded-lg border cursor-pointer transition-colors',
+                      selectedNewAdmin === member.userId
+                        ? 'border-primary bg-primary/10'
+                        : 'border-border bg-muted/30 hover:bg-muted/50'
+                    )}
+                    onClick={() => setSelectedNewAdmin(member.userId)}
+                  >
+                    <input
+                      id={radioId}
+                      type="radio"
+                      name="new-admin"
+                      checked={selectedNewAdmin === member.userId}
+                      onChange={() => setSelectedNewAdmin(member.userId)}
+                      className="h-4 w-4 text-primary"
+                    />
+                    <label
+                      htmlFor={radioId}
+                      className="font-medium text-foreground cursor-pointer flex-1"
+                    >
+                      {displayName}
+                    </label>
+                  </div>
+                );
+              })}
             </div>
             <AlertDialogFooter className="mt-6">
               <AlertDialogCancel disabled={isTransferringAdmin}>Cancel</AlertDialogCancel>

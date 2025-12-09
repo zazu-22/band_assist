@@ -29,7 +29,7 @@ import {
   AvatarFallback,
   Badge,
 } from '@/components/primitives';
-import { toast, ConfirmDialog, DangerousActionDialog } from '@/components/ui';
+import { toast, ConfirmDialog, DangerousActionDialog, ErrorBoundary, Alert, AlertTitle, AlertDescription } from '@/components/ui';
 import { StorageService } from '@/services/storageService';
 import { InvitationManager } from '@/components/InvitationManager';
 import { LinkAccountSection } from '@/components/LinkAccountSection';
@@ -481,16 +481,39 @@ export const Settings: React.FC<SettingsProps> = memo(function Settings({
         {/* Band Tab - Only rendered when Supabase is configured */}
         {canRenderBandSettings && (
           <TabsContent value="BAND" className="space-y-6 animate-slide-in-from-bottom animation-forwards">
-            <BandSettingsSection
-              bandId={currentBandId!}
-              bandName={currentBandName}
-              currentUserId={currentUserId!}
-              isAdmin={isAdmin}
-              onBandNameUpdate={onBandNameUpdate!}
-              onLeaveBand={onLeaveBand!}
-              onDeleteBand={onDeleteBand!}
-              onAdminStatusChange={onAdminStatusChange}
-            />
+            <ErrorBoundary
+              fallback={
+                <Alert variant="destructive">
+                  <AlertTriangle className="h-4 w-4" />
+                  <AlertTitle>Something went wrong</AlertTitle>
+                  <AlertDescription>
+                    Failed to load band settings. Please refresh the page or try again later.
+                  </AlertDescription>
+                </Alert>
+              }
+            >
+              {(() => {
+                // Extract values to avoid non-null assertions in JSX
+                // These are guaranteed to be defined by the canRenderBandSettings guard
+                const bandId = currentBandId;
+                const userId = currentUserId;
+                const updateFn = onBandNameUpdate;
+                const leaveFn = onLeaveBand;
+                const deleteFn = onDeleteBand;
+                return (
+                  <BandSettingsSection
+                    bandId={bandId}
+                    bandName={currentBandName}
+                    currentUserId={userId}
+                    isAdmin={isAdmin}
+                    onBandNameUpdate={updateFn}
+                    onLeaveBand={leaveFn}
+                    onDeleteBand={deleteFn}
+                    onAdminStatusChange={onAdminStatusChange}
+                  />
+                );
+              })()}
+            </ErrorBoundary>
           </TabsContent>
         )}
 
