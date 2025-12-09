@@ -298,7 +298,7 @@ export const Settings: React.FC<SettingsProps> = memo(function Settings({
                 <span className="hidden sm:inline">Team</span>
               </TabsTrigger>
             )}
-            {showInvitations && (
+            {canRenderBandSettings && (
               <TabsTrigger value="BAND" className="gap-2">
                 <Shield className="h-4 w-4" />
                 <span className="hidden sm:inline">Band</span>

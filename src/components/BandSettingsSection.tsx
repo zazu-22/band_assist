@@ -401,7 +401,15 @@ export const BandSettingsSection: React.FC<BandSettingsSectionProps> = memo(
 
         setShowLeaveDialog(false);
         toast.success('You have left the band');
-        await onLeaveBand();
+
+        // Call parent callback - wrap in try/catch to prevent UI inconsistency
+        // if the callback throws after successful database deletion
+        try {
+          await onLeaveBand();
+        } catch (callbackErr) {
+          console.error('Error in onLeaveBand callback:', callbackErr);
+          // Don't show error toast since the database operation succeeded
+        }
       } catch (err) {
         console.error('Error leaving band:', err);
         toast.error('Failed to leave band. Please try again.');
@@ -431,7 +439,15 @@ export const BandSettingsSection: React.FC<BandSettingsSectionProps> = memo(
 
         setShowDeleteDialog(false);
         toast.success('Band deleted successfully');
-        await onDeleteBand();
+
+        // Call parent callback - wrap in try/catch to prevent UI inconsistency
+        // if the callback throws after successful database deletion
+        try {
+          await onDeleteBand();
+        } catch (callbackErr) {
+          console.error('Error in onDeleteBand callback:', callbackErr);
+          // Don't show error toast since the database operation succeeded
+        }
       } catch (err) {
         console.error('Error deleting band:', err);
         toast.error('Failed to delete band. Please try again.');
@@ -592,7 +608,7 @@ export const BandSettingsSection: React.FC<BandSettingsSectionProps> = memo(
               </div>
             ) : (
               <div className="space-y-2">
-                {members.map((member, index) => (
+                {members.map((member) => (
                   <div
                     key={member.userId}
                     className={cn(
@@ -607,7 +623,7 @@ export const BandSettingsSection: React.FC<BandSettingsSectionProps> = memo(
                         <span className="font-medium text-foreground">
                           {member.isCurrentUser
                             ? 'You'
-                            : member.memberName || `Member ${index + 1}`}
+                            : member.memberName || 'Member'}
                         </span>
                       </div>
                     </div>
@@ -717,9 +733,9 @@ export const BandSettingsSection: React.FC<BandSettingsSectionProps> = memo(
               </div>
             </AlertDialogHeader>
             <div className="mt-4 space-y-2" role="radiogroup" aria-label="Select new admin">
-              {nonAdminMembers.map((member, index) => {
+              {nonAdminMembers.map((member) => {
                 const radioId = `admin-transfer-${member.userId}`;
-                const displayName = member.memberName || `Member ${index + 1}`;
+                const displayName = member.memberName || 'Member';
                 return (
                   <div
                     key={member.userId}
