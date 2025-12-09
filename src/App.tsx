@@ -837,6 +837,7 @@ const App: React.FC = () => {
       // Only show error if this is still the current band
       if (currentBandIdRef.current === bandId) {
         console.error('Error loading band data:', error);
+        toast.error('Failed to load band data');
       }
     } finally {
       // Only clear loading if this is still the current band
@@ -900,6 +901,7 @@ const App: React.FC = () => {
       setMembers([]);
       setAvailableRoles([]);
       setEvents([]);
+      setIsAdmin(false);
 
       // Open the create band dialog
       handleOpenCreateBandDialog();
@@ -914,6 +916,14 @@ const App: React.FC = () => {
     // Same logic as leaving - the band is already deleted from database
     await handleLeaveBand();
   }, [handleLeaveBand]);
+
+  /**
+   * Handle admin status change from BandSettingsSection
+   * Called when user transfers admin role to another member
+   */
+  const handleAdminStatusChange = useCallback((newIsAdmin: boolean) => {
+    setIsAdmin(newIsAdmin);
+  }, []);
 
   // Memoize actions context - only changes when action-related values change
   // This prevents re-renders of components that only consume actions when data changes
@@ -1173,6 +1183,7 @@ const App: React.FC = () => {
                       onBandNameUpdate={handleBandNameUpdate}
                       onLeaveBand={handleLeaveBand}
                       onDeleteBand={handleDeleteBand}
+                      onAdminStatusChange={handleAdminStatusChange}
                     />
                   }
                 />

@@ -56,6 +56,8 @@ interface BandSettingsSectionProps {
   onLeaveBand: () => Promise<void>;
   /** Callback when band is deleted */
   onDeleteBand: () => Promise<void>;
+  /** Callback when user's admin status changes (e.g., after transferring admin role) */
+  onAdminStatusChange?: (isAdmin: boolean) => void;
 }
 
 /** Validation for band name */
@@ -84,6 +86,7 @@ export const BandSettingsSection: React.FC<BandSettingsSectionProps> = memo(
     onBandNameUpdate,
     onLeaveBand,
     onDeleteBand,
+    onAdminStatusChange,
   }) {
     // Band name editing state
     const [isEditing, setIsEditing] = useState(false);
@@ -145,6 +148,7 @@ export const BandSettingsSection: React.FC<BandSettingsSectionProps> = memo(
       } catch (err) {
         console.error('Error loading band members:', err);
         setMembers([]);
+        toast.error('Failed to load band members');
       } finally {
         setIsLoadingMembers(false);
       }
@@ -309,6 +313,9 @@ export const BandSettingsSection: React.FC<BandSettingsSectionProps> = memo(
         setShowTransferDialog(false);
         setSelectedNewAdmin(null);
 
+        // Notify parent that user is no longer admin
+        onAdminStatusChange?.(false);
+
         // Reload members in background (non-blocking) to reflect the change
         loadMembers();
 
@@ -322,7 +329,7 @@ export const BandSettingsSection: React.FC<BandSettingsSectionProps> = memo(
       } finally {
         setIsTransferringAdmin(false);
       }
-    }, [selectedNewAdmin, bandId, currentUserId, loadMembers]);
+    }, [selectedNewAdmin, bandId, currentUserId, loadMembers, onAdminStatusChange]);
 
     // Handle confirm leave band
     const handleConfirmLeave = useCallback(async () => {
@@ -581,7 +588,7 @@ export const BandSettingsSection: React.FC<BandSettingsSectionProps> = memo(
             <Button
               variant="outline"
               onClick={handleLeaveClick}
-              disabled={isLeavingBand}
+              disabled={isLeavingBand || isLoadingMembers}
               className="gap-2 border-warning/50 text-warning hover:bg-warning/10 hover:text-warning"
             >
               {isLeavingBand ? (
@@ -626,7 +633,7 @@ export const BandSettingsSection: React.FC<BandSettingsSectionProps> = memo(
           title="Leave Band"
           message={
             members.length === 1
-              ? `You are the only member of "${bandName}". Leaving will delete the band and all its data.`
+              ? `You are the only member of "${bandName}". Leaving will remove your access to this band.`
               : `Are you sure you want to leave "${bandName}"? You will lose access to this band's songs, events, and settings.`
           }
           variant="warning"

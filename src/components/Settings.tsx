@@ -61,6 +61,8 @@ interface SettingsProps {
   onLeaveBand?: () => Promise<void>;
   /** Callback when band is deleted */
   onDeleteBand?: () => Promise<void>;
+  /** Callback when user's admin status changes */
+  onAdminStatusChange?: (isAdmin: boolean) => void;
 }
 
 interface ConfirmDialogState {
@@ -98,6 +100,7 @@ export const Settings: React.FC<SettingsProps> = memo(function Settings({
   onBandNameUpdate,
   onLeaveBand,
   onDeleteBand,
+  onAdminStatusChange,
 }) {
   const [activeTab, setActiveTab] = useState<SettingsTab>('ROSTER');
   const showInvitations = isSupabaseConfigured() && currentBandId && currentUserId;
@@ -476,6 +479,7 @@ export const Settings: React.FC<SettingsProps> = memo(function Settings({
               onBandNameUpdate={onBandNameUpdate}
               onLeaveBand={onLeaveBand}
               onDeleteBand={onDeleteBand}
+              onAdminStatusChange={onAdminStatusChange}
             />
           </TabsContent>
         )}
