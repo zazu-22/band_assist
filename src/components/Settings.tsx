@@ -11,6 +11,7 @@ import {
   Upload,
   AlertTriangle,
   UserPlus,
+  Shield,
 } from 'lucide-react';
 import {
   Button,
@@ -32,12 +33,13 @@ import { toast, ConfirmDialog, DangerousActionDialog } from '@/components/ui';
 import { StorageService } from '@/services/storageService';
 import { InvitationManager } from '@/components/InvitationManager';
 import { LinkAccountSection } from '@/components/LinkAccountSection';
+import { BandSettingsSection } from '@/components/BandSettingsSection';
 import { isSupabaseConfigured } from '@/services/supabaseClient';
 import { getAvatarColor, getNextAvatarColor } from '@/lib/avatar';
 import { cn } from '@/lib/utils';
 import type { BandMember, Song, BandEvent } from '@/types';
 
-type SettingsTab = 'ROSTER' | 'ROLES' | 'TEAM' | 'DATA';
+type SettingsTab = 'ROSTER' | 'ROLES' | 'TEAM' | 'BAND' | 'DATA';
 
 interface SettingsProps {
   members: BandMember[];
@@ -51,6 +53,14 @@ interface SettingsProps {
   currentBandId?: string;
   currentUserId?: string;
   isAdmin?: boolean;
+  /** Current band name for display and editing */
+  currentBandName?: string;
+  /** Callback when band name is updated */
+  onBandNameUpdate?: (newName: string) => void;
+  /** Callback when user leaves the band */
+  onLeaveBand?: () => Promise<void>;
+  /** Callback when band is deleted */
+  onDeleteBand?: () => Promise<void>;
 }
 
 interface ConfirmDialogState {
@@ -84,6 +94,10 @@ export const Settings: React.FC<SettingsProps> = memo(function Settings({
   currentBandId,
   currentUserId,
   isAdmin = false,
+  currentBandName = '',
+  onBandNameUpdate,
+  onLeaveBand,
+  onDeleteBand,
 }) {
   const [activeTab, setActiveTab] = useState<SettingsTab>('ROSTER');
   const showInvitations = isSupabaseConfigured() && currentBandId && currentUserId;
@@ -271,6 +285,12 @@ export const Settings: React.FC<SettingsProps> = memo(function Settings({
                 <span className="hidden sm:inline">Team</span>
               </TabsTrigger>
             )}
+            {showInvitations && (
+              <TabsTrigger value="BAND" className="gap-2">
+                <Shield className="h-4 w-4" />
+                <span className="hidden sm:inline">Band</span>
+              </TabsTrigger>
+            )}
             <TabsTrigger value="DATA" className="gap-2">
               <Database className="h-4 w-4" />
               <span className="hidden sm:inline">Data</span>
@@ -442,6 +462,21 @@ export const Settings: React.FC<SettingsProps> = memo(function Settings({
                 />
               </CardContent>
             </Card>
+          </TabsContent>
+        )}
+
+        {/* Band Tab - Only rendered when Supabase is configured */}
+        {showInvitations && currentBandId && currentUserId && onBandNameUpdate && onLeaveBand && onDeleteBand && (
+          <TabsContent value="BAND" className="space-y-6 animate-slide-in-from-bottom animation-forwards">
+            <BandSettingsSection
+              bandId={currentBandId}
+              bandName={currentBandName}
+              currentUserId={currentUserId}
+              isAdmin={isAdmin}
+              onBandNameUpdate={onBandNameUpdate}
+              onLeaveBand={onLeaveBand}
+              onDeleteBand={onDeleteBand}
+            />
           </TabsContent>
         )}
 
