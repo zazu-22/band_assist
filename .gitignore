@@ -61,3 +61,6 @@ public/soundfont/
 
 # Codebase tooling artifacts
 .codebasemap
+
+# Database backups
+backups/

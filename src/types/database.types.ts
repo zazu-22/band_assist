@@ -7,30 +7,10 @@ export type Json =
   | Json[]
 
 export type Database = {
-  graphql_public: {
-    Tables: {
-      [_ in never]: never
-    }
-    Views: {
-      [_ in never]: never
-    }
-    Functions: {
-      graphql: {
-        Args: {
-          extensions?: Json
-          operationName?: string
-          query?: string
-          variables?: Json
-        }
-        Returns: Json
-      }
-    }
-    Enums: {
-      [_ in never]: never
-    }
-    CompositeTypes: {
-      [_ in never]: never
-    }
+  // Allows to automatically instantiate createClient with right options
+  // instead of createClient<Database, { PostgrestVersion: 'XX' }>(URL, KEY)
+  __InternalSupabase: {
+    PostgrestVersion: "13.0.5"
   }
   public: {
     Tables: {
@@ -266,6 +246,63 @@ export type Database = {
           },
         ]
       }
+      practice_sessions: {
+        Row: {
+          band_id: string
+          created_at: string
+          date: string
+          duration_minutes: number
+          id: string
+          notes: string | null
+          sections_practiced: Json | null
+          song_id: string
+          tempo_bpm: number | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          band_id: string
+          created_at?: string
+          date?: string
+          duration_minutes: number
+          id?: string
+          notes?: string | null
+          sections_practiced?: Json | null
+          song_id: string
+          tempo_bpm?: number | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          band_id?: string
+          created_at?: string
+          date?: string
+          duration_minutes?: number
+          id?: string
+          notes?: string | null
+          sections_practiced?: Json | null
+          song_id?: string
+          tempo_bpm?: number | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "practice_sessions_band_id_fkey"
+            columns: ["band_id"]
+            isOneToOne: false
+            referencedRelation: "bands"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "practice_sessions_song_id_fkey"
+            columns: ["song_id"]
+            isOneToOne: false
+            referencedRelation: "songs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       roles: {
         Row: {
           band_id: string | null
@@ -403,112 +440,41 @@ export type Database = {
       }
       user_song_status: {
         Row: {
+          confidence_level: number | null
+          created_at: string
           id: string
-          user_id: string
+          last_practiced_at: string | null
           song_id: string
           status: string
-          confidence_level: number | null
-          last_practiced_at: string | null
-          created_at: string
           updated_at: string
+          user_id: string
         }
         Insert: {
+          confidence_level?: number | null
+          created_at?: string
           id?: string
-          user_id: string
+          last_practiced_at?: string | null
           song_id: string
           status: string
-          confidence_level?: number | null
-          last_practiced_at?: string | null
-          created_at?: string
           updated_at?: string
+          user_id: string
         }
         Update: {
+          confidence_level?: number | null
+          created_at?: string
           id?: string
-          user_id?: string
+          last_practiced_at?: string | null
           song_id?: string
           status?: string
-          confidence_level?: number | null
-          last_practiced_at?: string | null
-          created_at?: string
           updated_at?: string
+          user_id?: string
         }
         Relationships: [
-          {
-            foreignKeyName: "user_song_status_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
           {
             foreignKeyName: "user_song_status_song_id_fkey"
             columns: ["song_id"]
             isOneToOne: false
             referencedRelation: "songs"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      practice_sessions: {
-        Row: {
-          id: string
-          user_id: string
-          song_id: string
-          band_id: string
-          duration_minutes: number
-          tempo_bpm: number | null
-          sections_practiced: Json | null
-          notes: string | null
-          date: string
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          user_id: string
-          song_id: string
-          band_id: string
-          duration_minutes: number
-          tempo_bpm?: number | null
-          sections_practiced?: Json | null
-          notes?: string | null
-          date?: string
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          user_id?: string
-          song_id?: string
-          band_id?: string
-          duration_minutes?: number
-          tempo_bpm?: number | null
-          sections_practiced?: Json | null
-          notes?: string | null
-          date?: string
-          created_at?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "practice_sessions_user_id_fkey"
-            columns: ["user_id"]
-            isOneToOne: false
-            referencedRelation: "users"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "practice_sessions_song_id_fkey"
-            columns: ["song_id"]
-            isOneToOne: false
-            referencedRelation: "songs"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "practice_sessions_band_id_fkey"
-            columns: ["band_id"]
-            isOneToOne: false
-            referencedRelation: "bands"
             referencedColumns: ["id"]
           },
         ]
@@ -527,6 +493,15 @@ export type Database = {
         Args: { p_band_id: string }
         Returns: number
       }
+      create_band_with_admin: {
+        Args: { p_band_name: string }
+        Returns: {
+          band_id: string
+          band_name: string
+          created_at: string
+        }[]
+      }
+      get_member_user_id: { Args: { member_id: string }; Returns: string }
       is_email_band_member: {
         Args: { p_band_id: string; p_email: string }
         Returns: boolean
@@ -659,11 +634,7 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
-  graphql_public: {
-    Enums: {},
-  },
   public: {
     Enums: {},
   },
 } as const
-

@@ -21,7 +21,7 @@
 | 🟢 Done | 16 | Completed and merged |
 | 🟡 Pending | 1 | Queued for implementation (in sequence order) |
 | ⚪ Backlog | 16 | Planned but not yet prioritized |
-| 🔵 GitHub Issues | 5 | Tracked in GitHub (bugs, smaller features) |
+| 🔵 GitHub Issues | 4 | Tracked in GitHub (bugs, smaller features) |
 
 ---
 
@@ -41,7 +41,7 @@ Specs queued for implementation **in priority order**. Work through these sequen
 
 ---
 
-## 🔵 GitHub Issues (5 open)
+## 🔵 GitHub Issues (4 open)
 
 Smaller features, bug fixes, and follow-up work tracked in GitHub rather than full specs.
 
@@ -63,9 +63,10 @@ Smaller features, bug fixes, and follow-up work tracked in GitHub rather than fu
 
 | # | Title | Effort | Dependencies |
 |---|-------|--------|--------------|
-| [#124](https://github.com/zazu-22/band_assist/issues/124) | Band management UI (parent tracking) | - | Close after #127, #128 |
-| [#127](https://github.com/zazu-22/band_assist/issues/127) | Enhanced band selector with creation flow | Medium | None |
-| [#128](https://github.com/zazu-22/band_assist/issues/128) | Band settings/management UI | Medium | None |
+| [#124](https://github.com/zazu-22/band_assist/issues/124) | Band management UI (parent tracking) | - | Close after #128 |
+| [#127](https://github.com/zazu-22/band_assist/issues/127) | Enhanced band selector with creation flow | Medium | ✅ Closed |
+| [#141](https://github.com/zazu-22/band_assist/issues/141) | Fix band selection persistence & auto-save race condition | Medium | ✅ Closed |
+| [#128](https://github.com/zazu-22/band_assist/issues/128) | Band settings/management UI | Medium | Ready (deps complete) |
 
 ### Standalone Enhancements
 
@@ -149,6 +150,11 @@ Smaller features, bug fixes, and follow-up work tracked in GitHub rather than fu
 
 | Date | Item | Change |
 |------|------|--------|
+| 2025-12-08 | [#141](https://github.com/zazu-22/band_assist/issues/141) Auto-save race condition | ✅ Fixed (three-layer protection: cancel pending saves, loading guard, band integrity check) |
+| 2025-12-08 | PR #139 | ✅ Unblocked (ready for merge) |
+| 2025-12-08 | [#141](https://github.com/zazu-22/band_assist/issues/141) Auto-save race condition | ➕ Created (blocks PR #139, #128 depends on it) |
+| 2025-12-08 | PR #139 | ⚠️ Blocked pending #141 resolution (data corruption discovered) |
+| 2025-12-08 | [#127](https://github.com/zazu-22/band_assist/issues/127) Enhanced band selector | ✅ Closed (merged in PR #139) |
 | 2025-12-08 | [#125](https://github.com/zazu-22/band_assist/issues/125), [#126](https://github.com/zazu-22/band_assist/issues/126) | ✅ Closed (merged in PR #135) |
 | 2025-12-07 | [#107](https://github.com/zazu-22/band_assist/issues/107) Song file naming | ✅ Closed (merged in PR #132) |
 | 2025-12-07 | [#100](https://github.com/zazu-22/band_assist/issues/100) Password reset bug | ✅ Closed (merged in PR #130) |
@@ -202,11 +208,12 @@ infra-test-environment-setup (backlog)
 #107 (file naming) ─── ✅ CLOSED
 #125 (practice edit) ─── ✅ CLOSED
 #126 (filtering/sort) ─── ✅ CLOSED
+#127 (band selector) ─── ✅ CLOSED
+#141 (auto-save race condition) ─── ✅ CLOSED
 
 #121 (virtualization) ─── ready (deps complete)
 
-#127 (band selector) ───┬──► #124 (close parent)
-#128 (band settings) ───┘
+#128 (band settings) ──► #124 (close parent) ─── ready (deps complete)
 
 #101 (mobile iOS) ─── standalone, large scope
 ```
@@ -232,12 +239,13 @@ Recommended order considering dependencies and effort:
 | 4 | [#126](https://github.com/zazu-22/band_assist/issues/126) Filtering & sorting | Issue | ✅ Closed (PR #135) |
 | 5 | [#121](https://github.com/zazu-22/band_assist/issues/121) Virtualize table | Issue | Ready - deps complete |
 
-### Phase 3: Band Management
+### Phase 3: Band Management (In Progress)
 
 | Order | Item | Type | Rationale |
 |-------|------|------|-----------|
-| 6 | [#127](https://github.com/zazu-22/band_assist/issues/127) Band selector | Issue | Foundation for multi-band UX |
-| 7 | [#128](https://github.com/zazu-22/band_assist/issues/128) Band settings | Issue | Completes band management |
+| 6 | [#127](https://github.com/zazu-22/band_assist/issues/127) Band selector | Issue | ✅ Closed |
+| 6a | [#141](https://github.com/zazu-22/band_assist/issues/141) Fix auto-save race condition | Issue | ✅ Closed |
+| 7 | [#128](https://github.com/zazu-22/band_assist/issues/128) Band settings | Issue | Ready (deps complete) |
 | 8 | Close [#124](https://github.com/zazu-22/band_assist/issues/124) | Issue | Parent tracking issue done |
 
 ### Phase 4: Larger Efforts
@@ -251,8 +259,10 @@ Recommended order considering dependencies and effort:
 
 These can run concurrently with minimal conflict:
 
-- **#127** + **#128** — same feature area, can be done together
-- **#101** (mobile) can run in parallel with Phase 2/3 if resources allow
+- **#128** (band settings) — ready, dependencies complete
+- **#101** (mobile) can run in parallel with Phase 3/4 if resources allow
+
+> ✅ **Note:** #141 (auto-save race condition) has been resolved. PR #139 is unblocked.
 
 ---
 

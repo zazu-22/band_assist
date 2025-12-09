@@ -42,6 +42,7 @@ interface SidebarProps {
   currentBandName?: string;
   userBands?: Array<{ id: string; name: string }>;
   onSelectBand?: (bandId: string) => void;
+  onCreateBand?: () => void;
   /** Forces expanded display for mobile drawer context */
   isMobileDrawer?: boolean;
 }
@@ -52,6 +53,7 @@ export const Sidebar = memo(function Sidebar({
   currentBandName,
   userBands = [],
   onSelectBand,
+  onCreateBand,
   isMobileDrawer = false,
 }: SidebarProps) {
   const navigate = useNavigate();
@@ -122,6 +124,7 @@ export const Sidebar = memo(function Sidebar({
           currentBandName={currentBandName}
           bands={userBands}
           onSelectBand={onSelectBand}
+          onCreateBand={onCreateBand}
         />
       )}
 

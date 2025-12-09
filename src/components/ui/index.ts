@@ -4,6 +4,7 @@ export { LoadingSpinner } from './LoadingSpinner';
 export { LoadingScreen } from './LoadingScreen';
 export { EmptyState } from './EmptyState';
 export { ConfirmDialog } from './ConfirmDialog';
+export { CreateBandDialog } from './CreateBandDialog';
 export { DangerousActionDialog } from './DangerousActionDialog';
 export { LogPracticeModal, type PracticeFormData } from './LogPracticeModal';
 export { ErrorBoundary } from './ErrorBoundary';

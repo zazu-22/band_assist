@@ -1,11 +1,12 @@
 import React, { memo, useState, useCallback, useMemo } from 'react';
-import { Users, ChevronDown, Check } from 'lucide-react';
+import { Users, ChevronDown, Check, Plus } from 'lucide-react';
 import { Avatar, AvatarFallback } from '@/components/primitives';
 import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
   DropdownMenuTrigger,
+  DropdownMenuSeparator,
 } from '@/components/ui/dropdown-menu';
 
 interface Band {
@@ -17,18 +18,20 @@ interface BandSelectorProps {
   currentBandName: string;
   bands: Band[];
   onSelectBand: (bandId: string) => void;
+  onCreateBand?: () => void;
 }
 
 /**
  * BandSelector Component
  *
- * Displays the current band name and allows switching between multiple bands.
- * Shows a dropdown when user is a member of multiple bands.
+ * Displays the current band name and allows switching between bands.
+ * Always shows as a dropdown for consistency and to enable band creation.
  */
 export const BandSelector: React.FC<BandSelectorProps> = memo(function BandSelector({
   currentBandName,
   bands,
   onSelectBand,
+  onCreateBand,
 }) {
   const [isOpen, setIsOpen] = useState(false);
 
@@ -36,8 +39,6 @@ export const BandSelector: React.FC<BandSelectorProps> = memo(function BandSelec
     () => bands.find(b => b.name === currentBandName),
     [bands, currentBandName]
   );
-
-  const showDropdown = bands.length > 1;
 
   const handleBandClick = useCallback(
     (bandId: string) => {
@@ -47,36 +48,26 @@ export const BandSelector: React.FC<BandSelectorProps> = memo(function BandSelec
     [onSelectBand]
   );
 
-  const handleOpenChange = useCallback(
-    (open: boolean) => {
-      if (showDropdown) {
-        setIsOpen(open);
-      }
-    },
-    [showDropdown]
-  );
+  const handleCreateClick = useCallback(() => {
+    setIsOpen(false);
+    onCreateBand?.();
+  }, [onCreateBand]);
 
-  // Single band - no dropdown needed
-  if (!showDropdown) {
-    return (
-      <div className="w-full flex items-center gap-2 px-4 py-3 bg-sidebar border-b border-sidebar-border">
-        <Avatar className="w-8 h-8 bg-primary">
-          <AvatarFallback className="bg-primary text-primary-foreground">
-            <Users className="w-4 h-4" />
-          </AvatarFallback>
-        </Avatar>
-        <div className="flex-1 min-w-0 text-left">
-          <p className="text-sm font-medium text-sidebar-foreground truncate">{currentBandName}</p>
-          <p className="text-xs text-sidebar-foreground/60">Current Band</p>
-        </div>
-      </div>
-    );
-  }
+  const handleOpenChange = useCallback((open: boolean) => {
+    setIsOpen(open);
+  }, []);
+
+  // Subtitle text based on band count
+  const subtitleText = useMemo(
+    () => (bands.length === 1 ? 'Current Band' : `${bands.length} bands`),
+    [bands.length]
+  );
 
   return (
     <DropdownMenu open={isOpen} onOpenChange={handleOpenChange}>
       <DropdownMenuTrigger asChild>
         <button
+          type="button"
           className="w-full flex items-center gap-2 px-4 py-3 bg-sidebar border-b border-sidebar-border hover:bg-sidebar-accent/50 transition-colors"
           aria-label="Select band"
         >
@@ -89,7 +80,7 @@ export const BandSelector: React.FC<BandSelectorProps> = memo(function BandSelec
             <p className="text-sm font-medium text-sidebar-foreground truncate">
               {currentBandName}
             </p>
-            <p className="text-xs text-sidebar-foreground/60">{bands.length} bands</p>
+            <p className="text-xs text-sidebar-foreground/60">{subtitleText}</p>
           </div>
           <ChevronDown
             className={`w-4 h-4 text-sidebar-foreground/60 transition-transform ${isOpen ? 'rotate-180' : ''}`}
@@ -118,6 +109,23 @@ export const BandSelector: React.FC<BandSelectorProps> = memo(function BandSelec
             )}
           </DropdownMenuItem>
         ))}
+
+        {/* Add New Band option */}
+        {onCreateBand && (
+          <>
+            <DropdownMenuSeparator />
+            <DropdownMenuItem
+              onClick={handleCreateClick}
+              className="flex items-center gap-3 text-primary"
+              aria-label="Create new band"
+            >
+              <div className="w-6 h-6 rounded-full bg-primary/10 flex items-center justify-center" aria-hidden="true">
+                <Plus className="w-3.5 h-3.5" />
+              </div>
+              <span className="font-medium">Add New Band</span>
+            </DropdownMenuItem>
+          </>
+        )}
       </DropdownMenuContent>
     </DropdownMenu>
   );

@@ -2,11 +2,12 @@ import { Song, BandMember, BandEvent } from '../types';
 import { IStorageService, LoadResult } from './IStorageService';
 import { toast } from 'sonner';
 
-const STORAGE_KEYS = {
+export const STORAGE_KEYS = {
   SONGS: 'sdb_songs',
   MEMBERS: 'sdb_members',
   ROLES: 'sdb_roles',
   EVENTS: 'sdb_events',
+  SELECTED_BAND: 'band-assist-selected-band',
 };
 
 /**

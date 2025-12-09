@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { memo, useEffect } from 'react';
 import { useLocation } from 'react-router-dom';
 import { Menu } from 'lucide-react';
 import { cn } from '@/lib/utils';
@@ -16,14 +16,27 @@ interface MobileNavProps {
   currentBandName?: string;
   userBands?: Array<{ id: string; name: string }>;
   onSelectBand?: (bandId: string) => void;
+  onCreateBand?: () => void;
 }
 
-export function MobileNav({
+/**
+ * Render a fixed mobile header with a slide-out navigation drawer, current band and page indicators, and a theme toggle.
+ *
+ * @param onLogout - Optional callback invoked when the user requests logout.
+ * @param showLogout - Whether to show the logout option in the navigation.
+ * @param currentBandName - Name of the currently selected band to display in the header.
+ * @param userBands - Array of available bands (each with `id` and `name`) passed through to the sidebar.
+ * @param onSelectBand - Optional callback called with a band ID when a band is selected from the sidebar.
+ * @param onCreateBand - Optional callback invoked to create a new band from the sidebar.
+ * @returns The mobile navigation header element containing the menu trigger, band/page labels, and theme toggle.
+ */
+export const MobileNav = memo(function MobileNav({
   onLogout,
   showLogout = false,
   currentBandName,
   userBands = [],
   onSelectBand,
+  onCreateBand,
 }: MobileNavProps) {
   const location = useLocation();
   const { mobileOpen, setMobileOpen } = useSidebar();
@@ -62,6 +75,7 @@ export function MobileNav({
               currentBandName={currentBandName}
               userBands={userBands}
               onSelectBand={onSelectBand}
+              onCreateBand={onCreateBand}
               isMobileDrawer
             />
           </SheetContent>
@@ -91,4 +105,6 @@ export function MobileNav({
       </div>
     </>
   );
-}
+});
+
+MobileNav.displayName = 'MobileNav';

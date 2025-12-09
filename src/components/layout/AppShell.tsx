@@ -1,3 +1,4 @@
+import { memo } from 'react';
 import { Outlet } from 'react-router-dom';
 import { cn } from '@/lib/utils';
 import { useIsDesktop } from '@/hooks/useMediaQuery';
@@ -12,6 +13,7 @@ interface AppShellProps {
   currentBandName?: string;
   userBands?: Array<{ id: string; name: string }>;
   onSelectBand?: (bandId: string) => void;
+  onCreateBand?: () => void;
 }
 
 /**
@@ -36,12 +38,28 @@ function SkipLink() {
   );
 }
 
-export function AppShell({
+/**
+ * Render the application shell with responsive navigation and a main content area.
+ *
+ * Renders a TooltipProvider-wrapped layout that includes an accessible skip link, a
+ * sidebar on desktop or a mobile navigation on smaller viewports, and a main content
+ * region that hosts routed children inside an error boundary.
+ *
+ * @param onLogout - Optional callback invoked when the user triggers logout.
+ * @param showLogout - Whether to show the logout control in navigation.
+ * @param currentBandName - The name of the currently selected band (displayed in navigation).
+ * @param userBands - Array of user bands (each with `id` and `name`) shown in band selector.
+ * @param onSelectBand - Optional callback invoked with a band `id` when the user selects a band.
+ * @param onCreateBand - Optional callback invoked to initiate creating a new band.
+ * @returns A React element rendering the application shell with navigation and the main content region.
+ */
+export const AppShell = memo(function AppShell({
   onLogout,
   showLogout = false,
   currentBandName,
   userBands = [],
   onSelectBand,
+  onCreateBand,
 }: AppShellProps) {
   const isDesktop = useIsDesktop();
 
@@ -57,6 +75,7 @@ export function AppShell({
             currentBandName={currentBandName}
             userBands={userBands}
             onSelectBand={onSelectBand}
+            onCreateBand={onCreateBand}
           />
         )}
 
@@ -68,6 +87,7 @@ export function AppShell({
             currentBandName={currentBandName}
             userBands={userBands}
             onSelectBand={onSelectBand}
+            onCreateBand={onCreateBand}
           />
         )}
 
@@ -89,4 +109,6 @@ export function AppShell({
       </div>
     </TooltipProvider>
   );
-}
+});
+
+AppShell.displayName = 'AppShell';
