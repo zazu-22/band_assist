@@ -20,6 +20,7 @@ vi.mock('@/services/storageService', () => ({
 vi.mock('@/components/ui', () => ({
   toast: {
     success: vi.fn(),
+    warning: vi.fn(),
   },
 }));
 

@@ -105,12 +105,10 @@ export function useBandCreation({
       try {
         // Create band and add user as admin atomically using RPC function
         // This prevents orphaned bands if user_bands insert would fail
-        // Note: Type assertion used because migration may not be applied yet
-        type CreateBandResult = { band_id: string; band_name: string; created_at: string };
         const { data: rpcResult, error: createError } = await supabase.rpc(
-          'create_band_with_admin' as never,
-          { p_band_name: trimmedName } as never
-        ) as { data: CreateBandResult[] | null; error: { message: string } | null };
+          'create_band_with_admin',
+          { p_band_name: trimmedName }
+        );
 
         if (createError) {
           console.error('Error creating band:', createError);
