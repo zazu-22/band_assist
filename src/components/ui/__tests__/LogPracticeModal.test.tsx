@@ -2,7 +2,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { LogPracticeModal } from '../LogPracticeModal';
-import type { Song, PracticeSession } from '@/types';
+import type { Song, PracticeSession, UserSongProgress } from '@/types';
 
 // Mock getTodayDateString to return a consistent date for testing
 vi.mock('@/lib/dateUtils', () => ({
@@ -318,6 +318,201 @@ describe('LogPracticeModal', () => {
   describe('displayName', () => {
     it('should have displayName set', () => {
       expect(LogPracticeModal.displayName).toBe('LogPracticeModal');
+    });
+  });
+
+  describe('status and confidence fields', () => {
+    // Create mock song statuses for testing
+    const mockSongStatuses = new Map<string, UserSongProgress>([
+      [
+        'song-1',
+        {
+          id: 'status-1',
+          userId: 'user-1',
+          songId: 'song-1',
+          status: 'Learning',
+          confidenceLevel: 3,
+          createdAt: '2025-12-01T00:00:00Z',
+          updatedAt: '2025-12-01T00:00:00Z',
+        },
+      ],
+      [
+        'song-2',
+        {
+          id: 'status-2',
+          userId: 'user-1',
+          songId: 'song-2',
+          status: 'Mastered',
+          confidenceLevel: 5,
+          createdAt: '2025-12-01T00:00:00Z',
+          updatedAt: '2025-12-01T00:00:00Z',
+        },
+      ],
+    ]);
+
+    it('should render Learning Status dropdown', () => {
+      render(<LogPracticeModal {...defaultProps} />);
+
+      expect(screen.getByLabelText(/learning status/i)).toBeInTheDocument();
+    });
+
+    it('should render Confidence Level selector with 5 buttons', () => {
+      render(<LogPracticeModal {...defaultProps} />);
+
+      expect(screen.getByText('Confidence Level')).toBeInTheDocument();
+      // Check all 5 confidence buttons exist
+      for (let i = 1; i <= 5; i++) {
+        expect(screen.getByRole('button', { name: String(i) })).toBeInTheDocument();
+      }
+    });
+
+    it('should pre-populate status from songStatuses when song is auto-selected', () => {
+      render(
+        <LogPracticeModal
+          {...defaultProps}
+          songs={singleSong}
+          songStatuses={mockSongStatuses}
+        />
+      );
+
+      // The status dropdown should show "Learning" (the status for song-1)
+      expect(screen.getByRole('combobox', { name: /learning status/i })).toHaveTextContent('Learning');
+    });
+
+    it('should default to Not Started when no status exists for song', () => {
+      const emptySongStatuses = new Map<string, UserSongProgress>();
+      render(
+        <LogPracticeModal
+          {...defaultProps}
+          songs={singleSong}
+          songStatuses={emptySongStatuses}
+        />
+      );
+
+      expect(screen.getByRole('combobox', { name: /learning status/i })).toHaveTextContent('Not Started');
+    });
+
+    it('should allow selecting a confidence level', async () => {
+      const user = userEvent.setup();
+      render(<LogPracticeModal {...defaultProps} songs={singleSong} />);
+
+      const confidenceButton3 = screen.getByRole('button', { name: '3' });
+      await user.click(confidenceButton3);
+
+      // Button 3 should have the selected styling (scale-105 class indicates selection)
+      expect(confidenceButton3).toHaveClass('scale-105');
+    });
+
+    it('should call onStatusChange when confidence is changed on submit', async () => {
+      const user = userEvent.setup();
+      const onSubmit = vi.fn().mockResolvedValue(undefined);
+      const onStatusChange = vi.fn().mockResolvedValue(undefined);
+
+      render(
+        <LogPracticeModal
+          {...defaultProps}
+          songs={singleSong}
+          onSubmit={onSubmit}
+          songStatuses={mockSongStatuses}
+          onStatusChange={onStatusChange}
+        />
+      );
+
+      // Change confidence from 3 to 4 (simpler than changing dropdown)
+      const confidenceButton4 = screen.getByRole('button', { name: '4' });
+      await user.click(confidenceButton4);
+
+      // Submit the form
+      const submitButton = screen.getByRole('button', { name: /log session/i });
+      await user.click(submitButton);
+
+      await waitFor(() => {
+        expect(onStatusChange).toHaveBeenCalledWith('song-1', 'Learning', 4);
+      });
+    });
+
+    it('should not call onStatusChange when status is unchanged', async () => {
+      const user = userEvent.setup();
+      const onSubmit = vi.fn().mockResolvedValue(undefined);
+      const onStatusChange = vi.fn().mockResolvedValue(undefined);
+
+      render(
+        <LogPracticeModal
+          {...defaultProps}
+          songs={singleSong}
+          onSubmit={onSubmit}
+          songStatuses={mockSongStatuses}
+          onStatusChange={onStatusChange}
+        />
+      );
+
+      // Submit without changing status
+      const submitButton = screen.getByRole('button', { name: /log session/i });
+      await user.click(submitButton);
+
+      await waitFor(() => {
+        expect(onSubmit).toHaveBeenCalled();
+      });
+
+      // onStatusChange should NOT be called since status didn't change
+      expect(onStatusChange).not.toHaveBeenCalled();
+    });
+
+    it('should call onStatusChange when only confidence is changed', async () => {
+      const user = userEvent.setup();
+      const onSubmit = vi.fn().mockResolvedValue(undefined);
+      const onStatusChange = vi.fn().mockResolvedValue(undefined);
+
+      render(
+        <LogPracticeModal
+          {...defaultProps}
+          songs={singleSong}
+          onSubmit={onSubmit}
+          songStatuses={mockSongStatuses}
+          onStatusChange={onStatusChange}
+        />
+      );
+
+      // Change confidence from 3 to 5
+      const confidenceButton5 = screen.getByRole('button', { name: '5' });
+      await user.click(confidenceButton5);
+
+      // Submit the form
+      const submitButton = screen.getByRole('button', { name: /log session/i });
+      await user.click(submitButton);
+
+      await waitFor(() => {
+        expect(onStatusChange).toHaveBeenCalledWith('song-1', 'Learning', 5);
+      });
+    });
+
+    it('should show correct status when single song is auto-selected with different statuses', () => {
+      // Test with a song that has Mastered status
+      const masteredSong: Song[] = [mockSongs[1]]; // song-2 has Mastered status
+
+      render(
+        <LogPracticeModal
+          {...defaultProps}
+          songs={masteredSong}
+          songStatuses={mockSongStatuses}
+        />
+      );
+
+      // Status should be Mastered (song-2's status)
+      expect(screen.getByRole('combobox', { name: /learning status/i })).toHaveTextContent('Mastered');
+    });
+
+    it('should pre-populate status in edit mode from songStatuses', () => {
+      render(
+        <LogPracticeModal
+          {...defaultProps}
+          editSession={mockEditSession}
+          songStatuses={mockSongStatuses}
+        />
+      );
+
+      // Should show the status for the session's song (song-1 = Learning)
+      expect(screen.getByRole('combobox', { name: /learning status/i })).toHaveTextContent('Learning');
     });
   });
 });

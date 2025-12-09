@@ -18,7 +18,7 @@ import {
   SelectValue,
 } from '@/components/primitives';
 import { getTodayDateString } from '@/lib/dateUtils';
-import type { Song, PracticeSession } from '@/types';
+import type { Song, PracticeSession, UserSongStatus, UserSongProgress } from '@/types';
 
 // =============================================================================
 // TYPES
@@ -31,6 +31,10 @@ interface LogPracticeModalProps {
   /** If provided, modal is in edit mode for this session */
   editSession?: PracticeSession;
   onSubmit: (data: PracticeFormData) => Promise<void>;
+  /** Map of songId to current status (for pre-populating status fields) */
+  songStatuses?: Map<string, UserSongProgress>;
+  /** Callback to update song status (only called if status changed) */
+  onStatusChange?: (songId: string, status: UserSongStatus, confidence?: number) => Promise<void>;
 }
 
 export interface PracticeFormData {
@@ -46,12 +50,22 @@ export interface PracticeFormData {
 // COMPONENT
 // =============================================================================
 
+// Status options for the Learning Status dropdown
+const STATUS_OPTIONS: { value: UserSongStatus; label: string }[] = [
+  { value: 'Not Started', label: 'Not Started' },
+  { value: 'Learning', label: 'Learning' },
+  { value: 'Learned', label: 'Learned' },
+  { value: 'Mastered', label: 'Mastered' },
+];
+
 export const LogPracticeModal: React.FC<LogPracticeModalProps> = memo(function LogPracticeModal({
   isOpen,
   onClose,
   songs,
   editSession,
   onSubmit,
+  songStatuses,
+  onStatusChange,
 }) {
   const isEditMode = !!editSession;
 
@@ -65,6 +79,26 @@ export const LogPracticeModal: React.FC<LogPracticeModalProps> = memo(function L
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
+  // Status fields
+  const [status, setStatus] = useState<UserSongStatus>('Not Started');
+  const [confidence, setConfidence] = useState<number | undefined>(undefined);
+
+  // Track original status to detect changes
+  const [originalStatus, setOriginalStatus] = useState<UserSongStatus>('Not Started');
+  const [originalConfidence, setOriginalConfidence] = useState<number | undefined>(undefined);
+
+  // Helper to get status for a song from the statuses map
+  const getSongStatus = useCallback(
+    (id: string): { status: UserSongStatus; confidence: number | undefined } => {
+      const songStatus = songStatuses?.get(id);
+      return {
+        status: songStatus?.status || 'Not Started',
+        confidence: songStatus?.confidenceLevel,
+      };
+    },
+    [songStatuses]
+  );
+
   // Reset form when modal opens or editSession changes
   useEffect(() => {
     if (isOpen) {
@@ -75,18 +109,51 @@ export const LogPracticeModal: React.FC<LogPracticeModalProps> = memo(function L
         setTempoBpm(editSession.tempoBpm ? String(editSession.tempoBpm) : '');
         setSections(editSession.sectionsPracticed?.join(', ') || '');
         setNotes(editSession.notes || '');
+        // Set status from the song's current status
+        const { status: songStatus, confidence: songConfidence } = getSongStatus(editSession.songId);
+        setStatus(songStatus);
+        setConfidence(songConfidence);
+        setOriginalStatus(songStatus);
+        setOriginalConfidence(songConfidence);
       } else {
         // Reset to defaults for new session
-        setSongId(songs.length === 1 ? songs[0].id : '');
+        const initialSongId = songs.length === 1 ? songs[0].id : '';
+        setSongId(initialSongId);
         setDate(getTodayDateString());
         setDurationMinutes('30');
         setTempoBpm('');
         setSections('');
         setNotes('');
+        // Set status from the song's current status (or default if no song selected)
+        if (initialSongId) {
+          const { status: songStatus, confidence: songConfidence } = getSongStatus(initialSongId);
+          setStatus(songStatus);
+          setConfidence(songConfidence);
+          setOriginalStatus(songStatus);
+          setOriginalConfidence(songConfidence);
+        } else {
+          setStatus('Not Started');
+          setConfidence(undefined);
+          setOriginalStatus('Not Started');
+          setOriginalConfidence(undefined);
+        }
       }
       setError(null);
     }
-  }, [isOpen, editSession, songs]);
+  }, [isOpen, editSession, songs, getSongStatus]);
+
+  // Update status when song selection changes
+  const handleSongChange = useCallback(
+    (newSongId: string) => {
+      setSongId(newSongId);
+      const { status: songStatus, confidence: songConfidence } = getSongStatus(newSongId);
+      setStatus(songStatus);
+      setConfidence(songConfidence);
+      setOriginalStatus(songStatus);
+      setOriginalConfidence(songConfidence);
+    },
+    [getSongStatus]
+  );
 
   const handleOpenChange = useCallback(
     (open: boolean) => {
@@ -160,6 +227,13 @@ export const LogPracticeModal: React.FC<LogPracticeModalProps> = memo(function L
           notes: notes.trim() || undefined,
           date,
         });
+
+        // Update status if it changed and callback is provided
+        const statusChanged = status !== originalStatus || confidence !== originalConfidence;
+        if (statusChanged && onStatusChange) {
+          await onStatusChange(songId, status, confidence);
+        }
+
         onClose();
       } catch (err) {
         setError(err instanceof Error ? err.message : 'Failed to save practice session');
@@ -167,7 +241,7 @@ export const LogPracticeModal: React.FC<LogPracticeModalProps> = memo(function L
         setIsSubmitting(false);
       }
     },
-    [songId, durationMinutes, date, tempoBpm, sections, notes, onSubmit, onClose]
+    [songId, durationMinutes, date, tempoBpm, sections, notes, onSubmit, onClose, status, confidence, originalStatus, originalConfidence, onStatusChange]
   );
 
   return (
@@ -204,7 +278,7 @@ export const LogPracticeModal: React.FC<LogPracticeModalProps> = memo(function L
           {/* Song selection */}
           <div className="space-y-2">
             <Label htmlFor="song-select">Song *</Label>
-            <Select value={songId} onValueChange={setSongId}>
+            <Select value={songId} onValueChange={handleSongChange}>
               <SelectTrigger id="song-select">
                 <SelectValue placeholder="Select a song" />
               </SelectTrigger>
@@ -280,6 +354,47 @@ export const LogPracticeModal: React.FC<LogPracticeModalProps> = memo(function L
               placeholder="Any observations or reminders"
               rows={3}
             />
+          </div>
+
+          {/* Learning Status */}
+          <div className="space-y-2">
+            <Label htmlFor="learning-status">Learning Status</Label>
+            <Select value={status} onValueChange={(value: UserSongStatus) => setStatus(value)}>
+              <SelectTrigger id="learning-status">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                {STATUS_OPTIONS.map(option => (
+                  <SelectItem key={option.value} value={option.value}>
+                    {option.label}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Confidence Level */}
+          <div className="space-y-2">
+            <Label>Confidence Level</Label>
+            <div className="flex gap-2">
+              {[1, 2, 3, 4, 5].map(level => (
+                <button
+                  key={level}
+                  type="button"
+                  onClick={() => setConfidence(level)}
+                  className={`flex-1 py-2 rounded-lg text-lg font-bold transition-all ${
+                    confidence === level
+                      ? 'bg-primary text-primary-foreground scale-105 shadow-md'
+                      : 'bg-muted text-muted-foreground hover:bg-muted/80'
+                  }`}
+                >
+                  {level}
+                </button>
+              ))}
+            </div>
+            <p className="text-xs text-muted-foreground text-center">
+              1 = Not confident, 5 = Very confident
+            </p>
           </div>
 
           <DialogFooter>
