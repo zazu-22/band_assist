@@ -868,6 +868,12 @@ const App: React.FC = () => {
    * Switches to the next available band or shows create band dialog
    */
   const handleLeaveBand = useCallback(async () => {
+    // Guard against being called when no band is selected
+    if (!currentBandId) {
+      console.warn('handleLeaveBand called with no currentBandId');
+      return;
+    }
+
     // Remove the current band from userBands
     const remainingBands = userBands.filter(b => b.id !== currentBandId);
     setUserBands(remainingBands);

@@ -123,13 +123,23 @@ export const BandSettingsSection: React.FC<BandSettingsSectionProps> = memo(
 
         if (error) throw error;
 
-        // Transform data
-        const transformedMembers: BandMemberWithRole[] = (data || []).map((row) => ({
-          userId: row.user_id,
-          role: row.role as 'admin' | 'member',
-          joinedAt: row.joined_at,
-          isCurrentUser: row.user_id === currentUserId,
-        }));
+        // Transform data with safe type handling
+        const transformedMembers: BandMemberWithRole[] = (data || []).map((row) => {
+          // Validate role - log unexpected values for debugging
+          let role: 'admin' | 'member' = 'member';
+          if (row.role === 'admin') {
+            role = 'admin';
+          } else if (row.role !== 'member') {
+            console.warn(`Unexpected role value for user ${row.user_id}: ${row.role}. Treating as 'member'.`);
+          }
+
+          return {
+            userId: row.user_id,
+            role,
+            joinedAt: row.joined_at,
+            isCurrentUser: row.user_id === currentUserId,
+          };
+        });
 
         setMembers(transformedMembers);
       } catch (err) {
@@ -234,7 +244,9 @@ export const BandSettingsSection: React.FC<BandSettingsSectionProps> = memo(
       }
     }, [isOnlyAdmin, otherMembers.length]);
 
-    // Handle transfer admin role
+    // Handle transfer admin role with rollback on partial failure
+    // Note: This uses Promise.all for near-atomic execution, but true DB atomicity
+    // would require a stored procedure. This implementation handles rollback explicitly.
     const handleTransferAdmin = useCallback(async () => {
       if (!selectedNewAdmin) return;
 
@@ -247,23 +259,62 @@ export const BandSettingsSection: React.FC<BandSettingsSectionProps> = memo(
       }
 
       try {
-        // Update the selected member to admin
-        const { error: updateError } = await supabase
-          .from('user_bands')
-          .update({ role: 'admin' })
-          .eq('user_id', selectedNewAdmin)
-          .eq('band_id', bandId);
+        // Execute both operations in parallel for near-atomic behavior
+        const [demoteResult, promoteResult] = await Promise.all([
+          supabase
+            .from('user_bands')
+            .update({ role: 'member' })
+            .eq('user_id', currentUserId)
+            .eq('band_id', bandId),
+          supabase
+            .from('user_bands')
+            .update({ role: 'admin' })
+            .eq('user_id', selectedNewAdmin)
+            .eq('band_id', bandId),
+        ]);
 
-        if (updateError) throw updateError;
+        // Handle partial failures with rollback
+        const demoteFailed = !!demoteResult.error;
+        const promoteFailed = !!promoteResult.error;
 
+        if (demoteFailed && promoteFailed) {
+          // Both failed - no state change, just report error
+          throw new Error('Failed to transfer admin role');
+        }
+
+        if (demoteFailed && !promoteFailed) {
+          // Promote succeeded but demote failed - rollback promote
+          console.error('Demote failed, rolling back promote:', demoteResult.error);
+          await supabase
+            .from('user_bands')
+            .update({ role: 'member' })
+            .eq('user_id', selectedNewAdmin)
+            .eq('band_id', bandId);
+          throw new Error('Failed to transfer admin role');
+        }
+
+        if (!demoteFailed && promoteFailed) {
+          // Demote succeeded but promote failed - rollback demote
+          console.error('Promote failed, rolling back demote:', promoteResult.error);
+          await supabase
+            .from('user_bands')
+            .update({ role: 'admin' })
+            .eq('user_id', currentUserId)
+            .eq('band_id', bandId);
+          throw new Error('Failed to transfer admin role');
+        }
+
+        // Both succeeded
         toast.success('Admin role transferred successfully');
         setShowTransferDialog(false);
         setSelectedNewAdmin(null);
 
-        // Reload members to reflect the change
-        await loadMembers();
+        // Reload members in background (non-blocking) to reflect the change
+        loadMembers();
 
-        // Now show the leave dialog
+        // Show leave dialog immediately - the transfer succeeded so the user
+        // is no longer the only admin. The leave dialog message will be correct
+        // because it checks the isOnlyAdmin derived state which will update.
         setShowLeaveDialog(true);
       } catch (err) {
         console.error('Error transferring admin role:', err);
@@ -271,7 +322,7 @@ export const BandSettingsSection: React.FC<BandSettingsSectionProps> = memo(
       } finally {
         setIsTransferringAdmin(false);
       }
-    }, [selectedNewAdmin, bandId, loadMembers]);
+    }, [selectedNewAdmin, bandId, currentUserId, loadMembers]);
 
     // Handle confirm leave band
     const handleConfirmLeave = useCallback(async () => {
@@ -428,9 +479,11 @@ export const BandSettingsSection: React.FC<BandSettingsSectionProps> = memo(
               {nameError && (
                 <p className="text-sm text-destructive">{nameError}</p>
               )}
-              <p className="text-xs text-muted-foreground">
-                {editedName.length}/50 characters
-              </p>
+              {isEditing && (
+                <p className="text-xs text-muted-foreground">
+                  {editedName.length}/50 characters
+                </p>
+              )}
             </div>
 
             {/* Your Role */}
@@ -477,7 +530,7 @@ export const BandSettingsSection: React.FC<BandSettingsSectionProps> = memo(
               </div>
             ) : (
               <div className="space-y-2">
-                {members.map(member => (
+                {members.map((member, index) => (
                   <div
                     key={member.userId}
                     className={cn(
@@ -490,7 +543,7 @@ export const BandSettingsSection: React.FC<BandSettingsSectionProps> = memo(
                     <div className="flex items-center gap-3">
                       <div className="flex flex-col">
                         <span className="font-medium text-foreground">
-                          {member.isCurrentUser ? 'You' : `Member ${members.indexOf(member) + 1}`}
+                          {member.isCurrentUser ? 'You' : `Member ${index + 1}`}
                         </span>
                       </div>
                     </div>
@@ -528,9 +581,14 @@ export const BandSettingsSection: React.FC<BandSettingsSectionProps> = memo(
             <Button
               variant="outline"
               onClick={handleLeaveClick}
+              disabled={isLeavingBand}
               className="gap-2 border-warning/50 text-warning hover:bg-warning/10 hover:text-warning"
             >
-              <LogOut className="h-4 w-4" />
+              {isLeavingBand ? (
+                <Loader2 className="h-4 w-4 animate-spin" />
+              ) : (
+                <LogOut className="h-4 w-4" />
+              )}
               {isOnlyAdmin && otherMembers.length > 0 ? 'Transfer Admin & Leave' : 'Leave Band'}
             </Button>
           </CardContent>
@@ -620,7 +678,10 @@ export const BandSettingsSection: React.FC<BandSettingsSectionProps> = memo(
             <AlertDialogFooter className="mt-6">
               <AlertDialogCancel disabled={isTransferringAdmin}>Cancel</AlertDialogCancel>
               <AlertDialogAction
-                onClick={handleTransferAdmin}
+                onClick={(e) => {
+                  e.preventDefault();
+                  handleTransferAdmin();
+                }}
                 disabled={!selectedNewAdmin || isTransferringAdmin}
                 className="bg-info text-info-foreground hover:bg-info/90"
               >
