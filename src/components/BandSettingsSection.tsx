@@ -215,11 +215,23 @@ export const BandSettingsSection: React.FC<BandSettingsSectionProps> = memo(
       setEditedName(bandName);
     }, [bandName]);
 
-    // Derived state
-    const adminCount = members.filter(m => m.role === 'admin').length;
-    const isOnlyAdmin = isAdmin && adminCount === 1;
-    const otherMembers = members.filter(m => m.userId !== currentUserId);
-    const nonAdminMembers = members.filter(m => m.role === 'member');
+    // Memoized derived state for performance
+    const adminCount = React.useMemo(
+      () => members.filter(m => m.role === 'admin').length,
+      [members]
+    );
+    const isOnlyAdmin = React.useMemo(
+      () => isAdmin && adminCount === 1,
+      [isAdmin, adminCount]
+    );
+    const otherMembers = React.useMemo(
+      () => members.filter(m => m.userId !== currentUserId),
+      [members, currentUserId]
+    );
+    const nonAdminMembers = React.useMemo(
+      () => members.filter(m => m.role === 'member'),
+      [members]
+    );
 
     // Handle start editing
     const handleStartEditing = useCallback(() => {
