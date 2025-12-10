@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.1.10](https://github.com/zazu-22/band_assist/compare/v0.1.9...v0.1.10) (2025-12-10)
+
+
+### Features
+
+* **personalization:** add Phase 3 user-member linking features ([#169](https://github.com/zazu-22/band_assist/issues/169)) ([3001aa8](https://github.com/zazu-22/band_assist/commit/3001aa8fad4044dae55437ffbe2c4a063739296c))
+* **practice:** integrate design system conventions in PracticeHistory ([#170](https://github.com/zazu-22/band_assist/issues/170)) ([a938c21](https://github.com/zazu-22/band_assist/commit/a938c21a1990e6a50a54a957aff3aad9a272ec9f))
+* **practice:** virtualize PracticeHistory table for large datasets ([#167](https://github.com/zazu-22/band_assist/issues/167)) ([cd4f87a](https://github.com/zazu-22/band_assist/commit/cd4f87afa6fe2fd5e5838b201e60a9d920f0fe29))
+
 ## [0.1.9](https://github.com/zazu-22/band_assist/compare/v0.1.8...v0.1.9) (2025-12-10)
 
 
