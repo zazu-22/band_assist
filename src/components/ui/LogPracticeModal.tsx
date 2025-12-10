@@ -518,7 +518,7 @@ export const LogPracticeModal: React.FC<LogPracticeModalProps> = memo(function L
 
   return (
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-md">
         {isOpen && (
           <LogPracticeForm
             key={formKey}
