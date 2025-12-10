@@ -21,7 +21,7 @@
 | 🟢 Done | 16 | Completed and merged |
 | 🟡 Pending | 1 | Queued for implementation (in sequence order) |
 | ⚪ Backlog | 16 | Planned but not yet prioritized |
-| 🔵 GitHub Issues | 7 | Tracked in GitHub (bugs, smaller features) |
+| 🔵 GitHub Issues | 5 | Tracked in GitHub (bugs, smaller features) |
 
 ---
 
@@ -41,17 +41,11 @@ Specs queued for implementation **in priority order**. Work through these sequen
 
 ---
 
-## 🔵 GitHub Issues (7 open)
+## 🔵 GitHub Issues (5 open)
 
 Smaller features, bug fixes, and follow-up work tracked in GitHub rather than full specs.
 
 > **Tip:** Use `gh issue list --state open` locally or visit [GitHub Issues](https://github.com/zazu-22/band_assist/issues)
-
-### Bugs
-
-| # | Title | Effort | Notes |
-|---|-------|--------|-------|
-| [#164](https://github.com/zazu-22/band_assist/issues/164) | Fix release please action | Small | 🔄 PR #166 pending |
 
 ### Practice Tracking Cluster ✅ COMPLETE
 
@@ -60,7 +54,7 @@ Smaller features, bug fixes, and follow-up work tracked in GitHub rather than fu
 | [#125](https://github.com/zazu-22/band_assist/issues/125) | Practice Logging: Date Selection & Edit | ✅ Closed |
 | [#126](https://github.com/zazu-22/band_assist/issues/126) | Practice History Filtering & Sorting | ✅ Closed |
 | [#145](https://github.com/zazu-22/band_assist/issues/145) | Add "status" field to Practice Session logger | ✅ Closed |
-| [#121](https://github.com/zazu-22/band_assist/issues/121) | Virtualize PracticeHistory table | Open (ready) |
+| [#121](https://github.com/zazu-22/band_assist/issues/121) | Virtualize PracticeHistory table | ✅ Closed |
 
 ### Band Management Cluster ✅ COMPLETE
 
@@ -161,7 +155,8 @@ Smaller features, bug fixes, and follow-up work tracked in GitHub rather than fu
 
 | Date | Item | Change |
 |------|------|--------|
-| 2025-12-10 | [#164](https://github.com/zazu-22/band_assist/issues/164) Fix release please action | 🔄 PR #166 opened (adds PR title validation) |
+| 2025-12-10 | [#121](https://github.com/zazu-22/band_assist/issues/121) Virtualize PracticeHistory | ✅ Closed (merged in PR #167) |
+| 2025-12-10 | [#164](https://github.com/zazu-22/band_assist/issues/164) Fix release please action | ✅ Closed (merged in PR #166) |
 | 2025-12-09 | [#128](https://github.com/zazu-22/band_assist/issues/128) Band settings/management UI | ✅ Closed (merged in PR #157) |
 | 2025-12-09 | [#124](https://github.com/zazu-22/band_assist/issues/124) Band management UI (parent) | ✅ Closed (all child issues complete) |
 | 2025-12-09 | [#145](https://github.com/zazu-22/band_assist/issues/145) Practice Session status field | ✅ Closed (merged in PR #155) |
@@ -227,7 +222,7 @@ Completed Clusters:
 │   ├── #125 (practice edit) ─── ✅ CLOSED
 │   ├── #126 (filtering/sort) ─── ✅ CLOSED
 │   ├── #145 (status field) ─── ✅ CLOSED
-│   └── #121 (virtualization) ─── ready
+│   └── #121 (virtualization) ─── ✅ CLOSED
 │
 └── Band Management ✅
     ├── #127 (band selector) ─── ✅ CLOSED
@@ -236,12 +231,10 @@ Completed Clusters:
     └── #124 (parent tracking) ─── ✅ CLOSED
 
 Open Issues:
-├── #164 (release please action) ─── 🔄 PR #166 pending
 ├── #154 (ESLint upgrade) ─── enhancement
 ├── #153 (deprecated deps) ─── documentation
 ├── #152 (AlphaTab 1.7 eval) ─── enhancement
 ├── #142 (weekly dep review) ─── documentation
-├── #121 (virtualization) ─── ready
 └── #101 (mobile iOS) ─── standalone, large scope
 ```
 
@@ -264,7 +257,7 @@ Recommended order considering dependencies and effort:
 |-------|------|------|-----------|
 | 3 | [#125](https://github.com/zazu-22/band_assist/issues/125) Practice logging | Issue | ✅ Closed (PR #135) |
 | 4 | [#126](https://github.com/zazu-22/band_assist/issues/126) Filtering & sorting | Issue | ✅ Closed (PR #135) |
-| 5 | [#121](https://github.com/zazu-22/band_assist/issues/121) Virtualize table | Issue | Ready - deps complete |
+| 5 | [#121](https://github.com/zazu-22/band_assist/issues/121) Virtualize table | Issue | ✅ Closed (PR #167) |
 
 ### Phase 3: Band Management ✅ COMPLETE
 
@@ -286,11 +279,10 @@ Recommended order considering dependencies and effort:
 
 These can run concurrently with minimal conflict:
 
-- **#121** (virtualization) — ready, practice tracking dep complete
 - **#101** (mobile) can run in parallel with Phase 4 if resources allow
 - **Infrastructure issues** (#154, #153, #152, #142) — independent, can be tackled anytime
 
-> ✅ **Note:** Both Practice Tracking and Band Management clusters are complete except for #121 virtualization.
+> ✅ **Note:** Both Practice Tracking and Band Management clusters are fully complete.
 
 ---
 
