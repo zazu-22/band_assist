@@ -134,6 +134,13 @@ $$ LANGUAGE plpgsql IMMUTABLE;
 CREATE OR REPLACE FUNCTION get_unseen_announcements(user_last_seen TEXT)
 RETURNS SETOF announcements AS $$
 BEGIN
+  -- Validate version format (X.Y.Z where X, Y, Z are integers)
+  IF user_last_seen !~ '^\d+\.\d+\.\d+$' THEN
+    -- Invalid format, return all announcements as fallback
+    RETURN QUERY SELECT * FROM announcements ORDER BY released_at DESC;
+    RETURN;
+  END IF;
+
   RETURN QUERY
   SELECT *
   FROM announcements
@@ -246,7 +253,7 @@ jobs:
           claude_args: '--model claude-opus-4-5-20251101 --max-turns 5'
 
       - name: Generate fallback announcement if Claude failed
-        if: ${{ !fileExists('announcement.json') }}
+        if: ${{ hashFiles('announcement.json') == '' }}
         run: |
           # Fallback: Generate minimal announcement from changelog
           VERSION="${{ steps.changelog.outputs.version }}"
@@ -624,7 +631,7 @@ import {
 import { Button } from '@/components/primitives/button';
 import { Badge } from '@/components/primitives/badge';
 import { Sparkles, Wrench, Bug, ChevronLeft, ChevronRight } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import type { Announcement, AnnouncementFeature } from '@/types/announcement';
 
 interface WhatsNewModalProps {
@@ -647,6 +654,20 @@ const importanceColors = {
 export function WhatsNewModal({ announcements, onDismiss }: WhatsNewModalProps) {
   const [currentIndex, setCurrentIndex] = useState(0);
 
+  // Keyboard navigation for announcements
+  useEffect(() => {
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'ArrowLeft' && currentIndex > 0) {
+        setCurrentIndex(i => i - 1);
+      } else if (e.key === 'ArrowRight' && currentIndex < announcements.length - 1) {
+        setCurrentIndex(i => i + 1);
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [currentIndex, announcements.length]);
+
   if (announcements.length === 0) return null;
 
   const current = announcements[currentIndex];
@@ -654,7 +675,7 @@ export function WhatsNewModal({ announcements, onDismiss }: WhatsNewModalProps) 
 
   return (
     <Dialog open onOpenChange={() => onDismiss()}>
-      <DialogContent className="max-w-lg">
+      <DialogContent className="max-w-lg" aria-describedby="whats-new-description">
         <DialogHeader>
           <div className="flex items-center gap-2 mb-1">
             <Badge variant="outline" className={importanceColors[current.importance]}>
@@ -665,10 +686,16 @@ export function WhatsNewModal({ announcements, onDismiss }: WhatsNewModalProps) 
             </span>
           </div>
           <DialogTitle className="text-xl">{current.title}</DialogTitle>
-          <p className="text-sm text-muted-foreground">{current.summary}</p>
+          <p id="whats-new-description" className="text-sm text-muted-foreground">
+            {current.summary}
+          </p>
         </DialogHeader>
 
-        <div className="space-y-3 my-4 max-h-[300px] overflow-y-auto">
+        <div
+          role="region"
+          aria-label="Release announcements"
+          className="space-y-3 my-4 max-h-[300px] overflow-y-auto"
+        >
           {current.features.map((feature, i) => (
             <FeatureCard key={i} feature={feature} />
           ))}
@@ -681,16 +708,17 @@ export function WhatsNewModal({ announcements, onDismiss }: WhatsNewModalProps) 
 
         <DialogFooter className="flex-col sm:flex-row gap-2">
           {hasMultiple && (
-            <div className="flex items-center gap-2 mr-auto">
+            <div className="flex items-center gap-2 mr-auto" role="navigation" aria-label="Announcement navigation">
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={() => setCurrentIndex(i => i - 1)}
                 disabled={currentIndex === 0}
+                aria-label="Previous announcement"
               >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
-              <span className="text-sm text-muted-foreground">
+              <span className="text-sm text-muted-foreground" aria-live="polite">
                 {currentIndex + 1} of {announcements.length}
               </span>
               <Button
@@ -698,6 +726,7 @@ export function WhatsNewModal({ announcements, onDismiss }: WhatsNewModalProps) 
                 size="icon"
                 onClick={() => setCurrentIndex(i => i + 1)}
                 disabled={currentIndex === announcements.length - 1}
+                aria-label="Next announcement"
               >
                 <ChevronRight className="h-4 w-4" />
               </Button>
@@ -734,15 +763,23 @@ function FeatureCard({ feature }: { feature: AnnouncementFeature }) {
 ```tsx
 // In App.tsx, after session is confirmed and bands loaded
 
-const { announcements, markAllSeen } = useWhatsNew(session?.user?.id);
+const { announcements, loading: announcementsLoading, error: announcementsError, markAllSeen } = useWhatsNew(session?.user?.id);
 const [showWhatsNew, setShowWhatsNew] = useState(false);
 
-// Show modal after initial load completes
+// Show modal after initial load completes (only if no errors)
 useEffect(() => {
-  if (announcements.length > 0 && !loadingBands) {
+  if (announcements.length > 0 && !loadingBands && !announcementsError) {
     setShowWhatsNew(true);
   }
-}, [announcements, loadingBands]);
+}, [announcements, loadingBands, announcementsError]);
+
+// Optional: Log errors for monitoring (don't block user)
+useEffect(() => {
+  if (announcementsError) {
+    console.error('What\'s New feature unavailable:', announcementsError);
+    // Optionally send to error tracking service
+  }
+}, [announcementsError]);
 
 // In render:
 {showWhatsNew && (
@@ -755,6 +792,8 @@ useEffect(() => {
   />
 )}
 ```
+
+**Note:** The hook is designed to fail gracefully - if announcements can't be loaded, the app continues normally without showing the modal. Errors are logged but don't block the user experience.
 
 ---
 
@@ -811,15 +850,24 @@ This reuses the same `announcements` table data in a different presentation.
 
 ---
 
+## Known Limitations
+
+| Limitation | Impact | Notes |
+|------------|--------|-------|
+| **Pre-release versions not supported** | Low | `semver_gt` assumes strict `X.Y.Z` format. Versions like `0.1.10-rc1` or `0.2.0-beta` will fail validation and fall back to returning all announcements. Current release-please config uses stable releases only, so this is not a blocker. If pre-release versions are adopted later, enhance the SQL function to strip/compare pre-release suffixes. |
+
+---
+
 ## Risks & Mitigations
 
 | Risk | Mitigation |
 |------|------------|
-| Claude generates invalid JSON | Validate JSON before Supabase insert, fail workflow on error |
-| Workflow fails silently | Add error handling and notifications |
-| Users overwhelmed by many announcements | Pagination in modal, limit to last 3-5 versions |
+| Claude generates invalid JSON | Validate JSON before Supabase insert, fallback announcement if validation fails |
+| Workflow fails silently | Add error handling, fallback step generates minimal announcement |
+| Users overwhelmed by many announcements | Pagination in modal, keyboard navigation, limit to last 3-5 versions |
 | Service role key exposure | Key only used in CI, never in client code |
 | Announcement content inappropriate | Review generated content in CI logs, can manually override |
+| Malformed version strings | Client and server-side validation with graceful fallbacks |
 
 ---
 
