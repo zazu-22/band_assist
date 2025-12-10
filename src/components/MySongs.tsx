@@ -64,6 +64,7 @@ const SongRow = memo(function SongRow({
     <div
       className={cn(
         'flex items-center gap-4 px-4 py-3',
+        'border-l-[3px] border-l-primary/60',
         'border-b border-border/30 last:border-b-0',
         'hover:bg-muted/30 transition-colors'
       )}
@@ -180,7 +181,17 @@ export const MySongs: React.FC<MySongsProps> = memo(function MySongs({
 
   if (!linkedMember) {
     return (
-      <div className="p-4 sm:p-6 lg:p-10">
+      <div className="relative p-4 sm:p-6 lg:p-10">
+        {/* Ambient background glow */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
+          <div
+            className="absolute -top-48 -left-48 w-[500px] h-[500px] rounded-full opacity-[0.03]"
+            style={{
+              background: 'radial-gradient(circle, var(--primary) 0%, transparent 70%)',
+            }}
+          />
+        </div>
+
         <header className="mb-8">
           <h2 className="text-4xl font-bold font-serif text-foreground tracking-tight">
             My Songs
@@ -188,7 +199,7 @@ export const MySongs: React.FC<MySongsProps> = memo(function MySongs({
           <p className="text-muted-foreground mt-2">Songs assigned to you</p>
         </header>
 
-        <Card>
+        <Card className="animate-slide-in-from-bottom animation-forwards opacity-0 stagger-1">
           <CardContent className="p-8">
             <EmptyState
               icon={User}
@@ -207,7 +218,17 @@ export const MySongs: React.FC<MySongsProps> = memo(function MySongs({
 
   if (mySongs.length === 0) {
     return (
-      <div className="p-4 sm:p-6 lg:p-10">
+      <div className="relative p-4 sm:p-6 lg:p-10">
+        {/* Ambient background glow */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
+          <div
+            className="absolute -top-48 -left-48 w-[500px] h-[500px] rounded-full opacity-[0.03]"
+            style={{
+              background: 'radial-gradient(circle, var(--primary) 0%, transparent 70%)',
+            }}
+          />
+        </div>
+
         <header className="mb-8">
           <h2 className="text-4xl font-bold font-serif text-foreground tracking-tight">
             My Songs
@@ -217,7 +238,7 @@ export const MySongs: React.FC<MySongsProps> = memo(function MySongs({
           </p>
         </header>
 
-        <Card>
+        <Card className="animate-slide-in-from-bottom animation-forwards opacity-0 stagger-1">
           <CardContent className="p-8">
             <EmptyState
               icon={Music}
@@ -234,15 +255,26 @@ export const MySongs: React.FC<MySongsProps> = memo(function MySongs({
   // RENDER: Main view
   // ---------------------------------------------------------------------------
 
-  const renderSection = (title: string, items: SongWithStatus[], defaultOpen = true) => {
+  const renderSection = (
+    title: string,
+    items: SongWithStatus[],
+    staggerIndex: number,
+    defaultOpen = true
+  ) => {
     if (items.length === 0) return null;
 
     return (
-      <Card className="overflow-hidden">
-        <CardHeader className="py-3 px-4 bg-muted/30">
+      <Card className={cn(
+        'overflow-hidden',
+        'animate-slide-in-from-bottom animation-forwards opacity-0',
+        `stagger-${staggerIndex}`
+      )}>
+        <CardHeader className="py-4 px-5 bg-muted/30">
           <div className="flex items-center justify-between">
-            <h3 className="font-semibold text-foreground">{title}</h3>
-            <span className="text-sm text-muted-foreground">{items.length} songs</span>
+            <h3 className="text-lg font-semibold font-serif text-foreground">{title}</h3>
+            <span className="text-sm text-muted-foreground font-mono tabular-nums">
+              {items.length} {items.length === 1 ? 'song' : 'songs'}
+            </span>
           </div>
         </CardHeader>
         <CardContent className="p-0">
@@ -261,23 +293,33 @@ export const MySongs: React.FC<MySongsProps> = memo(function MySongs({
   };
 
   return (
-    <div className="p-4 sm:p-6 lg:p-10 space-y-6">
+    <div className="relative p-4 sm:p-6 lg:p-10 space-y-6">
+      {/* Ambient background glow */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
+        <div
+          className="absolute -top-48 -left-48 w-[500px] h-[500px] rounded-full opacity-[0.03]"
+          style={{
+            background: 'radial-gradient(circle, var(--primary) 0%, transparent 70%)',
+          }}
+        />
+      </div>
+
       <header>
         <h2 className="text-4xl font-bold font-serif text-foreground tracking-tight">
           My Songs
         </h2>
         <p className="text-muted-foreground mt-2">
-          {mySongs.length} songs assigned to{' '}
+          <span className="font-mono tabular-nums">{mySongs.length}</span> songs assigned to{' '}
           <span className="font-medium text-foreground">{linkedMember.name}</span>
         </p>
       </header>
 
       {/* Priority: Not Started and Learning first */}
       <div className="space-y-4">
-        {renderSection('Not Started', groupedSongs.notStarted)}
-        {renderSection('Learning', groupedSongs.learning)}
-        {renderSection('Learned', groupedSongs.learned)}
-        {renderSection('Mastered', groupedSongs.mastered)}
+        {renderSection('Not Started', groupedSongs.notStarted, 1)}
+        {renderSection('Learning', groupedSongs.learning, 2)}
+        {renderSection('Learned', groupedSongs.learned, 3)}
+        {renderSection('Mastered', groupedSongs.mastered, 4)}
       </div>
     </div>
   );
