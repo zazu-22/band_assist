@@ -39,11 +39,12 @@ jobs:
             build
             revert
           requireScope: false
-          # Skip validation for bot PRs
+          # Skip validation for bot PRs and work-in-progress
           ignoreLabels: |
             bot
             dependencies
             dependabot
+            wip
 
   quality:
     name: Code Quality
