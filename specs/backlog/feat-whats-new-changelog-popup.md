@@ -231,7 +231,7 @@ jobs:
 
             Write the JSON to announcement.json using your Write tool.
 
-          claude_args: '--model claude-sonnet-4-5-20250929 --max-turns 5'
+          claude_args: '--model claude-opus-4-5-20251101 --max-turns 5'
 
       - name: Store announcement in Supabase
         env:
