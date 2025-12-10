@@ -299,15 +299,16 @@ const VirtualizedSessionTable = memo(function VirtualizedSessionTable({
 
   // Column group to enforce consistent column widths between header and body tables
   // This ensures alignment when header and body are separate tables for virtualization
+  // Note: Responsive hiding is handled by the <td>/<th> elements, not the <col> elements
   const colGroup = (
     <colgroup>
       <col className="w-[12%]" /> {/* Date */}
       <col className="w-[18%]" /> {/* Song */}
       <col className="w-[10%]" /> {/* Duration */}
-      <col className="w-[10%] hidden sm:table-column" /> {/* Tempo */}
-      <col className="w-[15%] hidden md:table-column" /> {/* Sections */}
+      <col className="w-[10%]" /> {/* Tempo - hidden on mobile via <td> */}
+      <col className="w-[15%]" /> {/* Sections - hidden on tablet via <td> */}
       <col className="w-[10%]" /> {/* Status */}
-      <col className="w-[20%] hidden lg:table-column" /> {/* Notes */}
+      <col className="w-[20%]" /> {/* Notes - hidden on small screens via <td> */}
       <col className="w-[5%]" /> {/* Actions */}
     </colgroup>
   );
