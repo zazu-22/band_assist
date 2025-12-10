@@ -21,7 +21,7 @@
 | 🟢 Done | 17 | Completed and merged |
 | 🟡 Pending | 0 | Queued for implementation (in sequence order) |
 | ⚪ Backlog | 15 | Planned but not yet prioritized |
-| 🔵 GitHub Issues | 5 | Tracked in GitHub (bugs, smaller features) |
+| 🔵 GitHub Issues | 7 | Tracked in GitHub (bugs, smaller features) |
 
 ---
 
@@ -74,10 +74,12 @@ Smaller features, bug fixes, and follow-up work tracked in GitHub rather than fu
 | [#152](https://github.com/zazu-22/band_assist/issues/152) | Evaluate AlphaTab 1.7 | Medium | Dependency evaluation |
 | [#142](https://github.com/zazu-22/band_assist/issues/142) | Weekly Dependency Review - 2025-12-08 | Small | Documentation |
 
-### Standalone Enhancements
+### UI/UX Enhancements
 
 | # | Title | Effort | Notes |
 |---|-------|--------|-------|
+| [#172](https://github.com/zazu-22/band_assist/issues/172) | My Songs design aesthetic refinements | Small | Apply design system polish |
+| [#173](https://github.com/zazu-22/band_assist/issues/173) | Log Practice Modal UX fixes | Medium | Scroll, keyboard submit, date field responsiveness |
 | [#101](https://github.com/zazu-22/band_assist/issues/101) | Mobile layout for iOS Safari | Large | Major refactor, needs device testing |
 
 ---
@@ -155,7 +157,8 @@ Smaller features, bug fixes, and follow-up work tracked in GitHub rather than fu
 
 | Date | Item | Change |
 |------|------|--------|
-| 2025-12-10 | feat-user-member-linking-phase-4-practice-history-design | 🟢 Moved to done (merged PR #169) |
+| 2025-12-10 | [#172](https://github.com/zazu-22/band_assist/issues/172), [#173](https://github.com/zazu-22/band_assist/issues/173) | ➕ Created (My Songs design, Log Practice Modal UX) |
+| 2025-12-10 | feat-user-member-linking-phase-4-practice-history-design | 🟢 Moved to done (merged PR #170) |
 | 2025-12-10 | feat-user-member-linking-phase-3 | 🔴 Moved to active, task breakdown created |
 | 2025-12-10 | [#121](https://github.com/zazu-22/band_assist/issues/121) Virtualize PracticeHistory | ✅ Closed (merged in PR #167) |
 | 2025-12-10 | [#164](https://github.com/zazu-22/band_assist/issues/164) Fix release please action | ✅ Closed (merged in PR #166) |
@@ -232,11 +235,16 @@ Completed Clusters:
     └── #124 (parent tracking) ─── ✅ CLOSED
 
 Open Issues:
-├── #154 (ESLint upgrade) ─── enhancement
-├── #153 (deprecated deps) ─── documentation
-├── #152 (AlphaTab 1.7 eval) ─── enhancement
-├── #142 (weekly dep review) ─── documentation
-└── #101 (mobile iOS) ─── standalone, large scope
+├── UI/UX Enhancements
+│   ├── #172 (My Songs design) ─── small, design polish
+│   ├── #173 (Log Practice Modal UX) ─── medium, scroll/keyboard/responsive
+│   └── #101 (mobile iOS) ─── large scope
+│
+└── Infrastructure / Dependencies
+    ├── #154 (ESLint upgrade) ─── enhancement
+    ├── #153 (deprecated deps) ─── documentation
+    ├── #152 (AlphaTab 1.7 eval) ─── enhancement
+    └── #142 (weekly dep review) ─── documentation
 ```
 
 ---
