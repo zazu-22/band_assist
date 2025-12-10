@@ -2,7 +2,7 @@
 
 > Quick reference for all specs, GitHub issues, and current status.
 >
-> Last updated: 2025-12-08
+> Last updated: 2025-12-09
 
 ---
 
@@ -21,7 +21,7 @@
 | 🟢 Done | 16 | Completed and merged |
 | 🟡 Pending | 1 | Queued for implementation (in sequence order) |
 | ⚪ Backlog | 16 | Planned but not yet prioritized |
-| 🔵 GitHub Issues | 4 | Tracked in GitHub (bugs, smaller features) |
+| 🔵 GitHub Issues | 7 | Tracked in GitHub (bugs, smaller features) |
 
 ---
 
@@ -41,38 +41,49 @@ Specs queued for implementation **in priority order**. Work through these sequen
 
 ---
 
-## 🔵 GitHub Issues (4 open)
+## 🔵 GitHub Issues (7 open)
 
 Smaller features, bug fixes, and follow-up work tracked in GitHub rather than full specs.
 
 > **Tip:** Use `gh issue list --state open` locally or visit [GitHub Issues](https://github.com/zazu-22/band_assist/issues)
 
-### Bugs (Critical)
+### Bugs
 
-✅ No critical bugs open. ([#100](https://github.com/zazu-22/band_assist/issues/100) password reset fixed 2025-12-07)
+| # | Title | Effort | Notes |
+|---|-------|--------|-------|
+| [#164](https://github.com/zazu-22/band_assist/issues/164) | Fix release please action | Small | CI/CD issue |
 
-### Practice Tracking Cluster
+### Practice Tracking Cluster ✅ COMPLETE
 
-| # | Title | Effort | Dependencies |
-|---|-------|--------|--------------|
-| [#125](https://github.com/zazu-22/band_assist/issues/125) | Practice Logging: Date Selection & Edit | Medium | ✅ Closed |
-| [#126](https://github.com/zazu-22/band_assist/issues/126) | Practice History Filtering & Sorting | Medium | ✅ Closed |
-| [#121](https://github.com/zazu-22/band_assist/issues/121) | Virtualize PracticeHistory table | Medium | Ready (deps complete) |
+| # | Title | Status |
+|---|-------|--------|
+| [#125](https://github.com/zazu-22/band_assist/issues/125) | Practice Logging: Date Selection & Edit | ✅ Closed |
+| [#126](https://github.com/zazu-22/band_assist/issues/126) | Practice History Filtering & Sorting | ✅ Closed |
+| [#145](https://github.com/zazu-22/band_assist/issues/145) | Add "status" field to Practice Session logger | ✅ Closed |
+| [#121](https://github.com/zazu-22/band_assist/issues/121) | Virtualize PracticeHistory table | Open (ready) |
 
-### Band Management Cluster
+### Band Management Cluster ✅ COMPLETE
 
-| # | Title | Effort | Dependencies |
-|---|-------|--------|--------------|
-| [#124](https://github.com/zazu-22/band_assist/issues/124) | Band management UI (parent tracking) | - | Close after #128 |
-| [#127](https://github.com/zazu-22/band_assist/issues/127) | Enhanced band selector with creation flow | Medium | ✅ Closed |
-| [#141](https://github.com/zazu-22/band_assist/issues/141) | Fix band selection persistence & auto-save race condition | Medium | ✅ Closed |
-| [#128](https://github.com/zazu-22/band_assist/issues/128) | Band settings/management UI | Medium | Ready (deps complete) |
+| # | Title | Status |
+|---|-------|--------|
+| [#124](https://github.com/zazu-22/band_assist/issues/124) | Band management UI (parent tracking) | ✅ Closed |
+| [#127](https://github.com/zazu-22/band_assist/issues/127) | Enhanced band selector with creation flow | ✅ Closed |
+| [#141](https://github.com/zazu-22/band_assist/issues/141) | Fix band selection persistence & auto-save race condition | ✅ Closed |
+| [#128](https://github.com/zazu-22/band_assist/issues/128) | Band settings/management UI | ✅ Closed |
+
+### Infrastructure / Dependencies
+
+| # | Title | Effort | Notes |
+|---|-------|--------|-------|
+| [#154](https://github.com/zazu-22/band_assist/issues/154) | Upgrade to latest stable ESLint version | Medium | Dependency update |
+| [#153](https://github.com/zazu-22/band_assist/issues/153) | Identify replacements for deprecated dependencies | Small | Documentation |
+| [#152](https://github.com/zazu-22/band_assist/issues/152) | Evaluate AlphaTab 1.7 | Medium | Dependency evaluation |
+| [#142](https://github.com/zazu-22/band_assist/issues/142) | Weekly Dependency Review - 2025-12-08 | Small | Documentation |
 
 ### Standalone Enhancements
 
 | # | Title | Effort | Notes |
 |---|-------|--------|-------|
-| [#107](https://github.com/zazu-22/band_assist/issues/107) | Add song naming to files (PDFs) | Small | ✅ Closed |
 | [#101](https://github.com/zazu-22/band_assist/issues/101) | Mobile layout for iOS Safari | Large | Major refactor, needs device testing |
 
 ---
@@ -150,10 +161,15 @@ Smaller features, bug fixes, and follow-up work tracked in GitHub rather than fu
 
 | Date | Item | Change |
 |------|------|--------|
+| 2025-12-09 | [#128](https://github.com/zazu-22/band_assist/issues/128) Band settings/management UI | ✅ Closed (merged in PR #157) |
+| 2025-12-09 | [#124](https://github.com/zazu-22/band_assist/issues/124) Band management UI (parent) | ✅ Closed (all child issues complete) |
+| 2025-12-09 | [#145](https://github.com/zazu-22/band_assist/issues/145) Practice Session status field | ✅ Closed (merged in PR #155) |
+| 2025-12-09 | [#144](https://github.com/zazu-22/band_assist/issues/144) Supabase migrations & types | ✅ Closed |
+| 2025-12-09 | Band Management Cluster | ✅ All issues complete (#124, #127, #128, #141) |
+| 2025-12-09 | [#164](https://github.com/zazu-22/band_assist/issues/164) Fix release please action | ➕ Created (CI/CD bug) |
+| 2025-12-09 | [#154](https://github.com/zazu-22/band_assist/issues/154), [#153](https://github.com/zazu-22/band_assist/issues/153), [#152](https://github.com/zazu-22/band_assist/issues/152) | ➕ Created (dependency management) |
 | 2025-12-08 | [#141](https://github.com/zazu-22/band_assist/issues/141) Auto-save race condition | ✅ Fixed (three-layer protection: cancel pending saves, loading guard, band integrity check) |
 | 2025-12-08 | PR #139 | ✅ Unblocked (ready for merge) |
-| 2025-12-08 | [#141](https://github.com/zazu-22/band_assist/issues/141) Auto-save race condition | ➕ Created (blocks PR #139, #128 depends on it) |
-| 2025-12-08 | PR #139 | ⚠️ Blocked pending #141 resolution (data corruption discovered) |
 | 2025-12-08 | [#127](https://github.com/zazu-22/band_assist/issues/127) Enhanced band selector | ✅ Closed (merged in PR #139) |
 | 2025-12-08 | [#125](https://github.com/zazu-22/band_assist/issues/125), [#126](https://github.com/zazu-22/band_assist/issues/126) | ✅ Closed (merged in PR #135) |
 | 2025-12-07 | [#107](https://github.com/zazu-22/band_assist/issues/107) Song file naming | ✅ Closed (merged in PR #132) |
@@ -204,18 +220,28 @@ infra-test-environment-setup (backlog)
 ### GitHub Issues
 
 ```
-#100 (password reset bug) ─── ✅ CLOSED
-#107 (file naming) ─── ✅ CLOSED
-#125 (practice edit) ─── ✅ CLOSED
-#126 (filtering/sort) ─── ✅ CLOSED
-#127 (band selector) ─── ✅ CLOSED
-#141 (auto-save race condition) ─── ✅ CLOSED
+Completed Clusters:
+├── Practice Tracking ✅
+│   ├── #100 (password reset bug) ─── ✅ CLOSED
+│   ├── #125 (practice edit) ─── ✅ CLOSED
+│   ├── #126 (filtering/sort) ─── ✅ CLOSED
+│   ├── #145 (status field) ─── ✅ CLOSED
+│   └── #121 (virtualization) ─── ready
+│
+└── Band Management ✅
+    ├── #127 (band selector) ─── ✅ CLOSED
+    ├── #141 (auto-save race condition) ─── ✅ CLOSED
+    ├── #128 (band settings) ─── ✅ CLOSED
+    └── #124 (parent tracking) ─── ✅ CLOSED
 
-#121 (virtualization) ─── ready (deps complete)
-
-#128 (band settings) ──► #124 (close parent) ─── ready (deps complete)
-
-#101 (mobile iOS) ─── standalone, large scope
+Open Issues:
+├── #164 (release please action) ─── bug
+├── #154 (ESLint upgrade) ─── enhancement
+├── #153 (deprecated deps) ─── documentation
+├── #152 (AlphaTab 1.7 eval) ─── enhancement
+├── #142 (weekly dep review) ─── documentation
+├── #121 (virtualization) ─── ready
+└── #101 (mobile iOS) ─── standalone, large scope
 ```
 
 ---
@@ -239,14 +265,14 @@ Recommended order considering dependencies and effort:
 | 4 | [#126](https://github.com/zazu-22/band_assist/issues/126) Filtering & sorting | Issue | ✅ Closed (PR #135) |
 | 5 | [#121](https://github.com/zazu-22/band_assist/issues/121) Virtualize table | Issue | Ready - deps complete |
 
-### Phase 3: Band Management (In Progress)
+### Phase 3: Band Management ✅ COMPLETE
 
 | Order | Item | Type | Rationale |
 |-------|------|------|-----------|
 | 6 | [#127](https://github.com/zazu-22/band_assist/issues/127) Band selector | Issue | ✅ Closed |
 | 6a | [#141](https://github.com/zazu-22/band_assist/issues/141) Fix auto-save race condition | Issue | ✅ Closed |
-| 7 | [#128](https://github.com/zazu-22/band_assist/issues/128) Band settings | Issue | Ready (deps complete) |
-| 8 | Close [#124](https://github.com/zazu-22/band_assist/issues/124) | Issue | Parent tracking issue done |
+| 7 | [#128](https://github.com/zazu-22/band_assist/issues/128) Band settings | Issue | ✅ Closed (PR #157) |
+| 8 | [#124](https://github.com/zazu-22/band_assist/issues/124) Parent tracking issue | Issue | ✅ Closed |
 
 ### Phase 4: Larger Efforts
 
@@ -259,10 +285,11 @@ Recommended order considering dependencies and effort:
 
 These can run concurrently with minimal conflict:
 
-- **#128** (band settings) — ready, dependencies complete
-- **#101** (mobile) can run in parallel with Phase 3/4 if resources allow
+- **#121** (virtualization) — ready, practice tracking dep complete
+- **#101** (mobile) can run in parallel with Phase 4 if resources allow
+- **Infrastructure issues** (#154, #153, #152, #142) — independent, can be tackled anytime
 
-> ✅ **Note:** #141 (auto-save race condition) has been resolved. PR #139 is unblocked.
+> ✅ **Note:** Both Practice Tracking and Band Management clusters are complete except for #121 virtualization.
 
 ---
 
