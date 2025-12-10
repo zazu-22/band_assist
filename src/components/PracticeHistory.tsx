@@ -170,8 +170,8 @@ const VirtualizedSessionTable = memo(function VirtualizedSessionTable({
   // This handles test environments (JSDOM) where DOM measurements don't work
   const shouldFallbackToNonVirtual = virtualRows.length === 0 && sessions.length > 0;
 
-  // Helper to render a single row
-  const renderRow = (session: PracticeSession, style?: React.CSSProperties) => {
+  // Memoized row renderer to prevent unnecessary recreations
+  const renderRow = useCallback((session: PracticeSession, style?: React.CSSProperties) => {
     const song = songMap.get(session.songId);
     const songStatus = statuses.get(session.songId);
 
@@ -181,32 +181,32 @@ const VirtualizedSessionTable = memo(function VirtualizedSessionTable({
         className="border-b border-border last:border-0"
         style={style}
       >
-        <td className="py-3 px-4 text-sm text-foreground">
+        <td className="w-[12%] py-3 px-4 text-sm text-foreground">
           {formatDate(session.date)}
         </td>
-        <td className="py-3 px-4 text-sm text-foreground font-medium">
+        <td className="w-[18%] py-3 px-4 text-sm text-foreground font-medium truncate">
           {song?.title || 'Unknown Song'}
         </td>
-        <td className="py-3 px-4 text-sm text-foreground">
+        <td className="w-[10%] py-3 px-4 text-sm text-foreground">
           {session.durationMinutes}m
         </td>
-        <td className="py-3 px-4 text-sm text-muted-foreground hidden sm:table-cell">
+        <td className="w-[10%] py-3 px-4 text-sm text-muted-foreground hidden sm:table-cell">
           {session.tempoBpm ? `${session.tempoBpm} BPM` : '—'}
         </td>
-        <td className="py-3 px-4 text-sm text-muted-foreground hidden md:table-cell">
+        <td className="w-[15%] py-3 px-4 text-sm text-muted-foreground hidden md:table-cell truncate">
           {session.sectionsPracticed && session.sectionsPracticed.length > 0
             ? session.sectionsPracticed.join(', ')
             : '—'}
         </td>
-        <td className="py-3 px-4">
+        <td className="w-[10%] py-3 px-4">
           <Badge variant={getStatusVariant(songStatus?.status)}>
             {songStatus?.status || 'Not Started'}
           </Badge>
         </td>
-        <td className="py-3 px-4 text-sm text-muted-foreground hidden lg:table-cell max-w-xs truncate">
+        <td className="w-[20%] py-3 px-4 text-sm text-muted-foreground hidden lg:table-cell truncate">
           {session.notes || '—'}
         </td>
-        <td className="py-3 px-4 text-right">
+        <td className="w-[5%] py-3 px-4 text-right">
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
               <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
@@ -231,13 +231,14 @@ const VirtualizedSessionTable = memo(function VirtualizedSessionTable({
         </td>
       </tr>
     );
-  };
+  }, [songMap, statuses, onEditSession, onDeleteSession]);
 
   // Render table header (shared between virtual and fallback modes)
+  // Using fixed widths to ensure header and body columns align
   const tableHeader = (
     <thead>
       <tr className="border-b border-border">
-        <th className="text-left py-3 px-4 text-sm font-semibold text-muted-foreground">
+        <th className="w-[12%] text-left py-3 px-4 text-sm font-semibold text-muted-foreground">
           <button
             type="button"
             onClick={() => onSortClick('date')}
@@ -247,7 +248,7 @@ const VirtualizedSessionTable = memo(function VirtualizedSessionTable({
             {getSortIcon('date')}
           </button>
         </th>
-        <th className="text-left py-3 px-4 text-sm font-semibold text-muted-foreground">
+        <th className="w-[18%] text-left py-3 px-4 text-sm font-semibold text-muted-foreground">
           <button
             type="button"
             onClick={() => onSortClick('songId')}
@@ -257,7 +258,7 @@ const VirtualizedSessionTable = memo(function VirtualizedSessionTable({
             {getSortIcon('songId')}
           </button>
         </th>
-        <th className="text-left py-3 px-4 text-sm font-semibold text-muted-foreground">
+        <th className="w-[10%] text-left py-3 px-4 text-sm font-semibold text-muted-foreground">
           <button
             type="button"
             onClick={() => onSortClick('durationMinutes')}
@@ -267,7 +268,7 @@ const VirtualizedSessionTable = memo(function VirtualizedSessionTable({
             {getSortIcon('durationMinutes')}
           </button>
         </th>
-        <th className="text-left py-3 px-4 text-sm font-semibold text-muted-foreground hidden sm:table-cell">
+        <th className="w-[10%] text-left py-3 px-4 text-sm font-semibold text-muted-foreground hidden sm:table-cell">
           <button
             type="button"
             onClick={() => onSortClick('tempoBpm')}
@@ -277,27 +278,30 @@ const VirtualizedSessionTable = memo(function VirtualizedSessionTable({
             {getSortIcon('tempoBpm')}
           </button>
         </th>
-        <th className="text-left py-3 px-4 text-sm font-semibold text-muted-foreground hidden md:table-cell">
+        <th className="w-[15%] text-left py-3 px-4 text-sm font-semibold text-muted-foreground hidden md:table-cell">
           Sections
         </th>
-        <th className="text-left py-3 px-4 text-sm font-semibold text-muted-foreground">
+        <th className="w-[10%] text-left py-3 px-4 text-sm font-semibold text-muted-foreground">
           Status
         </th>
-        <th className="text-left py-3 px-4 text-sm font-semibold text-muted-foreground hidden lg:table-cell">
+        <th className="w-[20%] text-left py-3 px-4 text-sm font-semibold text-muted-foreground hidden lg:table-cell">
           Notes
         </th>
-        <th className="text-right py-3 px-4 text-sm font-semibold text-muted-foreground w-16">
+        <th className="w-[5%] text-right py-3 px-4 text-sm font-semibold text-muted-foreground">
           <span className="sr-only">Actions</span>
         </th>
       </tr>
     </thead>
   );
 
+  // Table class with fixed layout to ensure consistent column widths
+  const tableClassName = "w-full table-fixed";
+
   // Fallback: render all rows without virtualization (for test environments)
   if (shouldFallbackToNonVirtual) {
     return (
       <div className="overflow-x-auto">
-        <table className="w-full">
+        <table className={tableClassName}>
           {tableHeader}
           <tbody>
             {sessions.map(session => renderRow(session))}
@@ -310,7 +314,7 @@ const VirtualizedSessionTable = memo(function VirtualizedSessionTable({
   return (
     <div className="overflow-x-auto">
       {/* Table Header - Always visible */}
-      <table className="w-full">
+      <table className={tableClassName}>
         {tableHeader}
       </table>
 
@@ -319,6 +323,9 @@ const VirtualizedSessionTable = memo(function VirtualizedSessionTable({
         ref={parentRef}
         className="overflow-y-auto"
         style={{ height: containerHeight, maxHeight: MAX_VISIBLE_ROWS * ROW_HEIGHT }}
+        role="region"
+        aria-label="Practice sessions list"
+        tabIndex={0}
       >
         <div
           style={{
@@ -327,7 +334,7 @@ const VirtualizedSessionTable = memo(function VirtualizedSessionTable({
             position: 'relative',
           }}
         >
-          <table className="w-full">
+          <table className={tableClassName}>
             <tbody>
               {virtualRows.map(virtualRow => {
                 const session = sessions[virtualRow.index];
