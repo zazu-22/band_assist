@@ -437,7 +437,7 @@ describe('PracticeHistory', () => {
         />
       );
 
-      expect(screen.getByText('2 sessions found')).toBeInTheDocument();
+      expect(screen.getByText('2 sessions')).toBeInTheDocument();
     });
 
     it('should display Unknown Song when song not found', () => {

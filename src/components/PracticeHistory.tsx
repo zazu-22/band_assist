@@ -21,7 +21,6 @@ import {
   CardContent,
   CardHeader,
   CardTitle,
-  CardDescription,
   Select,
   SelectContent,
   SelectItem,
@@ -178,7 +177,7 @@ const VirtualizedSessionTable = memo(function VirtualizedSessionTable({
     return (
       <tr
         key={session.id}
-        className="border-b border-border last:border-0"
+        className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors"
         style={style}
       >
         <td className="w-[12%] py-3 px-4 text-sm text-foreground">
@@ -187,10 +186,10 @@ const VirtualizedSessionTable = memo(function VirtualizedSessionTable({
         <td className="w-[18%] py-3 px-4 text-sm text-foreground font-medium truncate">
           {song?.title || 'Unknown Song'}
         </td>
-        <td className="w-[10%] py-3 px-4 text-sm text-foreground">
+        <td className="w-[10%] py-3 px-4 text-sm text-foreground font-mono tabular-nums">
           {session.durationMinutes}m
         </td>
-        <td className="w-[10%] py-3 px-4 text-sm text-muted-foreground hidden sm:table-cell">
+        <td className="w-[10%] py-3 px-4 text-sm text-muted-foreground font-mono tabular-nums hidden sm:table-cell">
           {session.tempoBpm ? `${session.tempoBpm} BPM` : '—'}
         </td>
         <td className="w-[15%] py-3 px-4 text-sm text-muted-foreground hidden md:table-cell truncate">
@@ -300,16 +299,17 @@ const VirtualizedSessionTable = memo(function VirtualizedSessionTable({
   // Column group to enforce consistent column widths between header and body tables
   // This ensures alignment when header and body are separate tables for virtualization
   // Note: Responsive hiding is handled by the <td>/<th> elements, not the <col> elements
+  // Columns: Date(12%), Song(18%), Duration(10%), Tempo(10%), Sections(15%), Status(10%), Notes(20%), Actions(5%)
   const colGroup = (
     <colgroup>
-      <col className="w-[12%]" /> {/* Date */}
-      <col className="w-[18%]" /> {/* Song */}
-      <col className="w-[10%]" /> {/* Duration */}
-      <col className="w-[10%]" /> {/* Tempo - hidden on mobile via <td> */}
-      <col className="w-[15%]" /> {/* Sections - hidden on tablet via <td> */}
-      <col className="w-[10%]" /> {/* Status */}
-      <col className="w-[20%]" /> {/* Notes - hidden on small screens via <td> */}
-      <col className="w-[5%]" /> {/* Actions */}
+      <col className="w-[12%]" />
+      <col className="w-[18%]" />
+      <col className="w-[10%]" />
+      <col className="w-[10%]" />
+      <col className="w-[15%]" />
+      <col className="w-[10%]" />
+      <col className="w-[20%]" />
+      <col className="w-[5%]" />
     </colgroup>
   );
 
@@ -625,13 +625,25 @@ export const PracticeHistory: React.FC<PracticeHistoryProps> = memo(function Pra
   // Show link account message when not authenticated
   if (!currentUserId) {
     return (
-      <div className="container mx-auto p-4 sm:p-6 lg:p-8 max-w-7xl">
-        <div className="mb-6">
-          <h1 className="text-3xl font-bold text-foreground mb-2">Practice History</h1>
-          <p className="text-muted-foreground">
+      <div className="relative p-4 sm:p-6 lg:p-10 space-y-8">
+        {/* Ambient background glow */}
+        <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
+          <div
+            className="absolute -top-48 -left-48 w-[500px] h-[500px] rounded-full opacity-[0.03]"
+            style={{
+              background: 'radial-gradient(circle, var(--primary) 0%, transparent 70%)',
+            }}
+          />
+        </div>
+
+        {/* Header */}
+        <header>
+          <h1 className="text-4xl font-bold font-serif text-foreground tracking-tight">Practice History</h1>
+          <p className="text-muted-foreground mt-2">
             Track your practice sessions and progress over time
           </p>
-        </div>
+        </header>
+
         <EmptyState
           icon={Music}
           title="Link Your Account"
@@ -642,20 +654,30 @@ export const PracticeHistory: React.FC<PracticeHistoryProps> = memo(function Pra
   }
 
   return (
-    <div className="container mx-auto p-4 sm:p-6 lg:p-8 max-w-7xl">
+    <div className="relative p-4 sm:p-6 lg:p-10 space-y-8">
+      {/* Ambient background glow */}
+      <div className="absolute inset-0 pointer-events-none overflow-hidden" aria-hidden="true">
+        <div
+          className="absolute -top-48 -left-48 w-[500px] h-[500px] rounded-full opacity-[0.03]"
+          style={{
+            background: 'radial-gradient(circle, var(--primary) 0%, transparent 70%)',
+          }}
+        />
+      </div>
+
       {/* Header */}
-      <div className="mb-6 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+      <header className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-foreground mb-2">Practice History</h1>
-          <p className="text-muted-foreground">
+          <h1 className="text-4xl font-bold font-serif text-foreground tracking-tight">Practice History</h1>
+          <p className="text-muted-foreground mt-2">
             Track your practice sessions and progress over time
           </p>
         </div>
-        <Button onClick={handleOpenLogModal} className="self-start sm:self-auto">
-          <Plus className="mr-2 h-4 w-4" />
+        <Button onClick={handleOpenLogModal} className="self-start sm:self-auto gap-2">
+          <Plus className="h-4 w-4" />
           Log Practice
         </Button>
-      </div>
+      </header>
 
       {/* Loading State */}
       {isLoading && (
@@ -679,7 +701,7 @@ export const PracticeHistory: React.FC<PracticeHistoryProps> = memo(function Pra
       {!isLoading && !error && (
         <>
           {/* Stats Cards */}
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mb-6">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 animate-slide-in-from-bottom animation-forwards opacity-0 stagger-1">
             <StatCard
               title="Total Sessions"
               value={stats?.totalSessions || 0}
@@ -707,16 +729,18 @@ export const PracticeHistory: React.FC<PracticeHistoryProps> = memo(function Pra
           </div>
 
           {/* Filters Card */}
-          <Card className="mb-6">
-            <CardHeader>
-              <CardTitle>Filters</CardTitle>
-              {hasUnappliedChanges && (
-                <CardDescription className="text-warning">
-                  You have unapplied filter changes
-                </CardDescription>
-              )}
+          <Card className="animate-slide-in-from-bottom animation-forwards opacity-0 stagger-2">
+            <CardHeader className="py-4 px-5">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg font-serif">Filters</CardTitle>
+                {hasUnappliedChanges && (
+                  <span className="text-xs font-medium text-warning">
+                    Unapplied changes
+                  </span>
+                )}
+              </div>
             </CardHeader>
-            <CardContent className="space-y-4">
+            <CardContent className="space-y-4 pt-0">
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
                 {/* Song Filter */}
                 <div className="space-y-2">
@@ -800,20 +824,24 @@ export const PracticeHistory: React.FC<PracticeHistoryProps> = memo(function Pra
           </Card>
 
           {/* Sessions Table Card */}
-          <Card>
-            <CardHeader>
-              <CardTitle>Practice Sessions</CardTitle>
-              <CardDescription>
-                {filteredSessions.length} session{filteredSessions.length !== 1 ? 's' : ''} found
-              </CardDescription>
+          <Card className="overflow-hidden animate-slide-in-from-bottom animation-forwards opacity-0 stagger-3">
+            <CardHeader className="py-4 px-5">
+              <div className="flex items-center justify-between">
+                <CardTitle className="text-lg font-serif">Practice Sessions</CardTitle>
+                <span className="text-sm text-muted-foreground font-mono tabular-nums">
+                  {filteredSessions.length} session{filteredSessions.length !== 1 ? 's' : ''}
+                </span>
+              </div>
             </CardHeader>
-            <CardContent>
+            <CardContent className="p-0">
               {filteredSessions.length === 0 ? (
-                <EmptyState
-                  icon={Music}
-                  title="No Practice Sessions"
-                  description="No practice sessions found for the selected filters. Start practicing to see your history here!"
-                />
+                <div className="p-5">
+                  <EmptyState
+                    icon={Music}
+                    title="No Practice Sessions"
+                    description="No practice sessions found for the selected filters. Start practicing to see your history here!"
+                  />
+                </div>
               ) : (
                 <VirtualizedSessionTable
                   sessions={filteredSessions}
