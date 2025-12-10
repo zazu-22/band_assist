@@ -17,17 +17,21 @@
 
 | Status | Count | Description |
 |--------|-------|-------------|
-| 🔴 Active | 0 | Currently being implemented |
+| 🔴 Active | 1 | Currently being implemented |
 | 🟢 Done | 16 | Completed and merged |
 | 🟡 Pending | 1 | Queued for implementation (in sequence order) |
-| ⚪ Backlog | 16 | Planned but not yet prioritized |
+| ⚪ Backlog | 15 | Planned but not yet prioritized |
 | 🔵 GitHub Issues | 5 | Tracked in GitHub (bugs, smaller features) |
 
 ---
 
 ## 🔴 Active Spec
 
-No specs currently active. Next up: [feat-user-member-linking-phase-3](pending/feat-user-member-linking-phase-3.md)
+| Spec | Type | Priority | Started |
+|------|------|----------|---------|
+| [feat-user-member-linking-phase-3](feat-user-member-linking-phase-3.md) | Feature | High | 2025-12-10 |
+
+Task breakdown: [feat-user-member-linking-phase-3-tasks.md](feat-user-member-linking-phase-3-tasks.md)
 
 ---
 
@@ -37,7 +41,7 @@ Specs queued for implementation **in priority order**. Work through these sequen
 
 | Seq | Spec | Type | Effort | Notes |
 |-----|------|------|--------|-------|
-| 1 | [feat-user-member-linking-phase-3](pending/feat-user-member-linking-phase-3.md) | Feature | Large | Personalization + preferences (5-7 days) |
+| 1 | [feat-user-member-linking-phase-4-practice-history-design](pending/feat-user-member-linking-phase-4-practice-history-design.md) | Feature | Small | Practice History design polish |
 
 ---
 
@@ -137,7 +141,6 @@ Smaller features, bug fixes, and follow-up work tracked in GitHub rather than fu
 | [infra-ci-test-suite](backlog/infra-ci-test-suite.md) | Infrastructure | Medium | CI/CD configuration |
 | [infra-unit-testing-practice-mode](backlog/infra-unit-testing-practice-mode.md) | Testing | Medium | Practice Mode tests |
 | [infra-unit-testing-band-dashboard](backlog/infra-unit-testing-band-dashboard.md) | Testing | Medium | Dashboard tests |
-| [feat-user-member-linking-phase-4-practice-history-design](backlog/feat-user-member-linking-phase-4-practice-history-design.md) | Feature | Low | Practice History design polish |
 
 ---
 
@@ -155,6 +158,8 @@ Smaller features, bug fixes, and follow-up work tracked in GitHub rather than fu
 
 | Date | Item | Change |
 |------|------|--------|
+| 2025-12-10 | feat-user-member-linking-phase-3 | 🔴 Moved to active, task breakdown created |
+| 2025-12-10 | feat-user-member-linking-phase-4-practice-history-design | 🟡 Moved to pending |
 | 2025-12-10 | [#121](https://github.com/zazu-22/band_assist/issues/121) Virtualize PracticeHistory | ✅ Closed (merged in PR #167) |
 | 2025-12-10 | [#164](https://github.com/zazu-22/band_assist/issues/164) Fix release please action | ✅ Closed (merged in PR #166) |
 | 2025-12-09 | [#128](https://github.com/zazu-22/band_assist/issues/128) Band settings/management UI | ✅ Closed (merged in PR #157) |
@@ -202,8 +207,8 @@ Smaller features, bug fixes, and follow-up work tracked in GitHub rather than fu
 ```
 feat-user-member-linking-phase-1 ✅
     └── feat-user-member-linking-phase-2 ✅
-            ├── feat-user-member-linking-phase-3 (pending)
-            └── feat-user-member-linking-phase-4-practice-history-design (backlog)
+            ├── feat-user-member-linking-phase-3 (active) 🔴
+            └── feat-user-member-linking-phase-4-practice-history-design (pending)
 
 perf-alphatab-lazy-loading ✅
     └── feat-alphatab-dark-mode-theming (backlog)
