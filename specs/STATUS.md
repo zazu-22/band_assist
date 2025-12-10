@@ -2,7 +2,7 @@
 
 > Quick reference for all specs, GitHub issues, and current status.
 >
-> Last updated: 2025-12-09
+> Last updated: 2025-12-10
 
 ---
 
@@ -51,7 +51,7 @@ Smaller features, bug fixes, and follow-up work tracked in GitHub rather than fu
 
 | # | Title | Effort | Notes |
 |---|-------|--------|-------|
-| [#164](https://github.com/zazu-22/band_assist/issues/164) | Fix release please action | Small | CI/CD issue |
+| [#164](https://github.com/zazu-22/band_assist/issues/164) | Fix release please action | Small | 🔄 PR #166 pending |
 
 ### Practice Tracking Cluster ✅ COMPLETE
 
@@ -161,6 +161,7 @@ Smaller features, bug fixes, and follow-up work tracked in GitHub rather than fu
 
 | Date | Item | Change |
 |------|------|--------|
+| 2025-12-10 | [#164](https://github.com/zazu-22/band_assist/issues/164) Fix release please action | 🔄 PR #166 opened (adds PR title validation) |
 | 2025-12-09 | [#128](https://github.com/zazu-22/band_assist/issues/128) Band settings/management UI | ✅ Closed (merged in PR #157) |
 | 2025-12-09 | [#124](https://github.com/zazu-22/band_assist/issues/124) Band management UI (parent) | ✅ Closed (all child issues complete) |
 | 2025-12-09 | [#145](https://github.com/zazu-22/band_assist/issues/145) Practice Session status field | ✅ Closed (merged in PR #155) |
@@ -235,7 +236,7 @@ Completed Clusters:
     └── #124 (parent tracking) ─── ✅ CLOSED
 
 Open Issues:
-├── #164 (release please action) ─── bug
+├── #164 (release please action) ─── 🔄 PR #166 pending
 ├── #154 (ESLint upgrade) ─── enhancement
 ├── #153 (deprecated deps) ─── documentation
 ├── #152 (AlphaTab 1.7 eval) ─── enhancement
