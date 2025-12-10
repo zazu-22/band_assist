@@ -511,8 +511,8 @@ export const PracticeHistory: React.FC<PracticeHistoryProps> = memo(function Pra
     }
   }, [sortBy]);
 
-  // Get sort icon for column header
-  const getSortIcon = (field: PracticeSortField) => {
+  // Get sort icon for column header (memoized to preserve VirtualizedSessionTable memo optimization)
+  const getSortIcon = useCallback((field: PracticeSortField) => {
     if (sortBy !== field) {
       return <ArrowUpDown className="ml-1 h-4 w-4 text-muted-foreground/50" />;
     }
@@ -521,7 +521,7 @@ export const PracticeHistory: React.FC<PracticeHistoryProps> = memo(function Pra
     ) : (
       <ArrowDown className="ml-1 h-4 w-4" />
     );
-  };
+  }, [sortBy, sortDirection]);
 
   // Modal handlers
   const handleOpenLogModal = useCallback(() => {
