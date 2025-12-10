@@ -18,8 +18,8 @@
 | Status | Count | Description |
 |--------|-------|-------------|
 | 🔴 Active | 1 | Currently being implemented |
-| 🟢 Done | 16 | Completed and merged |
-| 🟡 Pending | 1 | Queued for implementation (in sequence order) |
+| 🟢 Done | 17 | Completed and merged |
+| 🟡 Pending | 0 | Queued for implementation (in sequence order) |
 | ⚪ Backlog | 15 | Planned but not yet prioritized |
 | 🔵 GitHub Issues | 5 | Tracked in GitHub (bugs, smaller features) |
 
@@ -37,11 +37,7 @@ Task breakdown: [feat-user-member-linking-phase-3-tasks.md](feat-user-member-lin
 
 ## 🟡 Pending Queue (Sequenced)
 
-Specs queued for implementation **in priority order**. Work through these sequentially.
-
-| Seq | Spec | Type | Effort | Notes |
-|-----|------|------|--------|-------|
-| 1 | [feat-user-member-linking-phase-4-practice-history-design](pending/feat-user-member-linking-phase-4-practice-history-design.md) | Feature | Small | Practice History design polish |
+No pending specs. Next spec will be selected from backlog once Phase 3 completes.
 
 ---
 
@@ -86,10 +82,11 @@ Smaller features, bug fixes, and follow-up work tracked in GitHub rather than fu
 
 ---
 
-## 🟢 Done (16)
+## 🟢 Done (17)
 
 | Spec | Type | Priority | Completed |
 |------|------|----------|-----------|
+| [feat-user-member-linking-phase-4-practice-history-design](done/feat-user-member-linking-phase-4-practice-history-design.md) | Feature | Low | 2025-12-10 |
 | [feat-user-member-linking-phase-2](done/feat-user-member-linking-phase-2.md) | Feature | High | 2025-12-07 |
 | [feat-user-member-linking-phase-1](done/feat-user-member-linking-phase-1.md) | Feature | High | 2025-12-05 |
 | [infra-automated-versioning](done/infra-automated-versioning.md) | Infrastructure | Medium | 2025-12-03 |
@@ -158,8 +155,8 @@ Smaller features, bug fixes, and follow-up work tracked in GitHub rather than fu
 
 | Date | Item | Change |
 |------|------|--------|
+| 2025-12-10 | feat-user-member-linking-phase-4-practice-history-design | 🟢 Moved to done (merged PR #169) |
 | 2025-12-10 | feat-user-member-linking-phase-3 | 🔴 Moved to active, task breakdown created |
-| 2025-12-10 | feat-user-member-linking-phase-4-practice-history-design | 🟡 Moved to pending |
 | 2025-12-10 | [#121](https://github.com/zazu-22/band_assist/issues/121) Virtualize PracticeHistory | ✅ Closed (merged in PR #167) |
 | 2025-12-10 | [#164](https://github.com/zazu-22/band_assist/issues/164) Fix release please action | ✅ Closed (merged in PR #166) |
 | 2025-12-09 | [#128](https://github.com/zazu-22/band_assist/issues/128) Band settings/management UI | ✅ Closed (merged in PR #157) |
@@ -177,8 +174,7 @@ Smaller features, bug fixes, and follow-up work tracked in GitHub rather than fu
 | 2025-12-07 | [#100](https://github.com/zazu-22/band_assist/issues/100) Password reset bug | ✅ Closed (merged in PR #130) |
 | 2025-12-07 | GitHub Issues | 📋 Added 9 open issues to STATUS.md with dependency graph |
 | 2025-12-07 | Proposed Sequence | 📋 Added recommended implementation order |
-| 2025-12-07 | feat-user-member-linking-phase-4-practice-history-design | ➕ Added to backlog |
-| 2025-12-07 | feat-user-member-linking-phase-2 | ✅ Completed (migration fix) |
+| 2025-12-07 | feat-user-member-linking-phase-4-practice-history-design | ➕ Added to pending |
 | 2025-12-05 | feat-user-member-unlinking | ➕ Added to backlog (undo wrong member claim) |
 | 2025-12-05 | infra-test-environment-setup | ➕ Added to backlog (blocks testing specs) |
 | 2025-12-05 | feat-user-member-linking-phase-1 | ✅ Completed |
@@ -208,7 +204,7 @@ Smaller features, bug fixes, and follow-up work tracked in GitHub rather than fu
 feat-user-member-linking-phase-1 ✅
     └── feat-user-member-linking-phase-2 ✅
             ├── feat-user-member-linking-phase-3 (active) 🔴
-            └── feat-user-member-linking-phase-4-practice-history-design (pending)
+            └── feat-user-member-linking-phase-4-practice-history-design ✅
 
 perf-alphatab-lazy-loading ✅
     └── feat-alphatab-dark-mode-theming (backlog)
@@ -273,21 +269,29 @@ Recommended order considering dependencies and effort:
 | 7 | [#128](https://github.com/zazu-22/band_assist/issues/128) Band settings | Issue | ✅ Closed (PR #157) |
 | 8 | [#124](https://github.com/zazu-22/band_assist/issues/124) Parent tracking issue | Issue | ✅ Closed |
 
-### Phase 4: Larger Efforts
+### Phase 4: User-Member Linking ✅ IN PROGRESS
 
 | Order | Item | Type | Rationale |
 |-------|------|------|-----------|
-| 9 | [feat-user-member-linking-phase-3](pending/feat-user-member-linking-phase-3.md) | Spec | Large feature, personalization |
-| 10 | [#101](https://github.com/zazu-22/band_assist/issues/101) Mobile iOS refactor | Issue | Large scope, device testing needed |
+| 9 | [feat-user-member-linking-phase-1](done/feat-user-member-linking-phase-1.md) | Spec | ✅ Completed 2025-12-05 |
+| 10 | [feat-user-member-linking-phase-2](done/feat-user-member-linking-phase-2.md) | Spec | ✅ Completed 2025-12-07 |
+| 11 | [feat-user-member-linking-phase-3](feat-user-member-linking-phase-3.md) | Spec | 🔴 Currently in progress |
+| 12 | [feat-user-member-linking-phase-4-practice-history-design](done/feat-user-member-linking-phase-4-practice-history-design.md) | Spec | ✅ Completed 2025-12-10 |
+
+### Phase 5: Larger Efforts
+
+| Order | Item | Type | Rationale |
+|-------|------|------|-----------|
+| 13 | [#101](https://github.com/zazu-22/band_assist/issues/101) Mobile iOS refactor | Issue | Large scope, device testing needed |
 
 ### Parallel Opportunities
 
 These can run concurrently with minimal conflict:
 
-- **#101** (mobile) can run in parallel with Phase 4 if resources allow
+- **#101** (mobile) can run in parallel with other work if resources allow
 - **Infrastructure issues** (#154, #153, #152, #142) — independent, can be tackled anytime
 
-> ✅ **Note:** Both Practice Tracking and Band Management clusters are fully complete.
+> ✅ **Note:** Practice Tracking, Band Management, and User-Member Linking phases are progressing well.
 
 ---
 
