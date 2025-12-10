@@ -1,4 +1,4 @@
-import React, { memo, useState, useCallback } from 'react';
+import React, { memo, useState, useCallback, useRef } from 'react';
 import { Plus, Pencil, Loader2 } from 'lucide-react';
 import {
   Dialog,
@@ -19,6 +19,7 @@ import {
 } from '@/components/primitives';
 import { cn } from '@/lib/utils';
 import { getTodayDateString } from '@/lib/dateUtils';
+import { useKeyboardSubmit, getSubmitShortcutHint } from '@/hooks/useKeyboardSubmit';
 import type { Song, PracticeSession, UserSongStatus, UserSongProgress } from '@/types';
 
 // =============================================================================
@@ -174,6 +175,7 @@ const LogPracticeForm: React.FC<LogPracticeFormProps> = ({
   onClose,
 }) => {
   const isEditMode = !!editSession;
+  const formRef = useRef<HTMLFormElement>(null);
 
   // Initialize state once on mount using lazy initializer
   const [formState, setFormState] = useState<FormState>(() =>
@@ -181,6 +183,12 @@ const LogPracticeForm: React.FC<LogPracticeFormProps> = ({
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Keyboard shortcut for form submission (Cmd+Enter on Mac, Ctrl+Enter on Windows)
+  useKeyboardSubmit({
+    enabled: !isSubmitting,
+    onSubmit: () => formRef.current?.requestSubmit(),
+  });
 
   // Destructure for easier access
   const { songId, date, durationMinutes, tempoBpm, sections, notes, status, confidence, originalStatus, originalConfidence } = formState;
@@ -331,7 +339,7 @@ const LogPracticeForm: React.FC<LogPracticeFormProps> = ({
         </div>
       </DialogHeader>
 
-      <form onSubmit={handleSubmit} className="space-y-4">
+      <form ref={formRef} onSubmit={handleSubmit} className="space-y-4">
         {/* Error message */}
         {error && (
           <div className="rounded-md bg-destructive/10 p-3 text-sm text-destructive">
@@ -365,6 +373,7 @@ const LogPracticeForm: React.FC<LogPracticeFormProps> = ({
             value={date}
             onChange={(e) => setDate(e.target.value)}
             max={getTodayDateString()}
+            className="w-full"
           />
         </div>
 
@@ -466,6 +475,9 @@ const LogPracticeForm: React.FC<LogPracticeFormProps> = ({
           <Button type="submit" disabled={isSubmitting}>
             {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {isSubmitting ? 'Saving...' : isEditMode ? 'Save Changes' : 'Log Session'}
+            {!isSubmitting && (
+              <span className="ml-2 text-xs opacity-60">{getSubmitShortcutHint()}</span>
+            )}
           </Button>
         </DialogFooter>
       </form>
@@ -506,7 +518,7 @@ export const LogPracticeModal: React.FC<LogPracticeModalProps> = memo(function L
 
   return (
     <Dialog open={isOpen} onOpenChange={handleOpenChange}>
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
         {isOpen && (
           <LogPracticeForm
             key={formKey}
