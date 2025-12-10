@@ -17,27 +17,23 @@
 
 | Status | Count | Description |
 |--------|-------|-------------|
-| 🔴 Active | 1 | Currently being implemented |
-| 🟢 Done | 17 | Completed and merged |
+| 🔴 Active | 0 | Currently being implemented |
+| 🟢 Done | 18 | Completed and merged |
 | 🟡 Pending | 0 | Queued for implementation (in sequence order) |
-| ⚪ Backlog | 15 | Planned but not yet prioritized |
+| ⚪ Backlog | 16 | Planned but not yet prioritized |
 | 🔵 GitHub Issues | 7 | Tracked in GitHub (bugs, smaller features) |
 
 ---
 
 ## 🔴 Active Spec
 
-| Spec | Type | Priority | Started |
-|------|------|----------|---------|
-| [feat-user-member-linking-phase-3](feat-user-member-linking-phase-3.md) | Feature | High | 2025-12-10 |
-
-Task breakdown: [feat-user-member-linking-phase-3-tasks.md](feat-user-member-linking-phase-3-tasks.md)
+No active spec. Next spec will be selected from backlog.
 
 ---
 
 ## 🟡 Pending Queue (Sequenced)
 
-No pending specs. Next spec will be selected from backlog once Phase 3 completes.
+No pending specs.
 
 ---
 
@@ -84,11 +80,12 @@ Smaller features, bug fixes, and follow-up work tracked in GitHub rather than fu
 
 ---
 
-## 🟢 Done (17)
+## 🟢 Done (18)
 
 | Spec | Type | Priority | Completed |
 |------|------|----------|-----------|
 | [feat-user-member-linking-phase-4-practice-history-design](done/feat-user-member-linking-phase-4-practice-history-design.md) | Feature | Low | 2025-12-10 |
+| [feat-user-member-linking-phase-3](done/feat-user-member-linking-phase-3.md) | Feature | High | 2025-12-10 |
 | [feat-user-member-linking-phase-2](done/feat-user-member-linking-phase-2.md) | Feature | High | 2025-12-07 |
 | [feat-user-member-linking-phase-1](done/feat-user-member-linking-phase-1.md) | Feature | High | 2025-12-05 |
 | [infra-automated-versioning](done/infra-automated-versioning.md) | Infrastructure | Medium | 2025-12-03 |
@@ -121,6 +118,7 @@ Smaller features, bug fixes, and follow-up work tracked in GitHub rather than fu
 
 | Spec | Type | Effort | Notes |
 |------|------|--------|-------|
+| [feat-whats-new-changelog-popup](backlog/feat-whats-new-changelog-popup.md) | Feature | Medium | Auto-generated release announcements |
 | [feat-lead-sheet-generation](backlog/feat-lead-sheet-generation.md) | Feature | Large | Auto-generate from GP files |
 | [feat-collaborative-song-notes](backlog/feat-collaborative-song-notes.md) | Feature | Medium | Timestamped comments |
 | [feat-practice-mode-track-presets](backlog/feat-practice-mode-track-presets.md) | Feature | Medium | Save practice configurations |
@@ -157,9 +155,10 @@ Smaller features, bug fixes, and follow-up work tracked in GitHub rather than fu
 
 | Date | Item | Change |
 |------|------|--------|
+| 2025-12-10 | feat-whats-new-changelog-popup | ➕ Added to backlog (auto-generated release announcements) |
+| 2025-12-10 | feat-user-member-linking-phase-3 | 🟢 Moved to done |
 | 2025-12-10 | [#172](https://github.com/zazu-22/band_assist/issues/172), [#173](https://github.com/zazu-22/band_assist/issues/173) | ➕ Created (My Songs design, Log Practice Modal UX) |
 | 2025-12-10 | feat-user-member-linking-phase-4-practice-history-design | 🟢 Moved to done (merged PR #170) |
-| 2025-12-10 | feat-user-member-linking-phase-3 | 🔴 Moved to active, task breakdown created |
 | 2025-12-10 | [#121](https://github.com/zazu-22/band_assist/issues/121) Virtualize PracticeHistory | ✅ Closed (merged in PR #167) |
 | 2025-12-10 | [#164](https://github.com/zazu-22/band_assist/issues/164) Fix release please action | ✅ Closed (merged in PR #166) |
 | 2025-12-09 | [#128](https://github.com/zazu-22/band_assist/issues/128) Band settings/management UI | ✅ Closed (merged in PR #157) |
@@ -206,7 +205,7 @@ Smaller features, bug fixes, and follow-up work tracked in GitHub rather than fu
 ```
 feat-user-member-linking-phase-1 ✅
     └── feat-user-member-linking-phase-2 ✅
-            ├── feat-user-member-linking-phase-3 (active) 🔴
+            ├── feat-user-member-linking-phase-3 ✅
             └── feat-user-member-linking-phase-4-practice-history-design ✅
 
 perf-alphatab-lazy-loading ✅
@@ -277,13 +276,13 @@ Recommended order considering dependencies and effort:
 | 7 | [#128](https://github.com/zazu-22/band_assist/issues/128) Band settings | Issue | ✅ Closed (PR #157) |
 | 8 | [#124](https://github.com/zazu-22/band_assist/issues/124) Parent tracking issue | Issue | ✅ Closed |
 
-### Phase 4: User-Member Linking ✅ IN PROGRESS
+### Phase 4: User-Member Linking ✅ COMPLETE
 
 | Order | Item | Type | Rationale |
 |-------|------|------|-----------|
 | 9 | [feat-user-member-linking-phase-1](done/feat-user-member-linking-phase-1.md) | Spec | ✅ Completed 2025-12-05 |
 | 10 | [feat-user-member-linking-phase-2](done/feat-user-member-linking-phase-2.md) | Spec | ✅ Completed 2025-12-07 |
-| 11 | [feat-user-member-linking-phase-3](feat-user-member-linking-phase-3.md) | Spec | 🔴 Currently in progress |
+| 11 | [feat-user-member-linking-phase-3](done/feat-user-member-linking-phase-3.md) | Spec | ✅ Completed 2025-12-10 |
 | 12 | [feat-user-member-linking-phase-4-practice-history-design](done/feat-user-member-linking-phase-4-practice-history-design.md) | Spec | ✅ Completed 2025-12-10 |
 
 ### Phase 5: Larger Efforts
