@@ -129,6 +129,18 @@ BEGIN
          (v1_parts[1] = v2_parts[1] AND v1_parts[2] = v2_parts[2] AND v1_parts[3] > v2_parts[3]);
 END;
 $$ LANGUAGE plpgsql IMMUTABLE;
+
+-- RPC function for server-side filtering (better performance than client-side)
+CREATE OR REPLACE FUNCTION get_unseen_announcements(user_last_seen TEXT)
+RETURNS SETOF announcements AS $$
+BEGIN
+  RETURN QUERY
+  SELECT *
+  FROM announcements
+  WHERE semver_gt(version, user_last_seen)
+  ORDER BY released_at DESC;
+END;
+$$ LANGUAGE plpgsql STABLE SECURITY DEFINER;
 ```
 
 ### 1.2 Features JSON Schema
@@ -233,6 +245,28 @@ jobs:
 
           claude_args: '--model claude-opus-4-5-20251101 --max-turns 5'
 
+      - name: Generate fallback announcement if Claude failed
+        if: ${{ !fileExists('announcement.json') }}
+        run: |
+          # Fallback: Generate minimal announcement from changelog
+          VERSION="${{ steps.changelog.outputs.version }}"
+          DATE=$(date -I)
+
+          # Count features and fixes from changelog
+          FEAT_COUNT=$(grep -c "^\* \*\*" changelog_excerpt.txt 2>/dev/null || echo "0")
+
+          cat > announcement.json << EOF
+          {
+            "version": "${VERSION}",
+            "released_at": "${DATE}",
+            "title": "New Updates Available",
+            "summary": "We've made improvements to Band Assist. Check out what's new!",
+            "importance": "minor",
+            "features": []
+          }
+          EOF
+          echo "⚠️ Generated fallback announcement (Claude unavailable)"
+
       - name: Store announcement in Supabase
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
@@ -241,13 +275,23 @@ jobs:
           if [ -f announcement.json ]; then
             # Validate JSON
             if jq empty announcement.json 2>/dev/null; then
-              curl -X POST "${SUPABASE_URL}/rest/v1/announcements" \
+              # Check if announcement for this version already exists
+              VERSION=$(jq -r '.version' announcement.json)
+              EXISTING=$(curl -s "${SUPABASE_URL}/rest/v1/announcements?version=eq.${VERSION}" \
                 -H "apikey: ${SUPABASE_SERVICE_ROLE_KEY}" \
-                -H "Authorization: Bearer ${SUPABASE_SERVICE_ROLE_KEY}" \
-                -H "Content-Type: application/json" \
-                -H "Prefer: return=minimal" \
-                -d @announcement.json
-              echo "✅ Announcement stored in Supabase"
+                -H "Authorization: Bearer ${SUPABASE_SERVICE_ROLE_KEY}")
+
+              if [ "$EXISTING" = "[]" ]; then
+                curl -X POST "${SUPABASE_URL}/rest/v1/announcements" \
+                  -H "apikey: ${SUPABASE_SERVICE_ROLE_KEY}" \
+                  -H "Authorization: Bearer ${SUPABASE_SERVICE_ROLE_KEY}" \
+                  -H "Content-Type: application/json" \
+                  -H "Prefer: return=minimal" \
+                  -d @announcement.json
+                echo "✅ Announcement stored in Supabase"
+              else
+                echo "⚠️ Announcement for version ${VERSION} already exists, skipping"
+              fi
             else
               echo "❌ Invalid JSON in announcement.json"
               cat announcement.json
@@ -453,9 +497,17 @@ import { useEffect, useState } from 'react';
 import { supabase } from '@/lib/supabase';
 import type { Announcement } from '@/types/announcement';
 
-export function useWhatsNew(userId: string | undefined) {
+interface UseWhatsNewResult {
+  announcements: Announcement[];
+  loading: boolean;
+  error: Error | null;
+  markAllSeen: () => Promise<void>;
+}
+
+export function useWhatsNew(userId: string | undefined): UseWhatsNewResult {
   const [announcements, setAnnouncements] = useState<Announcement[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<Error | null>(null);
 
   useEffect(() => {
     if (!userId) {
@@ -465,31 +517,37 @@ export function useWhatsNew(userId: string | undefined) {
 
     async function checkAnnouncements() {
       try {
+        setError(null);
+
         // Get user's last seen version
-        const { data: userVersion } = await supabase
+        const { data: userVersion, error: versionError } = await supabase
           .from('user_seen_versions')
           .select('last_seen_version')
           .eq('user_id', userId)
           .single();
 
+        if (versionError && versionError.code !== 'PGRST116') {
+          // PGRST116 = no rows returned (new user), which is fine
+          throw versionError;
+        }
+
         const lastSeen = userVersion?.last_seen_version || '0.0.0';
 
-        // Get announcements newer than last seen version
-        // Using the semver_gt function we created
-        const { data: unseen } = await supabase
-          .from('announcements')
-          .select('*')
+        // Server-side filtering using RPC for better performance
+        const { data: unseen, error: fetchError } = await supabase
+          .rpc('get_unseen_announcements', { user_last_seen: lastSeen })
           .order('released_at', { ascending: false });
 
-        // Filter client-side using semver comparison
-        // (Could also use RPC call to semver_gt if preferred)
-        const newer = (unseen || []).filter(a =>
-          compareSemver(a.version, lastSeen) > 0
-        );
+        if (fetchError) {
+          throw fetchError;
+        }
 
-        setAnnouncements(newer);
-      } catch (error) {
-        console.error('Failed to check announcements:', error);
+        setAnnouncements(unseen || []);
+      } catch (err) {
+        console.error('Failed to check announcements:', err);
+        setError(err instanceof Error ? err : new Error('Failed to load announcements'));
+        // Don't block the app - just skip showing announcements
+        setAnnouncements([]);
       } finally {
         setLoading(false);
       }
@@ -501,29 +559,47 @@ export function useWhatsNew(userId: string | undefined) {
   const markAllSeen = async () => {
     if (!userId || announcements.length === 0) return;
 
-    // Get the highest version from announcements
-    const latestVersion = announcements.reduce((max, a) =>
-      compareSemver(a.version, max) > 0 ? a.version : max
-    , '0.0.0');
+    try {
+      // Get the highest version from announcements
+      const latestVersion = announcements.reduce((max, a) =>
+        compareSemver(a.version, max) > 0 ? a.version : max
+      , '0.0.0');
 
-    await supabase
-      .from('user_seen_versions')
-      .upsert({
-        user_id: userId,
-        last_seen_version: latestVersion,
-        updated_at: new Date().toISOString()
-      });
+      const { error } = await supabase
+        .from('user_seen_versions')
+        .upsert({
+          user_id: userId,
+          last_seen_version: latestVersion,
+          updated_at: new Date().toISOString()
+        });
 
-    setAnnouncements([]);
+      if (error) throw error;
+      setAnnouncements([]);
+    } catch (err) {
+      console.error('Failed to mark announcements as seen:', err);
+      // Still clear UI to avoid blocking user
+      setAnnouncements([]);
+    }
   };
 
-  return { announcements, loading, markAllSeen };
+  return { announcements, loading, error, markAllSeen };
 }
 
-// Simple semver comparison: returns 1 if a > b, -1 if a < b, 0 if equal
+// Semver comparison with validation for malformed strings
+// Returns 1 if a > b, -1 if a < b, 0 if equal
 function compareSemver(a: string, b: string): number {
-  const pa = a.split('.').map(Number);
-  const pb = b.split('.').map(Number);
+  const parseVersion = (v: string): number[] => {
+    const parts = v.split('.').map(Number);
+    // Handle malformed versions - default to [0, 0, 0]
+    if (parts.length !== 3 || parts.some(isNaN)) {
+      console.warn(`Malformed version string: ${v}, treating as 0.0.0`);
+      return [0, 0, 0];
+    }
+    return parts;
+  };
+
+  const pa = parseVersion(a);
+  const pb = parseVersion(b);
 
   for (let i = 0; i < 3; i++) {
     if (pa[i] > pb[i]) return 1;
