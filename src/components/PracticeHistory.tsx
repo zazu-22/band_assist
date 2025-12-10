@@ -1,4 +1,5 @@
-import React, { memo, useMemo, useState, useCallback } from 'react';
+import React, { memo, useMemo, useState, useCallback, useRef } from 'react';
+import { useVirtualizer } from '@tanstack/react-virtual';
 import {
   CalendarDays,
   Clock,
@@ -123,7 +124,234 @@ function getStatusVariant(status: UserSongStatus | undefined): BadgeVariant {
 }
 
 // =============================================================================
-// COMPONENT
+// VIRTUALIZED TABLE COMPONENT
+// =============================================================================
+
+// Row height for virtualization (py-3 = 12px * 2 + content ~= 48px)
+const ROW_HEIGHT = 48;
+// Max visible rows before scrolling
+const MAX_VISIBLE_ROWS = 10;
+
+interface VirtualizedSessionTableProps {
+  sessions: PracticeSession[];
+  songMap: Map<string, Song>;
+  statuses: Map<string, { status: UserSongStatus; confidence?: number }>;
+  onSortClick: (field: PracticeSortField) => void;
+  getSortIcon: (field: PracticeSortField) => React.ReactNode;
+  onEditSession: (session: PracticeSession) => void;
+  onDeleteSession: (sessionId: string) => void;
+}
+
+const VirtualizedSessionTable = memo(function VirtualizedSessionTable({
+  sessions,
+  songMap,
+  statuses,
+  onSortClick,
+  getSortIcon,
+  onEditSession,
+  onDeleteSession,
+}: VirtualizedSessionTableProps) {
+  const parentRef = useRef<HTMLDivElement>(null);
+
+  // Calculate container height - show all rows if under MAX_VISIBLE_ROWS, otherwise cap at MAX_VISIBLE_ROWS
+  const containerHeight = Math.min(sessions.length, MAX_VISIBLE_ROWS) * ROW_HEIGHT;
+
+  // eslint-disable-next-line react-hooks/incompatible-library -- TanStack Virtual is safe to use, React Compiler will skip this component
+  const virtualizer = useVirtualizer({
+    count: sessions.length,
+    getScrollElement: () => parentRef.current,
+    estimateSize: () => ROW_HEIGHT,
+    overscan: 5, // Render 5 extra rows above/below viewport for smoother scrolling
+  });
+
+  const virtualRows = virtualizer.getVirtualItems();
+
+  // Fallback: if virtualization returns no items but we have sessions, render all rows
+  // This handles test environments (JSDOM) where DOM measurements don't work
+  const shouldFallbackToNonVirtual = virtualRows.length === 0 && sessions.length > 0;
+
+  // Helper to render a single row
+  const renderRow = (session: PracticeSession, style?: React.CSSProperties) => {
+    const song = songMap.get(session.songId);
+    const songStatus = statuses.get(session.songId);
+
+    return (
+      <tr
+        key={session.id}
+        className="border-b border-border last:border-0"
+        style={style}
+      >
+        <td className="py-3 px-4 text-sm text-foreground">
+          {formatDate(session.date)}
+        </td>
+        <td className="py-3 px-4 text-sm text-foreground font-medium">
+          {song?.title || 'Unknown Song'}
+        </td>
+        <td className="py-3 px-4 text-sm text-foreground">
+          {session.durationMinutes}m
+        </td>
+        <td className="py-3 px-4 text-sm text-muted-foreground hidden sm:table-cell">
+          {session.tempoBpm ? `${session.tempoBpm} BPM` : '—'}
+        </td>
+        <td className="py-3 px-4 text-sm text-muted-foreground hidden md:table-cell">
+          {session.sectionsPracticed && session.sectionsPracticed.length > 0
+            ? session.sectionsPracticed.join(', ')
+            : '—'}
+        </td>
+        <td className="py-3 px-4">
+          <Badge variant={getStatusVariant(songStatus?.status)}>
+            {songStatus?.status || 'Not Started'}
+          </Badge>
+        </td>
+        <td className="py-3 px-4 text-sm text-muted-foreground hidden lg:table-cell max-w-xs truncate">
+          {session.notes || '—'}
+        </td>
+        <td className="py-3 px-4 text-right">
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                <span className="sr-only">Open menu</span>
+                <MoreHorizontal className="h-4 w-4" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end">
+              <DropdownMenuItem onClick={() => onEditSession(session)}>
+                <Pencil className="mr-2 h-4 w-4" />
+                Edit
+              </DropdownMenuItem>
+              <DropdownMenuItem
+                onClick={() => onDeleteSession(session.id)}
+                className="text-destructive focus:text-destructive"
+              >
+                <Trash2 className="mr-2 h-4 w-4" />
+                Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </td>
+      </tr>
+    );
+  };
+
+  // Render table header (shared between virtual and fallback modes)
+  const tableHeader = (
+    <thead>
+      <tr className="border-b border-border">
+        <th className="text-left py-3 px-4 text-sm font-semibold text-muted-foreground">
+          <button
+            type="button"
+            onClick={() => onSortClick('date')}
+            className="flex items-center hover:text-foreground transition-colors"
+          >
+            Date
+            {getSortIcon('date')}
+          </button>
+        </th>
+        <th className="text-left py-3 px-4 text-sm font-semibold text-muted-foreground">
+          <button
+            type="button"
+            onClick={() => onSortClick('songId')}
+            className="flex items-center hover:text-foreground transition-colors"
+          >
+            Song
+            {getSortIcon('songId')}
+          </button>
+        </th>
+        <th className="text-left py-3 px-4 text-sm font-semibold text-muted-foreground">
+          <button
+            type="button"
+            onClick={() => onSortClick('durationMinutes')}
+            className="flex items-center hover:text-foreground transition-colors"
+          >
+            Duration
+            {getSortIcon('durationMinutes')}
+          </button>
+        </th>
+        <th className="text-left py-3 px-4 text-sm font-semibold text-muted-foreground hidden sm:table-cell">
+          <button
+            type="button"
+            onClick={() => onSortClick('tempoBpm')}
+            className="flex items-center hover:text-foreground transition-colors"
+          >
+            Tempo
+            {getSortIcon('tempoBpm')}
+          </button>
+        </th>
+        <th className="text-left py-3 px-4 text-sm font-semibold text-muted-foreground hidden md:table-cell">
+          Sections
+        </th>
+        <th className="text-left py-3 px-4 text-sm font-semibold text-muted-foreground">
+          Status
+        </th>
+        <th className="text-left py-3 px-4 text-sm font-semibold text-muted-foreground hidden lg:table-cell">
+          Notes
+        </th>
+        <th className="text-right py-3 px-4 text-sm font-semibold text-muted-foreground w-16">
+          <span className="sr-only">Actions</span>
+        </th>
+      </tr>
+    </thead>
+  );
+
+  // Fallback: render all rows without virtualization (for test environments)
+  if (shouldFallbackToNonVirtual) {
+    return (
+      <div className="overflow-x-auto">
+        <table className="w-full">
+          {tableHeader}
+          <tbody>
+            {sessions.map(session => renderRow(session))}
+          </tbody>
+        </table>
+      </div>
+    );
+  }
+
+  return (
+    <div className="overflow-x-auto">
+      {/* Table Header - Always visible */}
+      <table className="w-full">
+        {tableHeader}
+      </table>
+
+      {/* Virtualized Table Body */}
+      <div
+        ref={parentRef}
+        className="overflow-y-auto"
+        style={{ height: containerHeight, maxHeight: MAX_VISIBLE_ROWS * ROW_HEIGHT }}
+      >
+        <div
+          style={{
+            height: virtualizer.getTotalSize(),
+            width: '100%',
+            position: 'relative',
+          }}
+        >
+          <table className="w-full">
+            <tbody>
+              {virtualRows.map(virtualRow => {
+                const session = sessions[virtualRow.index];
+                return renderRow(session, {
+                  position: 'absolute',
+                  top: 0,
+                  left: 0,
+                  width: '100%',
+                  height: ROW_HEIGHT,
+                  transform: `translateY(${virtualRow.start}px)`,
+                });
+              })}
+            </tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  );
+});
+
+VirtualizedSessionTable.displayName = 'VirtualizedSessionTable';
+
+// =============================================================================
+// MAIN COMPONENT
 // =============================================================================
 
 // Default filter values
@@ -561,125 +789,15 @@ export const PracticeHistory: React.FC<PracticeHistoryProps> = memo(function Pra
                   description="No practice sessions found for the selected filters. Start practicing to see your history here!"
                 />
               ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full">
-                    <thead>
-                      <tr className="border-b border-border">
-                        <th className="text-left py-3 px-4 text-sm font-semibold text-muted-foreground">
-                          <button
-                            type="button"
-                            onClick={() => handleSortClick('date')}
-                            className="flex items-center hover:text-foreground transition-colors"
-                          >
-                            Date
-                            {getSortIcon('date')}
-                          </button>
-                        </th>
-                        <th className="text-left py-3 px-4 text-sm font-semibold text-muted-foreground">
-                          <button
-                            type="button"
-                            onClick={() => handleSortClick('songId')}
-                            className="flex items-center hover:text-foreground transition-colors"
-                          >
-                            Song
-                            {getSortIcon('songId')}
-                          </button>
-                        </th>
-                        <th className="text-left py-3 px-4 text-sm font-semibold text-muted-foreground">
-                          <button
-                            type="button"
-                            onClick={() => handleSortClick('durationMinutes')}
-                            className="flex items-center hover:text-foreground transition-colors"
-                          >
-                            Duration
-                            {getSortIcon('durationMinutes')}
-                          </button>
-                        </th>
-                        <th className="text-left py-3 px-4 text-sm font-semibold text-muted-foreground hidden sm:table-cell">
-                          <button
-                            type="button"
-                            onClick={() => handleSortClick('tempoBpm')}
-                            className="flex items-center hover:text-foreground transition-colors"
-                          >
-                            Tempo
-                            {getSortIcon('tempoBpm')}
-                          </button>
-                        </th>
-                        <th className="text-left py-3 px-4 text-sm font-semibold text-muted-foreground hidden md:table-cell">
-                          Sections
-                        </th>
-                        <th className="text-left py-3 px-4 text-sm font-semibold text-muted-foreground">
-                          Status
-                        </th>
-                        <th className="text-left py-3 px-4 text-sm font-semibold text-muted-foreground hidden lg:table-cell">
-                          Notes
-                        </th>
-                        <th className="text-right py-3 px-4 text-sm font-semibold text-muted-foreground w-16">
-                          <span className="sr-only">Actions</span>
-                        </th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {filteredSessions.map(session => {
-                        const song = songMap.get(session.songId);
-                        const songStatus = statuses.get(session.songId);
-
-                        return (
-                          <tr key={session.id} className="border-b border-border last:border-0">
-                            <td className="py-3 px-4 text-sm text-foreground">
-                              {formatDate(session.date)}
-                            </td>
-                            <td className="py-3 px-4 text-sm text-foreground font-medium">
-                              {song?.title || 'Unknown Song'}
-                            </td>
-                            <td className="py-3 px-4 text-sm text-foreground">
-                              {session.durationMinutes}m
-                            </td>
-                            <td className="py-3 px-4 text-sm text-muted-foreground hidden sm:table-cell">
-                              {session.tempoBpm ? `${session.tempoBpm} BPM` : '—'}
-                            </td>
-                            <td className="py-3 px-4 text-sm text-muted-foreground hidden md:table-cell">
-                              {session.sectionsPracticed && session.sectionsPracticed.length > 0
-                                ? session.sectionsPracticed.join(', ')
-                                : '—'}
-                            </td>
-                            <td className="py-3 px-4">
-                              <Badge variant={getStatusVariant(songStatus?.status)}>
-                                {songStatus?.status || 'Not Started'}
-                              </Badge>
-                            </td>
-                            <td className="py-3 px-4 text-sm text-muted-foreground hidden lg:table-cell max-w-xs truncate">
-                              {session.notes || '—'}
-                            </td>
-                            <td className="py-3 px-4 text-right">
-                              <DropdownMenu>
-                                <DropdownMenuTrigger asChild>
-                                  <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
-                                    <span className="sr-only">Open menu</span>
-                                    <MoreHorizontal className="h-4 w-4" />
-                                  </Button>
-                                </DropdownMenuTrigger>
-                                <DropdownMenuContent align="end">
-                                  <DropdownMenuItem onClick={() => handleOpenEditModal(session)}>
-                                    <Pencil className="mr-2 h-4 w-4" />
-                                    Edit
-                                  </DropdownMenuItem>
-                                  <DropdownMenuItem
-                                    onClick={() => handleDeleteClick(session.id)}
-                                    className="text-destructive focus:text-destructive"
-                                  >
-                                    <Trash2 className="mr-2 h-4 w-4" />
-                                    Delete
-                                  </DropdownMenuItem>
-                                </DropdownMenuContent>
-                              </DropdownMenu>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
+                <VirtualizedSessionTable
+                  sessions={filteredSessions}
+                  songMap={songMap}
+                  statuses={statuses}
+                  onSortClick={handleSortClick}
+                  getSortIcon={getSortIcon}
+                  onEditSession={handleOpenEditModal}
+                  onDeleteSession={handleDeleteClick}
+                />
               )}
             </CardContent>
           </Card>
