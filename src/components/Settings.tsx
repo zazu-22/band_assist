@@ -464,7 +464,16 @@ export const Settings: React.FC<SettingsProps> = memo(function Settings({
         {/* Team Tab - Only rendered when Supabase is configured */}
         {showInvitations && currentBandId && currentUserId && (
           <TabsContent value="TEAM" className="space-y-6 animate-slide-in-from-bottom animation-forwards">
-            <LinkAccountSection currentBandId={currentBandId} currentUserId={currentUserId} />
+            <LinkAccountSection
+              currentBandId={currentBandId}
+              currentUserId={currentUserId}
+              availableRoles={availableRoles}
+              onUpdateMember={(updatedMember) => {
+                setMembers(prevMembers =>
+                  prevMembers.map(m => m.id === updatedMember.id ? updatedMember : m)
+                );
+              }}
+            />
 
             <Card>
               <CardContent className="p-6">

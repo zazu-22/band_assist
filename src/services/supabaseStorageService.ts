@@ -101,6 +101,8 @@ export class SupabaseStorageService implements IStorageService {
       roles: string[];
       avatar_color: string | null;
       band_id: string;
+      user_id?: string | null;
+      preferred_instrument?: string | null;
     };
 
     type SongInsert = {
@@ -148,6 +150,8 @@ export class SupabaseStorageService implements IStorageService {
         roles: m.roles,
         avatar_color: m.avatarColor || null,
         band_id: this.currentBandId!,
+        user_id: m.userId,
+        preferred_instrument: m.preferredInstrument,
       }));
       const { error: membersError } = await supabase
         .from('band_members')
@@ -397,13 +401,19 @@ export class SupabaseStorageService implements IStorageService {
       if (rolesError) throw rolesError;
 
       // Transform database format to app format
+      // Note: preferred_instrument column added in migration 022, cast for compatibility
       const members: BandMember[] | null = membersData
-        ? membersData.map(m => ({
-            id: m.id,
-            name: m.name,
-            roles: m.roles,
-            avatarColor: validateAvatarColor(m.avatar_color),
-          }))
+        ? membersData.map(m => {
+            const row = m as typeof m & { preferred_instrument?: string | null };
+            return {
+              id: row.id,
+              name: row.name,
+              roles: row.roles,
+              avatarColor: validateAvatarColor(row.avatar_color),
+              userId: row.user_id,
+              preferredInstrument: row.preferred_instrument,
+            };
+          })
         : null;
 
       // Transform and refresh chart URLs for all songs
@@ -1296,12 +1306,15 @@ export class SupabaseStorageService implements IStorageService {
       }
 
       // Map database row to BandMember interface
+      // Note: preferred_instrument column added in migration 022, cast for compatibility
+      const row = data as typeof data & { preferred_instrument?: string | null };
       return {
-        id: data.id,
-        name: data.name,
-        roles: data.roles,
-        avatarColor: validateAvatarColor(data.avatar_color),
-        userId: data.user_id,
+        id: row.id,
+        name: row.name,
+        roles: row.roles,
+        avatarColor: validateAvatarColor(row.avatar_color),
+        userId: row.user_id,
+        preferredInstrument: row.preferred_instrument,
       };
     } catch (err) {
       console.error('[getLinkedMemberForUser] Unexpected error:', err);
@@ -1831,13 +1844,18 @@ export async function fetchUnlinkedMembers(
     }
 
     // Map database rows to BandMember interfaces
-    return data.map(row => ({
-      id: row.id,
-      name: row.name,
-      roles: row.roles,
-      avatarColor: validateAvatarColor(row.avatar_color),
-      userId: row.user_id, // Will be null for all results
-    }));
+    // Note: preferred_instrument column added in migration 022, cast for compatibility
+    return data.map(dbRow => {
+      const row = dbRow as typeof dbRow & { preferred_instrument?: string | null };
+      return {
+        id: row.id,
+        name: row.name,
+        roles: row.roles,
+        avatarColor: validateAvatarColor(row.avatar_color),
+        userId: row.user_id, // Will be null for all results
+        preferredInstrument: row.preferred_instrument,
+      };
+    });
   } catch (err) {
     console.error('Unexpected error in fetchUnlinkedMembers:', err);
     throw err;

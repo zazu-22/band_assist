@@ -39,7 +39,10 @@ import { getAudioContext, activateAudioContext } from '@/lib/audioContext';
 import { useIsMobile } from '@/hooks/useBreakpoint';
 import { useDerivedState, usePrevious } from '@/hooks/useDerivedState';
 import { useBlobUrl } from '@/hooks/useBlobUrl';
+import { useLinkedMember } from '@/hooks/useLinkedMember';
+import { useAppActions } from '@/contexts';
 import { PracticeControlBar, type AlphaTabState, type TrackInfo } from './practice';
+import { findMatchingTrackIndex } from '@/lib/trackMatcher';
 
 // =============================================================================
 // TYPES
@@ -130,6 +133,8 @@ export const PracticeRoom: React.FC<PracticeRoomProps> = memo(function PracticeR
   initialSongId,
 }) {
   const isMobile = useIsMobile();
+  const { currentBandId } = useAppActions();
+  const { linkedMember } = useLinkedMember(currentBandId);
 
   // ---------------------------------------------------------------------------
   // STATE
@@ -304,9 +309,20 @@ export const PracticeRoom: React.FC<PracticeRoomProps> = memo(function PracticeR
     setGpPosition({ current, total });
   }, []);
 
+  // Extract preferredInstrument to avoid re-creating callback when other linkedMember fields change
+  const preferredInstrument = linkedMember?.preferredInstrument;
+
   const handleAlphaTabTracksLoaded = useCallback((tracks: TrackInfo[]) => {
     setGpTracks(tracks);
-  }, []);
+
+    // Auto-select track based on user's preferred instrument
+    if (preferredInstrument && tracks.length > 1) {
+      const matchIndex = findMatchingTrackIndex(tracks, preferredInstrument);
+      if (matchIndex !== null && alphaTabRef.current) {
+        alphaTabRef.current.renderTrack(matchIndex);
+      }
+    }
+  }, [preferredInstrument]);
 
   // ---------------------------------------------------------------------------
   // CONTROL BAR PLAYBACK CALLBACKS

@@ -23,6 +23,7 @@ export interface BandMember {
   roles: string[]; // Default/Preferred roles (e.g. ["Lead Guitar", "Vocals"])
   avatarColor?: AvatarColorClass; // Validated avatar background color
   userId?: string | null; // Link to auth.users for personalized features
+  preferredInstrument?: string | null; // For auto-selecting GP tracks (e.g., "Lead Guitar")
 }
 
 // Type guard to check if member is linked to a user
