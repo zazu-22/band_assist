@@ -26,6 +26,7 @@ import { Settings } from './components/Settings';
 import { BandDashboard } from './components/BandDashboard';
 import { ScheduleManager } from './components/ScheduleManager';
 import { PracticeHistory } from './components/PracticeHistory';
+import { MySongs } from './components/MySongs';
 import { Login } from './components/Login';
 import { Signup } from './components/Signup';
 import { PasswordReset } from './components/PasswordReset';
@@ -57,6 +58,7 @@ import { useLayoutShortcuts } from './hooks/useLayoutShortcuts';
 import { useBandCreation } from './hooks/useBandCreation';
 import { ThemeProvider } from './components/ui/ThemeProvider';
 import { SidebarProvider, AppShell } from './components/layout';
+import { useAllUserSongStatuses } from './hooks/useUserSongStatus';
 
 // Re-export useAppContext from contexts for backwards compatibility
 // Components importing from App.tsx will continue to work
@@ -192,6 +194,12 @@ const App: React.FC = () => {
   const [members, setMembers] = useState<BandMember[]>([]);
   const [availableRoles, setAvailableRoles] = useState<string[]>([]);
   const [events, setEvents] = useState<BandEvent[]>([]);
+
+  // -- User Song Statuses for personalized Dashboard --
+  const { statuses: userSongStatuses } = useAllUserSongStatuses(
+    session?.user?.id || null,
+    currentBandId
+  );
 
   // -- Auto-Save Configuration --
   const AUTOSAVE_DEBOUNCE_MS = 1000;
@@ -1108,6 +1116,7 @@ const App: React.FC = () => {
                       members={members}
                       onNavigateToSong={id => navigate(getSongDetailRoute(id))}
                       events={events}
+                      userSongStatuses={userSongStatuses}
                     />
                   }
                 />
@@ -1140,6 +1149,14 @@ const App: React.FC = () => {
                       songs={songs}
                       currentUserId={session?.user?.id || null}
                       currentBandId={currentBandId}
+                    />
+                  }
+                />
+                <Route
+                  path={ROUTES.MY_SONGS}
+                  element={
+                    <MySongs
+                      onNavigateToSong={id => navigate(getSongDetailRoute(id))}
                     />
                   }
                 />

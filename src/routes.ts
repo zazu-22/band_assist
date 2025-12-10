@@ -18,6 +18,8 @@ export const ROUTES = {
   PRACTICE: '/practice',
   /** Practice history page */
   PRACTICE_HISTORY: '/practice-history',
+  /** My songs page - songs assigned to current user */
+  MY_SONGS: '/my-songs',
   /** Schedule/events page */
   SCHEDULE: '/schedule',
   /** Band lineup/dashboard page */
@@ -57,6 +59,7 @@ export const getPracticeRoute = (songId?: string): string =>
  */
 export const NAV_ITEMS = [
   { id: 'DASHBOARD', path: ROUTES.DASHBOARD, label: 'Dashboard' },
+  { id: 'MY_SONGS', path: ROUTES.MY_SONGS, label: 'My Songs' },
   { id: 'PRACTICE', path: ROUTES.PRACTICE, label: 'Practice Room' },
   { id: 'PRACTICE_HISTORY', path: ROUTES.PRACTICE_HISTORY, label: 'Practice History' },
   { id: 'SETLIST', path: ROUTES.SETLIST, label: 'Setlist Builder' },

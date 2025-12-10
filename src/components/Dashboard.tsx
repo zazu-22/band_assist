@@ -32,7 +32,7 @@ import {
   formatDaysUntil,
 } from '@/lib/dateUtils';
 import { ROUTES, getPracticeRoute } from '@/routes';
-import type { Song, BandEvent, BandMember } from '@/types';
+import type { Song, BandEvent, BandMember, UserSongProgress } from '@/types';
 
 // =============================================================================
 // TYPES
@@ -52,6 +52,11 @@ interface DashboardProps {
    * Should be wrapped in useCallback in parent for stable reference.
    */
   onNavigateToSong: (songId: string) => void;
+  /**
+   * Optional user song statuses for personalized urgency calculation.
+   * Map keyed by songId for O(1) lookup.
+   */
+  userSongStatuses?: Map<string, UserSongProgress>;
 }
 
 export interface SongIssue {
@@ -92,6 +97,7 @@ const TIMELINE_ICON_MAP = {
  * Exported for testing.
  */
 export const URGENCY_WEIGHTS = {
+  // Song-level weights
   NO_CHARTS: 30,
   NO_BACKING_TRACK: 5,
   UNASSIGNED: 20,
@@ -100,6 +106,10 @@ export const URGENCY_WEIGHTS = {
   DUE_WITHIN_7_DAYS: 25,
   STATUS_TO_LEARN: 15,
   STATUS_IN_PROGRESS: 5,
+  // User learning status weights (personalized)
+  USER_NOT_STARTED: 25,
+  USER_LEARNING: 15,
+  // USER_LEARNED and USER_MASTERED = 0 (no boost needed)
 } as const;
 
 // =============================================================================
@@ -108,9 +118,14 @@ export const URGENCY_WEIGHTS = {
 
 /**
  * Calculate urgency score and issues for a song.
+ * Optionally accepts user's learning status for personalized scoring.
  * Exported for testing.
  */
-export function calculateSongUrgency(song: Song, today: Date): SongWithUrgency {
+export function calculateSongUrgency(
+  song: Song,
+  today: Date,
+  userStatus?: UserSongProgress | null
+): SongWithUrgency {
   const issues: SongIssue[] = [];
   let score = 0;
 
@@ -161,6 +176,21 @@ export function calculateSongUrgency(song: Song, today: Date): SongWithUrgency {
     score += URGENCY_WEIGHTS.STATUS_IN_PROGRESS;
   }
 
+  // User learning status (personalized urgency)
+  if (userStatus) {
+    switch (userStatus.status) {
+      case 'Not Started':
+        issues.push({ label: 'You: Not started', severity: 'medium' });
+        score += URGENCY_WEIGHTS.USER_NOT_STARTED;
+        break;
+      case 'Learning':
+        issues.push({ label: 'You: Learning', severity: 'low' });
+        score += URGENCY_WEIGHTS.USER_LEARNING;
+        break;
+      // 'Learned' and 'Mastered' statuses don't add urgency
+    }
+  }
+
   return { song, score, issues };
 }
 
@@ -173,6 +203,7 @@ export const Dashboard: React.FC<DashboardProps> = memo(function Dashboard({
   members: _members,
   onNavigateToSong,
   events = [],
+  userSongStatuses,
 }) {
   const navigate = useNavigate();
 
@@ -209,10 +240,10 @@ export const Dashboard: React.FC<DashboardProps> = memo(function Dashboard({
   // Songs that need attention (sorted by urgency)
   const songsNeedingAttention = useMemo(() => {
     return songs
-      .map(song => calculateSongUrgency(song, normalizedToday))
+      .map(song => calculateSongUrgency(song, normalizedToday, userSongStatuses?.get(song.id)))
       .filter(item => item.score > 0)
       .sort((a, b) => b.score - a.score);
-  }, [songs, normalizedToday]);
+  }, [songs, normalizedToday, userSongStatuses]);
 
   // Practice Queue expand/collapse state
   const [isPracticeQueueExpanded, setIsPracticeQueueExpanded] = useState(false);

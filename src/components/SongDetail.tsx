@@ -1,8 +1,10 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useCallback } from 'react';
 import { Song, BandMember, Annotation, SongChart } from '@/types';
 import { INSTRUMENT_ICONS } from '@/constants';
 import { getAvatarColor } from '@/lib/avatar';
 import { useBlobUrl } from '@/hooks/useBlobUrl';
+import { useLinkedMember } from '@/hooks/useLinkedMember';
+import { useAppActions } from '@/contexts';
 import { SmartTabEditor } from './SmartTabEditor';
 import { isSupabaseConfigured } from '@/services/supabaseClient';
 import { supabaseStorageService } from '@/services/supabaseStorageService';
@@ -41,6 +43,8 @@ import {
   Music,
 } from 'lucide-react';
 import { LazyAlphaTab } from './LazyAlphaTab';
+import type { AlphaTabHandle, TrackInfo } from './LazyAlphaTab';
+import { findMatchingTrackIndex } from '@/lib/trackMatcher';
 
 interface SongDetailProps {
   song: Song;
@@ -57,6 +61,9 @@ export const SongDetail: React.FC<SongDetailProps> = ({
   onBack,
   onUpdateSong,
 }) => {
+  const { currentBandId } = useAppActions();
+  const { linkedMember } = useLinkedMember(currentBandId);
+
   const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'CHARTS' | 'ASSIGNMENTS' | 'AUDIO'>(
     'OVERVIEW'
   );
@@ -70,6 +77,25 @@ export const SongDetail: React.FC<SongDetailProps> = ({
   const fileInputRef = useRef<HTMLInputElement>(null);
   const audioInputRef = useRef<HTMLInputElement>(null);
   const audioPlayerRef = useRef<HTMLAudioElement>(null);
+  const alphaTabRef = useRef<AlphaTabHandle | null>(null);
+
+  // Extract preferredInstrument to avoid re-creating callback when other linkedMember fields change
+  const preferredInstrument = linkedMember?.preferredInstrument;
+
+  // Handle AlphaTab ready - store ref for track selection
+  const handleAlphaTabReady = useCallback((handle: AlphaTabHandle) => {
+    alphaTabRef.current = handle;
+  }, []);
+
+  // Handle tracks loaded - auto-select based on user's preferred instrument
+  const handleAlphaTabTracksLoaded = useCallback((tracks: TrackInfo[]) => {
+    if (preferredInstrument && tracks.length > 1) {
+      const matchIndex = findMatchingTrackIndex(tracks, preferredInstrument);
+      if (matchIndex !== null && alphaTabRef.current) {
+        alphaTabRef.current.renderTrack(matchIndex);
+      }
+    }
+  }, [preferredInstrument]);
 
   // Metadata Edit State
   const [editForm, setEditForm] = useState({
@@ -735,6 +761,8 @@ export const SongDetail: React.FC<SongDetailProps> = ({
                     <LazyAlphaTab
                       fileData={activeChart.storageBase64 || activeChart.url!}
                       readOnly={true}
+                      onReady={handleAlphaTabReady}
+                      onTracksLoaded={handleAlphaTabTracksLoaded}
                     />
                   </ErrorBoundary>
                 ) : (

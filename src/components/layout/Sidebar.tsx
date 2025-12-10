@@ -29,6 +29,7 @@ import { ROUTES, NAV_ITEMS, matchRoute } from '@/routes';
 type NavItemId = (typeof NAV_ITEMS)[number]['id'];
 const iconMap: Record<NavItemId, LucideIcon> = {
   DASHBOARD: LayoutDashboard,
+  MY_SONGS: Music,
   PRACTICE: Mic2,
   PRACTICE_HISTORY: History,
   SETLIST: ListMusic,
