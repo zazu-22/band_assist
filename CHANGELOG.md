@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.9](https://github.com/zazu-22/band_assist/compare/v0.1.8...v0.1.9) (2025-12-10)
+
+
+### Features
+
+* **band:** add band management UI (re-release trigger) ([b60f473](https://github.com/zazu-22/band_assist/commit/b60f473e9e069a39e0432d747e28cc5ba80f2720))
+
 ## [0.1.8](https://github.com/zazu-22/band_assist/compare/v0.1.7...v0.1.8) (2025-12-09)
 
 
