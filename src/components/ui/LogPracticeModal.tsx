@@ -373,7 +373,6 @@ const LogPracticeForm: React.FC<LogPracticeFormProps> = ({
             value={date}
             onChange={(e) => setDate(e.target.value)}
             max={getTodayDateString()}
-            className="w-full"
           />
         </div>
 
@@ -468,11 +467,17 @@ const LogPracticeForm: React.FC<LogPracticeFormProps> = ({
           </p>
         </div>
 
-        <DialogFooter>
-          <Button type="button" variant="outline" onClick={onClose} disabled={isSubmitting}>
+        <DialogFooter className="flex-row gap-3 pt-2">
+          <Button
+            type="button"
+            variant="outline"
+            onClick={onClose}
+            disabled={isSubmitting}
+            className="flex-1"
+          >
             Cancel
           </Button>
-          <Button type="submit" disabled={isSubmitting}>
+          <Button type="submit" disabled={isSubmitting} className="flex-1">
             {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
             {isSubmitting ? 'Saving...' : isEditMode ? 'Save Changes' : 'Log Session'}
             {!isSubmitting && (
