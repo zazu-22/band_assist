@@ -55,7 +55,7 @@ setSongs(songs.map(s => (s.id === id ? updated : s)));
 
 ## Common Pitfalls
 
-1. **AlphaTab Assets** - Requires `/font` and `/soundfont` directories. Vite plugin copies these during build.
+1. **AlphaTab Assets** - The `@coderline/alphatab-vite` plugin automatically copies font and soundfont assets during build. No manual setup needed.
 
 2. **Supabase Required** - App fails without `VITE_SUPABASE_URL` and `VITE_SUPABASE_ANON_KEY`.
 
@@ -63,9 +63,15 @@ setSongs(songs.map(s => (s.id === id ? updated : s)));
 
 4. **TypeScript Strict** - Project uses `"strict": true`. Avoid `any`.
 
-## Testing
+## Testing & Quality
 
-Browser automation reads credentials from `test-credentials.json`. Test data isolated in dedicated band (`npm run seed:test`).
+**Commands:**
+- `npm test` - Run Vitest tests
+- `npm run typecheck` - TypeScript type checking
+- `npm run lint` - ESLint (zero warnings allowed)
+- `npm run seed:test` - Seed test data for browser automation
+
+Browser automation reads credentials from `test-credentials.json`. Test data isolated in dedicated band.
 
 ## Git Conventions
 
@@ -90,7 +96,7 @@ docs: update deployment guide
 chore: upgrade dependencies
 ```
 
-Commits are validated by commitlint via husky hook. Invalid commits will be rejected.
+Commits are validated by commitlint via husky hook. PR titles are also validated in CI to follow the same format.
 
 ### Automated Versioning
 
