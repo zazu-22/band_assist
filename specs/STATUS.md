@@ -2,13 +2,14 @@
 
 > Quick reference for all specs, GitHub issues, and current status.
 >
-> Last updated: 2025-12-10
+> Last updated: 2025-12-11
 
 ---
 
 ## Quick Links
 
 - **GitHub Issues:** [zazu-22/band_assist/issues](https://github.com/zazu-22/band_assist/issues)
+- **Milestones:** [zazu-22/band_assist/milestones](https://github.com/zazu-22/band_assist/milestones)
 - **Local CLI:** `gh issue list --state open` (requires GitHub CLI)
 
 ---
@@ -20,8 +21,8 @@
 | 🔴 Active | 0 | Currently being implemented |
 | 🟢 Done | 18 | Completed and merged |
 | 🟡 Pending | 0 | Queued for implementation (in sequence order) |
-| ⚪ Backlog | 16 | Planned but not yet prioritized |
-| 🔵 GitHub Issues | 7 | Tracked in GitHub (bugs, smaller features) |
+| ⚪ Backlog | 18 | Planned but not yet prioritized |
+| 🔵 GitHub Issues | 17 | Tracked in GitHub (bugs, smaller features) |
 
 ---
 
@@ -37,11 +38,63 @@ No pending specs.
 
 ---
 
-## 🔵 GitHub Issues (5 open)
+## 🔵 GitHub Issues (17 open)
 
 Smaller features, bug fixes, and follow-up work tracked in GitHub rather than full specs.
 
 > **Tip:** Use `gh issue list --state open` locally or visit [GitHub Issues](https://github.com/zazu-22/band_assist/issues)
+
+### Milestone: Song Collaboration & Annotations (#3) 🆕
+
+| # | Title | Type | Notes |
+|---|-------|------|-------|
+| [#196](https://github.com/zazu-22/band_assist/issues/196) | epic: Song Collaboration & Annotations Architecture | Epic | Master plan for sections, assignments, annotations |
+| [#197](https://github.com/zazu-22/band_assist/issues/197) | infra: Upgrade AlphaTab to 1.7.1 | Infrastructure | Phase 0 prerequisite, blocks all collaboration phases |
+
+### Milestone: Improve 'My Songs' View (#1)
+
+| # | Title | Type | Notes |
+|---|-------|------|-------|
+| [#184](https://github.com/zazu-22/band_assist/issues/184) | epic: Improve 'My Songs' View | Epic | Parent tracking issue |
+| [#186](https://github.com/zazu-22/band_assist/issues/186) | feat(my-songs): Display total practice time per song | Enhancement | |
+| [#187](https://github.com/zazu-22/band_assist/issues/187) | feat(my-songs): add sortable columns and table-based layout | Enhancement | |
+| [#188](https://github.com/zazu-22/band_assist/issues/188) | feat(my-songs): Clarify user status vs band status badges | Enhancement | |
+| [#191](https://github.com/zazu-22/band_assist/issues/191) | feat(my-songs): add practice priority setting | Enhancement | |
+| [#192](https://github.com/zazu-22/band_assist/issues/192) | feat(my-songs): add infographic stat cards | Enhancement | |
+| [#193](https://github.com/zazu-22/band_assist/issues/193) | feat(my-songs): ensure song names are clickable links | Enhancement | |
+| [#194](https://github.com/zazu-22/band_assist/issues/194) | feat(my-songs): add edit menu for learning status changes | Enhancement | |
+
+### Milestone: Improve Schedule Dialogue (#2)
+
+| # | Title | Type | Notes |
+|---|-------|------|-------|
+| [#181](https://github.com/zazu-22/band_assist/issues/181) | refactor(schedule): use Textarea primitive for notes field | Enhancement | |
+| [#182](https://github.com/zazu-22/band_assist/issues/182) | feat(schedule): convert event editor to modal dialog | Enhancement | Mobile-friendly |
+
+### Infrastructure / Dependencies
+
+| # | Title | Effort | Notes |
+|---|-------|--------|-------|
+| [#154](https://github.com/zazu-22/band_assist/issues/154) | Upgrade to latest stable ESLint version | Medium | Dependency update |
+| [#153](https://github.com/zazu-22/band_assist/issues/153) | Identify replacements for deprecated dependencies | Small | Documentation |
+| [#142](https://github.com/zazu-22/band_assist/issues/142) | Weekly Dependency Review - 2025-12-08 | Small | Documentation |
+
+### Standalone / Mobile
+
+| # | Title | Effort | Notes |
+|---|-------|--------|-------|
+| [#195](https://github.com/zazu-22/band_assist/issues/195) | Add volume control | Small | Audio enhancement |
+| [#101](https://github.com/zazu-22/band_assist/issues/101) | Mobile layout for iOS Safari | Large | Major refactor, needs device testing |
+
+### Recently Closed ✅
+
+| # | Title | Closed |
+|---|-------|--------|
+| [#152](https://github.com/zazu-22/band_assist/issues/152) | Evaluate AlphaTab 1.7 | 2025-12-11 (promoted to #197) |
+| [#172](https://github.com/zazu-22/band_assist/issues/172) | My Songs design aesthetic refinements | 2025-12-10 (PR #177) |
+| [#173](https://github.com/zazu-22/band_assist/issues/173) | Log Practice Modal UX fixes | 2025-12-10 (PR #175) |
+| [#178](https://github.com/zazu-22/band_assist/issues/178) | Practice modal mobile scroll | 2025-12-10 (PR #179) |
+| [#171](https://github.com/zazu-22/band_assist/issues/171) | Failed to save toast bug | 2025-12-10 |
 
 ### Practice Tracking Cluster ✅ COMPLETE
 
@@ -60,23 +113,6 @@ Smaller features, bug fixes, and follow-up work tracked in GitHub rather than fu
 | [#127](https://github.com/zazu-22/band_assist/issues/127) | Enhanced band selector with creation flow | ✅ Closed |
 | [#141](https://github.com/zazu-22/band_assist/issues/141) | Fix band selection persistence & auto-save race condition | ✅ Closed |
 | [#128](https://github.com/zazu-22/band_assist/issues/128) | Band settings/management UI | ✅ Closed |
-
-### Infrastructure / Dependencies
-
-| # | Title | Effort | Notes |
-|---|-------|--------|-------|
-| [#154](https://github.com/zazu-22/band_assist/issues/154) | Upgrade to latest stable ESLint version | Medium | Dependency update |
-| [#153](https://github.com/zazu-22/band_assist/issues/153) | Identify replacements for deprecated dependencies | Small | Documentation |
-| [#152](https://github.com/zazu-22/band_assist/issues/152) | Evaluate AlphaTab 1.7 | Medium | Dependency evaluation |
-| [#142](https://github.com/zazu-22/band_assist/issues/142) | Weekly Dependency Review - 2025-12-08 | Small | Documentation |
-
-### UI/UX Enhancements
-
-| # | Title | Effort | Notes |
-|---|-------|--------|-------|
-| [#172](https://github.com/zazu-22/band_assist/issues/172) | My Songs design aesthetic refinements | Small | Apply design system polish |
-| [#173](https://github.com/zazu-22/band_assist/issues/173) | Log Practice Modal UX fixes | Medium | Scroll, keyboard submit, date field responsiveness |
-| [#101](https://github.com/zazu-22/band_assist/issues/101) | Mobile layout for iOS Safari | Large | Major refactor, needs device testing |
 
 ---
 
@@ -111,6 +147,8 @@ Smaller features, bug fixes, and follow-up work tracked in GitHub rather than fu
 
 | Spec | Type | Effort | Notes |
 |------|------|--------|-------|
+| [infra-alphatab-1.7-upgrade](backlog/infra-alphatab-1.7-upgrade.md) | Infrastructure | Small | **Phase 0** - [#197](https://github.com/zazu-22/band_assist/issues/197) |
+| [feat-song-collaboration-architecture](backlog/feat-song-collaboration-architecture.md) | Architecture | Large | Master plan - [#196](https://github.com/zazu-22/band_assist/issues/196) |
 | [infra-test-environment-setup](backlog/infra-test-environment-setup.md) | Infrastructure | Small | Blocks service-layer-testing and ci-test-suite |
 | [infra-service-layer-testing](backlog/infra-service-layer-testing.md) | Testing | Medium | Critical path has 0% coverage |
 
@@ -155,9 +193,19 @@ Smaller features, bug fixes, and follow-up work tracked in GitHub rather than fu
 
 | Date | Item | Change |
 |------|------|--------|
+| 2025-12-11 | Milestone #3 "Song Collaboration & Annotations" | ➕ Created |
+| 2025-12-11 | [#196](https://github.com/zazu-22/band_assist/issues/196) | ➕ Created epic: Song Collaboration & Annotations Architecture |
+| 2025-12-11 | [#197](https://github.com/zazu-22/band_assist/issues/197) | ➕ Created infra: Upgrade AlphaTab to 1.7.1 |
+| 2025-12-11 | [#152](https://github.com/zazu-22/band_assist/issues/152) | ✅ Closed (promoted to #197 with spec) |
+| 2025-12-11 | [#195](https://github.com/zazu-22/band_assist/issues/195) | ➕ Created (volume control) |
+| 2025-12-11 | [#172](https://github.com/zazu-22/band_assist/issues/172) | ✅ Closed (PR #177) |
+| 2025-12-11 | [#173](https://github.com/zazu-22/band_assist/issues/173) | ✅ Closed (PR #175) |
+| 2025-12-11 | [#178](https://github.com/zazu-22/band_assist/issues/178) | ✅ Closed (PR #179) |
+| 2025-12-10 | feat-song-collaboration-architecture | ➕ Added to backlog (master plan: sections, assignments, annotations) |
+| 2025-12-10 | infra-alphatab-1.7-upgrade | ➕ Added to backlog (Phase 0 prerequisite for collaboration) |
 | 2025-12-10 | feat-whats-new-changelog-popup | ➕ Added to backlog (auto-generated release announcements) |
 | 2025-12-10 | feat-user-member-linking-phase-3 | 🟢 Moved to done |
-| 2025-12-10 | [#172](https://github.com/zazu-22/band_assist/issues/172), [#173](https://github.com/zazu-22/band_assist/issues/173) | ➕ Created (My Songs design, Log Practice Modal UX) |
+| 2025-12-10 | Milestone #1 "Improve My Songs View", #2 "Improve Schedule Dialogue" | ➕ Created with issues #181-194 |
 | 2025-12-10 | feat-user-member-linking-phase-4-practice-history-design | 🟢 Moved to done (merged PR #170) |
 | 2025-12-10 | [#121](https://github.com/zazu-22/band_assist/issues/121) Virtualize PracticeHistory | ✅ Closed (merged in PR #167) |
 | 2025-12-10 | [#164](https://github.com/zazu-22/band_assist/issues/164) Fix release please action | ✅ Closed (merged in PR #166) |
@@ -214,11 +262,38 @@ perf-alphatab-lazy-loading ✅
 infra-test-environment-setup (backlog)
     └── infra-service-layer-testing (backlog)
             └── infra-ci-test-suite (backlog)
+
+#197 infra-alphatab-1.7-upgrade (backlog) ← Phase 0
+    └── #196 feat-song-collaboration-architecture (backlog) ← Master Plan
+            ├── Phase 1: Song Sections (feat-lead-sheet-generation)
+            ├── Phase 2: Section Assignments (new spec needed)
+            ├── Phase 3: Annotations (feat-collaborative-song-notes)
+            ├── Phase 4: Practice Integration (new spec needed)
+            └── Phase 5: AlphaTex Editing (future)
 ```
 
 ### GitHub Issues
 
 ```
+Milestones:
+├── #3 Song Collaboration & Annotations 🆕
+│   ├── #196 (epic: architecture) ─── master plan
+│   └── #197 (alphatab 1.7 upgrade) ─── phase 0 prerequisite
+│
+├── #1 Improve 'My Songs' View
+│   ├── #184 (epic) ─── parent tracking
+│   ├── #186 (practice time per song)
+│   ├── #187 (sortable columns)
+│   ├── #188 (status badges clarity)
+│   ├── #191 (practice priority)
+│   ├── #192 (stat cards)
+│   ├── #193 (clickable song names)
+│   └── #194 (edit menu for status)
+│
+└── #2 Improve Schedule Dialogue
+    ├── #181 (textarea primitive)
+    └── #182 (modal dialog)
+
 Completed Clusters:
 ├── Practice Tracking ✅
 │   ├── #100 (password reset bug) ─── ✅ CLOSED
@@ -233,17 +308,12 @@ Completed Clusters:
     ├── #128 (band settings) ─── ✅ CLOSED
     └── #124 (parent tracking) ─── ✅ CLOSED
 
-Open Issues:
-├── UI/UX Enhancements
-│   ├── #172 (My Songs design) ─── small, design polish
-│   ├── #173 (Log Practice Modal UX) ─── medium, scroll/keyboard/responsive
-│   └── #101 (mobile iOS) ─── large scope
-│
-└── Infrastructure / Dependencies
-    ├── #154 (ESLint upgrade) ─── enhancement
-    ├── #153 (deprecated deps) ─── documentation
-    ├── #152 (AlphaTab 1.7 eval) ─── enhancement
-    └── #142 (weekly dep review) ─── documentation
+Standalone Open Issues:
+├── #195 (volume control) ─── small
+├── #154 (ESLint upgrade) ─── enhancement
+├── #153 (deprecated deps) ─── documentation
+├── #142 (weekly dep review) ─── documentation
+└── #101 (mobile iOS) ─── large scope
 ```
 
 ---
