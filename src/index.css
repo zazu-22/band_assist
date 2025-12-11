@@ -454,14 +454,22 @@
 }
 
 /* ============================================
-   Form Input Fixes
+   Form Input Fixes - iOS Safari Date/Time Inputs
    ============================================ */
-/* Fix date inputs on mobile - ensure consistent sizing with other inputs */
-input[type='date'] {
-  /* Prevent date inputs from exceeding container width on mobile */
+/* Safari/iOS applies aggressive user-agent styles to date/time inputs that override
+   normal CSS, including system colors and fonts. We must use -webkit-appearance: none
+   to fully disable the native styling, then rebuild the appearance ourselves.
+   Note: This does NOT break the native pickers - they still work when tapped. */
+input[type='date'],
+input[type='time'],
+input[type='datetime-local'] {
+  -webkit-appearance: none;
+  appearance: none;
+  background-color: transparent !important;
+  font-family: inherit !important;
+  color: inherit !important;
   max-width: 100%;
   min-width: 0;
   box-sizing: border-box;
-  /* Override any browser-imposed minimum width */
   width: 100%;
 }
