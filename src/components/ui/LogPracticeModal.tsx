@@ -471,10 +471,9 @@ const LogPracticeForm: React.FC<LogPracticeFormProps> = ({
         <DialogFooter className="flex-row gap-3 pt-2">
           <Button
             type="button"
-            variant="outline"
+            variant="ghost"
             onClick={onClose}
             disabled={isSubmitting}
-            className="flex-1"
           >
             Cancel
           </Button>
