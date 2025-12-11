@@ -78,7 +78,7 @@ export const SongDetail: React.FC<SongDetailProps> = ({
     song.charts.length > 0 ? song.charts[0].id : null
   );
   // Convert backing track data URI to blob URL for audio playback
-  const { url: audioBlobUrl, isLoading: isAudioLoading } = useBlobUrl(song.backingTrackUrl);
+  const { url: audioBlobUrl, isLoading: isAudioLoading, error: audioLoadError } = useBlobUrl(song.backingTrackUrl);
   const [isEditingMetadata, setIsEditingMetadata] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -1053,6 +1053,37 @@ export const SongDetail: React.FC<SongDetailProps> = ({
                         </Button>
                       </div>
                     </>
+                  ) : audioLoadError ? (
+                    <div className="text-center py-10">
+                      <div className="mb-6 flex justify-center">
+                        <div className="w-20 h-20 bg-destructive/10 rounded-full flex items-center justify-center">
+                          <Music2 size={32} className="text-destructive" />
+                        </div>
+                      </div>
+                      <h3 className="text-xl font-bold font-serif text-foreground tracking-tight mb-2">
+                        Failed to Load Backing Track
+                      </h3>
+                      <p className="text-muted-foreground text-sm mb-6 max-w-xs mx-auto">
+                        {audioLoadError.message || 'An error occurred while loading the audio file.'}
+                      </p>
+                      <div className="flex justify-center gap-4">
+                        <Button
+                          variant="secondary"
+                          onClick={() => window.location.reload()}
+                        >
+                          Retry
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          onClick={() => {
+                            onUpdateSong({ ...song, backingTrackUrl: undefined });
+                          }}
+                          className="text-destructive"
+                        >
+                          Remove Track
+                        </Button>
+                      </div>
+                    </div>
                   ) : (
                     <div className="text-center py-10">
                       <div className="mb-6 flex justify-center">

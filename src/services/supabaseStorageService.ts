@@ -54,6 +54,8 @@ const PRACTICE_SESSION_SORT_FIELD_MAP: Record<string, string> = {
 export class SupabaseStorageService implements IStorageService {
   private realtimeChannels: RealtimeChannel[] = [];
   private currentBandId: string | null = null;
+  // Track in-flight backing track URL refreshes to prevent concurrent calls for the same song
+  private pendingBackingTrackRefreshes: Map<string, Promise<string | undefined>> = new Map();
 
   constructor() {
     if (!isSupabaseConfigured()) {
@@ -423,8 +425,9 @@ export class SupabaseStorageService implements IStorageService {
               const charts = (s.charts as unknown as SongChart[]) || [];
               const refreshedCharts = await this.refreshChartUrls(charts);
 
-              // Refresh backing track URL if it has a storage path
-              const refreshedBackingTrackUrl = await this.refreshBackingTrackUrl(
+              // Refresh backing track URL if it has a storage path (with deduplication)
+              const refreshedBackingTrackUrl = await this.refreshBackingTrackUrlDeduplicated(
+                s.id,
                 s.backing_track_storage_path || undefined
               );
 
@@ -995,6 +998,40 @@ export class SupabaseStorageService implements IStorageService {
   }
 
   /**
+   * Deduplicated version of refreshBackingTrackUrl that prevents concurrent
+   * refresh calls for the same song. If a refresh is already in progress,
+   * returns the existing promise instead of starting a new request.
+   *
+   * @param songId - The song ID to deduplicate by
+   * @param backingTrackStoragePath - Storage path for the backing track
+   * @returns Fresh Edge Function URL with valid token, or undefined if refresh fails
+   */
+  private async refreshBackingTrackUrlDeduplicated(
+    songId: string,
+    backingTrackStoragePath: string | undefined
+  ): Promise<string | undefined> {
+    if (!backingTrackStoragePath) return undefined;
+
+    // Check if there's already a pending refresh for this song
+    const existingRefresh = this.pendingBackingTrackRefreshes.get(songId);
+    if (existingRefresh) {
+      return existingRefresh;
+    }
+
+    // Start new refresh and track it
+    const refreshPromise = this.refreshBackingTrackUrl(backingTrackStoragePath);
+    this.pendingBackingTrackRefreshes.set(songId, refreshPromise);
+
+    try {
+      const result = await refreshPromise;
+      return result;
+    } finally {
+      // Clean up after completion (success or failure)
+      this.pendingBackingTrackRefreshes.delete(songId);
+    }
+  }
+
+  /**
    * Upload a chart file (PDF, image, or Guitar Pro) to Supabase Storage
    * For GP files, also stores base64 version for AlphaTab rendering
    * @returns Object with url, storagePath, and storageBase64 (GP only)
@@ -1105,10 +1142,11 @@ export class SupabaseStorageService implements IStorageService {
 
   /**
    * Subscribe to real-time updates from Supabase
-   * @param callbacks - Callbacks for each table change
+   * @param callbacks - Callbacks for each table change. Song callbacks may be invoked
+   * after async operations (e.g., URL refresh), so they support Promise return types.
    */
   subscribeToChanges(callbacks: {
-    onSongsChange?: (song: Song) => void;
+    onSongsChange?: (song: Song) => void | Promise<void>;
     onMembersChange?: (member: BandMember) => void;
     onEventsChange?: (event: BandEvent) => void;
     onRolesChange?: (role: string) => void;
@@ -1185,8 +1223,9 @@ export class SupabaseStorageService implements IStorageService {
                 return;
               }
 
-              // Refresh backing track URL if storage path exists
-              const refreshedBackingTrackUrl = await this.refreshBackingTrackUrl(
+              // Refresh backing track URL if storage path exists (with deduplication)
+              const refreshedBackingTrackUrl = await this.refreshBackingTrackUrlDeduplicated(
+                dbSong.id,
                 dbSong.backing_track_storage_path
               );
 

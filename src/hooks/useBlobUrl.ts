@@ -6,6 +6,8 @@ export interface UseBlobUrlResult {
   url: string | undefined;
   /** Whether a remote URL is currently being fetched */
   isLoading: boolean;
+  /** Error that occurred while fetching a remote URL, or null if no error */
+  error: Error | null;
 }
 
 /**
@@ -75,6 +77,12 @@ export function useBlobUrl(
     blobUrl: string;
   } | null>(null);
 
+  // Error state for failed remote URL fetches
+  const [fetchError, setFetchError] = useState<{
+    sourceUrl: string;
+    error: Error;
+  } | null>(null);
+
   // Ref to track current fetch - doesn't trigger re-renders
   const currentFetchRef = useRef<{
     url: string;
@@ -137,6 +145,8 @@ export function useBlobUrl(
     }
 
     // Start new fetch
+    // Note: We don't need to clear error state here as errors are keyed by sourceUrl
+    // A new fetch for a different URL won't show the old error (see return logic below)
     const controller = new AbortController();
     currentFetchRef.current = { url: dataUri, controller };
     const urlToFetch = dataUri;
@@ -153,12 +163,18 @@ export function useBlobUrl(
         if (currentFetchRef.current?.url === urlToFetch) {
           const blobUrl = URL.createObjectURL(blob);
           setFetchedData({ sourceUrl: urlToFetch, blobUrl });
+          setFetchError(null);
           currentFetchRef.current = null;
         }
       })
       .catch(error => {
         if (error.name !== 'AbortError') {
           console.error('[useBlobUrl] Failed to fetch remote URL:', error);
+          // Set error state for non-abort errors
+          if (currentFetchRef.current?.url === urlToFetch) {
+            const fetchErr = error instanceof Error ? error : new Error(String(error));
+            setFetchError({ sourceUrl: urlToFetch, error: fetchErr });
+          }
         }
         // Clear current fetch ref on error (but not on abort)
         if (currentFetchRef.current?.url === urlToFetch && error.name !== 'AbortError') {
@@ -201,12 +217,14 @@ export function useBlobUrl(
   if (isRemoteUrl && dataUri) {
     // Remote URL: check if we have fetched data for this specific URL
     const hasFetchedData = fetchedData?.sourceUrl === dataUri;
+    const hasError = fetchError?.sourceUrl === dataUri;
     const url = hasFetchedData ? fetchedData.blobUrl : undefined;
-    // Loading if we have a remote URL but haven't fetched it yet
-    const isLoading = !hasFetchedData;
-    return { url, isLoading };
+    // Loading if we have a remote URL but haven't fetched it yet and no error
+    const isLoading = !hasFetchedData && !hasError;
+    const error = hasError ? fetchError.error : null;
+    return { url, isLoading, error };
   }
 
-  // Non-remote URL: return sync result, never loading
-  return { url: syncBlobUrl, isLoading: false };
+  // Non-remote URL: return sync result, never loading, no error
+  return { url: syncBlobUrl, isLoading: false, error: null };
 }
