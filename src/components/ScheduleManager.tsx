@@ -13,6 +13,7 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  Textarea,
 } from '@/components/primitives';
 import { ConfirmDialog, EmptyState, toast } from '@/components/ui';
 import { StorageService } from '@/services/storageService';
@@ -266,11 +267,11 @@ export const ScheduleManager: React.FC<ScheduleManagerProps> = memo(function Sch
               </div>
               <div className="md:col-span-2 space-y-2">
                 <Label htmlFor="event-notes">Notes</Label>
-                <textarea
+                <Textarea
                   id="event-notes"
                   value={newEvent.notes || ''}
                   onChange={e => handleEventFieldChange('notes', e.target.value)}
-                  className="flex min-h-20 w-full rounded-md border border-input bg-transparent px-3 py-2 text-sm shadow-xs placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-ring disabled:cursor-not-allowed disabled:opacity-50 resize-none"
+                  className="min-h-20 resize-none"
                   placeholder="Details about the session..."
                 />
               </div>
