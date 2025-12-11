@@ -46,13 +46,16 @@ export const LinkAccountSection = memo(function LinkAccountSection({
   const [isClaiming, setIsClaiming] = useState(false);
   const [isSavingPreference, setIsSavingPreference] = useState(false);
 
+  // Sentinel value for "None" option since Radix Select requires non-empty string values
+  const NONE_VALUE = '__none__';
+
   const handlePreferredInstrumentChange = async (value: string) => {
     if (!linkedMember) return;
 
     setIsSavingPreference(true);
     try {
-      // value of '' means "None" was selected, convert to null
-      const preferredInstrument = value === '' ? null : value;
+      // NONE_VALUE means "None" was selected, convert to null
+      const preferredInstrument = value === NONE_VALUE ? null : value;
       onUpdateMember({
         ...linkedMember,
         preferredInstrument,
@@ -166,7 +169,7 @@ export const LinkAccountSection = memo(function LinkAccountSection({
                 Preferred Instrument
               </Label>
               <Select
-                value={linkedMember.preferredInstrument || ''}
+                value={linkedMember.preferredInstrument || NONE_VALUE}
                 onValueChange={handlePreferredInstrumentChange}
                 disabled={isSavingPreference}
               >
@@ -174,7 +177,7 @@ export const LinkAccountSection = memo(function LinkAccountSection({
                   <SelectValue placeholder="Select your instrument..." />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="">None</SelectItem>
+                  <SelectItem value={NONE_VALUE}>None</SelectItem>
                   {availableRoles.map(role => (
                     <SelectItem key={role} value={role}>
                       {role}
