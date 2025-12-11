@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.1.11](https://github.com/zazu-22/band_assist/compare/v0.1.10...v0.1.11) (2025-12-11)
+
+
+### Bug Fixes
+
+* **practice-modal:** improve form layout and iOS Safari compatibility ([#180](https://github.com/zazu-22/band_assist/issues/180)) ([fe24c6c](https://github.com/zazu-22/band_assist/commit/fe24c6ca54961d4c83f895c1e2947ceef1f8e74a))
+* **practice-modal:** improve mobile scroll behavior and responsive sizing ([#179](https://github.com/zazu-22/band_assist/issues/179)) ([e0c08b1](https://github.com/zazu-22/band_assist/commit/e0c08b149b1769d11ef79ebb65efa57ac3f9f8b2))
+* **practice-modal:** improve scrolling, keyboard submit, and date field responsiveness ([#175](https://github.com/zazu-22/band_assist/issues/175)) ([0caa4d0](https://github.com/zazu-22/band_assist/commit/0caa4d01347fac75cd107b340156769bf9c09aa3)), closes [#173](https://github.com/zazu-22/band_assist/issues/173)
+
 ## [0.1.10](https://github.com/zazu-22/band_assist/compare/v0.1.9...v0.1.10) (2025-12-10)
 
 
