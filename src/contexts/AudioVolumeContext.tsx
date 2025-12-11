@@ -44,10 +44,16 @@ export function AudioVolumeProvider({ children }: AudioVolumeProviderProps) {
       const stored = localStorage.getItem(STORAGE_KEY);
       if (stored) {
         const parsed = JSON.parse(stored) as Partial<AudioVolumeState>;
+        // Validate stored volume is a finite number to guard against NaN/Infinity
+        const storedVolume =
+          typeof parsed.backingTrackVolume === 'number' && Number.isFinite(parsed.backingTrackVolume)
+            ? parsed.backingTrackVolume
+            : undefined;
         return {
-          backingTrackVolume: typeof parsed.backingTrackVolume === 'number'
-            ? Math.max(0, Math.min(1, parsed.backingTrackVolume))
-            : DEFAULT_VOLUME,
+          backingTrackVolume:
+            storedVolume !== undefined
+              ? Math.max(0, Math.min(1, storedVolume))
+              : DEFAULT_VOLUME,
           backingTrackMuted: typeof parsed.backingTrackMuted === 'boolean'
             ? parsed.backingTrackMuted
             : false,
@@ -72,6 +78,10 @@ export function AudioVolumeProvider({ children }: AudioVolumeProviderProps) {
   }, [state]);
 
   const setBackingTrackVolume = useCallback((volume: number) => {
+    // Guard against NaN/Infinity values
+    if (!Number.isFinite(volume)) {
+      return;
+    }
     // Clamp to valid range and round to avoid floating-point precision issues
     const clampedVolume = Math.round(Math.max(0, Math.min(1, volume)) * 100) / 100;
     setState(prev => ({
