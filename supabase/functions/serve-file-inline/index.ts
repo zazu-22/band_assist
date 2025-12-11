@@ -276,12 +276,23 @@ Deno.serve(async (req: Request): Promise<Response> => {
     // Get content type from file extension
     const extension = storagePath.split('.').pop()?.toLowerCase() || '';
     const contentTypeMap: Record<string, string> = {
+      // Documents
       'pdf': 'application/pdf',
+      // Images
       'png': 'image/png',
       'jpg': 'image/jpeg',
       'jpeg': 'image/jpeg',
       'gif': 'image/gif',
       'svg': 'image/svg+xml',
+      // Audio (backing tracks)
+      'mp3': 'audio/mpeg',
+      'wav': 'audio/wav',
+      'm4a': 'audio/mp4',
+      'aac': 'audio/aac',
+      'ogg': 'audio/ogg',
+      'flac': 'audio/flac',
+      'webm': 'audio/webm',
+      // Guitar Pro files
       'gp': 'application/octet-stream',
       'gp3': 'application/octet-stream',
       'gp4': 'application/octet-stream',
