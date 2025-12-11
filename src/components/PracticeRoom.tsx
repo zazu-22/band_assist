@@ -18,6 +18,8 @@ import {
   ListMusic,
   Music2,
   Guitar,
+  Loader2,
+  AlertCircle,
 } from 'lucide-react';
 import { SmartTabEditor } from './SmartTabEditor';
 import { LazyAlphaTab } from './LazyAlphaTab';
@@ -166,7 +168,7 @@ export const PracticeRoom: React.FC<PracticeRoomProps> = memo(function PracticeR
   );
 
   // Blob URL for backing track audio (handles Base64 data URI conversion and cleanup)
-  const audioSrc = useBlobUrl(currentSong?.backingTrackUrl);
+  const { url: audioSrc, isLoading: isAudioLoading, error: audioLoadError } = useBlobUrl(currentSong?.backingTrackUrl);
 
   const [metronomeBpm, setMetronomeBpm] = useDerivedState(currentSong?.bpm ?? 120, selectedSongId);
   const [activeChartId, setActiveChartId] = useDerivedState<string | null>(
@@ -400,6 +402,16 @@ export const PracticeRoom: React.FC<PracticeRoomProps> = memo(function PracticeR
     if (audioRef.current) {
       setCurrentTime(audioRef.current.currentTime);
       setDuration(audioRef.current.duration || 0);
+    }
+  }, []);
+
+  const handleLoadedMetadata = useCallback((e: React.SyntheticEvent<HTMLAudioElement>) => {
+    // Verify the event target matches the current ref to prevent stale updates
+    // This guards against race conditions if the audio element changes rapidly
+    if (audioRef.current && e.currentTarget === audioRef.current) {
+      setDuration(audioRef.current.duration || 0);
+      setCurrentTime(0);
+      setIsPlaying(false);
     }
   }, []);
 
@@ -692,16 +704,26 @@ export const PracticeRoom: React.FC<PracticeRoomProps> = memo(function PracticeR
 
                   <Button
                     onClick={togglePlay}
-                    disabled={!audioSrc}
+                    disabled={!audioSrc || isAudioLoading || !!audioLoadError}
                     className={cn(
                       'w-12 h-12 rounded-full p-0',
-                      audioSrc
-                        ? 'bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:scale-105 transition-transform'
-                        : 'bg-muted text-muted-foreground cursor-not-allowed'
+                      audioLoadError
+                        ? 'bg-destructive/10 text-destructive cursor-not-allowed'
+                        : audioSrc || isAudioLoading
+                          ? 'bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:scale-105 transition-transform'
+                          : 'bg-muted text-muted-foreground cursor-not-allowed'
                     )}
-                    aria-label={isPlaying ? 'Pause' : 'Play'}
+                    aria-label={audioLoadError ? 'Failed to load audio' : isAudioLoading ? 'Loading audio' : isPlaying ? 'Pause' : 'Play'}
                   >
-                    {isPlaying ? <Pause size={20} /> : <Play size={20} className="ml-0.5" />}
+                    {audioLoadError ? (
+                      <AlertCircle size={20} />
+                    ) : isAudioLoading ? (
+                      <Loader2 size={20} className="animate-spin" />
+                    ) : isPlaying ? (
+                      <Pause size={20} />
+                    ) : (
+                      <Play size={20} className="ml-0.5" />
+                    )}
                   </Button>
 
                   <TooltipProvider delayDuration={100}>
@@ -775,6 +797,7 @@ export const PracticeRoom: React.FC<PracticeRoomProps> = memo(function PracticeR
                 <audio
                   ref={audioRef}
                   src={audioSrc}
+                  onLoadedMetadata={handleLoadedMetadata}
                   onTimeUpdate={handleTimeUpdate}
                   onEnded={handlePlaybackEnded}
                 />
