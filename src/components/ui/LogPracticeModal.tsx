@@ -373,6 +373,7 @@ const LogPracticeForm: React.FC<LogPracticeFormProps> = ({
             value={date}
             onChange={(e) => setDate(e.target.value)}
             max={getTodayDateString()}
+            className="min-w-0"
           />
         </div>
 

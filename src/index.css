@@ -460,5 +460,8 @@
 input[type='date'] {
   /* Prevent date inputs from exceeding container width on mobile */
   max-width: 100%;
+  min-width: 0;
   box-sizing: border-box;
+  /* Override any browser-imposed minimum width */
+  width: 100%;
 }
