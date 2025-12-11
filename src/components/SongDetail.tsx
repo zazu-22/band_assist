@@ -4,11 +4,11 @@ import { INSTRUMENT_ICONS } from '@/constants';
 import { getAvatarColor } from '@/lib/avatar';
 import { useBlobUrl } from '@/hooks/useBlobUrl';
 import { useLinkedMember } from '@/hooks/useLinkedMember';
-import { useAppActions } from '@/contexts';
+import { useAppActions, useAudioVolume } from '@/contexts';
 import { SmartTabEditor } from './SmartTabEditor';
 import { isSupabaseConfigured } from '@/services/supabaseClient';
 import { supabaseStorageService } from '@/services/supabaseStorageService';
-import { toast, ConfirmDialog, ErrorBoundary, StatusBadge, ScrollableContainer } from './ui';
+import { toast, ConfirmDialog, ErrorBoundary, StatusBadge, ScrollableContainer, VolumeControl } from './ui';
 import { Button } from '@/components/primitives/button';
 import { Card, CardContent, CardHeader } from '@/components/primitives/card';
 import { Input } from '@/components/primitives/input';
@@ -63,6 +63,12 @@ export const SongDetail: React.FC<SongDetailProps> = ({
 }) => {
   const { currentBandId } = useAppActions();
   const { linkedMember } = useLinkedMember(currentBandId);
+  const {
+    backingTrackVolume,
+    backingTrackMuted,
+    setBackingTrackVolume,
+    toggleBackingTrackMute,
+  } = useAudioVolume();
 
   const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'CHARTS' | 'ASSIGNMENTS' | 'AUDIO'>(
     'OVERVIEW'
@@ -78,6 +84,13 @@ export const SongDetail: React.FC<SongDetailProps> = ({
   const audioInputRef = useRef<HTMLInputElement>(null);
   const audioPlayerRef = useRef<HTMLAudioElement>(null);
   const alphaTabRef = useRef<AlphaTabHandle | null>(null);
+
+  // Sync audio element volume with context
+  React.useEffect(() => {
+    if (audioPlayerRef.current) {
+      audioPlayerRef.current.volume = backingTrackMuted ? 0 : backingTrackVolume;
+    }
+  }, [backingTrackVolume, backingTrackMuted]);
 
   // Extract preferredInstrument to avoid re-creating callback when other linkedMember fields change
   const preferredInstrument = linkedMember?.preferredInstrument;
@@ -985,6 +998,17 @@ export const SongDetail: React.FC<SongDetailProps> = ({
                         src={audioBlobUrl}
                         controls
                         className="w-full mb-6"
+                      />
+
+                      {/* Volume Control */}
+                      <VolumeControl
+                        value={backingTrackVolume}
+                        onChange={setBackingTrackVolume}
+                        muted={backingTrackMuted}
+                        onMuteToggle={toggleBackingTrackMute}
+                        label="Backing track volume"
+                        variant="expanded"
+                        className="mb-6"
                       />
 
                       <div className="flex justify-center gap-4">

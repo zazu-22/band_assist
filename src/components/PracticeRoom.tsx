@@ -13,7 +13,6 @@ import {
   Pause,
   Rewind,
   FastForward,
-  Volume2,
   Music,
   Gauge,
   ListMusic,
@@ -23,7 +22,7 @@ import {
 import { SmartTabEditor } from './SmartTabEditor';
 import { LazyAlphaTab } from './LazyAlphaTab';
 import type { AlphaTabHandle } from './LazyAlphaTab';
-import { EmptyState, ResizablePanel, StatusBadge, ErrorBoundary } from './ui';
+import { EmptyState, ResizablePanel, StatusBadge, ErrorBoundary, VolumeControl } from './ui';
 import {
   Button,
   Card,
@@ -40,7 +39,7 @@ import { useIsMobile } from '@/hooks/useBreakpoint';
 import { useDerivedState, usePrevious } from '@/hooks/useDerivedState';
 import { useBlobUrl } from '@/hooks/useBlobUrl';
 import { useLinkedMember } from '@/hooks/useLinkedMember';
-import { useAppActions } from '@/contexts';
+import { useAppActions, useAudioVolume } from '@/contexts';
 import { PracticeControlBar, type AlphaTabState, type TrackInfo } from './practice';
 import { findMatchingTrackIndex } from '@/lib/trackMatcher';
 
@@ -135,6 +134,12 @@ export const PracticeRoom: React.FC<PracticeRoomProps> = memo(function PracticeR
   const isMobile = useIsMobile();
   const { currentBandId } = useAppActions();
   const { linkedMember } = useLinkedMember(currentBandId);
+  const {
+    backingTrackVolume,
+    backingTrackMuted,
+    setBackingTrackVolume,
+    toggleBackingTrackMute,
+  } = useAudioVolume();
 
   // ---------------------------------------------------------------------------
   // STATE
@@ -148,7 +153,6 @@ export const PracticeRoom: React.FC<PracticeRoomProps> = memo(function PracticeR
     return songs.length > 0 ? songs[0].id : null;
   });
   const [playbackRate, setPlaybackRate] = useState(1.0);
-  const [volume, setVolume] = useState(0.8);
   const [isPlaying, setIsPlaying] = useState(false);
   const [currentTime, setCurrentTime] = useState(0);
   const [duration, setDuration] = useState(0);
@@ -259,9 +263,10 @@ export const PracticeRoom: React.FC<PracticeRoomProps> = memo(function PracticeR
   useEffect(() => {
     if (audioRef.current) {
       audioRef.current.playbackRate = playbackRate;
-      audioRef.current.volume = volume;
+      // Apply effective volume (0 when muted)
+      audioRef.current.volume = backingTrackMuted ? 0 : backingTrackVolume;
     }
-  }, [playbackRate, volume]);
+  }, [playbackRate, backingTrackVolume, backingTrackMuted]);
 
   // Metronome Logic
   useEffect(() => {
@@ -439,10 +444,6 @@ export const PracticeRoom: React.FC<PracticeRoomProps> = memo(function PracticeR
 
   const handlePlaybackRateChange = useCallback((e: React.ChangeEvent<HTMLSelectElement>) => {
     setPlaybackRate(parseFloat(e.target.value));
-  }, []);
-
-  const handleVolumeChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    setVolume(parseFloat(e.target.value));
   }, []);
 
   // ---------------------------------------------------------------------------
@@ -762,19 +763,13 @@ export const PracticeRoom: React.FC<PracticeRoomProps> = memo(function PracticeR
                   </div>
 
                   {/* Volume */}
-                  <div className="flex items-center gap-2 w-28">
-                    <Volume2 size={16} className="text-muted-foreground shrink-0" />
-                    <input
-                      type="range"
-                      min="0"
-                      max="1"
-                      step="0.1"
-                      value={volume}
-                      onChange={handleVolumeChange}
-                      className="w-full h-1 bg-muted rounded-full appearance-none cursor-pointer accent-primary"
-                      aria-label="Volume"
-                    />
-                  </div>
+                  <VolumeControl
+                    value={backingTrackVolume}
+                    onChange={setBackingTrackVolume}
+                    muted={backingTrackMuted}
+                    onMuteToggle={toggleBackingTrackMute}
+                    label="Backing track volume"
+                  />
                 </div>
 
                 <audio

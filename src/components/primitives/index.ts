@@ -78,3 +78,4 @@ export {
 } from './select';
 export { Avatar, AvatarImage, AvatarFallback } from './avatar';
 export { Collapsible, CollapsibleTrigger, CollapsibleContent } from './collapsible';
+export { Slider } from './slider';
