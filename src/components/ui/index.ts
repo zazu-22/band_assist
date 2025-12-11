@@ -28,3 +28,6 @@ export { SaveStatusIndicator } from './SaveStatusIndicator';
 
 // Layout components
 export { ScrollableContainer, type ScrollableContainerProps } from './ScrollableContainer';
+
+// Audio components
+export { VolumeControl, type VolumeControlProps } from './VolumeControl';

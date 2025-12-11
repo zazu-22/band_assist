@@ -14,6 +14,7 @@ import {
   AppActionsContext,
   AppDataContext,
   AppStatusContext,
+  AudioVolumeProvider,
   type AppActionsContextValue,
   type AppDataContextValue,
   type AppStatusContextValue,
@@ -1055,11 +1056,12 @@ const App: React.FC = () => {
 
   return (
     <ThemeProvider defaultTheme="dark" storageKey="band-assist-theme">
-      <SidebarProvider>
-        <AppActionsContext.Provider value={actionsContextValue}>
-          <AppDataContext.Provider value={dataContextValue}>
-            <AppStatusContext.Provider value={statusContextValue}>
-              <Routes>
+      <AudioVolumeProvider>
+        <SidebarProvider>
+          <AppActionsContext.Provider value={actionsContextValue}>
+            <AppDataContext.Provider value={dataContextValue}>
+              <AppStatusContext.Provider value={statusContextValue}>
+                <Routes>
               {/* Performance Mode - Full screen, no sidebar (lazy loaded) */}
               <Route
                 path={ROUTES.PERFORMANCE}
@@ -1209,16 +1211,17 @@ const App: React.FC = () => {
               </Route>
               </Routes>
 
-              {/* Create Band Dialog */}
-              <CreateBandDialog
-                isOpen={isCreateBandDialogOpen}
-                onClose={handleCloseCreateBandDialog}
-                onSubmit={handleCreateBand}
-              />
-            </AppStatusContext.Provider>
-          </AppDataContext.Provider>
-        </AppActionsContext.Provider>
-      </SidebarProvider>
+                {/* Create Band Dialog */}
+                <CreateBandDialog
+                  isOpen={isCreateBandDialogOpen}
+                  onClose={handleCloseCreateBandDialog}
+                  onSubmit={handleCreateBand}
+                />
+              </AppStatusContext.Provider>
+            </AppDataContext.Provider>
+          </AppActionsContext.Provider>
+        </SidebarProvider>
+      </AudioVolumeProvider>
     </ThemeProvider>
   );
 };
