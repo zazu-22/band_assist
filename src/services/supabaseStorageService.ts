@@ -416,12 +416,17 @@ export class SupabaseStorageService implements IStorageService {
           })
         : null;
 
-      // Transform and refresh chart URLs for all songs
+      // Transform and refresh chart/backing track URLs for all songs
       const songs: Song[] | null = songsData
         ? await Promise.all(
             songsData.map(async s => {
               const charts = (s.charts as unknown as SongChart[]) || [];
               const refreshedCharts = await this.refreshChartUrls(charts);
+
+              // Refresh backing track URL if it has a storage path
+              const refreshedBackingTrackUrl = await this.refreshBackingTrackUrl(
+                s.backing_track_storage_path || undefined
+              );
 
               return {
                 id: s.id,
@@ -436,7 +441,8 @@ export class SupabaseStorageService implements IStorageService {
                 charts: refreshedCharts,
                 assignments: (s.assignments as unknown as Assignment[]) || [],
                 parts: (s.parts as unknown as SongPart[]) || [],
-                backingTrackUrl: s.backing_track_url || undefined,
+                // Use refreshed URL if available, otherwise fall back to stored URL (for base64 data URIs)
+                backingTrackUrl: refreshedBackingTrackUrl || s.backing_track_url || undefined,
                 backingTrackStoragePath: s.backing_track_storage_path || undefined,
                 aiAnalysis: s.ai_analysis || undefined,
                 lyrics: s.lyrics || undefined,
@@ -943,6 +949,52 @@ export class SupabaseStorageService implements IStorageService {
   }
 
   /**
+   * Refresh a backing track URL with a fresh token
+   * Similar to refreshChartUrls but for a single audio file
+   *
+   * @param backingTrackStoragePath - Storage path for the backing track
+   * @returns Fresh Edge Function URL with valid token, or undefined if refresh fails
+   */
+  private async refreshBackingTrackUrl(
+    backingTrackStoragePath: string | undefined
+  ): Promise<string | undefined> {
+    if (!backingTrackStoragePath) return undefined;
+
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      console.warn('[refreshBackingTrackUrl] No Supabase client available');
+      return undefined;
+    }
+
+    const validSession = await this.ensureValidSession();
+    if (!validSession) {
+      console.warn('[refreshBackingTrackUrl] No valid session');
+      return undefined;
+    }
+
+    if (!this.currentBandId) {
+      console.warn('[refreshBackingTrackUrl] No band selected');
+      return undefined;
+    }
+
+    // Generate fresh token for the backing track
+    const freshUrl = await this.regenerateSignedUrl(
+      backingTrackStoragePath,
+      validSession.userId
+    );
+
+    if (!freshUrl) {
+      console.error(
+        '[refreshBackingTrackUrl] Failed to generate fresh URL for:',
+        backingTrackStoragePath
+      );
+      return undefined;
+    }
+
+    return freshUrl;
+  }
+
+  /**
    * Upload a chart file (PDF, image, or Guitar Pro) to Supabase Storage
    * For GP files, also stores base64 version for AlphaTab rendering
    * @returns Object with url, storagePath, and storageBase64 (GP only)
@@ -1088,6 +1140,7 @@ export class SupabaseStorageService implements IStorageService {
       assignments?: unknown[];
       parts?: unknown[];
       backing_track_url?: string;
+      backing_track_storage_path?: string;
       ai_analysis?: string;
       lyrics?: string;
       band_id: string;
@@ -1124,13 +1177,19 @@ export class SupabaseStorageService implements IStorageService {
             table: 'songs',
             filter: `band_id=eq.${bandId}`,
           },
-          payload => {
+          async payload => {
             if (payload.new && callbacks.onSongsChange) {
               const dbSong = payload.new as DbSong;
               // Validate band_id to prevent stale updates from band switches
               if (dbSong.band_id !== bandId) {
                 return;
               }
+
+              // Refresh backing track URL if storage path exists
+              const refreshedBackingTrackUrl = await this.refreshBackingTrackUrl(
+                dbSong.backing_track_storage_path
+              );
+
               const song: Song = {
                 id: dbSong.id,
                 title: dbSong.title,
@@ -1144,7 +1203,9 @@ export class SupabaseStorageService implements IStorageService {
                 charts: (dbSong.charts as []) || [],
                 assignments: (dbSong.assignments as []) || [],
                 parts: (dbSong.parts as []) || [],
-                backingTrackUrl: dbSong.backing_track_url,
+                // Use refreshed URL if available, otherwise fall back to stored URL
+                backingTrackUrl: refreshedBackingTrackUrl || dbSong.backing_track_url,
+                backingTrackStoragePath: dbSong.backing_track_storage_path,
                 aiAnalysis: dbSong.ai_analysis,
                 lyrics: dbSong.lyrics,
               };
