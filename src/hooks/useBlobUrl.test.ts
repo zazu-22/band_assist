@@ -34,7 +34,8 @@ describe('useBlobUrl', () => {
     it('should convert valid audio data URI to blob URL', () => {
       const { result } = renderHook(() => useBlobUrl(validAudioDataUri));
 
-      expect(result.current).toBe('blob:test-url-1');
+      expect(result.current.url).toBe('blob:test-url-1');
+      expect(result.current.isLoading).toBe(false);
       expect(createObjectURLMock).toHaveBeenCalledTimes(1);
       expect(createObjectURLMock).toHaveBeenCalledWith(expect.any(Blob));
     });
@@ -51,7 +52,7 @@ describe('useBlobUrl', () => {
         'data:audio/wav;base64,UklGRiQAAABXQVZFZm10IBAAAAABAAEAgD4AAAB9AAACABAAZGF0YQAAAAA=';
       const { result } = renderHook(() => useBlobUrl(wavDataUri));
 
-      expect(result.current).toBe('blob:test-url-1');
+      expect(result.current.url).toBe('blob:test-url-1');
       const createdBlob = createObjectURLMock.mock.calls[0][0] as Blob;
       expect(createdBlob.type).toBe('audio/wav');
     });
@@ -61,7 +62,7 @@ describe('useBlobUrl', () => {
         'data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==';
       const { result } = renderHook(() => useBlobUrl(imageDataUri, 'data:image'));
 
-      expect(result.current).toBe('blob:test-url-1');
+      expect(result.current.url).toBe('blob:test-url-1');
       const createdBlob = createObjectURLMock.mock.calls[0][0] as Blob;
       expect(createdBlob.type).toBe('image/png');
     });
@@ -71,21 +72,22 @@ describe('useBlobUrl', () => {
     it('should return undefined for undefined input', () => {
       const { result } = renderHook(() => useBlobUrl(undefined));
 
-      expect(result.current).toBeUndefined();
+      expect(result.current.url).toBeUndefined();
+      expect(result.current.isLoading).toBe(false);
       expect(createObjectURLMock).not.toHaveBeenCalled();
     });
 
     it('should return undefined for empty string', () => {
       const { result } = renderHook(() => useBlobUrl(''));
 
-      expect(result.current).toBeUndefined();
+      expect(result.current.url).toBeUndefined();
       expect(createObjectURLMock).not.toHaveBeenCalled();
     });
 
     it('should return undefined for non-matching prefix', () => {
       const { result } = renderHook(() => useBlobUrl(validAudioDataUri, 'data:video'));
 
-      expect(result.current).toBeUndefined();
+      expect(result.current.url).toBeUndefined();
       expect(createObjectURLMock).not.toHaveBeenCalled();
     });
 
@@ -93,7 +95,7 @@ describe('useBlobUrl', () => {
       const malformedUri = 'data:audio/mp3;notbase64,somedata';
       const { result } = renderHook(() => useBlobUrl(malformedUri));
 
-      expect(result.current).toBeUndefined();
+      expect(result.current.url).toBeUndefined();
       expect(createObjectURLMock).not.toHaveBeenCalled();
     });
 
@@ -101,7 +103,7 @@ describe('useBlobUrl', () => {
       const malformedUri = 'data:audio/mp3;base64';
       const { result } = renderHook(() => useBlobUrl(malformedUri));
 
-      expect(result.current).toBeUndefined();
+      expect(result.current.url).toBeUndefined();
     });
 
     it('should handle invalid base64 gracefully', () => {
@@ -109,26 +111,28 @@ describe('useBlobUrl', () => {
       const invalidBase64Uri = 'data:audio/mp3;base64,!!!invalid!!!';
       const { result } = renderHook(() => useBlobUrl(invalidBase64Uri));
 
-      expect(result.current).toBeUndefined();
+      expect(result.current.url).toBeUndefined();
     });
 
     it('should pass through existing blob URLs', () => {
       const blobUrl = 'blob:http://localhost/abc-123';
       const { result: blobResult } = renderHook(() => useBlobUrl(blobUrl));
-      expect(blobResult.current).toBe(blobUrl);
+      expect(blobResult.current.url).toBe(blobUrl);
 
       expect(createObjectURLMock).not.toHaveBeenCalled();
     });
 
-    it('should return undefined initially for remote URLs (async fetch)', () => {
-      // Remote URLs are fetched asynchronously, so initial value is undefined
+    it('should return undefined url and isLoading true for remote URLs initially', () => {
+      // Remote URLs are fetched asynchronously
       const httpsUrl = 'https://example.com/audio.mp3';
       const { result: httpsResult } = renderHook(() => useBlobUrl(httpsUrl));
-      expect(httpsResult.current).toBeUndefined();
+      expect(httpsResult.current.url).toBeUndefined();
+      expect(httpsResult.current.isLoading).toBe(true);
 
       const httpUrl = 'http://example.com/audio.mp3';
       const { result: httpResult } = renderHook(() => useBlobUrl(httpUrl));
-      expect(httpResult.current).toBeUndefined();
+      expect(httpResult.current.url).toBeUndefined();
+      expect(httpResult.current.isLoading).toBe(true);
     });
   });
 
@@ -184,12 +188,12 @@ describe('useBlobUrl', () => {
         initialProps: { dataUri: validAudioDataUri as string | undefined },
       });
 
-      expect(result.current).toBe('blob:test-url-1');
+      expect(result.current.url).toBe('blob:test-url-1');
 
       rerender({ dataUri: undefined });
 
       expect(revokeObjectURLMock).toHaveBeenCalledTimes(1);
-      expect(result.current).toBeUndefined();
+      expect(result.current.url).toBeUndefined();
     });
 
     it('should create URL when dataUri changes from undefined to valid', () => {
@@ -197,12 +201,12 @@ describe('useBlobUrl', () => {
         initialProps: { dataUri: undefined as string | undefined },
       });
 
-      expect(result.current).toBeUndefined();
+      expect(result.current.url).toBeUndefined();
       expect(createObjectURLMock).not.toHaveBeenCalled();
 
       rerender({ dataUri: validAudioDataUri });
 
-      expect(result.current).toBe('blob:test-url-1');
+      expect(result.current.url).toBe('blob:test-url-1');
       expect(createObjectURLMock).toHaveBeenCalledTimes(1);
     });
 
@@ -225,7 +229,7 @@ describe('useBlobUrl', () => {
   describe('prefix parameter', () => {
     it('should use default prefix of data:audio', () => {
       const { result } = renderHook(() => useBlobUrl(validAudioDataUri));
-      expect(result.current).toBe('blob:test-url-1');
+      expect(result.current.url).toBe('blob:test-url-1');
     });
 
     it('should respect custom prefix parameter', () => {
@@ -233,7 +237,7 @@ describe('useBlobUrl', () => {
       const videoDataUri = 'data:video/mp4;base64,SGVsbG8='; // "Hello" in base64
       const { result } = renderHook(() => useBlobUrl(videoDataUri, 'data:video'));
 
-      expect(result.current).toBe('blob:test-url-1');
+      expect(result.current.url).toBe('blob:test-url-1');
     });
 
     it('should update when prefix parameter changes', () => {
@@ -242,13 +246,13 @@ describe('useBlobUrl', () => {
         initialProps: { prefix: 'data:audio' },
       });
 
-      expect(result.current).toBe('blob:test-url-1');
+      expect(result.current.url).toBe('blob:test-url-1');
 
       // Change prefix to non-matching
       rerender({ prefix: 'data:video' });
 
       expect(revokeObjectURLMock).toHaveBeenCalled();
-      expect(result.current).toBeUndefined();
+      expect(result.current.url).toBeUndefined();
     });
   });
 

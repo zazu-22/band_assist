@@ -41,6 +41,7 @@ import {
   Gauge,
   Clock,
   Music,
+  Loader2,
 } from 'lucide-react';
 import { LazyAlphaTab } from './LazyAlphaTab';
 import type { AlphaTabHandle, TrackInfo } from './LazyAlphaTab';
@@ -77,7 +78,7 @@ export const SongDetail: React.FC<SongDetailProps> = ({
     song.charts.length > 0 ? song.charts[0].id : null
   );
   // Convert backing track data URI to blob URL for audio playback
-  const audioBlobUrl = useBlobUrl(song.backingTrackUrl);
+  const { url: audioBlobUrl, isLoading: isAudioLoading } = useBlobUrl(song.backingTrackUrl);
   const [isEditingMetadata, setIsEditingMetadata] = useState(false);
 
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -980,7 +981,21 @@ export const SongDetail: React.FC<SongDetailProps> = ({
             <div className="max-w-2xl mx-auto mt-10 animate-slide-in-from-bottom animation-forwards opacity-0 stagger-1">
               <Card className="shadow-2xl shadow-black/20">
                 <CardContent className="p-8">
-                  {audioBlobUrl ? (
+                  {isAudioLoading ? (
+                    <div className="text-center py-10">
+                      <div className="mb-6 flex justify-center">
+                        <div className="w-20 h-20 bg-muted rounded-full flex items-center justify-center">
+                          <Loader2 size={32} className="text-muted-foreground animate-spin" />
+                        </div>
+                      </div>
+                      <h3 className="text-xl font-bold font-serif text-foreground tracking-tight mb-2">
+                        Loading Backing Track
+                      </h3>
+                      <p className="text-muted-foreground text-sm">
+                        Please wait while the audio file loads...
+                      </p>
+                    </div>
+                  ) : audioBlobUrl ? (
                     <>
                       <div className="aspect-video bg-muted/30 rounded-2xl flex items-center justify-center mb-8 relative overflow-hidden border border-border">
                         <Music2 size={48} className="text-foreground relative z-10" />

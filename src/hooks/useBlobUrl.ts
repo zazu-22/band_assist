@@ -1,4 +1,12 @@
-import { useMemo, useEffect, useState, useRef, useCallback } from 'react';
+import { useMemo, useEffect, useState, useRef } from 'react';
+
+/** Return type for useBlobUrl hook */
+export interface UseBlobUrlResult {
+  /** The blob URL, or undefined if not available */
+  url: string | undefined;
+  /** Whether a remote URL is currently being fetched */
+  isLoading: boolean;
+}
 
 /**
  * Converts a Base64 data URI to a Blob URL.
@@ -43,11 +51,11 @@ function dataUriToBlobUrl(dataUri: string, prefix: string): string | undefined {
  *
  * @param dataUri - A Base64 data URI (e.g., "data:audio/mp3;base64,..."), remote URL, or undefined
  * @param prefix - Required prefix for base64 data URIs (default: "data:audio")
- * @returns The object URL for the blob, or undefined if conversion fails or dataUri is empty
+ * @returns Object with `url` (blob URL or undefined) and `isLoading` (true while fetching remote URLs)
  *
  * @example
  * // Convert a base64 audio data URI to a playable URL
- * const audioUrl = useBlobUrl(song?.backingTrackUrl);
+ * const { url: audioUrl, isLoading } = useBlobUrl(song?.backingTrackUrl);
  * return <audio src={audioUrl} />;
  *
  * @remarks
@@ -59,13 +67,19 @@ function dataUriToBlobUrl(dataUri: string, prefix: string): string | undefined {
 export function useBlobUrl(
   dataUri: string | undefined,
   prefix: string = 'data:audio'
-): string | undefined {
-  // State for fetched blob URLs (remote URLs need async fetch)
-  const [fetchedBlobUrl, setFetchedBlobUrl] = useState<string | undefined>(undefined);
-  // Track the URL we're currently fetching to avoid duplicate fetches
-  const fetchingUrlRef = useRef<string | undefined>(undefined);
-  // Track the previous fetched blob URL for cleanup
-  const previousBlobUrlRef = useRef<string | undefined>(undefined);
+): UseBlobUrlResult {
+  // State: the successfully fetched result (sourceUrl + blobUrl pair)
+  // Only updated when fetch completes successfully or fails
+  const [fetchedData, setFetchedData] = useState<{
+    sourceUrl: string;
+    blobUrl: string;
+  } | null>(null);
+
+  // Ref to track current fetch - doesn't trigger re-renders
+  const currentFetchRef = useRef<{
+    url: string;
+    controller: AbortController;
+  } | null>(null);
 
   // Determine if this is a remote URL that needs fetching
   const isRemoteUrl = dataUri?.startsWith('https://') || dataUri?.startsWith('http://');
@@ -96,42 +110,35 @@ export function useBlobUrl(
     return result;
   }, [dataUri, prefix, isRemoteUrl]);
 
-  // Callback to handle successful fetch
-  const handleFetchSuccess = useCallback((blobUrl: string) => {
-    // Cleanup previous blob URL before setting new one
-    if (previousBlobUrlRef.current) {
-      URL.revokeObjectURL(previousBlobUrlRef.current);
-    }
-    previousBlobUrlRef.current = blobUrl;
-    setFetchedBlobUrl(blobUrl);
-  }, []);
-
-  // Fetch remote URLs and convert to blob URLs for seeking support
+  // Handle remote URL fetching
   useEffect(() => {
-    // If not a remote URL, nothing to fetch
+    // Not a remote URL - abort any pending fetch
     if (!dataUri || !isRemoteUrl) {
-      // Cleanup previous fetched URL when switching away from remote
-      if (previousBlobUrlRef.current) {
-        URL.revokeObjectURL(previousBlobUrlRef.current);
-        previousBlobUrlRef.current = undefined;
+      if (currentFetchRef.current) {
+        currentFetchRef.current.controller.abort();
+        currentFetchRef.current = null;
       }
-      fetchingUrlRef.current = undefined;
       return;
     }
 
-    // Skip if we're already fetching this exact URL
-    if (fetchingUrlRef.current === dataUri) {
+    // Already fetched this URL - nothing to do
+    if (fetchedData?.sourceUrl === dataUri) {
       return;
     }
 
-    // Cleanup previous blob URL when URL changes
-    if (previousBlobUrlRef.current) {
-      URL.revokeObjectURL(previousBlobUrlRef.current);
-      previousBlobUrlRef.current = undefined;
+    // Already fetching this URL - nothing to do
+    if (currentFetchRef.current?.url === dataUri) {
+      return;
     }
-    fetchingUrlRef.current = dataUri;
 
+    // Abort previous fetch if any
+    if (currentFetchRef.current) {
+      currentFetchRef.current.controller.abort();
+    }
+
+    // Start new fetch
     const controller = new AbortController();
+    currentFetchRef.current = { url: dataUri, controller };
     const urlToFetch = dataUri;
 
     fetch(urlToFetch, { signal: controller.signal })
@@ -142,33 +149,47 @@ export function useBlobUrl(
         return response.blob();
       })
       .then(blob => {
-        // Only update state if we're still interested in this URL
-        if (fetchingUrlRef.current === urlToFetch) {
+        // Only update if this is still the current fetch
+        if (currentFetchRef.current?.url === urlToFetch) {
           const blobUrl = URL.createObjectURL(blob);
-          handleFetchSuccess(blobUrl);
+          setFetchedData({ sourceUrl: urlToFetch, blobUrl });
+          currentFetchRef.current = null;
         }
       })
       .catch(error => {
         if (error.name !== 'AbortError') {
           console.error('[useBlobUrl] Failed to fetch remote URL:', error);
         }
-      })
-      .finally(() => {
-        if (fetchingUrlRef.current === urlToFetch) {
-          fetchingUrlRef.current = undefined;
+        // Clear current fetch ref on error (but not on abort)
+        if (currentFetchRef.current?.url === urlToFetch && error.name !== 'AbortError') {
+          currentFetchRef.current = null;
         }
       });
 
+    // Cleanup on unmount - only abort if we're still the current fetch
     return () => {
-      controller.abort();
+      // Only abort if this controller is still the current one
+      // This prevents aborting on StrictMode double-invoke
+      if (currentFetchRef.current?.controller === controller) {
+        controller.abort();
+        currentFetchRef.current = null;
+      }
     };
-  }, [dataUri, isRemoteUrl, handleFetchSuccess]);
+  }, [dataUri, isRemoteUrl, fetchedData?.sourceUrl]);
 
-  // Cleanup effect: revoke URL when it changes or component unmounts
+  // Cleanup old blob URLs when fetchedData changes
+  useEffect(() => {
+    const blobUrl = fetchedData?.blobUrl;
+    return () => {
+      if (blobUrl) {
+        URL.revokeObjectURL(blobUrl);
+      }
+    };
+  }, [fetchedData?.blobUrl]);
+
+  // Cleanup sync blob URL when it changes or component unmounts
   useEffect(() => {
     const urlToCleanup = syncBlobUrl;
-    // Return cleanup function that revokes the current URL
-    // Only revoke blob: URLs we created from base64, not passed-through blob URLs
     return () => {
       if (urlToCleanup && urlToCleanup.startsWith('blob:') && !dataUri?.startsWith('blob:')) {
         URL.revokeObjectURL(urlToCleanup);
@@ -176,19 +197,16 @@ export function useBlobUrl(
     };
   }, [syncBlobUrl, dataUri]);
 
-  // Cleanup fetched blob URL on unmount
-  useEffect(() => {
-    return () => {
-      if (previousBlobUrlRef.current) {
-        URL.revokeObjectURL(previousBlobUrlRef.current);
-      }
-    };
-  }, []);
-
-  // Return the appropriate URL
-  // For remote URLs, return undefined while fetching, then the blob URL once ready
-  if (isRemoteUrl) {
-    return fetchedBlobUrl;
+  // Compute return values
+  if (isRemoteUrl && dataUri) {
+    // Remote URL: check if we have fetched data for this specific URL
+    const hasFetchedData = fetchedData?.sourceUrl === dataUri;
+    const url = hasFetchedData ? fetchedData.blobUrl : undefined;
+    // Loading if we have a remote URL but haven't fetched it yet
+    const isLoading = !hasFetchedData;
+    return { url, isLoading };
   }
-  return syncBlobUrl;
+
+  // Non-remote URL: return sync result, never loading
+  return { url: syncBlobUrl, isLoading: false };
 }

@@ -18,6 +18,7 @@ import {
   ListMusic,
   Music2,
   Guitar,
+  Loader2,
 } from 'lucide-react';
 import { SmartTabEditor } from './SmartTabEditor';
 import { LazyAlphaTab } from './LazyAlphaTab';
@@ -166,7 +167,7 @@ export const PracticeRoom: React.FC<PracticeRoomProps> = memo(function PracticeR
   );
 
   // Blob URL for backing track audio (handles Base64 data URI conversion and cleanup)
-  const audioSrc = useBlobUrl(currentSong?.backingTrackUrl);
+  const { url: audioSrc, isLoading: isAudioLoading } = useBlobUrl(currentSong?.backingTrackUrl);
 
   const [metronomeBpm, setMetronomeBpm] = useDerivedState(currentSong?.bpm ?? 120, selectedSongId);
   const [activeChartId, setActiveChartId] = useDerivedState<string | null>(
@@ -700,16 +701,22 @@ export const PracticeRoom: React.FC<PracticeRoomProps> = memo(function PracticeR
 
                   <Button
                     onClick={togglePlay}
-                    disabled={!audioSrc}
+                    disabled={!audioSrc || isAudioLoading}
                     className={cn(
                       'w-12 h-12 rounded-full p-0',
-                      audioSrc
+                      audioSrc || isAudioLoading
                         ? 'bg-primary hover:bg-primary/90 text-primary-foreground shadow-lg hover:scale-105 transition-transform'
                         : 'bg-muted text-muted-foreground cursor-not-allowed'
                     )}
-                    aria-label={isPlaying ? 'Pause' : 'Play'}
+                    aria-label={isAudioLoading ? 'Loading audio' : isPlaying ? 'Pause' : 'Play'}
                   >
-                    {isPlaying ? <Pause size={20} /> : <Play size={20} className="ml-0.5" />}
+                    {isAudioLoading ? (
+                      <Loader2 size={20} className="animate-spin" />
+                    ) : isPlaying ? (
+                      <Pause size={20} />
+                    ) : (
+                      <Play size={20} className="ml-0.5" />
+                    )}
                   </Button>
 
                   <TooltipProvider delayDuration={100}>
