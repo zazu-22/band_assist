@@ -461,19 +461,4 @@ input[type='date'] {
   /* Prevent date inputs from exceeding container width on mobile */
   max-width: 100%;
   box-sizing: border-box;
-  /* Ensure the date picker icon doesn't cause overflow */
-  -webkit-appearance: none;
-  -moz-appearance: none;
-  appearance: none;
-}
-
-/* Maintain the calendar picker functionality */
-input[type='date']::-webkit-calendar-picker-indicator {
-  cursor: pointer;
-  opacity: 0.6;
-  transition: opacity 0.15s ease;
-}
-
-input[type='date']::-webkit-calendar-picker-indicator:hover {
-  opacity: 1;
 }
