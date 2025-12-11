@@ -403,6 +403,14 @@ export const PracticeRoom: React.FC<PracticeRoomProps> = memo(function PracticeR
     }
   }, []);
 
+  const handleLoadedMetadata = useCallback(() => {
+    if (audioRef.current) {
+      setDuration(audioRef.current.duration || 0);
+      setCurrentTime(0);
+      setIsPlaying(false);
+    }
+  }, []);
+
   const handleSeek = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
     const time = parseFloat(e.target.value);
     if (audioRef.current) {
@@ -775,6 +783,7 @@ export const PracticeRoom: React.FC<PracticeRoomProps> = memo(function PracticeR
                 <audio
                   ref={audioRef}
                   src={audioSrc}
+                  onLoadedMetadata={handleLoadedMetadata}
                   onTimeUpdate={handleTimeUpdate}
                   onEnded={handlePlaybackEnded}
                 />
