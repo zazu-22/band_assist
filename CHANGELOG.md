@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.1.12](https://github.com/zazu-22/band_assist/compare/v0.1.11...v0.1.12) (2025-12-11)
+
+
+### Features
+
+* **audio:** add backing track volume control ([#195](https://github.com/zazu-22/band_assist/issues/195)) ([#198](https://github.com/zazu-22/band_assist/issues/198)) ([18737ed](https://github.com/zazu-22/band_assist/commit/18737ed84f14cbd498ec69ad0bc5f78d06d0723a))
+
+
+### Bug Fixes
+
+* add audio MIME types to serve-file-inline Edge Function ([#203](https://github.com/zazu-22/band_assist/issues/203)) ([3d5ed7e](https://github.com/zazu-22/band_assist/commit/3d5ed7e060b7547c5d46cc30892d3ab00835b5f3))
+* **team-config:** use non-empty sentinel value for Select.Item ([#204](https://github.com/zazu-22/band_assist/issues/204)) ([36754c0](https://github.com/zazu-22/band_assist/commit/36754c0201eea1f22513344ff452d9528baf528e))
+
 ## [0.1.11](https://github.com/zazu-22/band_assist/compare/v0.1.10...v0.1.11) (2025-12-11)
 
 
