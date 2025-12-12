@@ -206,6 +206,7 @@ export const LinkAccountSection = memo(function LinkAccountSection({
                   variant="ghost"
                   size="sm"
                   onClick={() => setShowUnlinkDialog(true)}
+                  disabled={isUnlinking}
                   aria-label="Unlink member"
                 >
                   <Unlink className="h-4 w-4" />

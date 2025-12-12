@@ -2077,11 +2077,11 @@ export async function unlinkMember(
       .eq('band_id', bandId)
       .eq('user_id', userId)
       .select('id')
-      .single();
+      .maybeSingle();
 
     if (error) {
       console.error('Error unlinking member:', error);
-      throw new Error('Failed to unlink member');
+      throw new Error(`Failed to unlink member: ${error.message}`);
     }
 
     if (!data) {
