@@ -1,29 +1,26 @@
 import React, { memo } from 'react';
 import { Badge } from '@/components/primitives';
-import type { Song } from '@/types';
-
-type SongStatus = Song['status'];
+import { getBandStatusVariant, type BandStatus } from '@/lib/statusConfig';
 
 interface StatusBadgeProps {
-  status: SongStatus;
+  status: BandStatus;
   className?: string;
 }
 
-type BadgeVariant = 'success' | 'info' | 'warning';
-
-// Maps song status to Badge variant - status value is used directly as label
-const STATUS_VARIANT_MAP = {
-  'Performance Ready': 'success',
-  'In Progress': 'info',
-  'To Learn': 'warning',
-} as const satisfies Record<SongStatus, BadgeVariant>;
-
+/**
+ * StatusBadge - Display a band's official song status badge
+ *
+ * Uses semantic color variants from shared config:
+ * - 'Performance Ready' → success (green)
+ * - 'In Progress' → info (blue)
+ * - 'To Learn' → warning (amber)
+ */
 export const StatusBadge: React.FC<StatusBadgeProps> = memo(function StatusBadge({
   status,
   className,
 }) {
   return (
-    <Badge variant={STATUS_VARIANT_MAP[status]} className={className}>
+    <Badge variant={getBandStatusVariant(status)} className={className}>
       {status}
     </Badge>
   );

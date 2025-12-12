@@ -14,10 +14,14 @@ const badgeVariants = cva(
         destructive:
           'border-transparent bg-destructive text-destructive-foreground shadow hover:bg-destructive/80',
         outline: 'text-foreground',
-        // Semantic status variants using theme CSS variables
+        // Semantic status variants for band status (bold colors)
         success: 'border-success/30 bg-success/20 text-success',
         info: 'border-info/30 bg-info/20 text-info',
         warning: 'border-warning/30 bg-warning/20 text-warning',
+        // Semantic status variants for user status (softer colors)
+        'user-success': 'border-user-success/30 bg-user-success/20 text-user-success',
+        'user-info': 'border-user-info/30 bg-user-info/20 text-user-info',
+        'user-warning': 'border-user-warning/30 bg-user-warning/20 text-user-warning',
       },
     },
     defaultVariants: {
