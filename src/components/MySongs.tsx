@@ -55,14 +55,19 @@ const SongRow = memo(function SongRow({
         'hover:bg-muted/30 transition-colors'
       )}
     >
-      {/* Song info */}
+      {/* Song info - clickable link to song detail */}
       <div className="flex-1 min-w-0">
         <button
           type="button"
           onClick={() => onNavigateToSong(song.id)}
-          className="text-left hover:text-primary transition-colors"
+          className={cn(
+            'text-left cursor-pointer group',
+            'rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2'
+          )}
         >
-          <p className="font-semibold text-foreground truncate">{song.title}</p>
+          <p className="font-semibold text-foreground truncate group-hover:text-primary group-hover:underline transition-colors">
+            {song.title}
+          </p>
           <p className="text-sm text-muted-foreground truncate">{song.artist}</p>
         </button>
       </div>
