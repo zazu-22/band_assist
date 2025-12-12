@@ -7,7 +7,8 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from '@/components/primitives';
-import type { Song, UserSongProgress, UserSongStatus } from '@/types';
+import { getBandStatusVariant, getUserStatusVariant } from '@/lib/statusConfig';
+import type { Song, UserSongProgress } from '@/types';
 
 // =============================================================================
 // TYPES
@@ -22,45 +23,6 @@ export interface SongStatusBadgesProps {
   showBandStatus?: boolean;
   /** Optional CSS class name */
   className?: string;
-}
-
-type BandStatus = Song['status'];
-type BadgeVariant = 'default' | 'secondary' | 'destructive' | 'outline';
-
-// =============================================================================
-// HELPERS
-// =============================================================================
-
-/**
- * Maps band song status to Badge variant
- * - 'Performance Ready' -> 'default' (green/primary)
- * - 'In Progress' -> 'secondary' (blue)
- * - 'To Learn' -> 'destructive' (red)
- */
-function getBandStatusVariant(status: BandStatus): BadgeVariant {
-  const map: Record<BandStatus, BadgeVariant> = {
-    'Performance Ready': 'default',
-    'In Progress': 'secondary',
-    'To Learn': 'destructive',
-  };
-  return map[status] ?? 'outline';
-}
-
-/**
- * Maps user song learning status to Badge variant
- * - 'Mastered' -> 'default' (green/primary)
- * - 'Learned' -> 'secondary' (blue)
- * - 'Learning' -> 'outline' (neutral)
- * - 'Not Started' -> 'outline' (neutral)
- */
-function getUserStatusVariant(status: UserSongStatus): BadgeVariant {
-  const map: Record<UserSongStatus, BadgeVariant> = {
-    'Mastered': 'default',
-    'Learned': 'secondary',
-    'Learning': 'outline',
-    'Not Started': 'outline',
-  };
-  return map[status] ?? 'outline';
 }
 
 // =============================================================================

@@ -49,6 +49,7 @@ import { usePracticeStats } from '@/hooks/usePracticeStats';
 import { useAllUserSongStatuses } from '@/hooks/useUserSongStatus';
 import { supabaseStorageService } from '@/services/supabaseStorageService';
 import { getTodayDateString, getDateDaysAgo } from '@/lib/dateUtils';
+import { getUserStatusVariant, USER_STATUS_OPTIONS } from '@/lib/statusConfig';
 import type { Song, PracticeFilters, UserSongStatus, PracticeSortField, SortDirection, PracticeSession } from '@/types';
 
 // =============================================================================
@@ -61,16 +62,11 @@ interface PracticeHistoryProps {
   currentBandId: string | null;
 }
 
-type BadgeVariant = 'success' | 'info' | 'warning' | 'default';
-
 // Status filter options including 'all'
 type StatusFilterValue = UserSongStatus | 'all';
-const STATUS_OPTIONS: { value: StatusFilterValue; label: string }[] = [
+const STATUS_FILTER_OPTIONS: { value: StatusFilterValue; label: string }[] = [
   { value: 'all', label: 'All Statuses' },
-  { value: 'Not Started', label: 'Not Started' },
-  { value: 'Learning', label: 'Learning' },
-  { value: 'Learned', label: 'Learned' },
-  { value: 'Mastered', label: 'Mastered' },
+  ...USER_STATUS_OPTIONS,
 ];
 
 // =============================================================================
@@ -103,23 +99,6 @@ function formatDate(dateStr: string): string {
     day: '2-digit',
     year: 'numeric',
   });
-}
-
-
-/**
- * Map UserSongStatus to Badge variant
- */
-function getStatusVariant(status: UserSongStatus | undefined): BadgeVariant {
-  if (!status) return 'default';
-
-  const variantMap: Record<UserSongStatus, BadgeVariant> = {
-    'Mastered': 'success',
-    'Learned': 'info',
-    'Learning': 'warning',
-    'Not Started': 'default',
-  };
-
-  return variantMap[status] || 'default';
 }
 
 // =============================================================================
@@ -198,7 +177,7 @@ const VirtualizedSessionTable = memo(function VirtualizedSessionTable({
             : '—'}
         </td>
         <td className="w-[10%] py-3 px-4">
-          <Badge variant={getStatusVariant(songStatus?.status)}>
+          <Badge variant={getUserStatusVariant(songStatus?.status)}>
             {songStatus?.status || 'Not Started'}
           </Badge>
         </td>
@@ -768,7 +747,7 @@ export const PracticeHistory: React.FC<PracticeHistoryProps> = memo(function Pra
                       <SelectValue placeholder="All Statuses" />
                     </SelectTrigger>
                     <SelectContent>
-                      {STATUS_OPTIONS.map(option => (
+                      {STATUS_FILTER_OPTIONS.map(option => (
                         <SelectItem key={option.value} value={option.value}>
                           {option.label}
                         </SelectItem>

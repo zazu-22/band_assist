@@ -22,7 +22,7 @@
   --accent-foreground: oklch(0.4732 0.1247 46.2007);
   --destructive: oklch(0.6368 0.2078 25.3313);
   --destructive-foreground: oklch(1 0 0);
-  /* Custom semantic colors for status indicators */
+  /* Custom semantic colors for status indicators (band status - bold) */
   --success: oklch(0.55 0.15 145);
   --success-foreground: oklch(1 0 0);
   /* Darkened from 0.75 to 0.65 for WCAG AA contrast compliance */
@@ -30,6 +30,13 @@
   --warning-foreground: oklch(0.15 0 0);
   --info: oklch(0.6 0.15 250);
   --info-foreground: oklch(1 0 0);
+  /* User status colors - softer/lighter variants for personal progress badges */
+  --user-success: oklch(0.62 0.12 145);
+  --user-success-foreground: oklch(0.15 0 0);
+  --user-warning: oklch(0.72 0.12 75);
+  --user-warning-foreground: oklch(0.15 0 0);
+  --user-info: oklch(0.67 0.12 250);
+  --user-info-foreground: oklch(0.15 0 0);
   --border: oklch(0.9276 0.0058 264.5313);
   --input: oklch(0.9276 0.0058 264.5313);
   --ring: oklch(0.7686 0.1647 70.0804);
@@ -85,13 +92,20 @@
   --accent-foreground: oklch(0.9243 0.1151 95.7459);
   --destructive: oklch(0.6368 0.2078 25.3313);
   --destructive-foreground: oklch(1 0 0);
-  /* Custom semantic colors for status indicators (dark mode) */
+  /* Custom semantic colors for status indicators (dark mode - band status) */
   --success: oklch(0.65 0.18 145);
   --success-foreground: oklch(0.15 0 0);
   --warning: oklch(0.8 0.16 75);
   --warning-foreground: oklch(0.15 0 0);
   --info: oklch(0.7 0.15 250);
   --info-foreground: oklch(0.15 0 0);
+  /* User status colors - softer/dimmer variants for personal progress badges (dark mode) */
+  --user-success: oklch(0.58 0.14 145);
+  --user-success-foreground: oklch(0.95 0 0);
+  --user-warning: oklch(0.72 0.13 75);
+  --user-warning-foreground: oklch(0.15 0 0);
+  --user-info: oklch(0.62 0.12 250);
+  --user-info-foreground: oklch(0.95 0 0);
   --border: oklch(0.3715 0 0);
   --input: oklch(0.3715 0 0);
   --ring: oklch(0.7686 0.1647 70.0804);
@@ -134,6 +148,12 @@
   --color-warning-foreground: var(--warning-foreground);
   --color-info: var(--info);
   --color-info-foreground: var(--info-foreground);
+  --color-user-success: var(--user-success);
+  --color-user-success-foreground: var(--user-success-foreground);
+  --color-user-warning: var(--user-warning);
+  --color-user-warning-foreground: var(--user-warning-foreground);
+  --color-user-info: var(--user-info);
+  --color-user-info-foreground: var(--user-info-foreground);
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
