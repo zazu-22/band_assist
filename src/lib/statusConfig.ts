@@ -4,6 +4,9 @@
  * Color scheme:
  * - Band status uses bold semantic colors (success/info/warning)
  * - User status uses softer variants (user-success/user-info/user-warning)
+ * - Neutral states (Not Started, undefined) use the shared 'outline' variant
+ *   intentionally - there's no user-outline because neutral appearance should
+ *   be consistent across contexts
  *
  * This ensures visual distinction between:
  * - Band's official song status (group context)
@@ -21,8 +24,18 @@ export type BandStatus = Song['status'];
 /** Badge variants for band status (bold colors) */
 export type BandStatusVariant = 'success' | 'info' | 'warning';
 
-/** Badge variants for user status (softer colors) */
+/**
+ * Badge variants for user status (softer colors).
+ * Note: 'outline' is the shared neutral variant - no user-outline exists because
+ * the neutral/unstarted appearance should be consistent across all contexts.
+ */
 export type UserStatusVariant = 'user-success' | 'user-info' | 'user-warning' | 'outline';
+
+/** Readonly status option for dropdown menus and filters */
+export type StatusOption<T extends string> = Readonly<{ value: T; label: T }>;
+
+/** Default variant for user status when undefined or unknown */
+export const DEFAULT_USER_STATUS_VARIANT: UserStatusVariant = 'outline';
 
 // =============================================================================
 // BAND STATUS CONFIGURATION
@@ -78,35 +91,43 @@ export const USER_STATUS_VARIANT_MAP: Record<UserSongStatus, UserStatusVariant> 
 
 /**
  * Get the Badge variant for a user learning status.
+ *
+ * Falls back to DEFAULT_USER_STATUS_VARIANT ('outline') for undefined or unknown
+ * statuses, providing a neutral appearance that doesn't imply any particular state.
+ *
  * @param status - The user's personal learning status
  * @returns Badge variant name
  */
 export function getUserStatusVariant(status: UserSongStatus | undefined): UserStatusVariant {
-  if (!status) return 'outline';
-  return USER_STATUS_VARIANT_MAP[status] ?? 'outline';
+  if (!status) return DEFAULT_USER_STATUS_VARIANT;
+  return USER_STATUS_VARIANT_MAP[status] ?? DEFAULT_USER_STATUS_VARIANT;
 }
 
 // =============================================================================
 // STATUS OPTIONS (for dropdowns/filters)
 // =============================================================================
 
-/** User status options for dropdown menus and filters */
-export const USER_STATUS_OPTIONS: { value: UserSongStatus; label: string }[] = [
+/**
+ * User status options for dropdown menus and filters.
+ * Readonly to prevent accidental mutation by consumers.
+ */
+export const USER_STATUS_OPTIONS: readonly StatusOption<UserSongStatus>[] = [
   { value: 'Not Started', label: 'Not Started' },
   { value: 'Learning', label: 'Learning' },
   { value: 'Learned', label: 'Learned' },
   { value: 'Mastered', label: 'Mastered' },
-];
+] as const;
 
 /**
  * Band status options for dropdown menus and filters.
+ * Readonly to prevent accidental mutation by consumers.
  *
  * Ordered from least to most ready (To Learn → In Progress → Performance Ready)
  * to match typical workflow progression. Exported for consistency when building
  * band status filter/selection UI components.
  */
-export const BAND_STATUS_OPTIONS: { value: BandStatus; label: string }[] = [
+export const BAND_STATUS_OPTIONS: readonly StatusOption<BandStatus>[] = [
   { value: 'To Learn', label: 'To Learn' },
   { value: 'In Progress', label: 'In Progress' },
   { value: 'Performance Ready', label: 'Performance Ready' },
-];
+] as const;

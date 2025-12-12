@@ -6,7 +6,9 @@ import {
   USER_STATUS_VARIANT_MAP,
   USER_STATUS_OPTIONS,
   BAND_STATUS_OPTIONS,
+  DEFAULT_USER_STATUS_VARIANT,
   type BandStatus,
+  type BandStatusVariant,
   type UserStatusVariant,
 } from './statusConfig';
 import type { UserSongStatus } from '@/types';
@@ -35,7 +37,7 @@ describe('getBandStatusVariant', () => {
   });
 
   it('maps all statuses in BAND_STATUS_VARIANT_MAP correctly', () => {
-    const expectedMappings: Record<BandStatus, string> = {
+    const expectedMappings: Record<BandStatus, BandStatusVariant> = {
       'Performance Ready': 'success',
       'In Progress': 'info',
       'To Learn': 'warning',
@@ -44,6 +46,21 @@ describe('getBandStatusVariant', () => {
     for (const [status, variant] of Object.entries(expectedMappings)) {
       expect(getBandStatusVariant(status as BandStatus)).toBe(variant);
     }
+  });
+});
+
+// =============================================================================
+// DEFAULT_USER_STATUS_VARIANT
+// =============================================================================
+
+describe('DEFAULT_USER_STATUS_VARIANT', () => {
+  it('is set to "outline"', () => {
+    expect(DEFAULT_USER_STATUS_VARIANT).toBe('outline');
+  });
+
+  it('is a valid UserStatusVariant', () => {
+    const validVariants: UserStatusVariant[] = ['user-success', 'user-info', 'user-warning', 'outline'];
+    expect(validVariants).toContain(DEFAULT_USER_STATUS_VARIANT);
   });
 });
 
@@ -68,13 +85,13 @@ describe('getUserStatusVariant', () => {
     expect(getUserStatusVariant('Not Started')).toBe('outline');
   });
 
-  it('returns "outline" for undefined status', () => {
-    expect(getUserStatusVariant(undefined)).toBe('outline');
+  it('returns DEFAULT_USER_STATUS_VARIANT for undefined status', () => {
+    expect(getUserStatusVariant(undefined)).toBe(DEFAULT_USER_STATUS_VARIANT);
   });
 
-  it('returns "outline" as fallback for unknown status', () => {
-    expect(getUserStatusVariant('Unknown' as UserSongStatus)).toBe('outline');
-    expect(getUserStatusVariant('' as UserSongStatus)).toBe('outline');
+  it('returns DEFAULT_USER_STATUS_VARIANT as fallback for unknown status', () => {
+    expect(getUserStatusVariant('Unknown' as UserSongStatus)).toBe(DEFAULT_USER_STATUS_VARIANT);
+    expect(getUserStatusVariant('' as UserSongStatus)).toBe(DEFAULT_USER_STATUS_VARIANT);
   });
 
   it('maps all statuses in USER_STATUS_VARIANT_MAP correctly', () => {
