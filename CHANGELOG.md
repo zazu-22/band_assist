@@ -1,5 +1,12 @@
 # Changelog
 
+## [0.1.13](https://github.com/zazu-22/band_assist/compare/v0.1.12...v0.1.13) (2025-12-12)
+
+
+### Features
+
+* **schedule:** convert event editor to modal dialog ([#205](https://github.com/zazu-22/band_assist/issues/205)) ([cfbd9eb](https://github.com/zazu-22/band_assist/commit/cfbd9ebfdd711b277fb14a73e2bc7f68dfedae12)), closes [#182](https://github.com/zazu-22/band_assist/issues/182)
+
 ## [0.1.12](https://github.com/zazu-22/band_assist/compare/v0.1.11...v0.1.12) (2025-12-11)
 
 
