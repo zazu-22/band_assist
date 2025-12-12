@@ -2054,5 +2054,44 @@ export async function claimMember(
   }
 }
 
+/**
+ * Unlink the current user from their band member record
+ * @param userId - Supabase auth user ID
+ * @param bandId - Band ID
+ * @throws Error if user is not linked to any member in this band
+ */
+export async function unlinkMember(
+  userId: string,
+  bandId: string
+): Promise<void> {
+  const supabase = getSupabaseClient();
+  if (!supabase) {
+    throw new Error('Supabase is not configured');
+  }
+
+  try {
+    // Find and unlink the member by setting user_id to null
+    const { data, error } = await supabase
+      .from('band_members')
+      .update({ user_id: null })
+      .eq('band_id', bandId)
+      .eq('user_id', userId)
+      .select('id')
+      .single();
+
+    if (error) {
+      console.error('Error unlinking member:', error);
+      throw new Error('Failed to unlink member');
+    }
+
+    if (!data) {
+      throw new Error('No linked member found');
+    }
+  } catch (err) {
+    console.error('Error in unlinkMember:', err);
+    throw err;
+  }
+}
+
 // Export singleton instance
 export const supabaseStorageService = new SupabaseStorageService();

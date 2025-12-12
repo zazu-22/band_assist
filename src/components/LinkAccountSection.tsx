@@ -1,5 +1,5 @@
-import React, { useState, memo } from 'react';
-import { Loader2, AlertCircle, Info } from 'lucide-react';
+import React, { useState, memo, useCallback } from 'react';
+import { Loader2, AlertCircle, Info, Unlink } from 'lucide-react';
 import {
   Button,
   Card,
@@ -16,10 +16,18 @@ import {
   SelectItem,
   SelectTrigger,
   SelectValue,
+  AlertDialog,
+  AlertDialogContent,
+  AlertDialogHeader,
+  AlertDialogFooter,
+  AlertDialogTitle,
+  AlertDialogDescription,
+  AlertDialogAction,
+  AlertDialogCancel,
 } from '@/components/primitives';
 import { toast, Alert, AlertTitle, AlertDescription } from '@/components/ui';
 import { useLinkedMember } from '@/hooks/useLinkedMember';
-import { claimMember } from '@/services/supabaseStorageService';
+import { claimMember, unlinkMember } from '@/services/supabaseStorageService';
 import { getAvatarColor, getInitials } from '@/lib/avatar';
 import type { BandMember } from '@/types';
 
@@ -45,6 +53,8 @@ export const LinkAccountSection = memo(function LinkAccountSection({
   const [selectedMemberId, setSelectedMemberId] = useState<string>('');
   const [isClaiming, setIsClaiming] = useState(false);
   const [isSavingPreference, setIsSavingPreference] = useState(false);
+  const [showUnlinkDialog, setShowUnlinkDialog] = useState(false);
+  const [isUnlinking, setIsUnlinking] = useState(false);
 
   // Sentinel value for "None" option since Radix Select requires non-empty string values
   const NONE_VALUE = '__none__';
@@ -94,6 +104,37 @@ export const LinkAccountSection = memo(function LinkAccountSection({
     }
   };
 
+  const handleUnlink = useCallback(async () => {
+    if (!currentBandId || !currentUserId) return;
+
+    setIsUnlinking(true);
+
+    try {
+      await unlinkMember(currentUserId, currentBandId);
+
+      toast.success('Member unlinked successfully');
+
+      setShowUnlinkDialog(false);
+      await refetch();
+    } catch (err) {
+      console.error('Error unlinking member:', err);
+
+      const errorMessage = err instanceof Error ? err.message : 'Failed to unlink member';
+
+      toast.error('Failed to unlink member', {
+        description: errorMessage,
+      });
+    } finally {
+      setIsUnlinking(false);
+    }
+  }, [currentBandId, currentUserId, refetch]);
+
+  const handleUnlinkDialogOpenChange = useCallback((open: boolean) => {
+    if (!isUnlinking) {
+      setShowUnlinkDialog(open);
+    }
+  }, [isUnlinking]);
+
   if (isLoading) {
     return (
       <Card>
@@ -136,6 +177,7 @@ export const LinkAccountSection = memo(function LinkAccountSection({
   }
 
   return (
+    <>
     <Card>
       <CardHeader>
         <CardTitle>Link Your Account</CardTitle>
@@ -158,9 +200,17 @@ export const LinkAccountSection = memo(function LinkAccountSection({
                   </p>
                 </div>
               </div>
-              <Badge variant="secondary" className="ml-auto">
-                Linked
-              </Badge>
+              <div className="flex items-center gap-2">
+                <Badge variant="secondary">Linked</Badge>
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setShowUnlinkDialog(true)}
+                  aria-label="Unlink member"
+                >
+                  <Unlink className="h-4 w-4" />
+                </Button>
+              </div>
             </div>
 
             {/* Preferred Instrument Selector */}
@@ -243,6 +293,36 @@ export const LinkAccountSection = memo(function LinkAccountSection({
         )}
       </CardContent>
     </Card>
+
+    {/* Unlink Confirmation Dialog */}
+    <AlertDialog open={showUnlinkDialog} onOpenChange={handleUnlinkDialogOpenChange}>
+      <AlertDialogContent>
+        <AlertDialogHeader>
+          <AlertDialogTitle>Unlink Member</AlertDialogTitle>
+          <AlertDialogDescription>
+            Are you sure you want to unlink from &ldquo;{linkedMember?.name}&rdquo;? You can link to a different member afterwards.
+          </AlertDialogDescription>
+        </AlertDialogHeader>
+        <AlertDialogFooter>
+          <AlertDialogCancel disabled={isUnlinking}>Cancel</AlertDialogCancel>
+          <AlertDialogAction
+            onClick={handleUnlink}
+            disabled={isUnlinking}
+            className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+          >
+            {isUnlinking ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Unlinking...
+              </>
+            ) : (
+              'Unlink'
+            )}
+          </AlertDialogAction>
+        </AlertDialogFooter>
+      </AlertDialogContent>
+    </AlertDialog>
+  </>
   );
 });
 
