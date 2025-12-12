@@ -7,7 +7,8 @@ import {
   CardContent,
   CardHeader,
 } from '@/components/primitives';
-import { EmptyState, StatusBadge } from '@/components/ui';
+import { EmptyState } from '@/components/ui';
+import { SongStatusBadges } from '@/components/SongStatusBadges';
 import { cn } from '@/lib/utils';
 import { getPracticeRoute } from '@/routes';
 import { useLinkedMember } from '@/hooks/useLinkedMember';
@@ -29,17 +30,6 @@ interface SongWithStatus {
 }
 
 // =============================================================================
-// CONSTANTS
-// =============================================================================
-
-const USER_STATUS_LABELS: Record<string, { label: string; className: string }> = {
-  'Not Started': { label: 'Not Started', className: 'bg-muted text-muted-foreground' },
-  'Learning': { label: 'Learning', className: 'bg-info/20 text-info' },
-  'Learned': { label: 'Learned', className: 'bg-success/20 text-success' },
-  'Mastered': { label: 'Mastered', className: 'bg-primary/20 text-primary' },
-};
-
-// =============================================================================
 // SUB-COMPONENTS
 // =============================================================================
 
@@ -56,10 +46,6 @@ const SongRow = memo(function SongRow({
   onNavigateToSong,
   onPractice,
 }: SongRowProps) {
-  const statusConfig = userStatus?.status
-    ? USER_STATUS_LABELS[userStatus.status]
-    : USER_STATUS_LABELS['Not Started'];
-
   return (
     <div
       className={cn(
@@ -81,17 +67,9 @@ const SongRow = memo(function SongRow({
         </button>
       </div>
 
-      {/* Status badges */}
+      {/* Status badges - now uses SongStatusBadges for clear distinction */}
       <div className="flex items-center gap-2 shrink-0">
-        <StatusBadge status={song.status} />
-        <span
-          className={cn(
-            'px-2 py-0.5 rounded-full text-xs font-medium',
-            statusConfig.className
-          )}
-        >
-          {statusConfig.label}
-        </span>
+        <SongStatusBadges song={song} userStatus={userStatus} />
       </div>
 
       {/* Practice button */}
