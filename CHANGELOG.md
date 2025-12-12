@@ -1,5 +1,14 @@
 # Changelog
 
+## [0.1.15](https://github.com/zazu-22/band_assist/compare/v0.1.14...v0.1.15) (2025-12-12)
+
+
+### Features
+
+* **my-songs:** add edit menu for learning status changes ([#194](https://github.com/zazu-22/band_assist/issues/194)) ([#213](https://github.com/zazu-22/band_assist/issues/213)) ([2e4859a](https://github.com/zazu-22/band_assist/commit/2e4859ae73c0b66b4bf8318abdb0afd71ba8c263))
+* **my-songs:** ensure song names are clickable links to detail page ([#210](https://github.com/zazu-22/band_assist/issues/210)) ([817c544](https://github.com/zazu-22/band_assist/commit/817c544fc96595525603b42e0e149712bd4ceb5c)), closes [#193](https://github.com/zazu-22/band_assist/issues/193)
+* **ui:** add consistent color scheme for status badges ([#214](https://github.com/zazu-22/band_assist/issues/214)) ([deda7bb](https://github.com/zazu-22/band_assist/commit/deda7bb2617e51bd9d73fc1d1a813eea2f39d81c))
+
 ## [0.1.14](https://github.com/zazu-22/band_assist/compare/v0.1.13...v0.1.14) (2025-12-12)
 
 
