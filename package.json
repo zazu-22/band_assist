@@ -20,7 +20,7 @@
     "test:coverage": "vitest --coverage"
   },
   "dependencies": {
-    "@coderline/alphatab": "^1.6.3",
+    "@coderline/alphatab": "^1.7.1",
     "@coderline/alphatab-vite": "^1.7.1",
     "@radix-ui/react-alert-dialog": "^1.1.15",
     "@radix-ui/react-avatar": "^1.1.11",
