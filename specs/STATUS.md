@@ -2,7 +2,7 @@
 
 > Quick reference for all specs, GitHub issues, and current status.
 >
-> Last updated: 2025-12-11
+> Last updated: 2025-12-12
 
 ---
 
@@ -19,7 +19,7 @@
 | Status | Count | Description |
 |--------|-------|-------------|
 | 🔴 Active | 0 | Currently being implemented |
-| 🟢 Done | 18 | Completed and merged |
+| 🟢 Done | 19 | Completed and merged |
 | 🟡 Pending | 0 | Queued for implementation (in sequence order) |
 | ⚪ Backlog | 18 | Planned but not yet prioritized |
 | 🔵 GitHub Issues | 17 | Tracked in GitHub (bugs, smaller features) |
@@ -120,6 +120,7 @@ Smaller features, bug fixes, and follow-up work tracked in GitHub rather than fu
 
 | Spec | Type | Priority | Completed |
 |------|------|----------|-----------|
+| [feat-user-member-unlinking](completed/feat-user-member-unlinking.md) | Feature | Small | 2025-12-12 |
 | [feat-user-member-linking-phase-4-practice-history-design](done/feat-user-member-linking-phase-4-practice-history-design.md) | Feature | Low | 2025-12-10 |
 | [feat-user-member-linking-phase-3](done/feat-user-member-linking-phase-3.md) | Feature | High | 2025-12-10 |
 | [feat-user-member-linking-phase-2](done/feat-user-member-linking-phase-2.md) | Feature | High | 2025-12-07 |
@@ -168,7 +169,6 @@ Smaller features, bug fixes, and follow-up work tracked in GitHub rather than fu
 
 | Spec | Type | Effort | Notes |
 |------|------|--------|-------|
-| [feat-user-member-unlinking](backlog/feat-user-member-unlinking.md) | Feature | Small | Undo accidental member claim |
 | [feat-alphatab-dark-mode-theming](backlog/feat-alphatab-dark-mode-theming.md) | Feature | Medium | Design system integration |
 | [feat-performance-mode-alphatab-metronome](backlog/feat-performance-mode-alphatab-metronome.md) | Feature | Small | Enable metronome |
 | [feat-performance-mode-pdf-viewer-improvements](backlog/feat-performance-mode-pdf-viewer-improvements.md) | Feature | Small | Better PDF display |
@@ -193,6 +193,7 @@ Smaller features, bug fixes, and follow-up work tracked in GitHub rather than fu
 
 | Date | Item | Change |
 |------|------|--------|
+| 2025-12-12 | feat-user-member-unlinking | 🟢 Moved to completed (PR #207) |
 | 2025-12-11 | Milestone #3 "Song Collaboration & Annotations" | ➕ Created |
 | 2025-12-11 | [#196](https://github.com/zazu-22/band_assist/issues/196) | ➕ Created epic: Song Collaboration & Annotations Architecture |
 | 2025-12-11 | [#197](https://github.com/zazu-22/band_assist/issues/197) | ➕ Created infra: Upgrade AlphaTab to 1.7.1 |
@@ -353,7 +354,8 @@ Recommended order considering dependencies and effort:
 | 9 | [feat-user-member-linking-phase-1](done/feat-user-member-linking-phase-1.md) | Spec | ✅ Completed 2025-12-05 |
 | 10 | [feat-user-member-linking-phase-2](done/feat-user-member-linking-phase-2.md) | Spec | ✅ Completed 2025-12-07 |
 | 11 | [feat-user-member-linking-phase-3](done/feat-user-member-linking-phase-3.md) | Spec | ✅ Completed 2025-12-10 |
-| 12 | [feat-user-member-linking-phase-4-practice-history-design](done/feat-user-member-linking-phase-4-practice-history-design.md) | Spec | ✅ Completed 2025-12-10 |
+| 12 | [feat-user-member-unlinking](completed/feat-user-member-unlinking.md) | Feature | Small | 2025-12-12 |
+| [feat-user-member-linking-phase-4-practice-history-design](done/feat-user-member-linking-phase-4-practice-history-design.md) | Spec | ✅ Completed 2025-12-10 |
 
 ### Phase 5: Larger Efforts
 
