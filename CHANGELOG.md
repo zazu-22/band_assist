@@ -1,5 +1,13 @@
 # Changelog
 
+## [0.1.14](https://github.com/zazu-22/band_assist/compare/v0.1.13...v0.1.14) (2025-12-12)
+
+
+### Features
+
+* **members:** add user-member unlinking capability ([#207](https://github.com/zazu-22/band_assist/issues/207)) ([d98f97f](https://github.com/zazu-22/band_assist/commit/d98f97f1213ffae444e5acabf78019cdd136ebb6))
+* **my-songs:** Clarify user status vs band status badges ([#209](https://github.com/zazu-22/band_assist/issues/209)) ([33ebbbf](https://github.com/zazu-22/band_assist/commit/33ebbbf2f1f757a6595b273c1206baabe144e1ab)), closes [#188](https://github.com/zazu-22/band_assist/issues/188)
+
 ## [0.1.13](https://github.com/zazu-22/band_assist/compare/v0.1.12...v0.1.13) (2025-12-12)
 
 
