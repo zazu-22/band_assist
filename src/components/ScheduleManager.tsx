@@ -1,11 +1,15 @@
 import React, { memo, useState, useCallback, useMemo } from 'react';
 import { Calendar, Clock, MapPin, Plus, Trash2, Guitar, Star, Edit2 } from 'lucide-react';
 import {
+  Button,
   Card,
   CardContent,
-  CardHeader,
-  CardTitle,
-  Button,
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
   Input,
   Label,
   Select,
@@ -44,7 +48,7 @@ export const ScheduleManager: React.FC<ScheduleManagerProps> = memo(function Sch
   songs,
   onNavigateToSong,
 }) {
-  const [isAdding, setIsAdding] = useState(false);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingId, setEditingId] = useState<string | null>(null);
   const [newEvent, setNewEvent] = useState<Partial<BandEvent>>(INITIAL_EVENT_STATE);
 
@@ -55,8 +59,8 @@ export const ScheduleManager: React.FC<ScheduleManagerProps> = memo(function Sch
     setConfirmDialog(INITIAL_DIALOG_STATE);
   }, []);
 
-  const resetForm = useCallback(() => {
-    setIsAdding(false);
+  const closeModal = useCallback(() => {
+    setIsModalOpen(false);
     setEditingId(null);
     setNewEvent({
       ...INITIAL_EVENT_STATE,
@@ -83,15 +87,14 @@ export const ScheduleManager: React.FC<ScheduleManagerProps> = memo(function Sch
       };
       setEvents(prev => [...prev, event]);
     }
-    resetForm();
-  }, [newEvent, editingId, setEvents, resetForm]);
+    closeModal();
+  }, [newEvent, editingId, setEvents, closeModal]);
 
   const handleEditEvent = useCallback((item: BandEvent) => {
     const { id, title, date, time, type, location, notes } = item;
     setNewEvent({ id, title, date, time, type, location, notes });
     setEditingId(id);
-    setIsAdding(true);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    setIsModalOpen(true);
   }, []);
 
   const handleDeleteEvent = useCallback((id: string) => {
@@ -115,9 +118,14 @@ export const ScheduleManager: React.FC<ScheduleManagerProps> = memo(function Sch
   }, [confirmDialog.eventId, setEvents, closeConfirmDialog]);
 
   const handleStartAdding = useCallback(() => {
-    resetForm();
-    setIsAdding(true);
-  }, [resetForm]);
+    // Reset form state and open modal for new event
+    setEditingId(null);
+    setNewEvent({
+      ...INITIAL_EVENT_STATE,
+      date: new Date().toISOString().split('T')[0],
+    });
+    setIsModalOpen(true);
+  }, []);
 
   const handleEventFieldChange = useCallback((field: keyof BandEvent, value: string) => {
     setNewEvent(prev => ({ ...prev, [field]: value }));
@@ -183,6 +191,15 @@ export const ScheduleManager: React.FC<ScheduleManagerProps> = memo(function Sch
     }
   }, []);
 
+  const handleModalOpenChange = useCallback(
+    (open: boolean) => {
+      if (!open) {
+        closeModal();
+      }
+    },
+    [closeModal]
+  );
+
   return (
     <div className="relative p-4 sm:p-6 lg:p-10 space-y-8">
       {/* Ambient background glow - fixed size to maintain consistent fade on all viewports */}
@@ -204,41 +221,61 @@ export const ScheduleManager: React.FC<ScheduleManagerProps> = memo(function Sch
         </Button>
       </div>
 
-      {isAdding && (
-        <Card className="mb-8 animate-slide-in-from-top shadow-lg">
-          <CardHeader>
-            <CardTitle className="font-serif">{editingId ? 'Edit Event' : 'New Event'}</CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
-              <div className="space-y-2">
-                <Label htmlFor="event-title">Event Title</Label>
-                <Input
-                  id="event-title"
-                  type="text"
-                  value={newEvent.title || ''}
-                  onChange={e => handleEventFieldChange('title', e.target.value)}
-                  placeholder="e.g. Garage Practice"
-                />
+      {/* Event Editor Modal */}
+      <Dialog open={isModalOpen} onOpenChange={handleModalOpenChange}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <div className="flex items-center gap-3">
+              <div className="flex h-10 w-10 shrink-0 items-center justify-center rounded-full bg-primary/20">
+                {editingId ? (
+                  <Edit2 className="h-5 w-5 text-primary" />
+                ) : (
+                  <Plus className="h-5 w-5 text-primary" />
+                )}
               </div>
-              <div className="space-y-2">
-                <Label htmlFor="event-type">Type</Label>
-                <Select
-                  value={newEvent.type}
-                  onValueChange={value => handleEventFieldChange('type', value)}
-                >
-                  <SelectTrigger id="event-type">
-                    <SelectValue placeholder="Select type" />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="PRACTICE">Practice</SelectItem>
-                    <SelectItem value="GIG">Gig / Performance</SelectItem>
-                    <SelectItem value="OTHER">Other</SelectItem>
-                  </SelectContent>
-                </Select>
+              <div>
+                <DialogTitle>{editingId ? 'Edit Event' : 'New Event'}</DialogTitle>
+                <DialogDescription>
+                  {editingId
+                    ? 'Update the details of your event'
+                    : 'Add a new event to your band schedule'}
+                </DialogDescription>
               </div>
+            </div>
+          </DialogHeader>
+
+          <div className="space-y-4">
+            <div className="space-y-2">
+              <Label htmlFor="event-title">Event Title *</Label>
+              <Input
+                id="event-title"
+                type="text"
+                value={newEvent.title || ''}
+                onChange={e => handleEventFieldChange('title', e.target.value)}
+                placeholder="e.g. Garage Practice"
+              />
+            </div>
+
+            <div className="space-y-2">
+              <Label htmlFor="event-type">Type</Label>
+              <Select
+                value={newEvent.type}
+                onValueChange={value => handleEventFieldChange('type', value)}
+              >
+                <SelectTrigger id="event-type">
+                  <SelectValue placeholder="Select type" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="PRACTICE">Practice</SelectItem>
+                  <SelectItem value="GIG">Gig / Performance</SelectItem>
+                  <SelectItem value="OTHER">Other</SelectItem>
+                </SelectContent>
+              </Select>
+            </div>
+
+            <div className="grid grid-cols-2 gap-4">
               <div className="space-y-2">
-                <Label htmlFor="event-date">Date</Label>
+                <Label htmlFor="event-date">Date *</Label>
                 <Input
                   id="event-date"
                   type="date"
@@ -255,36 +292,41 @@ export const ScheduleManager: React.FC<ScheduleManagerProps> = memo(function Sch
                   onChange={e => handleEventFieldChange('time', e.target.value)}
                 />
               </div>
-              <div className="md:col-span-2 space-y-2">
-                <Label htmlFor="event-location">Location</Label>
-                <Input
-                  id="event-location"
-                  type="text"
-                  value={newEvent.location || ''}
-                  onChange={e => handleEventFieldChange('location', e.target.value)}
-                  placeholder="e.g. Brother 1's House"
-                />
-              </div>
-              <div className="md:col-span-2 space-y-2">
-                <Label htmlFor="event-notes">Notes</Label>
-                <Textarea
-                  id="event-notes"
-                  value={newEvent.notes || ''}
-                  onChange={e => handleEventFieldChange('notes', e.target.value)}
-                  className="min-h-20 resize-none"
-                  placeholder="Details about the session..."
-                />
-              </div>
             </div>
-            <div className="flex justify-end gap-3">
-              <Button variant="ghost" onClick={resetForm}>
-                Cancel
-              </Button>
-              <Button onClick={handleSaveEvent}>{editingId ? 'Update Event' : 'Save Event'}</Button>
+
+            <div className="space-y-2">
+              <Label htmlFor="event-location">Location</Label>
+              <Input
+                id="event-location"
+                type="text"
+                value={newEvent.location || ''}
+                onChange={e => handleEventFieldChange('location', e.target.value)}
+                placeholder="e.g. Brother 1's House"
+              />
             </div>
-          </CardContent>
-        </Card>
-      )}
+
+            <div className="space-y-2">
+              <Label htmlFor="event-notes">Notes</Label>
+              <Textarea
+                id="event-notes"
+                value={newEvent.notes || ''}
+                onChange={e => handleEventFieldChange('notes', e.target.value)}
+                className="min-h-20 resize-none"
+                placeholder="Details about the session..."
+              />
+            </div>
+          </div>
+
+          <DialogFooter className="flex-row gap-3 pt-2">
+            <Button variant="ghost" onClick={closeModal}>
+              Cancel
+            </Button>
+            <Button onClick={handleSaveEvent} className="flex-1">
+              {editingId ? 'Update Event' : 'Save Event'}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
 
       <div className="space-y-4">
         {timelineItems.length === 0 ? (
