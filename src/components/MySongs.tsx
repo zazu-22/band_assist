@@ -121,7 +121,12 @@ const SongRow = memo(function SongRow({
           {STATUS_OPTIONS.map((option) => (
             <DropdownMenuItem
               key={option.value}
-              onClick={() => onStatusChange(song.id, option.value)}
+              onClick={() => {
+                // Skip redundant status updates when user selects already-active status
+                if (option.value !== currentStatus) {
+                  onStatusChange(song.id, option.value);
+                }
+              }}
               className="flex items-center justify-between"
             >
               <span>{option.label}</span>
@@ -216,6 +221,14 @@ export const MySongs: React.FC<MySongsProps> = memo(function MySongs({
       const userId = session?.user?.id;
       if (!userId) return;
 
+      // Validate that the song belongs to the current band to prevent cross-band updates
+      // The songs array is already scoped to currentBandId via useAppData
+      const songExistsInCurrentBand = songs.some((s) => s.id === songId);
+      if (!songExistsInCurrentBand) {
+        toast.error('Cannot update status for songs outside the current band');
+        return;
+      }
+
       try {
         await supabaseStorageService.updateUserSongStatus(
           userId,
@@ -230,7 +243,7 @@ export const MySongs: React.FC<MySongsProps> = memo(function MySongs({
         toast.error(`Failed to update status: ${message}`);
       }
     },
-    [session?.user?.id, refetchStatuses]
+    [session?.user?.id, refetchStatuses, songs]
   );
 
   // ---------------------------------------------------------------------------
