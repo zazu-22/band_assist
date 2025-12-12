@@ -1,20 +1,27 @@
 import React, { memo, useMemo, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Music, Play, User } from 'lucide-react';
+import { Music, Play, User, MoreHorizontal, Check } from 'lucide-react';
 import {
   Button,
   Card,
   CardContent,
   CardHeader,
+  DropdownMenu,
+  DropdownMenuTrigger,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuSeparator,
 } from '@/components/primitives';
-import { EmptyState } from '@/components/ui';
+import { EmptyState, toast } from '@/components/ui';
 import { SongStatusBadges } from '@/components/SongStatusBadges';
 import { cn } from '@/lib/utils';
 import { getPracticeRoute } from '@/routes';
 import { useLinkedMember } from '@/hooks/useLinkedMember';
 import { useAllUserSongStatuses } from '@/hooks/useUserSongStatus';
 import { useAppActions, useAppData } from '@/contexts';
-import type { Song, UserSongProgress } from '@/types';
+import { supabaseStorageService } from '@/services/supabaseStorageService';
+import type { Song, UserSongProgress, UserSongStatus } from '@/types';
 
 // =============================================================================
 // TYPES
@@ -38,14 +45,26 @@ interface SongRowProps {
   userStatus: UserSongProgress | undefined;
   onNavigateToSong: (id: string) => void;
   onPractice: (id: string) => void;
+  onStatusChange: (songId: string, newStatus: UserSongStatus) => void;
 }
+
+// Status options for the dropdown menu
+const STATUS_OPTIONS: { value: UserSongStatus; label: string }[] = [
+  { value: 'Not Started', label: 'Not Started' },
+  { value: 'Learning', label: 'Learning' },
+  { value: 'Learned', label: 'Learned' },
+  { value: 'Mastered', label: 'Mastered' },
+];
 
 const SongRow = memo(function SongRow({
   song,
   userStatus,
   onNavigateToSong,
   onPractice,
+  onStatusChange,
 }: SongRowProps) {
+  const currentStatus = userStatus?.status || 'Not Started';
+
   return (
     <div
       className={cn(
@@ -87,6 +106,39 @@ const SongRow = memo(function SongRow({
         <Play size={14} />
         Practice
       </Button>
+
+      {/* Actions dropdown menu */}
+      <DropdownMenu>
+        <DropdownMenuTrigger asChild>
+          <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+            <span className="sr-only">Open menu for {song.title}</span>
+            <MoreHorizontal className="h-4 w-4" />
+          </Button>
+        </DropdownMenuTrigger>
+        <DropdownMenuContent align="end">
+          <DropdownMenuLabel>Change Status</DropdownMenuLabel>
+          <DropdownMenuSeparator />
+          {STATUS_OPTIONS.map((option) => (
+            <DropdownMenuItem
+              key={option.value}
+              onClick={() => onStatusChange(song.id, option.value)}
+              className="flex items-center justify-between"
+            >
+              <span>{option.label}</span>
+              {currentStatus === option.value && (
+                <Check className="h-4 w-4 ml-2 text-primary" />
+              )}
+            </DropdownMenuItem>
+          ))}
+          <DropdownMenuSeparator />
+          <DropdownMenuItem onClick={() => onNavigateToSong(song.id)}>
+            View Details
+          </DropdownMenuItem>
+          <DropdownMenuItem onClick={() => onPractice(song.id)}>
+            Practice Now
+          </DropdownMenuItem>
+        </DropdownMenuContent>
+      </DropdownMenu>
     </div>
   );
 });
@@ -104,7 +156,7 @@ export const MySongs: React.FC<MySongsProps> = memo(function MySongs({
   const { currentBandId, session } = useAppActions();
   const { songs } = useAppData();
   const { linkedMember } = useLinkedMember(currentBandId);
-  const { statuses: userSongStatuses } = useAllUserSongStatuses(
+  const { statuses: userSongStatuses, refetch: refetchStatuses } = useAllUserSongStatuses(
     session?.user?.id || null,
     currentBandId
   );
@@ -156,6 +208,29 @@ export const MySongs: React.FC<MySongsProps> = memo(function MySongs({
       navigate(getPracticeRoute(songId));
     },
     [navigate]
+  );
+
+  // Handler for status changes from dropdown menu
+  const handleStatusChange = useCallback(
+    async (songId: string, newStatus: UserSongStatus) => {
+      const userId = session?.user?.id;
+      if (!userId) return;
+
+      try {
+        await supabaseStorageService.updateUserSongStatus(
+          userId,
+          songId,
+          newStatus
+        );
+        toast.success('Learning status updated');
+        // Refresh the statuses cache so the UI updates
+        await refetchStatuses();
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'An error occurred';
+        toast.error(`Failed to update status: ${message}`);
+      }
+    },
+    [session?.user?.id, refetchStatuses]
   );
 
   // ---------------------------------------------------------------------------
@@ -268,6 +343,7 @@ export const MySongs: React.FC<MySongsProps> = memo(function MySongs({
               userStatus={userStatus}
               onNavigateToSong={onNavigateToSong}
               onPractice={handlePractice}
+              onStatusChange={handleStatusChange}
             />
           ))}
         </CardContent>
