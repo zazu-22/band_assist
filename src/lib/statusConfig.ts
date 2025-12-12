@@ -44,6 +44,11 @@ export const BAND_STATUS_VARIANT_MAP: Record<BandStatus, BandStatusVariant> = {
 
 /**
  * Get the Badge variant for a band status.
+ *
+ * Falls back to 'warning' for unknown statuses to draw attention to unexpected
+ * states that may indicate a bug or data inconsistency. Warning (amber) is chosen
+ * over destructive (red) as it signals "needs attention" without implying error.
+ *
  * @param status - The band's official song status
  * @returns Badge variant name
  */
@@ -93,7 +98,13 @@ export const USER_STATUS_OPTIONS: { value: UserSongStatus; label: string }[] = [
   { value: 'Mastered', label: 'Mastered' },
 ];
 
-/** Band status options for dropdown menus and filters */
+/**
+ * Band status options for dropdown menus and filters.
+ *
+ * Ordered from least to most ready (To Learn → In Progress → Performance Ready)
+ * to match typical workflow progression. Exported for consistency when building
+ * band status filter/selection UI components.
+ */
 export const BAND_STATUS_OPTIONS: { value: BandStatus; label: string }[] = [
   { value: 'To Learn', label: 'To Learn' },
   { value: 'In Progress', label: 'In Progress' },
