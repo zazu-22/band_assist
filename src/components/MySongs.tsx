@@ -234,8 +234,8 @@ const VirtualizedSongTable = memo(function VirtualizedSongTable({
           <td className="w-32 py-3 px-4 hidden md:table-cell whitespace-nowrap" headers={COLUMN_IDS.bandStatus}>
             <SongStatusBadges song={song} showBandStatus userStatus={null} />
           </td>
-          {/* User Status - fixed width, hidden on mobile */}
-          <td className="w-28 py-3 px-4 hidden sm:table-cell whitespace-nowrap" headers={COLUMN_IDS.userStatus}>
+          {/* User Status - fixed width, always visible */}
+          <td className="w-28 py-3 px-4 whitespace-nowrap" headers={COLUMN_IDS.userStatus}>
             <SongStatusBadges
               song={song}
               showBandStatus={false}
@@ -352,7 +352,7 @@ const VirtualizedSongTable = memo(function VirtualizedSongTable({
         </th>
         <th
           id={COLUMN_IDS.userStatus}
-          className="w-28 text-left py-3 px-4 text-sm font-semibold text-muted-foreground hidden sm:table-cell"
+          className="w-28 text-left py-3 px-4 text-sm font-semibold text-muted-foreground"
           aria-sort={sortBy === 'userStatus' ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'}
         >
           <button
