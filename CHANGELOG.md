@@ -1,5 +1,19 @@
 # Changelog
 
+## [0.1.16](https://github.com/zazu-22/band_assist/compare/v0.1.15...v0.1.16) (2025-12-13)
+
+
+### Features
+
+* **my-songs:** add sortable columns and table-based layout ([#187](https://github.com/zazu-22/band_assist/issues/187)) ([#215](https://github.com/zazu-22/band_assist/issues/215)) ([e2c30ef](https://github.com/zazu-22/band_assist/commit/e2c30ef1501303f3721c86ac709e12e78f83584b))
+* **my-songs:** always show 'My Status' column in narrowest view ([#218](https://github.com/zazu-22/band_assist/issues/218)) ([79b9759](https://github.com/zazu-22/band_assist/commit/79b975928061ac8002a4351026b526344f800d69))
+* Set the default user/personal status for songs to be the not started badge ([#219](https://github.com/zazu-22/band_assist/issues/219)) ([4bb972b](https://github.com/zazu-22/band_assist/commit/4bb972b83e37831197773208fe15437b3b086323))
+
+
+### Bug Fixes
+
+* **my-songs:** improve table column layout with flexible and fixed widths ([#217](https://github.com/zazu-22/band_assist/issues/217)) ([6f3b136](https://github.com/zazu-22/band_assist/commit/6f3b13623d418cd5821efd1ef58c3176801c6db8))
+
 ## [0.1.15](https://github.com/zazu-22/band_assist/compare/v0.1.14...v0.1.15) (2025-12-12)
 
 
