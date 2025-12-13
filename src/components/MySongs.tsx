@@ -211,13 +211,13 @@ const VirtualizedSongTable = memo(function VirtualizedSongTable({
           className="border-b border-border last:border-0 hover:bg-muted/30 transition-colors"
           style={style}
         >
-          {/* Song Title - clickable */}
-          <td className="w-[25%] py-3 px-4" headers={COLUMN_IDS.title}>
+          {/* Song Title - clickable, flexible width */}
+          <td className="min-w-0 py-3 px-4" headers={COLUMN_IDS.title}>
             <button
               type="button"
               onClick={() => onNavigateToSong(song.id)}
               className={cn(
-                'text-left cursor-pointer group',
+                'text-left cursor-pointer group w-full',
                 'rounded-sm focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2'
               )}
             >
@@ -226,28 +226,28 @@ const VirtualizedSongTable = memo(function VirtualizedSongTable({
               </span>
             </button>
           </td>
-          {/* Artist */}
-          <td className="w-[15%] py-3 px-4 text-sm text-muted-foreground truncate hidden sm:table-cell" headers={COLUMN_IDS.artist}>
-            {song.artist}
+          {/* Artist - fixed width on sm+ */}
+          <td className="w-28 py-3 px-4 text-sm text-muted-foreground hidden sm:table-cell" headers={COLUMN_IDS.artist}>
+            <span className="truncate block">{song.artist}</span>
           </td>
-          {/* Band Status */}
-          <td className="w-[15%] py-3 px-4 hidden md:table-cell" headers={COLUMN_IDS.bandStatus}>
-            <SongStatusBadges song={song} showBandStatus={true} userStatus={null} />
+          {/* Band Status - fixed width on md+ */}
+          <td className="w-32 py-3 px-4 hidden md:table-cell whitespace-nowrap" headers={COLUMN_IDS.bandStatus}>
+            <SongStatusBadges song={song} showBandStatus userStatus={null} />
           </td>
-          {/* User Status */}
-          <td className="w-[15%] py-3 px-4" headers={COLUMN_IDS.userStatus}>
+          {/* User Status - fixed width, hidden on mobile */}
+          <td className="w-28 py-3 px-4 hidden sm:table-cell whitespace-nowrap" headers={COLUMN_IDS.userStatus}>
             <SongStatusBadges
               song={song}
               showBandStatus={false}
               userStatus={userStatus}
             />
           </td>
-          {/* Practice Time */}
-          <td className="w-[10%] py-3 px-4 text-sm text-muted-foreground font-mono tabular-nums hidden lg:table-cell" headers={COLUMN_IDS.practiceTime}>
+          {/* Practice Time - fixed width on lg+ */}
+          <td className="w-20 py-3 px-4 text-sm text-muted-foreground font-mono tabular-nums hidden lg:table-cell whitespace-nowrap" headers={COLUMN_IDS.practiceTime}>
             {formatMinutesToHours(totalPracticeMinutes)}
           </td>
-          {/* Actions */}
-          <td className="w-[20%] py-3 px-4" headers={COLUMN_IDS.actions}>
+          {/* Actions - auto width, shrink to fit content */}
+          <td className="w-auto py-3 px-4" headers={COLUMN_IDS.actions}>
             <div className="flex items-center justify-end gap-2">
               {/* Practice button */}
               <Button
@@ -310,7 +310,7 @@ const VirtualizedSongTable = memo(function VirtualizedSongTable({
       <tr className="border-b border-border">
         <th
           id={COLUMN_IDS.title}
-          className="w-[25%] text-left py-3 px-4 text-sm font-semibold text-muted-foreground"
+          className="min-w-0 text-left py-3 px-4 text-sm font-semibold text-muted-foreground"
           aria-sort={sortBy === 'title' ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'}
         >
           <button
@@ -324,7 +324,7 @@ const VirtualizedSongTable = memo(function VirtualizedSongTable({
         </th>
         <th
           id={COLUMN_IDS.artist}
-          className="w-[15%] text-left py-3 px-4 text-sm font-semibold text-muted-foreground hidden sm:table-cell"
+          className="w-28 text-left py-3 px-4 text-sm font-semibold text-muted-foreground hidden sm:table-cell"
           aria-sort={sortBy === 'artist' ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'}
         >
           <button
@@ -338,13 +338,13 @@ const VirtualizedSongTable = memo(function VirtualizedSongTable({
         </th>
         <th
           id={COLUMN_IDS.bandStatus}
-          className="w-[15%] text-left py-3 px-4 text-sm font-semibold text-muted-foreground hidden md:table-cell"
+          className="w-32 text-left py-3 px-4 text-sm font-semibold text-muted-foreground hidden md:table-cell"
           aria-sort={sortBy === 'bandStatus' ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'}
         >
           <button
             type="button"
             onClick={() => onSortClick('bandStatus')}
-            className="flex items-center hover:text-foreground transition-colors"
+            className="flex items-center hover:text-foreground transition-colors whitespace-nowrap"
           >
             Band Status
             {getSortIcon('bandStatus')}
@@ -352,13 +352,13 @@ const VirtualizedSongTable = memo(function VirtualizedSongTable({
         </th>
         <th
           id={COLUMN_IDS.userStatus}
-          className="w-[15%] text-left py-3 px-4 text-sm font-semibold text-muted-foreground"
+          className="w-28 text-left py-3 px-4 text-sm font-semibold text-muted-foreground hidden sm:table-cell"
           aria-sort={sortBy === 'userStatus' ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'}
         >
           <button
             type="button"
             onClick={() => onSortClick('userStatus')}
-            className="flex items-center hover:text-foreground transition-colors"
+            className="flex items-center hover:text-foreground transition-colors whitespace-nowrap"
           >
             My Status
             {getSortIcon('userStatus')}
@@ -366,7 +366,7 @@ const VirtualizedSongTable = memo(function VirtualizedSongTable({
         </th>
         <th
           id={COLUMN_IDS.practiceTime}
-          className="w-[10%] text-left py-3 px-4 text-sm font-semibold text-muted-foreground hidden lg:table-cell"
+          className="w-20 text-left py-3 px-4 text-sm font-semibold text-muted-foreground hidden lg:table-cell"
           aria-sort={sortBy === 'practiceTime' ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'}
         >
           <button
@@ -380,7 +380,7 @@ const VirtualizedSongTable = memo(function VirtualizedSongTable({
         </th>
         <th
           id={COLUMN_IDS.actions}
-          className="w-[20%] text-right py-3 px-4 text-sm font-semibold text-muted-foreground"
+          className="w-auto text-right py-3 px-4 text-sm font-semibold text-muted-foreground"
         >
           <span className="sr-only">Actions</span>
         </th>
@@ -388,27 +388,14 @@ const VirtualizedSongTable = memo(function VirtualizedSongTable({
     </thead>
   );
 
-  // Table class with fixed layout to ensure consistent column widths
-  const tableClassName = 'w-full table-fixed';
-
-  // Column group to enforce consistent column widths between header and body tables
-  const colGroup = (
-    <colgroup>
-      <col className="w-[25%]" />
-      <col className="w-[15%]" />
-      <col className="w-[15%]" />
-      <col className="w-[15%]" />
-      <col className="w-[10%]" />
-      <col className="w-[20%]" />
-    </colgroup>
-  );
+  // Table class - use auto layout for natural column sizing
+  const tableClassName = 'w-full';
 
   // Fallback: render all rows without virtualization (for test environments)
   if (shouldFallbackToNonVirtual) {
     return (
       <div className="overflow-x-auto">
         <table className={tableClassName}>
-          {colGroup}
           {tableHeader}
           <tbody>{songs.map((item) => renderRow(item))}</tbody>
         </table>
@@ -420,7 +407,6 @@ const VirtualizedSongTable = memo(function VirtualizedSongTable({
     <div className="overflow-x-auto" role="grid" aria-label="Songs table" aria-rowcount={songs.length + 1}>
       {/* Table Header - Always visible */}
       <table className={tableClassName} role="rowgroup">
-        {colGroup}
         {tableHeader}
       </table>
 
@@ -441,7 +427,6 @@ const VirtualizedSongTable = memo(function VirtualizedSongTable({
           }}
         >
           <table className={tableClassName}>
-            {colGroup}
             <tbody>
               {virtualRows.map((virtualRow) => {
                 const item = songs[virtualRow.index];
