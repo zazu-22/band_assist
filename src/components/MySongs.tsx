@@ -232,7 +232,7 @@ const VirtualizedSongTable = memo(function VirtualizedSongTable({
           </td>
           {/* Band Status - fixed width on md+ */}
           <td className="w-32 py-3 px-4 hidden md:table-cell whitespace-nowrap" headers={COLUMN_IDS.bandStatus}>
-            <SongStatusBadges song={song} showBandStatus={true} userStatus={null} />
+            <SongStatusBadges song={song} showBandStatus userStatus={null} />
           </td>
           {/* User Status - fixed width, hidden on mobile */}
           <td className="w-28 py-3 px-4 hidden sm:table-cell whitespace-nowrap" headers={COLUMN_IDS.userStatus}>
