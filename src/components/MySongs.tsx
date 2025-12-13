@@ -149,8 +149,20 @@ const ROW_HEIGHT = 48;
 // Max visible rows before scrolling
 const MAX_VISIBLE_ROWS = 10;
 
+// Column header IDs for accessibility (associates header with body cells in split table)
+const COLUMN_IDS = {
+  title: 'mysongs-col-title',
+  artist: 'mysongs-col-artist',
+  bandStatus: 'mysongs-col-bandstatus',
+  userStatus: 'mysongs-col-userstatus',
+  practiceTime: 'mysongs-col-practicetime',
+  actions: 'mysongs-col-actions',
+} as const;
+
 interface VirtualizedSongTableProps {
   songs: SongWithStatus[];
+  sortBy: MySongsSortField;
+  sortDirection: SortDirection;
   onSortClick: (field: MySongsSortField) => void;
   getSortIcon: (field: MySongsSortField) => React.ReactNode;
   onNavigateToSong: (id: string) => void;
@@ -160,6 +172,8 @@ interface VirtualizedSongTableProps {
 
 const VirtualizedSongTable = memo(function VirtualizedSongTable({
   songs,
+  sortBy,
+  sortDirection,
   onSortClick,
   getSortIcon,
   onNavigateToSong,
@@ -198,7 +212,7 @@ const VirtualizedSongTable = memo(function VirtualizedSongTable({
           style={style}
         >
           {/* Song Title - clickable */}
-          <td className="w-[25%] py-3 px-4">
+          <td className="w-[25%] py-3 px-4" headers={COLUMN_IDS.title}>
             <button
               type="button"
               onClick={() => onNavigateToSong(song.id)}
@@ -213,15 +227,15 @@ const VirtualizedSongTable = memo(function VirtualizedSongTable({
             </button>
           </td>
           {/* Artist */}
-          <td className="w-[15%] py-3 px-4 text-sm text-muted-foreground truncate hidden sm:table-cell">
+          <td className="w-[15%] py-3 px-4 text-sm text-muted-foreground truncate hidden sm:table-cell" headers={COLUMN_IDS.artist}>
             {song.artist}
           </td>
           {/* Band Status */}
-          <td className="w-[15%] py-3 px-4 hidden md:table-cell">
+          <td className="w-[15%] py-3 px-4 hidden md:table-cell" headers={COLUMN_IDS.bandStatus}>
             <SongStatusBadges song={song} showBandStatus={true} userStatus={null} />
           </td>
           {/* User Status */}
-          <td className="w-[15%] py-3 px-4">
+          <td className="w-[15%] py-3 px-4" headers={COLUMN_IDS.userStatus}>
             <SongStatusBadges
               song={song}
               showBandStatus={false}
@@ -229,11 +243,11 @@ const VirtualizedSongTable = memo(function VirtualizedSongTable({
             />
           </td>
           {/* Practice Time */}
-          <td className="w-[10%] py-3 px-4 text-sm text-muted-foreground font-mono tabular-nums hidden lg:table-cell">
+          <td className="w-[10%] py-3 px-4 text-sm text-muted-foreground font-mono tabular-nums hidden lg:table-cell" headers={COLUMN_IDS.practiceTime}>
             {formatMinutesToHours(totalPracticeMinutes)}
           </td>
           {/* Actions */}
-          <td className="w-[20%] py-3 px-4">
+          <td className="w-[20%] py-3 px-4" headers={COLUMN_IDS.actions}>
             <div className="flex items-center justify-end gap-2">
               {/* Practice button */}
               <Button
@@ -290,11 +304,15 @@ const VirtualizedSongTable = memo(function VirtualizedSongTable({
     [onNavigateToSong, onPractice, onStatusChange]
   );
 
-  // Render table header
+  // Render table header with IDs for accessibility (associates with body cells via headers attr)
   const tableHeader = (
     <thead>
       <tr className="border-b border-border">
-        <th className="w-[25%] text-left py-3 px-4 text-sm font-semibold text-muted-foreground">
+        <th
+          id={COLUMN_IDS.title}
+          className="w-[25%] text-left py-3 px-4 text-sm font-semibold text-muted-foreground"
+          aria-sort={sortBy === 'title' ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'}
+        >
           <button
             type="button"
             onClick={() => onSortClick('title')}
@@ -304,7 +322,11 @@ const VirtualizedSongTable = memo(function VirtualizedSongTable({
             {getSortIcon('title')}
           </button>
         </th>
-        <th className="w-[15%] text-left py-3 px-4 text-sm font-semibold text-muted-foreground hidden sm:table-cell">
+        <th
+          id={COLUMN_IDS.artist}
+          className="w-[15%] text-left py-3 px-4 text-sm font-semibold text-muted-foreground hidden sm:table-cell"
+          aria-sort={sortBy === 'artist' ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'}
+        >
           <button
             type="button"
             onClick={() => onSortClick('artist')}
@@ -314,7 +336,11 @@ const VirtualizedSongTable = memo(function VirtualizedSongTable({
             {getSortIcon('artist')}
           </button>
         </th>
-        <th className="w-[15%] text-left py-3 px-4 text-sm font-semibold text-muted-foreground hidden md:table-cell">
+        <th
+          id={COLUMN_IDS.bandStatus}
+          className="w-[15%] text-left py-3 px-4 text-sm font-semibold text-muted-foreground hidden md:table-cell"
+          aria-sort={sortBy === 'bandStatus' ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'}
+        >
           <button
             type="button"
             onClick={() => onSortClick('bandStatus')}
@@ -324,7 +350,11 @@ const VirtualizedSongTable = memo(function VirtualizedSongTable({
             {getSortIcon('bandStatus')}
           </button>
         </th>
-        <th className="w-[15%] text-left py-3 px-4 text-sm font-semibold text-muted-foreground">
+        <th
+          id={COLUMN_IDS.userStatus}
+          className="w-[15%] text-left py-3 px-4 text-sm font-semibold text-muted-foreground"
+          aria-sort={sortBy === 'userStatus' ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'}
+        >
           <button
             type="button"
             onClick={() => onSortClick('userStatus')}
@@ -334,7 +364,11 @@ const VirtualizedSongTable = memo(function VirtualizedSongTable({
             {getSortIcon('userStatus')}
           </button>
         </th>
-        <th className="w-[10%] text-left py-3 px-4 text-sm font-semibold text-muted-foreground hidden lg:table-cell">
+        <th
+          id={COLUMN_IDS.practiceTime}
+          className="w-[10%] text-left py-3 px-4 text-sm font-semibold text-muted-foreground hidden lg:table-cell"
+          aria-sort={sortBy === 'practiceTime' ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'}
+        >
           <button
             type="button"
             onClick={() => onSortClick('practiceTime')}
@@ -344,7 +378,10 @@ const VirtualizedSongTable = memo(function VirtualizedSongTable({
             {getSortIcon('practiceTime')}
           </button>
         </th>
-        <th className="w-[20%] text-right py-3 px-4 text-sm font-semibold text-muted-foreground">
+        <th
+          id={COLUMN_IDS.actions}
+          className="w-[20%] text-right py-3 px-4 text-sm font-semibold text-muted-foreground"
+        >
           <span className="sr-only">Actions</span>
         </th>
       </tr>
@@ -380,9 +417,9 @@ const VirtualizedSongTable = memo(function VirtualizedSongTable({
   }
 
   return (
-    <div className="overflow-x-auto">
+    <div className="overflow-x-auto" role="grid" aria-label="Songs table" aria-rowcount={songs.length + 1}>
       {/* Table Header - Always visible */}
-      <table className={tableClassName}>
+      <table className={tableClassName} role="rowgroup">
         {colGroup}
         {tableHeader}
       </table>
@@ -392,8 +429,8 @@ const VirtualizedSongTable = memo(function VirtualizedSongTable({
         ref={parentRef}
         className="overflow-y-auto"
         style={{ height: containerHeight, maxHeight: MAX_VISIBLE_ROWS * ROW_HEIGHT }}
-        role="region"
-        aria-label="Songs list"
+        role="rowgroup"
+        aria-label="Song rows"
         tabIndex={0}
       >
         <div
@@ -890,6 +927,8 @@ export const MySongs: React.FC<MySongsProps> = memo(function MySongs({
           ) : (
             <VirtualizedSongTable
               songs={sortedSongs}
+              sortBy={sortBy}
+              sortDirection={sortDirection}
               onSortClick={handleSortClick}
               getSortIcon={getSortIcon}
               onNavigateToSong={onNavigateToSong}
