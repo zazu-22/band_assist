@@ -1729,12 +1729,17 @@ export class SupabaseStorageService implements IStorageService {
 
     try {
       // First check if record exists to preserve its status
-      const { data: existing } = await supabase
+      const { data: existing, error: existingError } = await supabase
         .from('user_song_status')
         .select('status')
         .eq('user_id', userId)
         .eq('song_id', songId)
         .maybeSingle();
+
+      if (existingError) {
+        console.error('Error fetching existing user song status:', existingError);
+        throw new Error('Failed to load existing song status');
+      }
 
       // Build upsert payload
       const upsertPayload: Database['public']['Tables']['user_song_status']['Insert'] = {
@@ -1848,6 +1853,17 @@ export class SupabaseStorageService implements IStorageService {
   }
 
   /**
+   * Validate and convert a database priority value to PracticePriority type.
+   * Returns null for invalid or missing values to prevent bad data from propagating.
+   */
+  private validatePriority(value: string | null): PracticePriority | null {
+    if (value === 'low' || value === 'medium' || value === 'high') {
+      return value as PracticePriority;
+    }
+    return null;
+  }
+
+  /**
    * Transform database row to UserSongProgress type
    */
   private transformUserSongProgress(
@@ -1859,7 +1875,7 @@ export class SupabaseStorageService implements IStorageService {
       songId: row.song_id,
       status: row.status as UserSongStatus,
       confidenceLevel: row.confidence_level ?? undefined,
-      priority: (row.priority as PracticePriority | null) ?? undefined,
+      priority: this.validatePriority(row.priority) ?? undefined,
       lastPracticedAt: row.last_practiced_at ?? undefined,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
