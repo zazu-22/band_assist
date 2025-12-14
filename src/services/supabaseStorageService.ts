@@ -1727,27 +1727,37 @@ export class SupabaseStorageService implements IStorageService {
       throw new Error('Supabase is not configured. Check environment variables.');
     }
 
+    if (!this.currentBandId) {
+      throw new Error('No band selected. Call setCurrentBand() first.');
+    }
+
     try {
-      // First check if record exists to preserve its status
-      const { data: existing, error: existingError } = await supabase
+      // Prefer updating existing row without touching status (prevents overwriting recent changes)
+      const { data: updated, error: updateError } = await supabase
         .from('user_song_status')
-        .select('status')
+        .update({ priority, updated_at: new Date().toISOString() })
         .eq('user_id', userId)
         .eq('song_id', songId)
+        .select()
         .maybeSingle();
 
-      if (existingError) {
-        console.error('Error fetching existing user song status:', existingError);
-        throw new Error('Failed to load existing song status');
+      if (updateError) {
+        console.error('Error updating user song priority:', updateError);
+        throw new Error('Failed to update priority');
       }
 
-      // Build upsert payload
+      // If record exists, return the updated record
+      if (updated) {
+        return this.transformUserSongProgress(updated);
+      }
+
+      // No existing record - insert new one with default status
       const upsertPayload: Database['public']['Tables']['user_song_status']['Insert'] = {
         user_id: userId,
         song_id: songId,
-        status: existing?.status ?? 'Not Started', // Preserve existing or default
+        status: 'Not Started',
         updated_at: new Date().toISOString(),
-        priority: priority, // May be null to clear it
+        priority: priority,
       };
 
       const { data, error } = await supabase
@@ -1759,7 +1769,7 @@ export class SupabaseStorageService implements IStorageService {
         .single();
 
       if (error) {
-        console.error('Error updating user song priority:', error);
+        console.error('Error inserting user song priority:', error);
         throw new Error('Failed to update priority');
       }
 
@@ -1856,9 +1866,12 @@ export class SupabaseStorageService implements IStorageService {
    * Validate and convert a database priority value to PracticePriority type.
    * Returns null for invalid or missing values to prevent bad data from propagating.
    */
-  private validatePriority(value: string | null): PracticePriority | null {
+  private validatePriority(value: unknown): PracticePriority | null {
     if (value === 'low' || value === 'medium' || value === 'high') {
-      return value as PracticePriority;
+      return value;
+    }
+    if (value !== null && value !== undefined) {
+      console.warn(`Invalid priority value in database: "${value}"`);
     }
     return null;
   }
