@@ -13,7 +13,7 @@
  * - User's personal learning progress (individual context)
  */
 
-import type { Song, UserSongStatus } from '@/types';
+import type { Song, UserSongStatus, PracticePriority } from '@/types';
 
 // =============================================================================
 // TYPES
@@ -34,8 +34,20 @@ export type UserStatusVariant = 'user-success' | 'user-info' | 'user-warning' | 
 /** Readonly status option for dropdown menus and filters */
 export type StatusOption<T extends string> = Readonly<{ value: T; label: T }>;
 
+/** Readonly priority option for dropdown menus (label can differ from value) */
+export type PriorityOption = Readonly<{ value: PracticePriority | null; label: string }>;
+
+/**
+ * Badge variants for priority (uses existing semantic colors).
+ * Note: 'outline' is used for "None" state with additional opacity styling.
+ */
+export type PriorityVariant = 'destructive' | 'warning' | 'info' | 'outline';
+
 /** Default variant for user status when undefined or unknown */
 export const DEFAULT_USER_STATUS_VARIANT: UserStatusVariant = 'outline';
+
+/** Default variant for priority when null/undefined (no priority set) */
+export const DEFAULT_PRIORITY_VARIANT: PriorityVariant = 'outline';
 
 // =============================================================================
 // BAND STATUS CONFIGURATION
@@ -130,4 +142,68 @@ export const BAND_STATUS_OPTIONS: readonly StatusOption<BandStatus>[] = [
   { value: 'To Learn', label: 'To Learn' },
   { value: 'In Progress', label: 'In Progress' },
   { value: 'Performance Ready', label: 'Performance Ready' },
+] as const;
+
+// =============================================================================
+// PRIORITY CONFIGURATION
+// =============================================================================
+
+/**
+ * Maps practice priority to Badge semantic variants.
+ *
+ * Color mapping:
+ * - 'high' → 'destructive' (red) - needs immediate attention
+ * - 'medium' → 'warning' (amber) - moderate priority
+ * - 'low' → 'info' (blue) - lower priority
+ *
+ * Note: null/undefined priorities use DEFAULT_PRIORITY_VARIANT ('outline')
+ * with additional opacity styling in the UI component.
+ */
+export const PRIORITY_VARIANT_MAP: Record<PracticePriority, PriorityVariant> = {
+  high: 'destructive',
+  medium: 'warning',
+  low: 'info',
+} as const;
+
+/**
+ * Get the Badge variant for a practice priority.
+ *
+ * Falls back to DEFAULT_PRIORITY_VARIANT ('outline') for null, undefined,
+ * or unknown values. The UI should apply opacity-50 styling to outline
+ * badges to indicate "no priority set" state.
+ *
+ * @param priority - The practice priority value
+ * @returns Badge variant name
+ */
+export function getPriorityVariant(priority: PracticePriority | null | undefined): PriorityVariant {
+  if (!priority) return DEFAULT_PRIORITY_VARIANT;
+  return PRIORITY_VARIANT_MAP[priority] ?? DEFAULT_PRIORITY_VARIANT;
+}
+
+/**
+ * Get the display label for a practice priority.
+ *
+ * Capitalizes the priority value for display, or returns 'None' for null/undefined.
+ *
+ * @param priority - The practice priority value
+ * @returns Display label string
+ */
+export function getPriorityLabel(priority: PracticePriority | null | undefined): string {
+  if (!priority) return 'None';
+  return priority.charAt(0).toUpperCase() + priority.slice(1);
+}
+
+/**
+ * Priority options for dropdown menus.
+ * Readonly to prevent accidental mutation by consumers.
+ *
+ * Includes 'None' option (null value) first, then ordered from low to high
+ * to match typical selection flow where users start with no priority and
+ * escalate as needed.
+ */
+export const PRIORITY_OPTIONS: readonly PriorityOption[] = [
+  { value: null, label: 'None' },
+  { value: 'low', label: 'Low' },
+  { value: 'medium', label: 'Medium' },
+  { value: 'high', label: 'High' },
 ] as const;

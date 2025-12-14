@@ -550,6 +550,154 @@ describe('Practice Tracking Service Methods', () => {
     });
   });
 
+  describe('updateUserSongPriority', () => {
+    const userId = 'user-123';
+    const songId = 'song-456';
+
+    it('should set priority on existing status record', async () => {
+      // Arrange
+      const existingStatus = { status: 'Learning' };
+      const mockUpdatedStatus = {
+        id: 'status-123',
+        user_id: userId,
+        song_id: songId,
+        status: 'Learning',
+        confidence_level: null,
+        priority: 'high',
+        last_practiced_at: null,
+        created_at: '2025-12-05T10:00:00Z',
+        updated_at: '2025-12-05T10:00:00Z',
+      };
+
+      const mockCheckQuery = createQueryMock();
+      const mockUpsertQuery = createQueryMock();
+
+      mockSupabase.from
+        .mockReturnValueOnce(mockCheckQuery)
+        .mockReturnValueOnce(mockUpsertQuery);
+
+      mockCheckQuery.maybeSingle.mockResolvedValueOnce({ data: existingStatus, error: null });
+      mockUpsertQuery.single.mockResolvedValueOnce({ data: mockUpdatedStatus, error: null });
+
+      // Act
+      const result = await service.updateUserSongPriority(userId, songId, 'high');
+
+      // Assert
+      expect(mockSupabase.from).toHaveBeenCalledWith('user_song_status');
+      expect(mockUpsertQuery.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          user_id: userId,
+          song_id: songId,
+          priority: 'high',
+          status: 'Learning', // Preserves existing status
+        }),
+        { onConflict: 'user_id,song_id' }
+      );
+      expect(result.priority).toBe('high');
+      expect(result.status).toBe('Learning');
+    });
+
+    it('should create new record with default status when none exists', async () => {
+      // Arrange
+      const mockNewStatus = {
+        id: 'status-123',
+        user_id: userId,
+        song_id: songId,
+        status: 'Not Started',
+        confidence_level: null,
+        priority: 'medium',
+        last_practiced_at: null,
+        created_at: '2025-12-05T10:00:00Z',
+        updated_at: '2025-12-05T10:00:00Z',
+      };
+
+      const mockCheckQuery = createQueryMock();
+      const mockUpsertQuery = createQueryMock();
+
+      mockSupabase.from
+        .mockReturnValueOnce(mockCheckQuery)
+        .mockReturnValueOnce(mockUpsertQuery);
+
+      mockCheckQuery.maybeSingle.mockResolvedValueOnce({ data: null, error: null });
+      mockUpsertQuery.single.mockResolvedValueOnce({ data: mockNewStatus, error: null });
+
+      // Act
+      const result = await service.updateUserSongPriority(userId, songId, 'medium');
+
+      // Assert
+      expect(mockUpsertQuery.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          user_id: userId,
+          song_id: songId,
+          priority: 'medium',
+          status: 'Not Started', // Default status when creating new record
+        }),
+        { onConflict: 'user_id,song_id' }
+      );
+      expect(result.status).toBe('Not Started');
+      expect(result.priority).toBe('medium');
+    });
+
+    it('should clear priority when null is passed', async () => {
+      // Arrange
+      const existingStatus = { status: 'Learned' };
+      const mockUpdatedStatus = {
+        id: 'status-123',
+        user_id: userId,
+        song_id: songId,
+        status: 'Learned',
+        confidence_level: null,
+        priority: null,
+        last_practiced_at: null,
+        created_at: '2025-12-05T10:00:00Z',
+        updated_at: '2025-12-05T10:00:00Z',
+      };
+
+      const mockCheckQuery = createQueryMock();
+      const mockUpsertQuery = createQueryMock();
+
+      mockSupabase.from
+        .mockReturnValueOnce(mockCheckQuery)
+        .mockReturnValueOnce(mockUpsertQuery);
+
+      mockCheckQuery.maybeSingle.mockResolvedValueOnce({ data: existingStatus, error: null });
+      mockUpsertQuery.single.mockResolvedValueOnce({ data: mockUpdatedStatus, error: null });
+
+      // Act
+      const result = await service.updateUserSongPriority(userId, songId, null);
+
+      // Assert
+      expect(mockUpsertQuery.upsert).toHaveBeenCalledWith(
+        expect.objectContaining({
+          priority: null,
+        }),
+        expect.any(Object)
+      );
+      expect(result.priority).toBeUndefined();
+    });
+
+    it('should handle database error', async () => {
+      // Arrange
+      const mockCheckQuery = createQueryMock();
+      const mockUpsertQuery = createQueryMock();
+
+      mockSupabase.from
+        .mockReturnValueOnce(mockCheckQuery)
+        .mockReturnValueOnce(mockUpsertQuery);
+
+      mockCheckQuery.maybeSingle.mockResolvedValueOnce({ data: null, error: null });
+      mockUpsertQuery.single.mockResolvedValueOnce({
+        data: null,
+        error: { message: 'Upsert failed', code: 'PGRST301' },
+      });
+
+      // Act & Assert
+      await expect(service.updateUserSongPriority(userId, songId, 'low')).rejects.toThrow(
+        'Failed to update priority'
+      );
+    });
+  });
+
   describe('getUserSongStatus', () => {
     const userId = 'user-123';
     const songId = 'song-456';
