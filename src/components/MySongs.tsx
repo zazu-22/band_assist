@@ -70,7 +70,7 @@ interface SongWithStatus {
 }
 
 // Sort field options for My Songs table
-type MySongsSortField = 'title' | 'artist' | 'bandStatus' | 'userStatus' | 'practiceTime';
+type MySongsSortField = 'title' | 'artist' | 'bandStatus' | 'userStatus' | 'priority' | 'practiceTime';
 
 // Status filter options including 'all'
 type BandStatusFilterValue = Song['status'] | 'all';
@@ -128,6 +128,23 @@ function getUserStatusPriority(status: UserSongStatus | undefined): number {
     case 'Not Started':
     default:
       return 1;
+  }
+}
+
+/**
+ * Get numeric value for practice priority (for sorting)
+ * Higher numbers = higher priority for descending sort (High first)
+ */
+function getPracticePriorityValue(priority: PracticePriority | null | undefined): number {
+  switch (priority) {
+    case 'high':
+      return 3;
+    case 'medium':
+      return 2;
+    case 'low':
+      return 1;
+    default:
+      return 0; // No priority sorts last
   }
 }
 
@@ -413,8 +430,16 @@ const VirtualizedSongTable = memo(function VirtualizedSongTable({
         <th
           id={COLUMN_IDS.priority}
           className="w-24 text-left py-3 px-4 text-sm font-semibold text-muted-foreground hidden md:table-cell"
+          aria-sort={sortBy === 'priority' ? (sortDirection === 'asc' ? 'ascending' : 'descending') : 'none'}
         >
-          <span>Priority</span>
+          <button
+            type="button"
+            onClick={() => onSortClick('priority')}
+            className="flex items-center hover:text-foreground transition-colors"
+          >
+            Priority
+            {getSortIcon('priority')}
+          </button>
         </th>
         <th
           id={COLUMN_IDS.practiceTime}
@@ -622,6 +647,11 @@ export const MySongs: React.FC<MySongsProps> = memo(function MySongs({
             getUserStatusPriority(a.userStatus?.status) -
             getUserStatusPriority(b.userStatus?.status);
           break;
+        case 'priority':
+          comparison =
+            getPracticePriorityValue(a.userStatus?.priority) -
+            getPracticePriorityValue(b.userStatus?.priority);
+          break;
         case 'practiceTime':
           comparison = a.totalPracticeMinutes - b.totalPracticeMinutes;
           break;
@@ -740,9 +770,10 @@ export const MySongs: React.FC<MySongsProps> = memo(function MySongs({
         // Toggle direction if same field
         setSortDirection((prev) => (prev === 'asc' ? 'desc' : 'asc'));
       } else {
-        // New field, default to ascending for text, descending for numbers
+        // New field, default to ascending for text, descending for numbers/priority
         setSortBy(field);
-        setSortDirection(field === 'practiceTime' ? 'desc' : 'asc');
+        // Default to descending for practiceTime (most practiced first) and priority (High first)
+        setSortDirection(field === 'practiceTime' || field === 'priority' ? 'desc' : 'asc');
       }
     },
     [sortBy]
