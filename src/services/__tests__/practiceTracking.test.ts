@@ -554,9 +554,8 @@ describe('Practice Tracking Service Methods', () => {
     const userId = 'user-123';
     const songId = 'song-456';
 
-    it('should set priority on existing status record', async () => {
+    it('should set priority on existing status record using update-first pattern', async () => {
       // Arrange
-      const existingStatus = { status: 'Learning' };
       const mockUpdatedStatus = {
         id: 'status-123',
         user_id: userId,
@@ -569,30 +568,25 @@ describe('Practice Tracking Service Methods', () => {
         updated_at: '2025-12-05T10:00:00Z',
       };
 
-      const mockCheckQuery = createQueryMock();
-      const mockUpsertQuery = createQueryMock();
+      const mockUpdateQuery = createQueryMock();
+      mockSupabase.from.mockReturnValueOnce(mockUpdateQuery);
 
-      mockSupabase.from
-        .mockReturnValueOnce(mockCheckQuery)
-        .mockReturnValueOnce(mockUpsertQuery);
-
-      mockCheckQuery.maybeSingle.mockResolvedValueOnce({ data: existingStatus, error: null });
-      mockUpsertQuery.single.mockResolvedValueOnce({ data: mockUpdatedStatus, error: null });
+      // Update returns the existing record
+      mockUpdateQuery.maybeSingle.mockResolvedValueOnce({ data: mockUpdatedStatus, error: null });
 
       // Act
       const result = await service.updateUserSongPriority(userId, songId, 'high');
 
       // Assert
       expect(mockSupabase.from).toHaveBeenCalledWith('user_song_status');
-      expect(mockUpsertQuery.upsert).toHaveBeenCalledWith(
+      expect(mockUpdateQuery.update).toHaveBeenCalledWith(
         expect.objectContaining({
-          user_id: userId,
-          song_id: songId,
           priority: 'high',
-          status: 'Learning', // Preserves existing status
-        }),
-        { onConflict: 'user_id,song_id' }
+          updated_at: expect.any(String),
+        })
       );
+      expect(mockUpdateQuery.eq).toHaveBeenCalledWith('user_id', userId);
+      expect(mockUpdateQuery.eq).toHaveBeenCalledWith('song_id', songId);
       expect(result.priority).toBe('high');
       expect(result.status).toBe('Learning');
     });
@@ -611,14 +605,15 @@ describe('Practice Tracking Service Methods', () => {
         updated_at: '2025-12-05T10:00:00Z',
       };
 
-      const mockCheckQuery = createQueryMock();
+      const mockUpdateQuery = createQueryMock();
       const mockUpsertQuery = createQueryMock();
 
       mockSupabase.from
-        .mockReturnValueOnce(mockCheckQuery)
+        .mockReturnValueOnce(mockUpdateQuery)
         .mockReturnValueOnce(mockUpsertQuery);
 
-      mockCheckQuery.maybeSingle.mockResolvedValueOnce({ data: null, error: null });
+      // Update returns null (no existing record)
+      mockUpdateQuery.maybeSingle.mockResolvedValueOnce({ data: null, error: null });
       mockUpsertQuery.single.mockResolvedValueOnce({ data: mockNewStatus, error: null });
 
       // Act
@@ -638,9 +633,8 @@ describe('Practice Tracking Service Methods', () => {
       expect(result.priority).toBe('medium');
     });
 
-    it('should clear priority when null is passed', async () => {
+    it('should clear priority when null is passed on existing record', async () => {
       // Arrange
-      const existingStatus = { status: 'Learned' };
       const mockUpdatedStatus = {
         id: 'status-123',
         user_id: userId,
@@ -653,39 +647,50 @@ describe('Practice Tracking Service Methods', () => {
         updated_at: '2025-12-05T10:00:00Z',
       };
 
-      const mockCheckQuery = createQueryMock();
-      const mockUpsertQuery = createQueryMock();
+      const mockUpdateQuery = createQueryMock();
+      mockSupabase.from.mockReturnValueOnce(mockUpdateQuery);
 
-      mockSupabase.from
-        .mockReturnValueOnce(mockCheckQuery)
-        .mockReturnValueOnce(mockUpsertQuery);
-
-      mockCheckQuery.maybeSingle.mockResolvedValueOnce({ data: existingStatus, error: null });
-      mockUpsertQuery.single.mockResolvedValueOnce({ data: mockUpdatedStatus, error: null });
+      mockUpdateQuery.maybeSingle.mockResolvedValueOnce({ data: mockUpdatedStatus, error: null });
 
       // Act
       const result = await service.updateUserSongPriority(userId, songId, null);
 
       // Assert
-      expect(mockUpsertQuery.upsert).toHaveBeenCalledWith(
+      expect(mockUpdateQuery.update).toHaveBeenCalledWith(
         expect.objectContaining({
           priority: null,
-        }),
-        expect.any(Object)
+        })
       );
       expect(result.priority).toBeUndefined();
     });
 
-    it('should handle database error', async () => {
+    it('should throw when update operation fails', async () => {
       // Arrange
-      const mockCheckQuery = createQueryMock();
+      const mockUpdateQuery = createQueryMock();
+      mockSupabase.from.mockReturnValueOnce(mockUpdateQuery);
+
+      mockUpdateQuery.maybeSingle.mockResolvedValueOnce({
+        data: null,
+        error: { message: 'Connection failed', code: 'PGRST301' },
+      });
+
+      // Act & Assert
+      await expect(service.updateUserSongPriority(userId, songId, 'high')).rejects.toThrow(
+        'Failed to update priority'
+      );
+    });
+
+    it('should throw when insert operation fails for new record', async () => {
+      // Arrange
+      const mockUpdateQuery = createQueryMock();
       const mockUpsertQuery = createQueryMock();
 
       mockSupabase.from
-        .mockReturnValueOnce(mockCheckQuery)
+        .mockReturnValueOnce(mockUpdateQuery)
         .mockReturnValueOnce(mockUpsertQuery);
 
-      mockCheckQuery.maybeSingle.mockResolvedValueOnce({ data: null, error: null });
+      // Update returns null (no existing record)
+      mockUpdateQuery.maybeSingle.mockResolvedValueOnce({ data: null, error: null });
       mockUpsertQuery.single.mockResolvedValueOnce({
         data: null,
         error: { message: 'Upsert failed', code: 'PGRST301' },
@@ -695,6 +700,57 @@ describe('Practice Tracking Service Methods', () => {
       await expect(service.updateUserSongPriority(userId, songId, 'low')).rejects.toThrow(
         'Failed to update priority'
       );
+    });
+  });
+
+  describe('validatePriority', () => {
+    // Access private method for testing via type assertion
+    const getValidatePriority = (svc: SupabaseStorageService) =>
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (svc as any).validatePriority.bind(svc);
+
+    it('should return valid priority values unchanged', () => {
+      const validatePriority = getValidatePriority(service);
+
+      expect(validatePriority('low')).toBe('low');
+      expect(validatePriority('medium')).toBe('medium');
+      expect(validatePriority('high')).toBe('high');
+    });
+
+    it('should return null for invalid string values', () => {
+      const validatePriority = getValidatePriority(service);
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+      expect(validatePriority('invalid')).toBeNull();
+      expect(validatePriority('')).toBeNull();
+      expect(validatePriority('HIGH')).toBeNull(); // Case sensitive
+      expect(validatePriority('Low')).toBeNull(); // Case sensitive
+
+      expect(warnSpy).toHaveBeenCalledTimes(4);
+      warnSpy.mockRestore();
+    });
+
+    it('should return null for null and undefined without warning', () => {
+      const validatePriority = getValidatePriority(service);
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+      expect(validatePriority(null)).toBeNull();
+      expect(validatePriority(undefined)).toBeNull();
+
+      expect(warnSpy).not.toHaveBeenCalled();
+      warnSpy.mockRestore();
+    });
+
+    it('should return null and warn for non-string values', () => {
+      const validatePriority = getValidatePriority(service);
+      const warnSpy = vi.spyOn(console, 'warn').mockImplementation(() => {});
+
+      expect(validatePriority(123)).toBeNull();
+      expect(validatePriority({})).toBeNull();
+      expect(validatePriority([])).toBeNull();
+
+      expect(warnSpy).toHaveBeenCalledTimes(3);
+      warnSpy.mockRestore();
     });
   });
 
