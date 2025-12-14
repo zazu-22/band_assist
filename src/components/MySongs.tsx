@@ -15,6 +15,7 @@ import {
   Search,
 } from 'lucide-react';
 import {
+  Badge,
   Button,
   Card,
   CardContent,
@@ -24,8 +25,10 @@ import {
   DropdownMenuTrigger,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuLabel,
   DropdownMenuSeparator,
+  DropdownMenuSub,
+  DropdownMenuSubTrigger,
+  DropdownMenuSubContent,
   Select,
   SelectContent,
   SelectItem,
@@ -46,8 +49,11 @@ import { supabaseStorageService } from '@/services/supabaseStorageService';
 import {
   BAND_STATUS_OPTIONS,
   USER_STATUS_OPTIONS,
+  PRIORITY_OPTIONS,
+  getPriorityVariant,
+  getPriorityLabel,
 } from '@/lib/statusConfig';
-import type { Song, UserSongProgress, UserSongStatus, SortDirection } from '@/types';
+import type { Song, UserSongProgress, UserSongStatus, PracticePriority, SortDirection } from '@/types';
 
 // =============================================================================
 // TYPES
@@ -155,6 +161,7 @@ const COLUMN_IDS = {
   artist: 'mysongs-col-artist',
   bandStatus: 'mysongs-col-bandstatus',
   userStatus: 'mysongs-col-userstatus',
+  priority: 'mysongs-col-priority',
   practiceTime: 'mysongs-col-practicetime',
   actions: 'mysongs-col-actions',
 } as const;
@@ -168,6 +175,7 @@ interface VirtualizedSongTableProps {
   onNavigateToSong: (id: string) => void;
   onPractice: (id: string) => void;
   onStatusChange: (songId: string, newStatus: UserSongStatus) => void;
+  onPriorityChange: (songId: string, newPriority: PracticePriority | null) => void;
 }
 
 const VirtualizedSongTable = memo(function VirtualizedSongTable({
@@ -179,6 +187,7 @@ const VirtualizedSongTable = memo(function VirtualizedSongTable({
   onNavigateToSong,
   onPractice,
   onStatusChange,
+  onPriorityChange,
 }: VirtualizedSongTableProps) {
   const parentRef = useRef<HTMLDivElement>(null);
 
@@ -204,6 +213,7 @@ const VirtualizedSongTable = memo(function VirtualizedSongTable({
     (item: SongWithStatus, style?: React.CSSProperties) => {
       const { song, userStatus, totalPracticeMinutes } = item;
       const currentStatus = userStatus?.status || 'Not Started';
+      const currentPriority = userStatus?.priority ?? null;
 
       return (
         <tr
@@ -242,6 +252,16 @@ const VirtualizedSongTable = memo(function VirtualizedSongTable({
               userStatus={userStatus}
             />
           </td>
+          {/* Priority - fixed width on md+ */}
+          <td className="w-24 py-3 px-4 hidden md:table-cell whitespace-nowrap" headers={COLUMN_IDS.priority}>
+            <Badge
+              variant={getPriorityVariant(currentPriority)}
+              className={cn(!currentPriority && 'opacity-50')}
+              aria-label={`Priority: ${getPriorityLabel(currentPriority)}`}
+            >
+              {getPriorityLabel(currentPriority)}
+            </Badge>
+          </td>
           {/* Practice Time - fixed width on lg+ */}
           <td className="w-20 py-3 px-4 text-sm text-muted-foreground font-mono tabular-nums hidden lg:table-cell whitespace-nowrap" headers={COLUMN_IDS.practiceTime}>
             {formatMinutesToHours(totalPracticeMinutes)}
@@ -269,24 +289,50 @@ const VirtualizedSongTable = memo(function VirtualizedSongTable({
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end">
-                  <DropdownMenuLabel>Change Status</DropdownMenuLabel>
-                  <DropdownMenuSeparator />
-                  {STATUS_OPTIONS.map((option) => (
-                    <DropdownMenuItem
-                      key={option.value}
-                      onClick={() => {
-                        if (option.value !== currentStatus) {
-                          onStatusChange(song.id, option.value);
-                        }
-                      }}
-                      className="flex items-center justify-between"
-                    >
-                      <span>{option.label}</span>
-                      {currentStatus === option.value && (
-                        <Check className="h-4 w-4 ml-2 text-primary" />
-                      )}
-                    </DropdownMenuItem>
-                  ))}
+                  {/* Change Status submenu */}
+                  <DropdownMenuSub>
+                    <DropdownMenuSubTrigger>Change Status</DropdownMenuSubTrigger>
+                    <DropdownMenuSubContent>
+                      {STATUS_OPTIONS.map((option) => (
+                        <DropdownMenuItem
+                          key={option.value}
+                          onClick={() => {
+                            if (option.value !== currentStatus) {
+                              onStatusChange(song.id, option.value);
+                            }
+                          }}
+                          className="flex items-center justify-between"
+                        >
+                          <span>{option.label}</span>
+                          {currentStatus === option.value && (
+                            <Check className="h-4 w-4 ml-2 text-primary" />
+                          )}
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuSubContent>
+                  </DropdownMenuSub>
+                  {/* Change Priority submenu */}
+                  <DropdownMenuSub>
+                    <DropdownMenuSubTrigger>Change Priority</DropdownMenuSubTrigger>
+                    <DropdownMenuSubContent>
+                      {PRIORITY_OPTIONS.map((option) => (
+                        <DropdownMenuItem
+                          key={option.label}
+                          onClick={() => {
+                            if (option.value !== currentPriority) {
+                              onPriorityChange(song.id, option.value);
+                            }
+                          }}
+                          className="flex items-center justify-between"
+                        >
+                          <span>{option.label}</span>
+                          {currentPriority === option.value && (
+                            <Check className="h-4 w-4 ml-2 text-primary" />
+                          )}
+                        </DropdownMenuItem>
+                      ))}
+                    </DropdownMenuSubContent>
+                  </DropdownMenuSub>
                   <DropdownMenuSeparator />
                   <DropdownMenuItem onClick={() => onNavigateToSong(song.id)}>
                     View Details
@@ -301,7 +347,7 @@ const VirtualizedSongTable = memo(function VirtualizedSongTable({
         </tr>
       );
     },
-    [onNavigateToSong, onPractice, onStatusChange]
+    [onNavigateToSong, onPractice, onStatusChange, onPriorityChange]
   );
 
   // Render table header with IDs for accessibility (associates with body cells via headers attr)
@@ -363,6 +409,12 @@ const VirtualizedSongTable = memo(function VirtualizedSongTable({
             My Status
             {getSortIcon('userStatus')}
           </button>
+        </th>
+        <th
+          id={COLUMN_IDS.priority}
+          className="w-24 text-left py-3 px-4 text-sm font-semibold text-muted-foreground hidden md:table-cell"
+        >
+          <span>Priority</span>
         </th>
         <th
           id={COLUMN_IDS.practiceTime}
@@ -633,6 +685,31 @@ export const MySongs: React.FC<MySongsProps> = memo(function MySongs({
       } catch (err) {
         const message = err instanceof Error ? err.message : 'An error occurred';
         toast.error(`Failed to update status: ${message}`);
+      }
+    },
+    [session?.user?.id, refetchStatuses, songs]
+  );
+
+  // Handler for priority changes from dropdown menu
+  const handlePriorityChange = useCallback(
+    async (songId: string, newPriority: PracticePriority | null) => {
+      const userId = session?.user?.id;
+      if (!userId) return;
+
+      // Validate that the song belongs to the current band
+      const songExistsInCurrentBand = songs.some((s) => s.id === songId);
+      if (!songExistsInCurrentBand) {
+        toast.error('Cannot update priority for songs outside the current band');
+        return;
+      }
+
+      try {
+        await supabaseStorageService.updateUserSongPriority(userId, songId, newPriority);
+        toast.success('Priority updated');
+        await refetchStatuses();
+      } catch (err) {
+        const message = err instanceof Error ? err.message : 'An error occurred';
+        toast.error(`Failed to update priority: ${message}`);
       }
     },
     [session?.user?.id, refetchStatuses, songs]
@@ -919,6 +996,7 @@ export const MySongs: React.FC<MySongsProps> = memo(function MySongs({
               onNavigateToSong={onNavigateToSong}
               onPractice={handlePractice}
               onStatusChange={handleStatusChange}
+              onPriorityChange={handlePriorityChange}
             />
           )}
         </CardContent>

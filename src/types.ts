@@ -131,6 +131,9 @@ export interface Setlist {
 // Personal song status enum
 export type UserSongStatus = 'Not Started' | 'Learning' | 'Learned' | 'Mastered';
 
+// Practice priority levels (stored as lowercase in DB)
+export type PracticePriority = 'low' | 'medium' | 'high';
+
 // Personal song progress tracking
 export interface UserSongProgress {
   id: string;
@@ -138,6 +141,7 @@ export interface UserSongProgress {
   songId: string;
   status: UserSongStatus;
   confidenceLevel?: number; // 1-5 scale
+  priority?: PracticePriority; // Practice priority (low, medium, high)
   lastPracticedAt?: string;
   createdAt: string;
   updatedAt: string;

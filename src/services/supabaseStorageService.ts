@@ -1,4 +1,4 @@
-import { Song, BandMember, BandEvent, SongChart, Assignment, SongPart, PracticeSession, PracticeFilters, UserSongProgress, UserSongStatus, PracticeStats, UpdatePracticeSessionInput } from '../types';
+import { Song, BandMember, BandEvent, SongChart, Assignment, SongPart, PracticeSession, PracticeFilters, UserSongProgress, UserSongStatus, PracticePriority, PracticeStats, UpdatePracticeSessionInput } from '../types';
 import { IStorageService, LoadResult } from './IStorageService';
 import { getSupabaseClient, isSupabaseConfigured } from './supabaseClient';
 import { validateAvatarColor } from '@/lib/avatar';
@@ -1709,6 +1709,66 @@ export class SupabaseStorageService implements IStorageService {
   }
 
   /**
+   * Update user's practice priority for a song
+   * Uses upsert to handle both insert and update cases
+   * When creating a new record, status defaults to 'Not Started'
+   *
+   * @param userId - User ID
+   * @param songId - Song ID
+   * @param priority - Priority value ('low', 'medium', 'high') or null to clear
+   */
+  async updateUserSongPriority(
+    userId: string,
+    songId: string,
+    priority: PracticePriority | null
+  ): Promise<UserSongProgress> {
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      throw new Error('Supabase is not configured. Check environment variables.');
+    }
+
+    try {
+      // First check if record exists to preserve its status
+      const { data: existing } = await supabase
+        .from('user_song_status')
+        .select('status')
+        .eq('user_id', userId)
+        .eq('song_id', songId)
+        .maybeSingle();
+
+      // Build upsert payload
+      // Note: priority column added in migration 024, use type assertion for compatibility
+      const upsertPayload = {
+        user_id: userId,
+        song_id: songId,
+        status: existing?.status ?? 'Not Started', // Preserve existing or default
+        updated_at: new Date().toISOString(),
+      } as Database['public']['Tables']['user_song_status']['Insert'] & { priority?: string | null };
+
+      // Add priority field (may be null to clear it)
+      upsertPayload.priority = priority;
+
+      const { data, error } = await supabase
+        .from('user_song_status')
+        .upsert(upsertPayload as Database['public']['Tables']['user_song_status']['Insert'], {
+          onConflict: 'user_id,song_id',
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error updating user song priority:', error);
+        throw new Error('Failed to update priority');
+      }
+
+      return this.transformUserSongProgress(data);
+    } catch (error) {
+      console.error('Error in updateUserSongPriority:', error);
+      throw error instanceof Error ? error : new Error('Failed to update priority');
+    }
+  }
+
+  /**
    * Get user's learning status for a specific song
    * Returns null if no status exists yet
    */
@@ -1792,16 +1852,20 @@ export class SupabaseStorageService implements IStorageService {
 
   /**
    * Transform database row to UserSongProgress type
+   * Note: priority column added in migration 024, cast for compatibility
    */
   private transformUserSongProgress(
     row: Database['public']['Tables']['user_song_status']['Row']
   ): UserSongProgress {
+    // Cast to include priority column (added in migration 024)
+    const rowWithPriority = row as typeof row & { priority?: string | null };
     return {
       id: row.id,
       userId: row.user_id,
       songId: row.song_id,
       status: row.status as UserSongStatus,
       confidenceLevel: row.confidence_level ?? undefined,
+      priority: (rowWithPriority.priority as PracticePriority | null) ?? undefined,
       lastPracticedAt: row.last_practiced_at ?? undefined,
       createdAt: row.created_at,
       updatedAt: row.updated_at,
