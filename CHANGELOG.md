@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.1.17](https://github.com/zazu-22/band_assist/compare/v0.1.16...v0.1.17) (2025-12-14)
+
+
+### Features
+
+* **my-songs:** add practice priority setting ([#191](https://github.com/zazu-22/band_assist/issues/191)) ([#220](https://github.com/zazu-22/band_assist/issues/220)) ([6b1ff2b](https://github.com/zazu-22/band_assist/commit/6b1ff2b8a02cfef28403ba20877ef600892eb873))
+* **my-songs:** add priority column sorting and type improvements ([#223](https://github.com/zazu-22/band_assist/issues/223)) ([5900aad](https://github.com/zazu-22/band_assist/commit/5900aadc98b0a0f09c6d81f7e3bb396b40c8c550))
+
+
+### Bug Fixes
+
+* **storage:** add error handling and priority validation ([#224](https://github.com/zazu-22/band_assist/issues/224)) ([3325e93](https://github.com/zazu-22/band_assist/commit/3325e93c8f563c4c9d071f3aaeb08e2d309783ec))
+
 ## [0.1.16](https://github.com/zazu-22/band_assist/compare/v0.1.15...v0.1.16) (2025-12-13)
 
 
