@@ -1737,20 +1737,17 @@ export class SupabaseStorageService implements IStorageService {
         .maybeSingle();
 
       // Build upsert payload
-      // Note: priority column added in migration 024, use type assertion for compatibility
-      const upsertPayload = {
+      const upsertPayload: Database['public']['Tables']['user_song_status']['Insert'] = {
         user_id: userId,
         song_id: songId,
         status: existing?.status ?? 'Not Started', // Preserve existing or default
         updated_at: new Date().toISOString(),
-      } as Database['public']['Tables']['user_song_status']['Insert'] & { priority?: string | null };
-
-      // Add priority field (may be null to clear it)
-      upsertPayload.priority = priority;
+        priority: priority, // May be null to clear it
+      };
 
       const { data, error } = await supabase
         .from('user_song_status')
-        .upsert(upsertPayload as Database['public']['Tables']['user_song_status']['Insert'], {
+        .upsert(upsertPayload, {
           onConflict: 'user_id,song_id',
         })
         .select()
@@ -1852,20 +1849,17 @@ export class SupabaseStorageService implements IStorageService {
 
   /**
    * Transform database row to UserSongProgress type
-   * Note: priority column added in migration 024, cast for compatibility
    */
   private transformUserSongProgress(
     row: Database['public']['Tables']['user_song_status']['Row']
   ): UserSongProgress {
-    // Cast to include priority column (added in migration 024)
-    const rowWithPriority = row as typeof row & { priority?: string | null };
     return {
       id: row.id,
       userId: row.user_id,
       songId: row.song_id,
       status: row.status as UserSongStatus,
       confidenceLevel: row.confidence_level ?? undefined,
-      priority: (rowWithPriority.priority as PracticePriority | null) ?? undefined,
+      priority: (row.priority as PracticePriority | null) ?? undefined,
       lastPracticedAt: row.last_practiced_at ?? undefined,
       createdAt: row.created_at,
       updatedAt: row.updated_at,

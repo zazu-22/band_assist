@@ -12,6 +12,31 @@ export type Database = {
   __InternalSupabase: {
     PostgrestVersion: "13.0.5"
   }
+  graphql_public: {
+    Tables: {
+      [_ in never]: never
+    }
+    Views: {
+      [_ in never]: never
+    }
+    Functions: {
+      graphql: {
+        Args: {
+          extensions?: Json
+          operationName?: string
+          query?: string
+          variables?: Json
+        }
+        Returns: Json
+      }
+    }
+    Enums: {
+      [_ in never]: never
+    }
+    CompositeTypes: {
+      [_ in never]: never
+    }
+  }
   public: {
     Tables: {
       band_events: {
@@ -68,6 +93,7 @@ export type Database = {
           created_at: string
           id: string
           name: string
+          preferred_instrument: string | null
           roles: string[]
           updated_at: string
           user_id: string | null
@@ -78,6 +104,7 @@ export type Database = {
           created_at?: string
           id?: string
           name: string
+          preferred_instrument?: string | null
           roles?: string[]
           updated_at?: string
           user_id?: string | null
@@ -88,6 +115,7 @@ export type Database = {
           created_at?: string
           id?: string
           name?: string
+          preferred_instrument?: string | null
           roles?: string[]
           updated_at?: string
           user_id?: string | null
@@ -444,6 +472,7 @@ export type Database = {
           created_at: string
           id: string
           last_practiced_at: string | null
+          priority: string | null
           song_id: string
           status: string
           updated_at: string
@@ -454,6 +483,7 @@ export type Database = {
           created_at?: string
           id?: string
           last_practiced_at?: string | null
+          priority?: string | null
           song_id: string
           status: string
           updated_at?: string
@@ -464,6 +494,7 @@ export type Database = {
           created_at?: string
           id?: string
           last_practiced_at?: string | null
+          priority?: string | null
           song_id?: string
           status?: string
           updated_at?: string
@@ -634,6 +665,9 @@ export type CompositeTypes<
     : never
 
 export const Constants = {
+  graphql_public: {
+    Enums: {},
+  },
   public: {
     Enums: {},
   },
