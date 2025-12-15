@@ -1,5 +1,18 @@
 # Changelog
 
+## [0.1.18](https://github.com/zazu-22/band_assist/compare/v0.1.17...v0.1.18) (2025-12-15)
+
+
+### Features
+
+* **my-songs:** add infographic stat cards ([#192](https://github.com/zazu-22/band_assist/issues/192)) ([#225](https://github.com/zazu-22/band_assist/issues/225)) ([20451a6](https://github.com/zazu-22/band_assist/commit/20451a677d069f3e1a99ad13a3c6dbdadd8ebdd0))
+* **my-songs:** add Learned and Not Started stat cards ([#227](https://github.com/zazu-22/band_assist/issues/227)) ([98e8229](https://github.com/zazu-22/band_assist/commit/98e82291572d58961e53dfbd0086204e7c63f199))
+
+
+### Bug Fixes
+
+* **ci:** update cleanup-tokens workflow for new Supabase API keys ([#228](https://github.com/zazu-22/band_assist/issues/228)) ([ca80a2b](https://github.com/zazu-22/band_assist/commit/ca80a2bae45d0fbae3ddc428c1abc1ba29080199))
+
 ## [0.1.17](https://github.com/zazu-22/band_assist/compare/v0.1.16...v0.1.17) (2025-12-14)
 
 
