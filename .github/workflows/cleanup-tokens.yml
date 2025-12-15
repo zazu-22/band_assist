@@ -13,12 +13,11 @@ jobs:
       - name: Cleanup Expired File Access Tokens
         env:
           SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
-          SUPABASE_PUBLISHABLE_KEY: ${{ secrets.SUPABASE_PUBLISHABLE_KEY }}
           EDGE_SECRET_KEY: ${{ secrets.EDGE_SECRET_KEY }}
         run: |
+          # Note: apikey/Authorization headers removed since verify_jwt=false in config.toml
+          # Authentication is handled by x-edge-secret header checked in the edge function
           RESPONSE=$(curl -s -w "\n%{http_code}" -L -X POST \
-            -H "Authorization: Bearer ${SUPABASE_PUBLISHABLE_KEY}" \
-            -H "apikey: ${SUPABASE_PUBLISHABLE_KEY}" \
             -H "x-edge-secret: ${EDGE_SECRET_KEY}" \
             "${SUPABASE_URL}/functions/v1/cleanup-expired-tokens")
 
