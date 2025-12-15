@@ -861,7 +861,7 @@ export const SongDetail: React.FC<SongDetailProps> = ({
               aria-labelledby="tab-structure"
               className="max-w-4xl mx-auto animate-slide-in-from-bottom animation-forwards opacity-0 stagger-1"
             >
-              <StructureTab song={song} />
+              <StructureTab song={song} members={members} />
             </div>
           )}
 

@@ -231,3 +231,48 @@ export interface SongSectionInput {
   source: SectionSource;
   color?: string;
 }
+
+// =============================================================================
+// SECTION ASSIGNMENTS (Phase 2 - Song Collaboration Architecture)
+// =============================================================================
+
+/** Assignment status indicating member activity in a section */
+export type AssignmentStatus = 'playing' | 'resting' | 'optional';
+
+/** Section assignment representing a member's role in a specific section */
+export interface SectionAssignment {
+  id: string;
+  sectionId: string;
+  memberId: string | null;  // null if member was deleted
+  bandId: string;
+  role: string;
+  status: AssignmentStatus;
+  notes?: string;           // Max 500 chars (enforced by DB)
+  gpTrackIndex?: number;
+
+  // Denormalized for display (populated by joins)
+  memberName?: string;
+  memberAvatarColor?: string;
+
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Input type for creating/updating assignments */
+export interface SectionAssignmentInput {
+  sectionId: string;
+  memberId: string;
+  bandId: string;
+  role: string;
+  status: AssignmentStatus;
+  notes?: string;
+  gpTrackIndex?: number;
+}
+
+/** Summary of assignment statuses for a section (used in SectionCard header) */
+export interface AssignmentStatusSummary {
+  playing: number;
+  resting: number;
+  optional: number;
+  total: number;
+}
