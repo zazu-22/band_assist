@@ -13,9 +13,10 @@ import {
   Filter,
   X,
   Search,
-  Clock,
   Target,
   Trophy,
+  CheckCircle2,
+  Circle,
 } from 'lucide-react';
 import {
   Badge,
@@ -606,20 +607,26 @@ export const MySongs: React.FC<MySongsProps> = memo(function MySongs({
   // Calculate stats from mySongs for stat cards
   const mySongsStats = useMemo(() => {
     let mastered = 0;
+    let learned = 0;
     let learning = 0;
+    let notStarted = 0;
     let totalPracticeTime = 0;
 
     for (const item of mySongs) {
       const status = item.userStatus?.status;
       if (status === 'Mastered') mastered++;
+      else if (status === 'Learned') learned++;
       else if (status === 'Learning') learning++;
+      else notStarted++;
       totalPracticeTime += item.totalPracticeMinutes;
     }
 
     return {
       total: mySongs.length,
       mastered,
+      learned,
       learning,
+      notStarted,
       totalPracticeTime,
     };
   }, [mySongs]);
@@ -931,7 +938,7 @@ export const MySongs: React.FC<MySongsProps> = memo(function MySongs({
       </header>
 
       {/* Stat Cards */}
-      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 animate-slide-in-from-bottom animation-forwards opacity-0 stagger-1">
+      <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4 animate-slide-in-from-bottom animation-forwards opacity-0 stagger-1">
         <StatCard
           title="My Songs"
           value={mySongsStats.total}
@@ -945,15 +952,21 @@ export const MySongs: React.FC<MySongsProps> = memo(function MySongs({
           variant="success"
         />
         <StatCard
+          title="Learned"
+          value={mySongsStats.learned}
+          icon={CheckCircle2}
+          variant="success"
+        />
+        <StatCard
           title="Learning"
           value={mySongsStats.learning}
           icon={Target}
           variant="warning"
         />
         <StatCard
-          title="Practice Time"
-          value={formatMinutesToHours(mySongsStats.totalPracticeTime)}
-          icon={Clock}
+          title="Not Started"
+          value={mySongsStats.notStarted}
+          icon={Circle}
           variant="default"
         />
       </div>
