@@ -1,4 +1,4 @@
-import { Song, BandMember, BandEvent, SongChart, Assignment, SongPart, PracticeSession, PracticeFilters, UserSongProgress, UserSongStatus, PracticePriority, PracticeStats, UpdatePracticeSessionInput, SongSection, SongSectionInput, SectionSource, SectionAssignment, SectionAssignmentInput, AssignmentStatus } from '../types';
+import { Song, BandMember, BandEvent, SongChart, Assignment, SongPart, PracticeSession, PracticeFilters, UserSongProgress, UserSongStatus, PracticePriority, PracticeStats, UpdatePracticeSessionInput, SongSection, SongSectionInput, SectionSource, SectionAssignment, SectionAssignmentInput, AssignmentStatus, SongAnnotation, SongAnnotationInput, SongAnnotationUpdate, AnnotationType } from '../types';
 import { IStorageService, LoadResult } from './IStorageService';
 import { getSupabaseClient, isSupabaseConfigured } from './supabaseClient';
 import { validateAvatarColor } from '@/lib/avatar';
@@ -2569,6 +2569,294 @@ export class SupabaseStorageService implements IStorageService {
       console.error('Error in deleteSectionAssignment:', error);
       throw error instanceof Error ? error : new Error('Failed to delete assignment');
     }
+  }
+
+  // =============================================================================
+  // SONG ANNOTATIONS (Phase 3)
+  // =============================================================================
+
+  /**
+   * Transform database row to SongAnnotation interface
+   */
+  private transformSongAnnotation(row: Record<string, unknown>): SongAnnotation {
+    return {
+      id: row.id as string,
+      songId: row.song_id as string,
+      bandId: row.band_id as string,
+      authorId: row.author_id as string,
+      sectionId: (row.section_id as string) || undefined,
+      barIndex: row.bar_index as number,
+      beatIndex: row.beat_index as number,
+      trackIndex: row.track_index as number,
+      content: row.content as string,
+      annotationType: row.annotation_type as AnnotationType,
+      isResolved: row.is_resolved as boolean,
+      resolvedBy: (row.resolved_by as string) || undefined,
+      resolvedAt: (row.resolved_at as string) || undefined,
+      visibleDuringPlayback: row.visible_during_playback as boolean,
+      createdAt: row.created_at as string,
+      updatedAt: row.updated_at as string,
+    };
+  }
+
+  /**
+   * Get all annotations for a song
+   */
+  async getAnnotations(songId: string): Promise<SongAnnotation[]> {
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      throw new Error('Supabase is not configured.');
+    }
+
+    if (!this.currentBandId) {
+      throw new Error('No band selected. Call setCurrentBand() first.');
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('song_annotations')
+        .select('*')
+        .eq('song_id', songId)
+        .order('bar_index', { ascending: true })
+        .order('beat_index', { ascending: true });
+
+      if (error) {
+        console.error('Error fetching annotations:', error);
+        throw new Error('Failed to load annotations');
+      }
+
+      return (data || []).map(row => this.transformSongAnnotation(row));
+    } catch (error) {
+      console.error('Error in getAnnotations:', error);
+      throw error instanceof Error ? error : new Error('Failed to load annotations');
+    }
+  }
+
+  /**
+   * Create a new annotation
+   */
+  async createAnnotation(input: SongAnnotationInput): Promise<SongAnnotation> {
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      throw new Error('Supabase is not configured.');
+    }
+
+    if (!this.currentBandId) {
+      throw new Error('No band selected. Call setCurrentBand() first.');
+    }
+
+    // Get current user for author_id
+    const { data: { user }, error: userError } = await supabase.auth.getUser();
+    if (userError || !user) {
+      throw new Error('Must be authenticated to create annotations');
+    }
+
+    // Validate content length
+    if (input.content.length > 2000) {
+      throw new Error('Annotation content cannot exceed 2000 characters');
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('song_annotations')
+        .insert({
+          song_id: input.songId,
+          band_id: input.bandId,
+          author_id: user.id,
+          section_id: input.sectionId ?? null,
+          bar_index: input.barIndex,
+          beat_index: input.beatIndex ?? 0,
+          track_index: input.trackIndex ?? 0,
+          content: input.content,
+          annotation_type: input.annotationType,
+          visible_during_playback: input.visibleDuringPlayback ?? true,
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error creating annotation:', error);
+        throw new Error('Failed to create annotation');
+      }
+
+      return this.transformSongAnnotation(data);
+    } catch (error) {
+      console.error('Error in createAnnotation:', error);
+      throw error instanceof Error ? error : new Error('Failed to create annotation');
+    }
+  }
+
+  /**
+   * Update an existing annotation
+   */
+  async updateAnnotation(annotationId: string, updates: SongAnnotationUpdate): Promise<SongAnnotation> {
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      throw new Error('Supabase is not configured.');
+    }
+
+    if (!this.currentBandId) {
+      throw new Error('No band selected. Call setCurrentBand() first.');
+    }
+
+    // Validate content length if provided
+    if (updates.content && updates.content.length > 2000) {
+      throw new Error('Annotation content cannot exceed 2000 characters');
+    }
+
+    try {
+      const updatePayload: Record<string, unknown> = {
+        updated_at: new Date().toISOString(),
+      };
+
+      if ('content' in updates) updatePayload.content = updates.content;
+      if ('annotationType' in updates) updatePayload.annotation_type = updates.annotationType;
+      if ('sectionId' in updates) updatePayload.section_id = updates.sectionId ?? null;
+      if ('visibleDuringPlayback' in updates) updatePayload.visible_during_playback = updates.visibleDuringPlayback;
+
+      // Handle resolution - if marking as resolved, record who and when
+      if ('isResolved' in updates) {
+        updatePayload.is_resolved = updates.isResolved;
+        if (updates.isResolved) {
+          const { data: { user } } = await supabase.auth.getUser();
+          if (user) {
+            updatePayload.resolved_by = user.id;
+            updatePayload.resolved_at = new Date().toISOString();
+          }
+        } else {
+          // Clearing resolution
+          updatePayload.resolved_by = null;
+          updatePayload.resolved_at = null;
+        }
+      }
+
+      const { data, error } = await supabase
+        .from('song_annotations')
+        .update(updatePayload)
+        .eq('id', annotationId)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error updating annotation:', error);
+        throw new Error('Failed to update annotation');
+      }
+
+      if (!data) {
+        throw new Error('Annotation not found or you do not have permission to update it');
+      }
+
+      return this.transformSongAnnotation(data);
+    } catch (error) {
+      console.error('Error in updateAnnotation:', error);
+      throw error instanceof Error ? error : new Error('Failed to update annotation');
+    }
+  }
+
+  /**
+   * Delete an annotation
+   */
+  async deleteAnnotation(annotationId: string): Promise<void> {
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      throw new Error('Supabase is not configured.');
+    }
+
+    if (!this.currentBandId) {
+      throw new Error('No band selected. Call setCurrentBand() first.');
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('song_annotations')
+        .delete()
+        .eq('id', annotationId)
+        .select();
+
+      if (error) {
+        console.error('Error deleting annotation:', error);
+        throw new Error('Failed to delete annotation');
+      }
+
+      if (!data || data.length === 0) {
+        throw new Error('Annotation not found or you do not have permission to delete it');
+      }
+    } catch (error) {
+      console.error('Error in deleteAnnotation:', error);
+      throw error instanceof Error ? error : new Error('Failed to delete annotation');
+    }
+  }
+
+  /**
+   * Subscribe to real-time annotation changes for a song
+   * Returns an unsubscribe function
+   */
+  subscribeToAnnotations(
+    songId: string,
+    bandId: string,
+    callbacks: {
+      onInsert: (annotation: SongAnnotation) => void;
+      onUpdate: (annotation: SongAnnotation) => void;
+      onDelete: (id: string) => void;
+    }
+  ): () => void {
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      console.warn('Supabase not configured, real-time annotations disabled');
+      return () => {};
+    }
+
+    const channelName = `annotations:${songId}:${bandId}`;
+    const channel = supabase
+      .channel(channelName)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'song_annotations',
+          filter: `song_id=eq.${songId}`,
+        },
+        (payload) => {
+          callbacks.onInsert(this.transformSongAnnotation(payload.new));
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'UPDATE',
+          schema: 'public',
+          table: 'song_annotations',
+          filter: `song_id=eq.${songId}`,
+        },
+        (payload) => {
+          callbacks.onUpdate(this.transformSongAnnotation(payload.new));
+        }
+      )
+      .on(
+        'postgres_changes',
+        {
+          event: 'DELETE',
+          schema: 'public',
+          table: 'song_annotations',
+          filter: `song_id=eq.${songId}`,
+        },
+        (payload) => {
+          callbacks.onDelete(payload.old.id as string);
+        }
+      )
+      .subscribe();
+
+    this.realtimeChannels.push(channel);
+
+    // Return unsubscribe function
+    return () => {
+      supabase.removeChannel(channel);
+      const idx = this.realtimeChannels.indexOf(channel);
+      if (idx > -1) {
+        this.realtimeChannels.splice(idx, 1);
+      }
+    };
   }
 }
 
