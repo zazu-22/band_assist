@@ -275,12 +275,21 @@ CREATE POLICY "Users can insert annotations for their bands"
 
 CREATE POLICY "Users can update their own annotations"
   ON song_annotations FOR UPDATE TO authenticated
-  USING (author_id = auth.uid())
-  WITH CHECK (author_id = auth.uid());
+  USING (
+    author_id = auth.uid()
+    AND band_id IN (SELECT band_id FROM user_bands WHERE user_id = auth.uid())
+  )
+  WITH CHECK (
+    author_id = auth.uid()
+    AND band_id IN (SELECT band_id FROM user_bands WHERE user_id = auth.uid())
+  );
 
 CREATE POLICY "Users can delete their own annotations"
   ON song_annotations FOR DELETE TO authenticated
-  USING (author_id = auth.uid());
+  USING (
+    author_id = auth.uid()
+    AND band_id IN (SELECT band_id FROM user_bands WHERE user_id = auth.uid())
+  );
 
 ALTER PUBLICATION supabase_realtime ADD TABLE song_annotations;
 ```
