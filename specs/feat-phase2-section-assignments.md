@@ -619,7 +619,7 @@ export function useSectionAssignments(songId: string | undefined, bandId: string
 
 ### 6.5 Component Architecture
 
-```
+```text
 src/components/structure/
   index.ts                    # Update barrel export
   StructureTab.tsx            # Pass members prop to SectionList

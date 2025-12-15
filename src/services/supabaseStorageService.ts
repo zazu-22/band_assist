@@ -2516,6 +2516,10 @@ export class SupabaseStorageService implements IStorageService {
         .single();
 
       if (error) {
+        // Handle unique constraint violation
+        if (error.code === '23505') {
+          throw new Error('This member is already assigned to this role in this section');
+        }
         console.error('Error updating section assignment:', error);
         throw new Error('Failed to update assignment');
       }

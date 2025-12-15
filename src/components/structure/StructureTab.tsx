@@ -238,7 +238,10 @@ export const StructureTab: React.FC<StructureTabProps> = memo(function Structure
 
   const handleAssignmentFormSubmit = useCallback(
     async (data: AssignmentFormData) => {
-      if (!assignmentSectionId || !currentBandId) return;
+      if (!assignmentSectionId || !currentBandId) {
+        console.warn('Assignment submit called without section or band context');
+        return;
+      }
 
       if (editingAssignment) {
         await updateAssignment(editingAssignment.id, data);

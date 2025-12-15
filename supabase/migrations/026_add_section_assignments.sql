@@ -54,6 +54,11 @@ CREATE POLICY "Users can update band section assignments"
     band_id IN (
       SELECT band_id FROM user_bands WHERE user_id = auth.uid()
     )
+  )
+  WITH CHECK (
+    band_id IN (
+      SELECT band_id FROM user_bands WHERE user_id = auth.uid()
+    )
   );
 
 -- Users can delete assignments in their bands

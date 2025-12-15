@@ -29,7 +29,7 @@ export const ActivityIndicator: React.FC<ActivityIndicatorProps> = memo(function
     sm: 'text-xs',
     md: 'text-sm',
     lg: 'text-base',
-  };
+  } as const;
 
   const config = {
     playing: {

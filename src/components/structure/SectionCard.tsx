@@ -79,11 +79,11 @@ export const SectionCard: React.FC<SectionCardProps> = memo(function SectionCard
             {/* Status summary */}
             {statusSummary.total > 0 && (
               <span className="text-xs text-muted-foreground ml-2">
-                {statusSummary.playing > 0 && `${statusSummary.playing} Playing`}
-                {statusSummary.playing > 0 && statusSummary.resting > 0 && ', '}
-                {statusSummary.resting > 0 && `${statusSummary.resting} Resting`}
-                {(statusSummary.playing > 0 || statusSummary.resting > 0) && statusSummary.optional > 0 && ', '}
-                {statusSummary.optional > 0 && `${statusSummary.optional} Optional`}
+                {[
+                  statusSummary.playing > 0 && `${statusSummary.playing} Playing`,
+                  statusSummary.resting > 0 && `${statusSummary.resting} Resting`,
+                  statusSummary.optional > 0 && `${statusSummary.optional} Optional`,
+                ].filter(Boolean).join(', ')}
               </span>
             )}
           </div>

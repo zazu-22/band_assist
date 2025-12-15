@@ -42,6 +42,8 @@ export function useSectionAssignments(songId: string | undefined, bandId: string
     return map;
   }, [allAssignments]);
 
+  // Note: bandId is included in dependencies to trigger refetch when band changes,
+  // even though the service method uses its internal currentBandId state
   const fetchAssignments = useCallback(async () => {
     if (!songId || !bandId) {
       setAllAssignments([]);
@@ -93,12 +95,14 @@ export function useSectionAssignments(songId: string | undefined, bandId: string
 
   const getStatusSummary = useCallback((sectionId: string): AssignmentStatusSummary => {
     const sectionAssignments = assignmentsBySection.get(sectionId) || [];
-    return {
-      playing: sectionAssignments.filter(a => a.status === 'playing').length,
-      resting: sectionAssignments.filter(a => a.status === 'resting').length,
-      optional: sectionAssignments.filter(a => a.status === 'optional').length,
-      total: sectionAssignments.length,
-    };
+    return sectionAssignments.reduce(
+      (acc, a) => {
+        acc[a.status]++;
+        acc.total++;
+        return acc;
+      },
+      { playing: 0, resting: 0, optional: 0, total: 0 }
+    );
   }, [assignmentsBySection]);
 
   const getUserAssignmentForSection = useCallback((

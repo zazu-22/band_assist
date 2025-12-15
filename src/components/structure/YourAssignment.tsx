@@ -25,7 +25,7 @@ export const YourAssignment: React.FC<YourAssignmentProps> = memo(function YourA
         'flex items-center gap-2 text-muted-foreground',
         compact ? 'text-xs' : 'text-sm'
       )}>
-        <AlertCircle size={compact ? 12 : 14} />
+        <AlertCircle size={compact ? 12 : 14} aria-hidden="true" />
         <span>No assignment for you in this section</span>
       </div>
     );
