@@ -1,13 +1,13 @@
 import React, { useState, useCallback, useMemo, memo } from 'react';
 import { Plus, RefreshCw, Layers } from 'lucide-react';
-import type { Song, SongSection } from '@/types';
-import { useSongSections } from '@/hooks/useSongSections';
-import { useAppActions } from '@/contexts';
 import { SectionList } from './SectionList';
 import { SectionForm, type SectionFormData } from './SectionForm';
 import { ConfirmDialog, toast } from '@/components/ui';
 import { Button } from '@/components/primitives/button';
 import { Card, CardContent, CardHeader } from '@/components/primitives/card';
+import { useSongSections } from '@/hooks/useSongSections';
+import { useAppActions } from '@/contexts';
+import type { Song, SongSection } from '@/types';
 import { extractSectionsFromScore, scoreHasSectionMarkers, type AlphaTabScore } from '@/lib/sectionExtractor';
 
 interface StructureTabProps {

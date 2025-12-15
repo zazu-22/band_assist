@@ -82,8 +82,8 @@ export const SectionCard: React.FC<SectionCardProps> = memo(function SectionCard
           )}
         </div>
 
-        {/* Action Buttons */}
-        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+        {/* Action Buttons - visible on hover or focus for accessibility */}
+        <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 group-focus-within:opacity-100 transition-opacity">
           <Button
             variant="ghost"
             size="icon"

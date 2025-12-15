@@ -57,7 +57,8 @@ CREATE POLICY "Users can insert sections for their bands"
 
 CREATE POLICY "Users can update sections for their bands"
   ON song_sections FOR UPDATE TO authenticated
-  USING (band_id IN (SELECT band_id FROM user_bands WHERE user_id = auth.uid()));
+  USING (band_id IN (SELECT band_id FROM user_bands WHERE user_id = auth.uid()))
+  WITH CHECK (band_id IN (SELECT band_id FROM user_bands WHERE user_id = auth.uid()));
 
 CREATE POLICY "Users can delete sections for their bands"
   ON song_sections FOR DELETE TO authenticated
