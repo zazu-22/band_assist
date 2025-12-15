@@ -27,6 +27,22 @@ interface UseSectionAssignmentsResult {
   refetch: () => Promise<void>;
 }
 
+/**
+ * Manages section assignment state for a given song and band, exposing CRUD operations, derived views, and helpers.
+ *
+ * @param songId - The song ID whose section assignments should be loaded; when `undefined`, assignments are cleared.
+ * @param bandId - The band ID used to validate loading; when `null`, assignments are cleared.
+ * @returns An object containing:
+ *  - `assignmentsBySection`: a Map of sectionId -> SectionAssignment[] grouped by section,
+ *  - `allAssignments`: flat list of all SectionAssignment objects,
+ *  - `isLoading`: loading state flag,
+ *  - `error`: any loading error or `null`,
+ *  - `createAssignment`, `updateAssignment`, `deleteAssignment`: async functions to mutate assignments,
+ *  - `getAssignmentsForSection`: returns assignments for a specific section,
+ *  - `getStatusSummary`: returns counts of `playing`, `resting`, `optional`, and `total` for a section,
+ *  - `getUserAssignmentForSection`: finds a user's assignment in a section based on member linkage,
+ *  - `refetch`: function to reload assignments.
+ */
 export function useSectionAssignments(songId: string | undefined, bandId: string | null): UseSectionAssignmentsResult {
   const [allAssignments, setAllAssignments] = useState<SectionAssignment[]>([]);
   const [isLoading, setIsLoading] = useState(false);
