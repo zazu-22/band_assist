@@ -634,6 +634,85 @@ export type Database = {
           },
         ]
       }
+      song_annotations: {
+        Row: {
+          id: string
+          song_id: string
+          band_id: string
+          author_id: string
+          section_id: string | null
+          bar_index: number
+          beat_index: number
+          track_index: number
+          content: string
+          annotation_type: string
+          is_resolved: boolean
+          resolved_by: string | null
+          resolved_at: string | null
+          visible_during_playback: boolean
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          song_id: string
+          band_id: string
+          author_id: string
+          section_id?: string | null
+          bar_index: number
+          beat_index?: number
+          track_index?: number
+          content: string
+          annotation_type?: string
+          is_resolved?: boolean
+          resolved_by?: string | null
+          resolved_at?: string | null
+          visible_during_playback?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          song_id?: string
+          band_id?: string
+          author_id?: string
+          section_id?: string | null
+          bar_index?: number
+          beat_index?: number
+          track_index?: number
+          content?: string
+          annotation_type?: string
+          is_resolved?: boolean
+          resolved_by?: string | null
+          resolved_at?: string | null
+          visible_during_playback?: boolean
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "song_annotations_song_id_fkey"
+            columns: ["song_id"]
+            isOneToOne: false
+            referencedRelation: "songs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "song_annotations_band_id_fkey"
+            columns: ["band_id"]
+            isOneToOne: false
+            referencedRelation: "bands"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "song_annotations_section_id_fkey"
+            columns: ["section_id"]
+            isOneToOne: false
+            referencedRelation: "song_sections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

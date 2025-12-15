@@ -276,3 +276,75 @@ export interface AssignmentStatusSummary {
   optional: number;
   total: number;
 }
+
+// =============================================================================
+// SONG ANNOTATIONS (Phase 3 - Song Collaboration Architecture)
+// =============================================================================
+
+/** Annotation type determines visual styling and behavior */
+export type AnnotationType = 'note' | 'cue' | 'warning' | 'question';
+
+/** Default colors derived from annotation type (no color field in database) */
+export const ANNOTATION_TYPE_COLORS: Record<AnnotationType, string> = {
+  note: 'yellow',
+  cue: 'blue',
+  warning: 'red',
+  question: 'green',
+} as const;
+
+/** Song annotation tied to a specific position in a song */
+export interface SongAnnotation {
+  id: string;
+  songId: string;
+  bandId: string;
+  authorId: string;
+
+  // Optional link to a song section
+  sectionId?: string;
+
+  // Position in the score (bar/beat based)
+  barIndex: number;
+  beatIndex: number;
+  trackIndex: number;
+
+  // Content
+  content: string;
+  annotationType: AnnotationType;
+
+  // Resolution (for question-type)
+  isResolved: boolean;
+  resolvedBy?: string;
+  resolvedAt?: string;
+
+  // Display options
+  visibleDuringPlayback: boolean;
+
+  // Denormalized for display (populated by joins or client-side)
+  authorName?: string;
+  sectionName?: string;
+
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Input type for creating a new annotation */
+export interface SongAnnotationInput {
+  songId: string;
+  bandId: string;
+  sectionId?: string;
+  barIndex: number;
+  beatIndex?: number;
+  trackIndex?: number;
+  content: string;
+  annotationType: AnnotationType;
+  visibleDuringPlayback?: boolean;
+}
+
+/** Input type for updating an existing annotation */
+export interface SongAnnotationUpdate {
+  content?: string;
+  annotationType?: AnnotationType;
+  sectionId?: string | null;
+  isResolved?: boolean;
+  visibleDuringPlayback?: boolean;
+}
