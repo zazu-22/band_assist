@@ -1,4 +1,4 @@
-import { Song, BandMember, BandEvent, SongChart, Assignment, SongPart, PracticeSession, PracticeFilters, UserSongProgress, UserSongStatus, PracticePriority, PracticeStats, UpdatePracticeSessionInput } from '../types';
+import { Song, BandMember, BandEvent, SongChart, Assignment, SongPart, PracticeSession, PracticeFilters, UserSongProgress, UserSongStatus, PracticePriority, PracticeStats, UpdatePracticeSessionInput, SongSection, SongSectionInput, SectionSource } from '../types';
 import { IStorageService, LoadResult } from './IStorageService';
 import { getSupabaseClient, isSupabaseConfigured } from './supabaseClient';
 import { validateAvatarColor } from '@/lib/avatar';
@@ -1995,6 +1995,292 @@ export class SupabaseStorageService implements IStorageService {
     } catch (error) {
       console.error('Error in calculatePracticeStats:', error);
       throw error instanceof Error ? error : new Error('Failed to calculate practice statistics');
+    }
+  }
+
+  // =============================================================================
+  // SONG SECTIONS (Phase 1 - Song Collaboration Architecture)
+  // =============================================================================
+
+  /**
+   * Transform database row to SongSection type
+   * barCount is computed client-side (not stored in database)
+   */
+  private transformSongSection(
+    row: Database['public']['Tables']['song_sections']['Row']
+  ): SongSection {
+    return {
+      id: row.id,
+      songId: row.song_id,
+      bandId: row.band_id,
+      name: row.name,
+      displayOrder: row.display_order,
+      startBar: row.start_bar,
+      endBar: row.end_bar,
+      barCount: row.end_bar - row.start_bar + 1, // Computed here
+      startTick: row.start_tick ?? undefined,
+      endTick: row.end_tick ?? undefined,
+      source: row.source as SectionSource,
+      color: row.color ?? undefined,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+    };
+  }
+
+  /**
+   * Get all sections for a song, ordered by display_order
+   */
+  async getSongSections(songId: string): Promise<SongSection[]> {
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      throw new Error('Supabase is not configured. Check environment variables.');
+    }
+
+    if (!this.currentBandId) {
+      throw new Error('No band selected. Call setCurrentBand() first.');
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('song_sections')
+        .select('*')
+        .eq('song_id', songId)
+        .order('display_order', { ascending: true });
+
+      if (error) {
+        console.error('Error fetching song sections:', error);
+        throw new Error('Failed to load song sections');
+      }
+
+      return (data || []).map(row => this.transformSongSection(row));
+    } catch (error) {
+      console.error('Error in getSongSections:', error);
+      throw error instanceof Error ? error : new Error('Failed to load song sections');
+    }
+  }
+
+  /**
+   * Create a new section
+   */
+  async createSection(input: SongSectionInput): Promise<SongSection> {
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      throw new Error('Supabase is not configured. Check environment variables.');
+    }
+
+    if (!this.currentBandId) {
+      throw new Error('No band selected. Call setCurrentBand() first.');
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('song_sections')
+        .insert({
+          song_id: input.songId,
+          band_id: input.bandId,
+          name: input.name,
+          display_order: input.displayOrder,
+          start_bar: input.startBar,
+          end_bar: input.endBar,
+          start_tick: input.startTick ?? null,
+          end_tick: input.endTick ?? null,
+          source: input.source,
+          color: input.color ?? null,
+        })
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error creating section:', error);
+        throw new Error('Failed to create section');
+      }
+
+      return this.transformSongSection(data);
+    } catch (error) {
+      console.error('Error in createSection:', error);
+      throw error instanceof Error ? error : new Error('Failed to create section');
+    }
+  }
+
+  /**
+   * Update an existing section
+   */
+  async updateSection(sectionId: string, updates: Partial<SongSectionInput>): Promise<SongSection> {
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      throw new Error('Supabase is not configured. Check environment variables.');
+    }
+
+    if (!this.currentBandId) {
+      throw new Error('No band selected. Call setCurrentBand() first.');
+    }
+
+    try {
+      // Build update payload, only including fields that are present
+      const updatePayload: Record<string, unknown> = {
+        updated_at: new Date().toISOString(),
+      };
+      if ('name' in updates) updatePayload.name = updates.name;
+      if ('displayOrder' in updates) updatePayload.display_order = updates.displayOrder;
+      if ('startBar' in updates) updatePayload.start_bar = updates.startBar;
+      if ('endBar' in updates) updatePayload.end_bar = updates.endBar;
+      if ('startTick' in updates) updatePayload.start_tick = updates.startTick ?? null;
+      if ('endTick' in updates) updatePayload.end_tick = updates.endTick ?? null;
+      if ('source' in updates) updatePayload.source = updates.source;
+      if ('color' in updates) updatePayload.color = updates.color ?? null;
+
+      const { data, error } = await supabase
+        .from('song_sections')
+        .update(updatePayload)
+        .eq('id', sectionId)
+        .eq('band_id', this.currentBandId)
+        .select()
+        .single();
+
+      if (error) {
+        console.error('Error updating section:', error);
+        throw new Error('Failed to update section');
+      }
+
+      if (!data) {
+        throw new Error('Section not found');
+      }
+
+      return this.transformSongSection(data);
+    } catch (error) {
+      console.error('Error in updateSection:', error);
+      throw error instanceof Error ? error : new Error('Failed to update section');
+    }
+  }
+
+  /**
+   * Delete a section
+   */
+  async deleteSection(sectionId: string): Promise<void> {
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      throw new Error('Supabase is not configured. Check environment variables.');
+    }
+
+    if (!this.currentBandId) {
+      throw new Error('No band selected. Call setCurrentBand() first.');
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('song_sections')
+        .delete()
+        .eq('id', sectionId)
+        .eq('band_id', this.currentBandId)
+        .select();
+
+      if (error) {
+        console.error('Error deleting section:', error);
+        throw new Error('Failed to delete section');
+      }
+
+      if (!data || data.length === 0) {
+        throw new Error('Section not found or you do not have permission to delete it');
+      }
+    } catch (error) {
+      console.error('Error in deleteSection:', error);
+      throw error instanceof Error ? error : new Error('Failed to delete section');
+    }
+  }
+
+  /**
+   * Bulk upsert sections (used for GP extraction)
+   * Deletes existing gp_marker sections and inserts new ones
+   * Manual sections are preserved
+   */
+  async upsertSections(songId: string, bandId: string, sections: SongSectionInput[]): Promise<SongSection[]> {
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      throw new Error('Supabase is not configured. Check environment variables.');
+    }
+
+    if (!this.currentBandId) {
+      throw new Error('No band selected. Call setCurrentBand() first.');
+    }
+
+    try {
+      // Delete existing gp_marker sections for this song
+      const { error: deleteError } = await supabase
+        .from('song_sections')
+        .delete()
+        .eq('song_id', songId)
+        .eq('band_id', bandId)
+        .eq('source', 'gp_marker');
+
+      if (deleteError) {
+        console.error('Error deleting existing GP sections:', deleteError);
+        throw new Error('Failed to clear existing GP sections');
+      }
+
+      // If no new sections to insert, return empty array
+      if (sections.length === 0) {
+        return [];
+      }
+
+      // Insert new sections
+      const insertData = sections.map(s => ({
+        song_id: s.songId,
+        band_id: s.bandId,
+        name: s.name,
+        display_order: s.displayOrder,
+        start_bar: s.startBar,
+        end_bar: s.endBar,
+        start_tick: s.startTick ?? null,
+        end_tick: s.endTick ?? null,
+        source: s.source,
+        color: s.color ?? null,
+      }));
+
+      const { data, error } = await supabase
+        .from('song_sections')
+        .insert(insertData)
+        .select();
+
+      if (error) {
+        console.error('Error inserting sections:', error);
+        throw new Error('Failed to insert sections');
+      }
+
+      return (data || []).map(row => this.transformSongSection(row));
+    } catch (error) {
+      console.error('Error in upsertSections:', error);
+      throw error instanceof Error ? error : new Error('Failed to upsert sections');
+    }
+  }
+
+  /**
+   * Delete all sections for a song (both gp_marker and manual)
+   * Used when re-extracting from GP with "replace all" option
+   */
+  async deleteAllSections(songId: string): Promise<void> {
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      throw new Error('Supabase is not configured. Check environment variables.');
+    }
+
+    if (!this.currentBandId) {
+      throw new Error('No band selected. Call setCurrentBand() first.');
+    }
+
+    try {
+      const { error } = await supabase
+        .from('song_sections')
+        .delete()
+        .eq('song_id', songId)
+        .eq('band_id', this.currentBandId);
+
+      if (error) {
+        console.error('Error deleting all sections:', error);
+        throw new Error('Failed to delete sections');
+      }
+    } catch (error) {
+      console.error('Error in deleteAllSections:', error);
+      throw error instanceof Error ? error : new Error('Failed to delete sections');
     }
   }
 }

@@ -192,3 +192,42 @@ export interface PracticeFilters {
 export type UpdatePracticeSessionInput = Partial<
   Pick<PracticeSession, 'durationMinutes' | 'tempoBpm' | 'sectionsPracticed' | 'notes' | 'date' | 'songId'>
 >;
+
+// =============================================================================
+// SONG SECTIONS (Phase 1 - Song Collaboration Architecture)
+// =============================================================================
+
+/** Source of section creation */
+export type SectionSource = 'gp_marker' | 'manual';
+
+/** Song section representing a structural part of a song */
+export interface SongSection {
+  id: string;
+  songId: string;
+  bandId: string;
+  name: string;
+  displayOrder: number;
+  startBar: number;
+  endBar: number;
+  barCount: number;       // Computed client-side: endBar - startBar + 1
+  startTick?: number;
+  endTick?: number;       // May be null for final section
+  source: SectionSource;
+  color?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+/** Input type for creating/updating sections (excludes computed fields) */
+export interface SongSectionInput {
+  songId: string;
+  bandId: string;
+  name: string;
+  displayOrder: number;
+  startBar: number;
+  endBar: number;
+  startTick?: number;
+  endTick?: number;
+  source: SectionSource;
+  color?: string;
+}

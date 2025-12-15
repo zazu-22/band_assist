@@ -510,6 +510,69 @@ export type Database = {
           },
         ]
       }
+      song_sections: {
+        Row: {
+          id: string
+          song_id: string
+          band_id: string
+          name: string
+          display_order: number
+          start_bar: number
+          end_bar: number
+          start_tick: number | null
+          end_tick: number | null
+          source: string
+          color: string | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          song_id: string
+          band_id: string
+          name: string
+          display_order: number
+          start_bar: number
+          end_bar: number
+          start_tick?: number | null
+          end_tick?: number | null
+          source?: string
+          color?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          song_id?: string
+          band_id?: string
+          name?: string
+          display_order?: number
+          start_bar?: number
+          end_bar?: number
+          start_tick?: number | null
+          end_tick?: number | null
+          source?: string
+          color?: string | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "song_sections_song_id_fkey"
+            columns: ["song_id"]
+            isOneToOne: false
+            referencedRelation: "songs"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "song_sections_band_id_fkey"
+            columns: ["band_id"]
+            isOneToOne: false
+            referencedRelation: "bands"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never

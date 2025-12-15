@@ -46,6 +46,7 @@ import {
 import { LazyAlphaTab } from './LazyAlphaTab';
 import type { AlphaTabHandle, TrackInfo } from './LazyAlphaTab';
 import { findMatchingTrackIndex } from '@/lib/trackMatcher';
+import { StructureTab } from './structure';
 
 interface SongDetailProps {
   song: Song;
@@ -71,7 +72,7 @@ export const SongDetail: React.FC<SongDetailProps> = ({
     toggleBackingTrackMute,
   } = useAudioVolume();
 
-  const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'CHARTS' | 'ASSIGNMENTS' | 'AUDIO'>(
+  const [activeTab, setActiveTab] = useState<'OVERVIEW' | 'CHARTS' | 'STRUCTURE' | 'ASSIGNMENTS' | 'AUDIO'>(
     'OVERVIEW'
   );
   const [activeChartId, setActiveChartId] = useState<string | null>(
@@ -350,7 +351,7 @@ export const SongDetail: React.FC<SongDetailProps> = ({
   };
 
   // Keyboard navigation for tabs
-  const tabs = ['OVERVIEW', 'CHARTS', 'ASSIGNMENTS', 'AUDIO'] as const;
+  const tabs = ['OVERVIEW', 'CHARTS', 'STRUCTURE', 'ASSIGNMENTS', 'AUDIO'] as const;
   const handleTabKeyDown = (e: React.KeyboardEvent<HTMLDivElement>) => {
     const currentIndex = tabs.indexOf(activeTab);
     let newIndex = currentIndex;
@@ -849,6 +850,18 @@ export const SongDetail: React.FC<SongDetailProps> = ({
                   </div>
                 )}
               </div>
+            </div>
+          )}
+
+          {/* STRUCTURE TAB */}
+          {activeTab === 'STRUCTURE' && (
+            <div
+              id="tabpanel-structure"
+              role="tabpanel"
+              aria-labelledby="tab-structure"
+              className="max-w-4xl mx-auto animate-slide-in-from-bottom animation-forwards opacity-0 stagger-1"
+            >
+              <StructureTab song={song} />
             </div>
           )}
 
