@@ -38,3 +38,6 @@ export type { ProgressBarProps } from './ProgressBar';
 
 export { PracticeControlBar } from './PracticeControlBar';
 export type { PracticeControlBarProps } from './PracticeControlBar';
+
+export { SectionNav, calculateSectionSeekPercentage } from './SectionNav';
+export type { SectionNavProps } from './SectionNav';

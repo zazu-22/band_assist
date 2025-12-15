@@ -7,7 +7,7 @@ import React, {
   useMemo,
   useCallback,
 } from 'react';
-import { Song } from '@/types';
+import { Song, SongSection } from '@/types';
 import {
   Play,
   Pause,
@@ -42,8 +42,9 @@ import { useDerivedState, usePrevious } from '@/hooks/useDerivedState';
 import { useBlobUrl } from '@/hooks/useBlobUrl';
 import { useLinkedMember } from '@/hooks/useLinkedMember';
 import { useAppActions, useAudioVolume } from '@/contexts';
-import { PracticeControlBar, type AlphaTabState, type TrackInfo } from './practice';
+import { PracticeControlBar, SectionNav, calculateSectionSeekPercentage, type AlphaTabState, type TrackInfo } from './practice';
 import { findMatchingTrackIndex } from '@/lib/trackMatcher';
+import { useSongSections } from '@/hooks/useSongSections';
 
 // =============================================================================
 // TYPES
@@ -181,6 +182,28 @@ export const PracticeRoom: React.FC<PracticeRoomProps> = memo(function PracticeR
   const [gpState, setGpState] = useState<AlphaTabState | null>(null);
   const [gpTracks, setGpTracks] = useState<TrackInfo[]>([]);
   const [gpPosition, setGpPosition] = useState({ current: 0, total: 0 });
+  const [totalBars, _setTotalBars] = useState(0);
+  // currentBar state - reserved for future use with more precise bar tracking
+  const [_currentBar, _setCurrentBar] = useState<number | undefined>(undefined);
+
+  // Song sections for navigation
+  const { sections } = useSongSections(currentSong?.id ?? null, currentBandId);
+
+  // Estimate total bars from sections (use highest endBar)
+  const estimatedTotalBars = useMemo(() => {
+    if (sections.length === 0) return totalBars;
+    const maxEndBar = Math.max(...sections.map(s => s.endBar));
+    return maxEndBar > 0 ? maxEndBar : totalBars;
+  }, [sections, totalBars]);
+
+  // Estimate current bar from position (rough approximation)
+  // Uses gpPosition directly since we extract it into constants later for playbackState
+  const estimatedCurrentBar = useMemo(() => {
+    if (gpPosition.total <= 0 || estimatedTotalBars <= 0) return undefined;
+    const progress = gpPosition.current / gpPosition.total;
+    return Math.max(1, Math.ceil(progress * estimatedTotalBars));
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- gpPosition.current/total are primitive values
+  }, [gpPosition.current, gpPosition.total, estimatedTotalBars]);
 
   // ---------------------------------------------------------------------------
   // CONSTANTS
@@ -382,6 +405,13 @@ export const PracticeRoom: React.FC<PracticeRoomProps> = memo(function PracticeR
   const handleToggleTrackSolo = useCallback((index: number) => {
     alphaTabRef.current?.toggleTrackSolo(index);
   }, []);
+
+  const handleSectionClick = useCallback((section: SongSection) => {
+    if (!alphaTabRef.current || estimatedTotalBars <= 0) return;
+
+    const percentage = calculateSectionSeekPercentage(section, estimatedTotalBars);
+    alphaTabRef.current.seekTo(percentage);
+  }, [estimatedTotalBars]);
 
   // ---------------------------------------------------------------------------
   // OTHER CALLBACKS
@@ -594,6 +624,16 @@ export const PracticeRoom: React.FC<PracticeRoomProps> = memo(function PracticeR
 
         {/* Main Stage */}
         <div className="flex-1 flex flex-col relative min-w-0">
+          {/* Section Navigation (only for GP charts with sections) */}
+          {isGuitarPro && sections.length > 0 && (
+            <SectionNav
+              sections={sections}
+              currentBar={estimatedCurrentBar}
+              totalBars={estimatedTotalBars}
+              onSectionClick={handleSectionClick}
+            />
+          )}
+
           {/* Content Viewer */}
           <div
             id={CHART_PANEL_ID}
