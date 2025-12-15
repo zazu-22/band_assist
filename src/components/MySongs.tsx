@@ -609,17 +609,16 @@ export const MySongs: React.FC<MySongsProps> = memo(function MySongs({
     let mastered = 0;
     let learned = 0;
     let learning = 0;
-    let notStarted = 0;
-    let totalPracticeTime = 0;
 
     for (const item of mySongs) {
       const status = item.userStatus?.status;
       if (status === 'Mastered') mastered++;
       else if (status === 'Learned') learned++;
       else if (status === 'Learning') learning++;
-      else notStarted++;
-      totalPracticeTime += item.totalPracticeMinutes;
     }
+
+    // Derive notStarted to guarantee the invariant: total = mastered + learned + learning + notStarted
+    const notStarted = mySongs.length - (mastered + learned + learning);
 
     return {
       total: mySongs.length,
@@ -627,7 +626,6 @@ export const MySongs: React.FC<MySongsProps> = memo(function MySongs({
       learned,
       learning,
       notStarted,
-      totalPracticeTime,
     };
   }, [mySongs]);
 
@@ -955,7 +953,7 @@ export const MySongs: React.FC<MySongsProps> = memo(function MySongs({
           title="Learned"
           value={mySongsStats.learned}
           icon={CheckCircle2}
-          variant="success"
+          variant="info"
         />
         <StatCard
           title="Learning"
