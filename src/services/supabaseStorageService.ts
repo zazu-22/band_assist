@@ -1,4 +1,4 @@
-import { Song, BandMember, BandEvent, SongChart, Assignment, SongPart, PracticeSession, PracticeFilters, UserSongProgress, UserSongStatus, PracticePriority, PracticeStats, UpdatePracticeSessionInput, SongSection, SongSectionInput, SectionSource } from '../types';
+import { Song, BandMember, BandEvent, SongChart, Assignment, SongPart, PracticeSession, PracticeFilters, UserSongProgress, UserSongStatus, PracticePriority, PracticeStats, UpdatePracticeSessionInput, SongSection, SongSectionInput, SectionSource, SectionAssignment, SectionAssignmentInput, AssignmentStatus } from '../types';
 import { IStorageService, LoadResult } from './IStorageService';
 import { getSupabaseClient, isSupabaseConfigured } from './supabaseClient';
 import { validateAvatarColor } from '@/lib/avatar';
@@ -2281,6 +2281,293 @@ export class SupabaseStorageService implements IStorageService {
     } catch (error) {
       console.error('Error in deleteAllSections:', error);
       throw error instanceof Error ? error : new Error('Failed to delete sections');
+    }
+  }
+
+  // =============================================================================
+  // SECTION ASSIGNMENTS (Phase 2 - Song Collaboration Architecture)
+  // =============================================================================
+
+  /**
+   * Transform database row to SectionAssignment type
+   */
+  private transformSectionAssignment(
+    row: Database['public']['Tables']['section_assignments']['Row'],
+    memberData?: { name: string; avatar_color: string | null }
+  ): SectionAssignment {
+    return {
+      id: row.id,
+      sectionId: row.section_id,
+      memberId: row.member_id,
+      bandId: row.band_id,
+      role: row.role,
+      status: row.status as AssignmentStatus,
+      notes: row.notes ?? undefined,
+      gpTrackIndex: row.gp_track_index ?? undefined,
+      memberName: memberData?.name,
+      memberAvatarColor: memberData?.avatar_color ?? undefined,
+      createdAt: row.created_at,
+      updatedAt: row.updated_at,
+    };
+  }
+
+  /**
+   * Get all assignments for a song's sections.
+   * Uses a two-query approach for reliable filtering:
+   * 1. Fetch section IDs for the song
+   * 2. Fetch assignments for those sections with member data
+   */
+  async getSongSectionAssignments(songId: string): Promise<SectionAssignment[]> {
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      throw new Error('Supabase is not configured.');
+    }
+
+    if (!this.currentBandId) {
+      throw new Error('No band selected. Call setCurrentBand() first.');
+    }
+
+    try {
+      // Step 1: Get section IDs for this song
+      const { data: sections, error: sectionsError } = await supabase
+        .from('song_sections')
+        .select('id')
+        .eq('song_id', songId)
+        .eq('band_id', this.currentBandId);
+
+      if (sectionsError) {
+        console.error('Error fetching sections:', sectionsError);
+        throw new Error('Failed to load sections');
+      }
+
+      const sectionIds = sections?.map(s => s.id) || [];
+      if (sectionIds.length === 0) {
+        return [];
+      }
+
+      // Step 2: Fetch assignments for those sections with member join
+      const { data, error } = await supabase
+        .from('section_assignments')
+        .select(`
+          *,
+          band_members!member_id (
+            name,
+            avatar_color
+          )
+        `)
+        .in('section_id', sectionIds)
+        .eq('band_id', this.currentBandId);
+
+      if (error) {
+        console.error('Error fetching section assignments:', error);
+        throw new Error('Failed to load section assignments');
+      }
+
+      return (data || []).map(row => {
+        const memberData = row.band_members as { name: string; avatar_color: string | null } | null;
+        return this.transformSectionAssignment(row, memberData ?? undefined);
+      });
+    } catch (error) {
+      console.error('Error in getSongSectionAssignments:', error);
+      throw error instanceof Error ? error : new Error('Failed to load section assignments');
+    }
+  }
+
+  /**
+   * Get assignments for a specific section
+   */
+  async getSectionAssignments(sectionId: string): Promise<SectionAssignment[]> {
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      throw new Error('Supabase is not configured.');
+    }
+
+    if (!this.currentBandId) {
+      throw new Error('No band selected. Call setCurrentBand() first.');
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('section_assignments')
+        .select(`
+          *,
+          band_members!member_id (
+            name,
+            avatar_color
+          )
+        `)
+        .eq('section_id', sectionId)
+        .eq('band_id', this.currentBandId);
+
+      if (error) {
+        console.error('Error fetching section assignments:', error);
+        throw new Error('Failed to load section assignments');
+      }
+
+      return (data || []).map(row => {
+        const memberData = row.band_members as { name: string; avatar_color: string | null } | null;
+        return this.transformSectionAssignment(row, memberData ?? undefined);
+      });
+    } catch (error) {
+      console.error('Error in getSectionAssignments:', error);
+      throw error instanceof Error ? error : new Error('Failed to load section assignments');
+    }
+  }
+
+  /**
+   * Create a new section assignment
+   */
+  async createSectionAssignment(input: SectionAssignmentInput): Promise<SectionAssignment> {
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      throw new Error('Supabase is not configured.');
+    }
+
+    if (!this.currentBandId) {
+      throw new Error('No band selected. Call setCurrentBand() first.');
+    }
+
+    // Validate notes length
+    if (input.notes && input.notes.length > 500) {
+      throw new Error('Notes cannot exceed 500 characters');
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('section_assignments')
+        .insert({
+          section_id: input.sectionId,
+          member_id: input.memberId,
+          band_id: input.bandId,
+          role: input.role,
+          status: input.status,
+          notes: input.notes ?? null,
+          gp_track_index: input.gpTrackIndex ?? null,
+        })
+        .select(`
+          *,
+          band_members!member_id (
+            name,
+            avatar_color
+          )
+        `)
+        .single();
+
+      if (error) {
+        // Handle unique constraint violation
+        if (error.code === '23505') {
+          throw new Error('This member is already assigned to this role in this section');
+        }
+        console.error('Error creating section assignment:', error);
+        throw new Error('Failed to create assignment');
+      }
+
+      const memberData = data.band_members as { name: string; avatar_color: string | null } | null;
+      return this.transformSectionAssignment(data, memberData ?? undefined);
+    } catch (error) {
+      console.error('Error in createSectionAssignment:', error);
+      throw error instanceof Error ? error : new Error('Failed to create assignment');
+    }
+  }
+
+  /**
+   * Update an existing section assignment
+   */
+  async updateSectionAssignment(
+    assignmentId: string,
+    updates: Partial<Omit<SectionAssignmentInput, 'sectionId' | 'bandId'>>
+  ): Promise<SectionAssignment> {
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      throw new Error('Supabase is not configured.');
+    }
+
+    if (!this.currentBandId) {
+      throw new Error('No band selected. Call setCurrentBand() first.');
+    }
+
+    // Validate notes length
+    if (updates.notes && updates.notes.length > 500) {
+      throw new Error('Notes cannot exceed 500 characters');
+    }
+
+    try {
+      const updatePayload: Record<string, unknown> = {
+        updated_at: new Date().toISOString(),
+      };
+      if ('memberId' in updates) updatePayload.member_id = updates.memberId;
+      if ('role' in updates) updatePayload.role = updates.role;
+      if ('status' in updates) updatePayload.status = updates.status;
+      if ('notes' in updates) updatePayload.notes = updates.notes ?? null;
+      if ('gpTrackIndex' in updates) updatePayload.gp_track_index = updates.gpTrackIndex ?? null;
+
+      const { data, error } = await supabase
+        .from('section_assignments')
+        .update(updatePayload)
+        .eq('id', assignmentId)
+        .eq('band_id', this.currentBandId)
+        .select(`
+          *,
+          band_members!member_id (
+            name,
+            avatar_color
+          )
+        `)
+        .single();
+
+      if (error) {
+        // Handle unique constraint violation
+        if (error.code === '23505') {
+          throw new Error('This member is already assigned to this role in this section');
+        }
+        console.error('Error updating section assignment:', error);
+        throw new Error('Failed to update assignment');
+      }
+
+      if (!data) {
+        throw new Error('Assignment not found');
+      }
+
+      const memberData = data.band_members as { name: string; avatar_color: string | null } | null;
+      return this.transformSectionAssignment(data, memberData ?? undefined);
+    } catch (error) {
+      console.error('Error in updateSectionAssignment:', error);
+      throw error instanceof Error ? error : new Error('Failed to update assignment');
+    }
+  }
+
+  /**
+   * Delete a section assignment
+   */
+  async deleteSectionAssignment(assignmentId: string): Promise<void> {
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      throw new Error('Supabase is not configured.');
+    }
+
+    if (!this.currentBandId) {
+      throw new Error('No band selected. Call setCurrentBand() first.');
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('section_assignments')
+        .delete()
+        .eq('id', assignmentId)
+        .eq('band_id', this.currentBandId)
+        .select();
+
+      if (error) {
+        console.error('Error deleting section assignment:', error);
+        throw new Error('Failed to delete assignment');
+      }
+
+      if (!data || data.length === 0) {
+        throw new Error('Assignment not found');
+      }
+    } catch (error) {
+      console.error('Error in deleteSectionAssignment:', error);
+      throw error instanceof Error ? error : new Error('Failed to delete assignment');
     }
   }
 }

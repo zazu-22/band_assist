@@ -573,6 +573,67 @@ export type Database = {
           },
         ]
       }
+      section_assignments: {
+        Row: {
+          id: string
+          section_id: string
+          member_id: string | null
+          band_id: string
+          role: string
+          status: string
+          notes: string | null
+          gp_track_index: number | null
+          created_at: string
+          updated_at: string
+        }
+        Insert: {
+          id?: string
+          section_id: string
+          member_id?: string | null
+          band_id: string
+          role: string
+          status?: string
+          notes?: string | null
+          gp_track_index?: number | null
+          created_at?: string
+          updated_at?: string
+        }
+        Update: {
+          id?: string
+          section_id?: string
+          member_id?: string | null
+          band_id?: string
+          role?: string
+          status?: string
+          notes?: string | null
+          gp_track_index?: number | null
+          created_at?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "section_assignments_section_id_fkey"
+            columns: ["section_id"]
+            isOneToOne: false
+            referencedRelation: "song_sections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "section_assignments_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "band_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "section_assignments_band_id_fkey"
+            columns: ["band_id"]
+            isOneToOne: false
+            referencedRelation: "bands"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       [_ in never]: never
