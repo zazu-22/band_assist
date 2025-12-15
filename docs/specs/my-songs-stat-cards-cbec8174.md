@@ -26,6 +26,7 @@ Currently, the My Songs page shows only a list of assigned songs without any sum
 ## 5. Requirements
 
 ### 5.1 Functional Requirements
+
 | ID | Requirement | Acceptance Criteria |
 |----|-------------|---------------------|
 | FR-1 | Display "My Songs" stat card | Shows count of total songs assigned to the user with Music icon and info variant |
@@ -81,6 +82,7 @@ const mySongsStats = useMemo(() => {
 ```
 
 ## 7. Edge Cases and Error Handling
+
 | Scenario | Expected Behavior |
 |----------|-------------------|
 | User has no songs assigned | Stat cards section is not rendered (existing "no songs assigned" view handles this) |
@@ -112,6 +114,7 @@ const mySongsStats = useMemo(() => {
 - Test with real data across different status distributions
 
 ## 9. Files to Modify/Create
+
 | File | Action | Description |
 |------|--------|-------------|
 | src/components/MySongs.tsx | Modify | Add Clock, Target, Trophy imports; add mySongsStats useMemo; add stat cards grid section between header and filters |
