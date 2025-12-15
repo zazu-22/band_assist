@@ -40,7 +40,6 @@ CREATE TABLE song_sections (
 
 CREATE INDEX idx_song_sections_song_id ON song_sections(song_id);
 CREATE INDEX idx_song_sections_band_id ON song_sections(band_id);
-CREATE INDEX idx_song_sections_display_order ON song_sections(song_id, display_order);
 
 -- =============================================================================
 -- ROW LEVEL SECURITY
@@ -106,13 +105,6 @@ BEGIN
     WHERE tablename = 'song_sections' AND indexname = 'idx_song_sections_band_id'
   ) THEN
     RAISE EXCEPTION 'Migration failed: idx_song_sections_band_id not created';
-  END IF;
-
-  IF NOT EXISTS (
-    SELECT 1 FROM pg_indexes
-    WHERE tablename = 'song_sections' AND indexname = 'idx_song_sections_display_order'
-  ) THEN
-    RAISE EXCEPTION 'Migration failed: idx_song_sections_display_order not created';
   END IF;
 
   -- Check RLS enabled

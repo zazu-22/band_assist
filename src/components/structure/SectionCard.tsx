@@ -1,8 +1,8 @@
 import React, { memo } from 'react';
+import { Edit3, Trash2, Music2, FileText } from 'lucide-react';
 import type { SongSection } from '@/types';
 import { Button } from '@/components/primitives/button';
 import { cn } from '@/lib/utils';
-import { Edit3, Trash2, Music2, FileText } from 'lucide-react';
 
 interface SectionCardProps {
   section: SongSection;
