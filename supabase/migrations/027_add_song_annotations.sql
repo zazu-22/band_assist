@@ -83,16 +83,25 @@ CREATE POLICY "Users can insert annotations for their bands"
     AND author_id = auth.uid()
   );
 
--- Users can update their own annotations
+-- Users can update their own annotations (must still be band member)
 CREATE POLICY "Users can update their own annotations"
   ON song_annotations FOR UPDATE TO authenticated
-  USING (author_id = auth.uid())
-  WITH CHECK (author_id = auth.uid());
+  USING (
+    author_id = auth.uid()
+    AND band_id IN (SELECT band_id FROM user_bands WHERE user_id = auth.uid())
+  )
+  WITH CHECK (
+    author_id = auth.uid()
+    AND band_id IN (SELECT band_id FROM user_bands WHERE user_id = auth.uid())
+  );
 
--- Users can delete their own annotations
+-- Users can delete their own annotations (must still be band member)
 CREATE POLICY "Users can delete their own annotations"
   ON song_annotations FOR DELETE TO authenticated
-  USING (author_id = auth.uid());
+  USING (
+    author_id = auth.uid()
+    AND band_id IN (SELECT band_id FROM user_bands WHERE user_id = auth.uid())
+  );
 
 -- =============================================================================
 -- REAL-TIME

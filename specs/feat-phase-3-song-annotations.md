@@ -126,7 +126,7 @@ The annotation system follows the existing patterns established in Phase 1 (Song
 
 ### Component Structure
 
-```
+```text
 src/components/annotations/
 ├── index.ts
 ├── AnnotationOverlay.tsx
