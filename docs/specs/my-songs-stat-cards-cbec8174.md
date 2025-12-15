@@ -98,7 +98,7 @@ const mySongsStats = useMemo(() => {
 - Test `mySongsStats` calculation with mocked mySongs data:
   - Empty array returns all zeros
   - Mixed statuses counted correctly
-  - Practice time summed correctly
+  - Practice time summed accurately
 - Test formatMinutesToHours edge cases (already covered in codebase)
 
 ### Integration Tests
