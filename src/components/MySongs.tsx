@@ -13,6 +13,9 @@ import {
   Filter,
   X,
   Search,
+  Clock,
+  Target,
+  Trophy,
 } from 'lucide-react';
 import {
   Badge,
@@ -37,7 +40,7 @@ import {
   Input,
   Label,
 } from '@/components/primitives';
-import { EmptyState, toast } from '@/components/ui';
+import { EmptyState, StatCard, toast } from '@/components/ui';
 import { SongStatusBadges } from '@/components/SongStatusBadges';
 import { cn } from '@/lib/utils';
 import { getPracticeRoute } from '@/routes';
@@ -600,6 +603,27 @@ export const MySongs: React.FC<MySongsProps> = memo(function MySongs({
       }));
   }, [songs, linkedMember, userSongStatuses, practiceTimePerSong]);
 
+  // Calculate stats from mySongs for stat cards
+  const mySongsStats = useMemo(() => {
+    let mastered = 0;
+    let learning = 0;
+    let totalPracticeTime = 0;
+
+    for (const item of mySongs) {
+      const status = item.userStatus?.status;
+      if (status === 'Mastered') mastered++;
+      else if (status === 'Learning') learning++;
+      totalPracticeTime += item.totalPracticeMinutes;
+    }
+
+    return {
+      total: mySongs.length,
+      mastered,
+      learning,
+      totalPracticeTime,
+    };
+  }, [mySongs]);
+
   // Apply filters to songs
   const filteredSongs = useMemo(() => {
     return mySongs.filter((item) => {
@@ -906,8 +930,36 @@ export const MySongs: React.FC<MySongsProps> = memo(function MySongs({
         </p>
       </header>
 
+      {/* Stat Cards */}
+      <div className="grid grid-cols-2 lg:grid-cols-4 gap-4 animate-slide-in-from-bottom animation-forwards opacity-0 stagger-1">
+        <StatCard
+          title="My Songs"
+          value={mySongsStats.total}
+          icon={Music}
+          variant="info"
+        />
+        <StatCard
+          title="Mastered"
+          value={mySongsStats.mastered}
+          icon={Trophy}
+          variant="success"
+        />
+        <StatCard
+          title="Learning"
+          value={mySongsStats.learning}
+          icon={Target}
+          variant="warning"
+        />
+        <StatCard
+          title="Practice Time"
+          value={formatMinutesToHours(mySongsStats.totalPracticeTime)}
+          icon={Clock}
+          variant="default"
+        />
+      </div>
+
       {/* Filters Card */}
-      <Card className="animate-slide-in-from-bottom animation-forwards opacity-0 stagger-1">
+      <Card className="animate-slide-in-from-bottom animation-forwards opacity-0 stagger-2">
         <CardHeader className="py-4 px-5">
           <div className="flex items-center justify-between">
             <CardTitle className="text-lg font-serif">Filters</CardTitle>
@@ -999,7 +1051,7 @@ export const MySongs: React.FC<MySongsProps> = memo(function MySongs({
       </Card>
 
       {/* Songs Table Card */}
-      <Card className="overflow-hidden animate-slide-in-from-bottom animation-forwards opacity-0 stagger-2">
+      <Card className="overflow-hidden animate-slide-in-from-bottom animation-forwards opacity-0 stagger-3">
         <CardHeader className="py-4 px-5">
           <div className="flex items-center justify-between">
             <CardTitle className="text-lg font-serif">Songs</CardTitle>
