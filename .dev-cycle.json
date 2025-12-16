@@ -1,7 +1,0 @@
-{
-  "spec": { "mode": "auto", "dir": "docs/specs" },
-  "worktree": { "mode": "auto", "baseDir": "../worktrees", "naming": "workflow" },
-  "gates": { "review": true, "merge": true },
-  "review": { "providers": ["claude","coderabbit"], "required": "all" },
-  "merge": { "requireChecks": "all", "timeoutMinutes": 10 }
-}

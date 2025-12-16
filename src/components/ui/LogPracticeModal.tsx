@@ -452,7 +452,7 @@ const LogPracticeForm: React.FC<LogPracticeFormProps> = ({
 
         {/* Sections (optional) */}
         <div className="space-y-2">
-          <Label id="sections-label">Sections Practiced</Label>
+          <Label htmlFor="sections" id="sections-label">Sections Practiced</Label>
           {songId && sectionsLoading ? (
             <div className="flex items-center gap-2 text-sm text-muted-foreground py-2">
               <Loader2 className="h-4 w-4 animate-spin" />
