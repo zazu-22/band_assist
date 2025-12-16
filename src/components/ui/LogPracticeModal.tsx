@@ -1,4 +1,4 @@
-import React, { memo, useState, useCallback, useRef } from 'react';
+import React, { memo, useState, useCallback, useRef, useMemo } from 'react';
 import { Plus, Pencil, Loader2 } from 'lucide-react';
 import {
   Dialog,
@@ -17,9 +17,11 @@ import {
   SelectTrigger,
   SelectValue,
 } from '@/components/primitives';
+import { SectionPicker } from '@/components/practice';
 import { cn } from '@/lib/utils';
 import { getTodayDateString } from '@/lib/dateUtils';
 import { useKeyboardSubmit, getSubmitShortcutHint } from '@/hooks/useKeyboardSubmit';
+import { useSongSections } from '@/hooks/useSongSections';
 import type { Song, PracticeSession, UserSongStatus, UserSongProgress } from '@/types';
 
 // =============================================================================
@@ -30,6 +32,8 @@ interface LogPracticeModalProps {
   isOpen: boolean;
   onClose: () => void;
   songs: Song[];
+  /** Current band ID for fetching sections */
+  bandId?: string | null;
   /** If provided, modal is in edit mode for this session */
   editSession?: PracticeSession;
   onSubmit: (data: PracticeFormData) => Promise<void>;
@@ -43,7 +47,8 @@ export interface PracticeFormData {
   songId: string;
   durationMinutes: number;
   tempoBpm?: number;
-  sectionsPracticed?: string[];
+  sectionsPracticed?: string[];  // Legacy: array of section names for display
+  sectionIds?: string[];         // New: array of song_section UUIDs
   notes?: string;
   date: string;
 }
@@ -87,7 +92,8 @@ interface FormState {
   date: string;
   durationMinutes: string;
   tempoBpm: string;
-  sections: string;
+  sections: string;                // Legacy text input (when no sections defined)
+  selectedSectionIds: string[];    // New: structured section IDs
   notes: string;
   status: UserSongStatus;
   confidence: number | undefined;
@@ -120,6 +126,7 @@ function computeInitialFormState(
       durationMinutes: String(editSession.durationMinutes),
       tempoBpm: editSession.tempoBpm ? String(editSession.tempoBpm) : '',
       sections: editSession.sectionsPracticed?.join(', ') || '',
+      selectedSectionIds: editSession.sectionIds || [],
       notes: editSession.notes || '',
       status: songStatus,
       confidence: songConfidence,
@@ -140,6 +147,7 @@ function computeInitialFormState(
     durationMinutes: '30',
     tempoBpm: '',
     sections: '',
+    selectedSectionIds: [],
     notes: '',
     status: songStatus,
     confidence: songConfidence,
@@ -154,6 +162,7 @@ function computeInitialFormState(
 
 interface LogPracticeFormProps {
   songs: Song[];
+  bandId?: string | null;
   editSession?: PracticeSession;
   songStatuses?: Map<string, UserSongProgress>;
   onSubmit: (data: PracticeFormData) => Promise<void>;
@@ -168,6 +177,7 @@ interface LogPracticeFormProps {
  */
 const LogPracticeForm: React.FC<LogPracticeFormProps> = ({
   songs,
+  bandId,
   editSession,
   songStatuses,
   onSubmit,
@@ -191,13 +201,25 @@ const LogPracticeForm: React.FC<LogPracticeFormProps> = ({
   });
 
   // Destructure for easier access
-  const { songId, date, durationMinutes, tempoBpm, sections, notes, status, confidence, originalStatus, originalConfidence } = formState;
+  const { songId, date, durationMinutes, tempoBpm, sections, selectedSectionIds, notes, status, confidence, originalStatus, originalConfidence } = formState;
+
+  // Fetch sections for the selected song
+  const { sections: songSections, isLoading: sectionsLoading } = useSongSections(songId || null, bandId ?? null);
+
+  // Build a map for quick section name lookup
+  const sectionMap = useMemo(() => {
+    return new Map(songSections.map(s => [s.id, s]));
+  }, [songSections]);
+
+  // Check if structured sections are available
+  const hasSections = songSections.length > 0;
 
   // Field setters
   const setDate = useCallback((value: string) => setFormState(prev => ({ ...prev, date: value })), []);
   const setDurationMinutes = useCallback((value: string) => setFormState(prev => ({ ...prev, durationMinutes: value })), []);
   const setTempoBpm = useCallback((value: string) => setFormState(prev => ({ ...prev, tempoBpm: value })), []);
   const setSections = useCallback((value: string) => setFormState(prev => ({ ...prev, sections: value })), []);
+  const setSelectedSectionIds = useCallback((ids: string[]) => setFormState(prev => ({ ...prev, selectedSectionIds: ids })), []);
   const setNotes = useCallback((value: string) => setFormState(prev => ({ ...prev, notes: value })), []);
   const setStatus = useCallback((value: UserSongStatus) => setFormState(prev => ({ ...prev, status: value })), []);
   const setConfidence = useCallback((value: number | undefined) => setFormState(prev => ({ ...prev, confidence: value })), []);
@@ -221,6 +243,9 @@ const LogPracticeForm: React.FC<LogPracticeFormProps> = ({
       setFormState(prev => ({
         ...prev,
         songId: newSongId,
+        // Reset section selections when song changes
+        sections: '',
+        selectedSectionIds: [],
         status: songStatus,
         confidence: songConfidence,
         originalStatus: songStatus,
@@ -275,11 +300,23 @@ const LogPracticeForm: React.FC<LogPracticeFormProps> = ({
         }
       }
 
-      // Parse sections (comma-separated)
-      const sectionsPracticed = sections
-        .split(',')
-        .map(s => s.trim())
-        .filter(s => s.length > 0);
+      // Handle sections: use structured section IDs if available, otherwise parse comma-separated text
+      let sectionsPracticed: string[] | undefined;
+      let sectionIdsToSubmit: string[] | undefined;
+
+      if (hasSections && selectedSectionIds.length > 0) {
+        // Use structured sections: get names from IDs
+        sectionIdsToSubmit = selectedSectionIds;
+        sectionsPracticed = selectedSectionIds
+          .map(id => sectionMap.get(id)?.name)
+          .filter((name): name is string => name !== undefined);
+      } else {
+        // Fall back to comma-separated text input
+        sectionsPracticed = sections
+          .split(',')
+          .map(s => s.trim())
+          .filter(s => s.length > 0);
+      }
 
       setError(null);
       setIsSubmitting(true);
@@ -289,7 +326,8 @@ const LogPracticeForm: React.FC<LogPracticeFormProps> = ({
           songId,
           durationMinutes: duration,
           tempoBpm: tempo,
-          sectionsPracticed: sectionsPracticed.length > 0 ? sectionsPracticed : undefined,
+          sectionsPracticed: sectionsPracticed && sectionsPracticed.length > 0 ? sectionsPracticed : undefined,
+          sectionIds: sectionIdsToSubmit && sectionIdsToSubmit.length > 0 ? sectionIdsToSubmit : undefined,
           notes: notes.trim() || undefined,
           date,
         });
@@ -314,7 +352,7 @@ const LogPracticeForm: React.FC<LogPracticeFormProps> = ({
       setIsSubmitting(false);
       onClose();
     },
-    [songId, durationMinutes, date, tempoBpm, sections, notes, onSubmit, onClose, status, confidence, originalStatus, originalConfidence, onStatusChange]
+    [songId, durationMinutes, date, tempoBpm, sections, selectedSectionIds, hasSections, sectionMap, notes, onSubmit, onClose, status, confidence, originalStatus, originalConfidence, onStatusChange]
   );
 
   return (
@@ -408,13 +446,27 @@ const LogPracticeForm: React.FC<LogPracticeFormProps> = ({
         {/* Sections (optional) */}
         <div className="space-y-2">
           <Label htmlFor="sections">Sections Practiced</Label>
-          <Input
-            id="sections"
-            type="text"
-            value={sections}
-            onChange={(e) => setSections(e.target.value)}
-            placeholder="Intro, Verse 1, Chorus (comma-separated)"
-          />
+          {sectionsLoading ? (
+            <div className="flex items-center gap-2 h-11 sm:h-9 text-sm text-muted-foreground">
+              <Loader2 className="h-4 w-4 animate-spin" />
+              Loading sections...
+            </div>
+          ) : hasSections ? (
+            <SectionPicker
+              sections={songSections}
+              selectedIds={selectedSectionIds}
+              onChange={setSelectedSectionIds}
+              disabled={isSubmitting}
+            />
+          ) : (
+            <Input
+              id="sections"
+              type="text"
+              value={sections}
+              onChange={(e) => setSections(e.target.value)}
+              placeholder="Intro, Verse 1, Chorus (comma-separated)"
+            />
+          )}
         </div>
 
         {/* Notes (optional) */}
@@ -503,6 +555,7 @@ export const LogPracticeModal: React.FC<LogPracticeModalProps> = memo(function L
   isOpen,
   onClose,
   songs,
+  bandId,
   editSession,
   onSubmit,
   songStatuses,
@@ -528,6 +581,7 @@ export const LogPracticeModal: React.FC<LogPracticeModalProps> = memo(function L
           <LogPracticeForm
             key={formKey}
             songs={songs}
+            bandId={bandId}
             editSession={editSession}
             songStatuses={songStatuses}
             onSubmit={onSubmit}

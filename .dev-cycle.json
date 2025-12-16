@@ -1,0 +1,19 @@
+{
+  "spec": {
+    "defaultBehavior": "auto",
+    "maxIterations": 3
+  },
+  "worktree": {
+    "defaultBehavior": "auto",
+    "parentDir": "../worktrees"
+  },
+  "review": {
+    "enabled": true,
+    "hasAutoReviewers": true,
+    "feedbackMode": "required"
+  },
+  "merge": {
+    "enabled": true,
+    "requireAllChecks": true
+  }
+}
