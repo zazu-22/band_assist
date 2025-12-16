@@ -1454,6 +1454,7 @@ export class SupabaseStorageService implements IStorageService {
           duration_minutes: session.durationMinutes,
           tempo_bpm: session.tempoBpm ?? null,
           sections_practiced: session.sectionsPracticed ?? null,
+          section_id: session.sectionId ?? null,
           notes: session.notes ?? null,
           date: session.date,
         })
@@ -1514,6 +1515,10 @@ export class SupabaseStorageService implements IStorageService {
         query = query.eq('song_id', filters.songId);
       }
 
+      if (filters?.sectionId) {
+        query = query.eq('section_id', filters.sectionId);
+      }
+
       if (filters?.startDate) {
         query = query.gte('date', filters.startDate);
       }
@@ -1559,6 +1564,7 @@ export class SupabaseStorageService implements IStorageService {
       durationMinutes: row.duration_minutes,
       tempoBpm: row.tempo_bpm ?? undefined,
       sectionsPracticed: (row.sections_practiced as string[] | null) ?? undefined,
+      sectionId: row.section_id ?? undefined,
       notes: row.notes ?? undefined,
       date: row.date,
       createdAt: row.created_at,
@@ -1595,6 +1601,7 @@ export class SupabaseStorageService implements IStorageService {
       if ('durationMinutes' in updates) updatePayload.duration_minutes = updates.durationMinutes;
       if ('tempoBpm' in updates) updatePayload.tempo_bpm = updates.tempoBpm ?? null;
       if ('sectionsPracticed' in updates) updatePayload.sections_practiced = updates.sectionsPracticed ?? null;
+      if ('sectionId' in updates) updatePayload.section_id = updates.sectionId ?? null;
       if ('notes' in updates) updatePayload.notes = updates.notes ?? null;
       if ('date' in updates) updatePayload.date = updates.date;
       if ('songId' in updates) updatePayload.song_id = updates.songId;

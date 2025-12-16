@@ -11,6 +11,7 @@ export interface LogPracticeSessionInput {
   durationMinutes: number;
   tempoBpm?: number;
   sectionsPracticed?: string[];
+  sectionId?: string; // Optional link to a specific section (Phase 4)
   notes?: string;
   date: string;
 }

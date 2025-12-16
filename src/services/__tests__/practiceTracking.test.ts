@@ -135,6 +135,7 @@ describe('Practice Tracking Service Methods', () => {
         duration_minutes: validSession.durationMinutes,
         tempo_bpm: validSession.tempoBpm,
         sections_practiced: validSession.sectionsPracticed,
+        section_id: null,
         notes: validSession.notes,
         date: validSession.date,
       });
@@ -281,6 +282,7 @@ describe('Practice Tracking Service Methods', () => {
         duration_minutes: minimalSession.durationMinutes,
         tempo_bpm: null,
         sections_practiced: null,
+        section_id: null,
         notes: null,
         date: minimalSession.date,
       });

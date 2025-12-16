@@ -47,6 +47,7 @@ import type { PracticeFormData } from '@/components/ui';
 import { usePracticeSessions } from '@/hooks/usePracticeSessions';
 import { usePracticeStats } from '@/hooks/usePracticeStats';
 import { useAllUserSongStatuses } from '@/hooks/useUserSongStatus';
+import { useSongSections } from '@/hooks/useSongSections';
 import { supabaseStorageService } from '@/services/supabaseStorageService';
 import { getTodayDateString, getDateDaysAgo } from '@/lib/dateUtils';
 import { getUserStatusVariant, USER_STATUS_OPTIONS } from '@/lib/statusConfig';
@@ -362,6 +363,7 @@ VirtualizedSessionTable.displayName = 'VirtualizedSessionTable';
 // Default filter values
 const DEFAULT_FILTERS = {
   songId: 'all' as string,
+  sectionId: 'all' as string,
   status: 'all' as StatusFilterValue,
   startDate: getDateDaysAgo(30),
   endDate: getTodayDateString(),
@@ -374,12 +376,14 @@ export const PracticeHistory: React.FC<PracticeHistoryProps> = memo(function Pra
 }) {
   // Staged filter state (UI edits these)
   const [stagedSongId, setStagedSongId] = useState<string>(DEFAULT_FILTERS.songId);
+  const [stagedSectionId, setStagedSectionId] = useState<string>(DEFAULT_FILTERS.sectionId);
   const [stagedStatus, setStagedStatus] = useState<StatusFilterValue>(DEFAULT_FILTERS.status);
   const [stagedStartDate, setStagedStartDate] = useState(DEFAULT_FILTERS.startDate);
   const [stagedEndDate, setStagedEndDate] = useState(DEFAULT_FILTERS.endDate);
 
   // Applied filter state (used for actual queries)
   const [appliedSongId, setAppliedSongId] = useState<string>(DEFAULT_FILTERS.songId);
+  const [appliedSectionId, setAppliedSectionId] = useState<string>(DEFAULT_FILTERS.sectionId);
   const [appliedStatus, setAppliedStatus] = useState<StatusFilterValue>(DEFAULT_FILTERS.status);
   const [appliedStartDate, setAppliedStartDate] = useState(DEFAULT_FILTERS.startDate);
   const [appliedEndDate, setAppliedEndDate] = useState(DEFAULT_FILTERS.endDate);
@@ -399,13 +403,24 @@ export const PracticeHistory: React.FC<PracticeHistoryProps> = memo(function Pra
   const filters = useMemo<PracticeFilters>(
     () => ({
       songId: appliedSongId === 'all' ? undefined : appliedSongId,
+      sectionId: appliedSectionId === 'all' ? undefined : appliedSectionId,
       startDate: appliedStartDate,
       endDate: appliedEndDate,
       sortBy,
       sortDirection,
     }),
-    [appliedSongId, appliedStartDate, appliedEndDate, sortBy, sortDirection]
+    [appliedSongId, appliedSectionId, appliedStartDate, appliedEndDate, sortBy, sortDirection]
   );
+
+  // Fetch sections for the staged song (for section filter dropdown)
+  // Use staged song so sections update immediately when user changes song filter
+  const { sections: songSections, isLoading: sectionsLoading } = useSongSections(
+    stagedSongId !== 'all' ? stagedSongId : null,
+    currentBandId
+  );
+
+  // Whether we can show section filter (only when a specific song is selected)
+  const canFilterBySection = stagedSongId !== 'all' && songSections.length > 0;
 
   const dateRange = useMemo(
     () => ({ start: appliedStartDate, end: appliedEndDate }),
@@ -416,21 +431,23 @@ export const PracticeHistory: React.FC<PracticeHistoryProps> = memo(function Pra
   const hasUnappliedChanges = useMemo(() => {
     return (
       stagedSongId !== appliedSongId ||
+      stagedSectionId !== appliedSectionId ||
       stagedStatus !== appliedStatus ||
       stagedStartDate !== appliedStartDate ||
       stagedEndDate !== appliedEndDate
     );
-  }, [stagedSongId, appliedSongId, stagedStatus, appliedStatus, stagedStartDate, appliedStartDate, stagedEndDate, appliedEndDate]);
+  }, [stagedSongId, appliedSongId, stagedSectionId, appliedSectionId, stagedStatus, appliedStatus, stagedStartDate, appliedStartDate, stagedEndDate, appliedEndDate]);
 
   // Check if filters are at default values
   const isDefaultFilters = useMemo(() => {
     return (
       appliedSongId === DEFAULT_FILTERS.songId &&
+      appliedSectionId === DEFAULT_FILTERS.sectionId &&
       appliedStatus === DEFAULT_FILTERS.status &&
       appliedStartDate === DEFAULT_FILTERS.startDate &&
       appliedEndDate === DEFAULT_FILTERS.endDate
     );
-  }, [appliedSongId, appliedStatus, appliedStartDate, appliedEndDate]);
+  }, [appliedSongId, appliedSectionId, appliedStatus, appliedStartDate, appliedEndDate]);
 
   // Fetch data using hooks
   const {
@@ -479,22 +496,32 @@ export const PracticeHistory: React.FC<PracticeHistoryProps> = memo(function Pra
   // Filter handlers
   const handleApplyFilters = useCallback(() => {
     setAppliedSongId(stagedSongId);
+    setAppliedSectionId(stagedSectionId);
     setAppliedStatus(stagedStatus);
     setAppliedStartDate(stagedStartDate);
     setAppliedEndDate(stagedEndDate);
-  }, [stagedSongId, stagedStatus, stagedStartDate, stagedEndDate]);
+  }, [stagedSongId, stagedSectionId, stagedStatus, stagedStartDate, stagedEndDate]);
 
   const handleClearFilters = useCallback(() => {
     // Reset staged to defaults
     setStagedSongId(DEFAULT_FILTERS.songId);
+    setStagedSectionId(DEFAULT_FILTERS.sectionId);
     setStagedStatus(DEFAULT_FILTERS.status);
     setStagedStartDate(DEFAULT_FILTERS.startDate);
     setStagedEndDate(DEFAULT_FILTERS.endDate);
     // Reset applied to defaults
     setAppliedSongId(DEFAULT_FILTERS.songId);
+    setAppliedSectionId(DEFAULT_FILTERS.sectionId);
     setAppliedStatus(DEFAULT_FILTERS.status);
     setAppliedStartDate(DEFAULT_FILTERS.startDate);
     setAppliedEndDate(DEFAULT_FILTERS.endDate);
+  }, []);
+
+  // Reset section filter when song changes
+  const handleSongFilterChange = useCallback((newSongId: string) => {
+    setStagedSongId(newSongId);
+    // Reset section filter when song changes since sections are song-specific
+    setStagedSectionId(DEFAULT_FILTERS.sectionId);
   }, []);
 
   // Sort column click handler
@@ -720,11 +747,11 @@ export const PracticeHistory: React.FC<PracticeHistoryProps> = memo(function Pra
               </div>
             </CardHeader>
             <CardContent className="space-y-4 pt-0">
-              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4">
                 {/* Song Filter */}
                 <div className="space-y-2">
                   <Label htmlFor="song-filter">Song</Label>
-                  <Select value={stagedSongId} onValueChange={setStagedSongId}>
+                  <Select value={stagedSongId} onValueChange={handleSongFilterChange}>
                     <SelectTrigger id="song-filter">
                       <SelectValue placeholder="All Songs" />
                     </SelectTrigger>
@@ -733,6 +760,36 @@ export const PracticeHistory: React.FC<PracticeHistoryProps> = memo(function Pra
                       {songs.map(song => (
                         <SelectItem key={song.id} value={song.id}>
                           {song.title}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
+                {/* Section Filter (only shown when a specific song is selected and has sections) */}
+                <div className="space-y-2">
+                  <Label htmlFor="section-filter">Section</Label>
+                  <Select
+                    value={stagedSectionId}
+                    onValueChange={setStagedSectionId}
+                    disabled={!canFilterBySection}
+                  >
+                    <SelectTrigger id="section-filter">
+                      <SelectValue placeholder={
+                        stagedSongId === 'all'
+                          ? 'Select a song first'
+                          : sectionsLoading
+                          ? 'Loading...'
+                          : songSections.length === 0
+                          ? 'No sections'
+                          : 'All Sections'
+                      } />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="all">All Sections</SelectItem>
+                      {songSections.map(section => (
+                        <SelectItem key={section.id} value={section.id}>
+                          {section.name}
                         </SelectItem>
                       ))}
                     </SelectContent>
@@ -842,6 +899,7 @@ export const PracticeHistory: React.FC<PracticeHistoryProps> = memo(function Pra
         isOpen={isLogModalOpen}
         onClose={handleCloseModal}
         songs={songs}
+        bandId={currentBandId}
         editSession={editingSession}
         onSubmit={handleSubmitSession}
         songStatuses={statuses}

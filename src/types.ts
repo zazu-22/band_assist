@@ -156,6 +156,7 @@ export interface PracticeSession {
   durationMinutes: number;
   tempoBpm?: number;
   sectionsPracticed?: string[]; // e.g., ["Intro", "Chorus", "Solo 1"]
+  sectionId?: string; // Optional link to a specific song section (Phase 4)
   notes?: string;
   date: string; // YYYY-MM-DD
   createdAt: string;
@@ -181,6 +182,7 @@ export type SortDirection = 'asc' | 'desc';
 // Filter options for querying practice sessions
 export interface PracticeFilters {
   songId?: string;
+  sectionId?: string; // Filter by specific section (Phase 4)
   startDate?: string;
   endDate?: string;
   limit?: number;
@@ -190,7 +192,7 @@ export interface PracticeFilters {
 
 /** Input data for updating an existing practice session */
 export type UpdatePracticeSessionInput = Partial<
-  Pick<PracticeSession, 'durationMinutes' | 'tempoBpm' | 'sectionsPracticed' | 'notes' | 'date' | 'songId'>
+  Pick<PracticeSession, 'durationMinutes' | 'tempoBpm' | 'sectionsPracticed' | 'sectionId' | 'notes' | 'date' | 'songId'>
 >;
 
 // =============================================================================

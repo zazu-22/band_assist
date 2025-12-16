@@ -9,6 +9,21 @@ vi.mock('@/lib/dateUtils', () => ({
   getTodayDateString: () => '2025-12-08',
 }));
 
+// Mock useSongSections to return empty sections by default
+vi.mock('@/hooks/useSongSections', () => ({
+  useSongSections: () => ({
+    sections: [],
+    isLoading: false,
+    error: null,
+    refetch: vi.fn(),
+    createSection: vi.fn(),
+    updateSection: vi.fn(),
+    deleteSection: vi.fn(),
+    upsertSections: vi.fn(),
+    deleteAllSections: vi.fn(),
+  }),
+}));
+
 const mockSongs: Song[] = [
   {
     id: 'song-1',
@@ -60,6 +75,7 @@ describe('LogPracticeModal', () => {
     isOpen: true,
     onClose: vi.fn(),
     songs: mockSongs,
+    bandId: 'band-1',
     onSubmit: vi.fn(),
   };
 
@@ -95,7 +111,7 @@ describe('LogPracticeModal', () => {
       expect(screen.getByLabelText(/date/i)).toBeInTheDocument();
       expect(screen.getByLabelText(/duration/i)).toBeInTheDocument();
       expect(screen.getByLabelText(/tempo/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/sections/i)).toBeInTheDocument();
+      expect(screen.getByText(/sections practiced/i)).toBeInTheDocument();
       expect(screen.getByLabelText(/notes/i)).toBeInTheDocument();
     });
 
@@ -125,7 +141,7 @@ describe('LogPracticeModal', () => {
       expect(screen.getByLabelText(/date/i)).toHaveValue('2025-12-05');
       expect(screen.getByLabelText(/duration/i)).toHaveValue(45);
       expect(screen.getByLabelText(/tempo/i)).toHaveValue(120);
-      expect(screen.getByLabelText(/sections/i)).toHaveValue('Intro, Verse 1');
+      expect(screen.getByPlaceholderText(/comma-separated/i)).toHaveValue('Intro, Verse 1');
       expect(screen.getByLabelText(/notes/i)).toHaveValue('Great progress today');
     });
 
@@ -215,7 +231,7 @@ describe('LogPracticeModal', () => {
       const tempoInput = screen.getByLabelText(/tempo/i);
       await user.type(tempoInput, '120');
 
-      const sectionsInput = screen.getByLabelText(/sections/i);
+      const sectionsInput = screen.getByPlaceholderText(/comma-separated/i);
       await user.type(sectionsInput, 'Intro, Chorus');
 
       const notesInput = screen.getByLabelText(/notes/i);

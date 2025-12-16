@@ -282,6 +282,7 @@ export type Database = {
           duration_minutes: number
           id: string
           notes: string | null
+          section_id: string | null
           sections_practiced: Json | null
           song_id: string
           tempo_bpm: number | null
@@ -295,6 +296,7 @@ export type Database = {
           duration_minutes: number
           id?: string
           notes?: string | null
+          section_id?: string | null
           sections_practiced?: Json | null
           song_id: string
           tempo_bpm?: number | null
@@ -308,6 +310,7 @@ export type Database = {
           duration_minutes?: number
           id?: string
           notes?: string | null
+          section_id?: string | null
           sections_practiced?: Json | null
           song_id?: string
           tempo_bpm?: number | null
@@ -320,6 +323,13 @@ export type Database = {
             columns: ["band_id"]
             isOneToOne: false
             referencedRelation: "bands"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "practice_sessions_section_id_fkey"
+            columns: ["section_id"]
+            isOneToOne: false
+            referencedRelation: "song_sections"
             referencedColumns: ["id"]
           },
           {
