@@ -34,8 +34,16 @@ export interface SectionPracticeStatsProps {
 function formatRelativeDate(dateStr: string | null): string {
   if (!dateStr) return 'Never';
 
-  const date = new Date(dateStr);
+  // Parse as local date to avoid timezone issues with YYYY-MM-DD strings
+  // JavaScript parses YYYY-MM-DD as UTC midnight, but we want local time comparison
+  const [year, month, day] = dateStr.split('-').map(Number);
+  if (isNaN(year) || isNaN(month) || isNaN(day)) return 'Never';
+
+  const date = new Date(year, month - 1, day);
   const now = new Date();
+  // Normalize both to start of day for accurate day difference
+  now.setHours(0, 0, 0, 0);
+  date.setHours(0, 0, 0, 0);
   const diffTime = now.getTime() - date.getTime();
   const diffDays = Math.floor(diffTime / (1000 * 60 * 60 * 24));
 

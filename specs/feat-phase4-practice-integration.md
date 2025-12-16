@@ -90,7 +90,7 @@ COMMENT ON COLUMN practice_sessions.section_ids IS
 
 ### 6.2 Component Architecture
 
-```
+```text
 src/components/
 ├── practice/
 │   ├── SectionPicker.tsx        # Multi-select for sections in LogPracticeModal
