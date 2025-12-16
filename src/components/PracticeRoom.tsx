@@ -42,9 +42,12 @@ import { useDerivedState, usePrevious } from '@/hooks/useDerivedState';
 import { useBlobUrl } from '@/hooks/useBlobUrl';
 import { useLinkedMember } from '@/hooks/useLinkedMember';
 import { useAppActions, useAudioVolume } from '@/contexts';
-import { PracticeControlBar, SectionNav, calculateSectionSeekPercentage, type AlphaTabState, type TrackInfo } from './practice';
+import { PracticeControlBar, SectionNav, calculateSectionSeekPercentage, YourAssignmentBar, AnnotationOverlay, type AlphaTabState, type TrackInfo } from './practice';
 import { findMatchingTrackIndex } from '@/lib/trackMatcher';
 import { useSongSections } from '@/hooks/useSongSections';
+import { useSectionAssignments } from '@/hooks/useSectionAssignments';
+import { useAnnotations } from '@/hooks/useAnnotations';
+import { useAppData } from '@/contexts';
 
 // =============================================================================
 // TYPES
@@ -189,6 +192,18 @@ export const PracticeRoom: React.FC<PracticeRoomProps> = memo(function PracticeR
   // Song sections for navigation
   const { sections } = useSongSections(currentSong?.id ?? null, currentBandId);
 
+  // Section assignments for "Your Assignment" display
+  const { members } = useAppData();
+  const { getUserAssignmentForSection } = useSectionAssignments(currentSong?.id, currentBandId);
+
+  // Annotations for overlay display during playback
+  const { annotations } = useAnnotations(currentSong?.id ?? null, currentBandId);
+
+  // Filter annotations to only those visible during playback
+  const playbackAnnotations = useMemo(() => {
+    return annotations.filter(a => a.visibleDuringPlayback);
+  }, [annotations]);
+
   // Estimate total bars from sections (use highest endBar)
   const estimatedTotalBars = useMemo(() => {
     if (sections.length === 0) return totalBars;
@@ -204,6 +219,21 @@ export const PracticeRoom: React.FC<PracticeRoomProps> = memo(function PracticeR
     return Math.max(1, Math.ceil(progress * estimatedTotalBars));
     // eslint-disable-next-line react-hooks/exhaustive-deps -- gpPosition.current/total are primitive values
   }, [gpPosition.current, gpPosition.total, estimatedTotalBars]);
+
+  // Find current section based on estimated bar position
+  const currentSection = useMemo(() => {
+    if (!estimatedCurrentBar || sections.length === 0) return null;
+    return sections.find(
+      s => estimatedCurrentBar >= s.startBar && estimatedCurrentBar <= s.endBar
+    ) ?? null;
+  }, [estimatedCurrentBar, sections]);
+
+  // Get current user's assignment for the active section
+  const currentUserId = linkedMember?.userId ?? null;
+  const currentUserAssignment = useMemo(() => {
+    if (!currentSection || !currentUserId || members.length === 0) return null;
+    return getUserAssignmentForSection(currentSection.id, currentUserId, members) ?? null;
+  }, [currentSection, currentUserId, members, getUserAssignmentForSection]);
 
   // ---------------------------------------------------------------------------
   // CONSTANTS
@@ -322,6 +352,53 @@ export const PracticeRoom: React.FC<PracticeRoomProps> = memo(function PracticeR
       if (metronomeInterval.current) clearInterval(metronomeInterval.current);
     };
   }, [metronomeActive, metronomeBpm]);
+
+  // Keyboard shortcuts for section navigation (1-9, arrows)
+  useEffect(() => {
+    if (!isGuitarPro || sections.length === 0 || estimatedTotalBars <= 0) return;
+
+    const handleKeyDown = (e: KeyboardEvent) => {
+      // Don't trigger during text input
+      const target = e.target as HTMLElement;
+      if (target.tagName === 'INPUT' || target.tagName === 'TEXTAREA' || target.isContentEditable) {
+        return;
+      }
+
+      // Number keys 1-9 navigate to sections
+      if (e.key >= '1' && e.key <= '9') {
+        const sectionIndex = parseInt(e.key, 10) - 1;
+        if (sectionIndex < sections.length) {
+          const section = sections[sectionIndex];
+          const percentage = calculateSectionSeekPercentage(section, estimatedTotalBars);
+          alphaTabRef.current?.seekTo(percentage);
+        }
+        return;
+      }
+
+      // Arrow keys navigate to prev/next section
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowRight') {
+        const currentIndex = currentSection
+          ? sections.findIndex(s => s.id === currentSection.id)
+          : -1;
+
+        let targetIndex: number;
+        if (e.key === 'ArrowLeft') {
+          targetIndex = currentIndex > 0 ? currentIndex - 1 : 0;
+        } else {
+          targetIndex = currentIndex < sections.length - 1 ? currentIndex + 1 : sections.length - 1;
+        }
+
+        const targetSection = sections[targetIndex];
+        if (targetSection) {
+          const percentage = calculateSectionSeekPercentage(targetSection, estimatedTotalBars);
+          alphaTabRef.current?.seekTo(percentage);
+        }
+      }
+    };
+
+    window.addEventListener('keydown', handleKeyDown);
+    return () => window.removeEventListener('keydown', handleKeyDown);
+  }, [isGuitarPro, sections, currentSection, estimatedTotalBars]);
 
   // ---------------------------------------------------------------------------
   // ALPHATAB CALLBACKS
@@ -634,6 +711,14 @@ export const PracticeRoom: React.FC<PracticeRoomProps> = memo(function PracticeR
             />
           )}
 
+          {/* Your Assignment Bar (shows user's role in current section) */}
+          {isGuitarPro && currentUserAssignment && (
+            <YourAssignmentBar
+              assignment={currentUserAssignment}
+              sectionName={currentSection?.name}
+            />
+          )}
+
           {/* Content Viewer */}
           <div
             id={CHART_PANEL_ID}
@@ -695,6 +780,14 @@ export const PracticeRoom: React.FC<PracticeRoomProps> = memo(function PracticeR
                       onPositionChange={handleAlphaTabPositionChange}
                       onTracksLoaded={handleAlphaTabTracksLoaded}
                     />
+                    {/* Annotation Overlay (read-only annotations during playback) */}
+                    {playbackAnnotations.length > 0 && (
+                      <AnnotationOverlay
+                        annotations={playbackAnnotations}
+                        currentBar={estimatedCurrentBar}
+                        barRange={2}
+                      />
+                    )}
                   </ErrorBoundary>
                 ) : (
                   <Card className="overflow-hidden">

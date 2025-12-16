@@ -1445,6 +1445,7 @@ export class SupabaseStorageService implements IStorageService {
 
     try {
       // Insert practice session
+      // Note: section_ids column added in migration 028_add_section_ids_to_practice.sql
       const { data, error } = await supabase
         .from('practice_sessions')
         .insert({
@@ -1454,9 +1455,10 @@ export class SupabaseStorageService implements IStorageService {
           duration_minutes: session.durationMinutes,
           tempo_bpm: session.tempoBpm ?? null,
           sections_practiced: session.sectionsPracticed ?? null,
+          section_ids: session.sectionIds ?? null,
           notes: session.notes ?? null,
           date: session.date,
-        })
+        } as Database['public']['Tables']['practice_sessions']['Insert'] & { section_ids?: string[] | null })
         .select()
         .single();
 
@@ -1547,9 +1549,10 @@ export class SupabaseStorageService implements IStorageService {
 
   /**
    * Transform database row to PracticeSession type
+   * Note: section_ids column added in migration 028_add_section_ids_to_practice.sql
    */
   private transformPracticeSession(
-    row: Database['public']['Tables']['practice_sessions']['Row']
+    row: Database['public']['Tables']['practice_sessions']['Row'] & { section_ids?: string[] | null }
   ): PracticeSession {
     return {
       id: row.id,
@@ -1559,6 +1562,7 @@ export class SupabaseStorageService implements IStorageService {
       durationMinutes: row.duration_minutes,
       tempoBpm: row.tempo_bpm ?? undefined,
       sectionsPracticed: (row.sections_practiced as string[] | null) ?? undefined,
+      sectionIds: row.section_ids ?? undefined,
       notes: row.notes ?? undefined,
       date: row.date,
       createdAt: row.created_at,
@@ -1591,10 +1595,12 @@ export class SupabaseStorageService implements IStorageService {
 
     try {
       // Use 'in' operator to detect property presence, allowing null/undefined to clear fields
+      // Note: section_ids column added in migration 028_add_section_ids_to_practice.sql
       const updatePayload: Record<string, unknown> = {};
       if ('durationMinutes' in updates) updatePayload.duration_minutes = updates.durationMinutes;
       if ('tempoBpm' in updates) updatePayload.tempo_bpm = updates.tempoBpm ?? null;
       if ('sectionsPracticed' in updates) updatePayload.sections_practiced = updates.sectionsPracticed ?? null;
+      if ('sectionIds' in updates) updatePayload.section_ids = updates.sectionIds ?? null;
       if ('notes' in updates) updatePayload.notes = updates.notes ?? null;
       if ('date' in updates) updatePayload.date = updates.date;
       if ('songId' in updates) updatePayload.song_id = updates.songId;
