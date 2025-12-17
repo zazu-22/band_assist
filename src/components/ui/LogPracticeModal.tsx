@@ -255,6 +255,7 @@ const LogPracticeForm: React.FC<LogPracticeFormProps> = ({
       setFormState(prev => ({
         ...prev,
         songId: newSongId,
+        sections: '', // Clear sections text field since sections are song-specific
         status: songStatus,
         confidence: songConfidence,
         originalStatus: songStatus,
