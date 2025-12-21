@@ -1,4 +1,4 @@
-import React, { memo, useMemo, useState, useCallback, useRef } from 'react';
+import React, { memo, useMemo, useState, useCallback, useRef, useEffect } from 'react';
 import { useVirtualizer } from '@tanstack/react-virtual';
 import {
   CalendarDays,
@@ -51,7 +51,7 @@ import { useSongSections } from '@/hooks/useSongSections';
 import { supabaseStorageService } from '@/services/supabaseStorageService';
 import { getTodayDateString, getDateDaysAgo } from '@/lib/dateUtils';
 import { getUserStatusVariant, USER_STATUS_OPTIONS } from '@/lib/statusConfig';
-import type { Song, PracticeFilters, UserSongStatus, PracticeSortField, SortDirection, PracticeSession } from '@/types';
+import type { Song, PracticeFilters, UserSongStatus, PracticeSortField, SortDirection, PracticeSession, SongSection } from '@/types';
 
 // =============================================================================
 // TYPES
@@ -102,6 +102,36 @@ function formatDate(dateStr: string): string {
   });
 }
 
+/**
+ * Resolve section names for a practice session.
+ * Prefers sectionIds (validated UUIDs) over legacy sectionsPracticed (free-text).
+ * Returns an array of {name, isUnknown} for rendering with appropriate styling.
+ */
+function resolveSectionNames(
+  session: PracticeSession,
+  sectionMap: Map<string, SongSection>
+): Array<{ name: string; isUnknown: boolean }> {
+  // Prefer sectionIds if available (new validated section references)
+  if (session.sectionIds && session.sectionIds.length > 0) {
+    return session.sectionIds.map(id => {
+      const section = sectionMap.get(id);
+      if (section) {
+        return { name: section.name, isUnknown: false };
+      }
+      // Section was deleted - show placeholder with muted styling
+      return { name: 'Unknown section', isUnknown: true };
+    });
+  }
+
+  // Fall back to legacy sectionsPracticed (free-text array)
+  if (session.sectionsPracticed && session.sectionsPracticed.length > 0) {
+    return session.sectionsPracticed.map(name => ({ name, isUnknown: false }));
+  }
+
+  // No sections
+  return [];
+}
+
 // =============================================================================
 // VIRTUALIZED TABLE COMPONENT
 // =============================================================================
@@ -114,6 +144,7 @@ const MAX_VISIBLE_ROWS = 10;
 interface VirtualizedSessionTableProps {
   sessions: PracticeSession[];
   songMap: Map<string, Song>;
+  sectionMap: Map<string, SongSection>;
   statuses: Map<string, { status: UserSongStatus; confidence?: number }>;
   onSortClick: (field: PracticeSortField) => void;
   getSortIcon: (field: PracticeSortField) => React.ReactNode;
@@ -124,6 +155,7 @@ interface VirtualizedSessionTableProps {
 const VirtualizedSessionTable = memo(function VirtualizedSessionTable({
   sessions,
   songMap,
+  sectionMap,
   statuses,
   onSortClick,
   getSortIcon,
@@ -173,9 +205,18 @@ const VirtualizedSessionTable = memo(function VirtualizedSessionTable({
           {session.tempoBpm ? `${session.tempoBpm} BPM` : '—'}
         </td>
         <td className="w-[15%] py-3 px-4 text-sm text-muted-foreground hidden md:table-cell truncate">
-          {session.sectionsPracticed && session.sectionsPracticed.length > 0
-            ? session.sectionsPracticed.join(', ')
-            : '—'}
+          {(() => {
+            const sections = resolveSectionNames(session, sectionMap);
+            if (sections.length === 0) return '—';
+            return sections.map((s, i) => (
+              <span key={i}>
+                {i > 0 && ', '}
+                <span className={s.isUnknown ? 'text-zinc-500 italic' : ''}>
+                  {s.name}
+                </span>
+              </span>
+            ));
+          })()}
         </td>
         <td className="w-[10%] py-3 px-4">
           <Badge variant={getUserStatusVariant(songStatus?.status)}>
@@ -210,7 +251,7 @@ const VirtualizedSessionTable = memo(function VirtualizedSessionTable({
         </td>
       </tr>
     );
-  }, [songMap, statuses, onEditSession, onDeleteSession]);
+  }, [songMap, sectionMap, statuses, onEditSession, onDeleteSession]);
 
   // Render table header (shared between virtual and fallback modes)
   // Using fixed widths to ensure header and body columns align
@@ -467,6 +508,67 @@ export const PracticeHistory: React.FC<PracticeHistoryProps> = memo(function Pra
   const songMap = useMemo(() => {
     return new Map(songs.map(song => [song.id, song]));
   }, [songs]);
+
+  // Extract unique section IDs from all sessions for section name resolution
+  const allSectionIds = useMemo(() => {
+    const ids = new Set<string>();
+    for (const session of sessions) {
+      if (session.sectionIds) {
+        for (const id of session.sectionIds) {
+          ids.add(id);
+        }
+      }
+    }
+    return Array.from(ids);
+  }, [sessions]);
+
+  // Fetch sections by their IDs for displaying in the history table
+  const [sectionMapInternal, setSectionMapInternal] = useState<Map<string, SongSection>>(new Map());
+  // Track the sectionIds we've fetched for to clear stale data
+  const [fetchedForIds, setFetchedForIds] = useState<string[]>([]);
+
+  useEffect(() => {
+    // Skip if no section IDs to fetch - sectionMap will be empty (computed below)
+    if (allSectionIds.length === 0) {
+      return;
+    }
+
+    let cancelled = false;
+
+    async function loadSections() {
+      try {
+        const map = await supabaseStorageService.getSectionsByIds(allSectionIds);
+        if (!cancelled) {
+          setSectionMapInternal(map);
+          setFetchedForIds(allSectionIds);
+        }
+      } catch (err) {
+        // Log error but don't fail the component - sections will show as "Unknown"
+        console.error('Failed to load sections for practice history:', err);
+      }
+    }
+
+    loadSections();
+
+    return () => {
+      cancelled = true;
+    };
+  }, [allSectionIds]);
+
+  // Compute final sectionMap: return empty map if we haven't fetched yet or IDs changed
+  const sectionMap = useMemo(() => {
+    // If no sections needed, return empty map
+    if (allSectionIds.length === 0) {
+      return new Map<string, SongSection>();
+    }
+    // If the fetched data matches current IDs, use it
+    if (fetchedForIds.length === allSectionIds.length &&
+        fetchedForIds.every((id, i) => id === allSectionIds[i])) {
+      return sectionMapInternal;
+    }
+    // Otherwise return empty map (will be updated when fetch completes)
+    return new Map<string, SongSection>();
+  }, [allSectionIds, fetchedForIds, sectionMapInternal]);
 
   // Apply client-side status and section filters
   // Status is per-song (from user_song_status), so we filter sessions by their song's status
@@ -877,6 +979,7 @@ export const PracticeHistory: React.FC<PracticeHistoryProps> = memo(function Pra
                 <VirtualizedSessionTable
                   sessions={filteredSessions}
                   songMap={songMap}
+                  sectionMap={sectionMap}
                   statuses={statuses}
                   onSortClick={handleSortClick}
                   getSortIcon={getSortIcon}

@@ -10,10 +10,18 @@ vi.mock('@/hooks/usePracticeStats');
 vi.mock('@/hooks/useUserSongStatus');
 vi.mock('@/hooks/useSongSections');
 
+// Mock supabaseStorageService for getSectionsByIds
+vi.mock('@/services/supabaseStorageService', () => ({
+  supabaseStorageService: {
+    getSectionsByIds: vi.fn().mockResolvedValue(new Map()),
+  },
+}));
+
 import { usePracticeSessions } from '@/hooks/usePracticeSessions';
 import { usePracticeStats } from '@/hooks/usePracticeStats';
 import { useAllUserSongStatuses } from '@/hooks/useUserSongStatus';
 import { useSongSections } from '@/hooks/useSongSections';
+import { supabaseStorageService } from '@/services/supabaseStorageService';
 
 // Type the mocked hooks
 const mockUsePracticeSessions = vi.mocked(usePracticeSessions);
@@ -397,8 +405,11 @@ describe('PracticeHistory', () => {
       expect(screen.getByText('45m')).toBeInTheDocument();
       expect(screen.getByText('120 BPM')).toBeInTheDocument();
       expect(screen.getByText('140 BPM')).toBeInTheDocument();
-      expect(screen.getByText('Intro, Chorus')).toBeInTheDocument();
-      expect(screen.getByText('Verse, Bridge')).toBeInTheDocument();
+      // Sections are now rendered as individual spans within a td
+      expect(screen.getByText('Intro')).toBeInTheDocument();
+      expect(screen.getByText('Chorus')).toBeInTheDocument();
+      expect(screen.getByText('Verse')).toBeInTheDocument();
+      expect(screen.getByText('Bridge')).toBeInTheDocument();
     });
 
     it('should display session count', () => {
@@ -449,6 +460,108 @@ describe('PracticeHistory', () => {
 
       expect(screen.getByText('Mastered')).toBeInTheDocument();
       expect(screen.getByText('Learning')).toBeInTheDocument();
+    });
+
+    it('should resolve section names from sectionIds when available', async () => {
+      // Create sessions with sectionIds instead of sectionsPracticed
+      const sessionsWithSectionIds: PracticeSession[] = [
+        {
+          id: 'session-with-ids',
+          userId: 'user-1',
+          songId: 'song-1',
+          bandId: 'band-1',
+          durationMinutes: 30,
+          tempoBpm: 120,
+          sectionIds: ['section-uuid-1', 'section-uuid-2'],
+          notes: 'Practiced with section IDs',
+          date: '2025-12-05',
+          createdAt: '2025-12-05T10:00:00Z',
+          updatedAt: '2025-12-05T10:00:00Z',
+        },
+      ];
+
+      // Mock getSectionsByIds to return section data
+      const mockSectionMap = new Map([
+        ['section-uuid-1', {
+          id: 'section-uuid-1',
+          songId: 'song-1',
+          bandId: 'band-1',
+          name: 'Resolved Intro',
+          displayOrder: 0,
+          startBar: 1,
+          endBar: 8,
+          barCount: 8,
+          source: 'manual' as const,
+          createdAt: '2025-12-01T00:00:00Z',
+          updatedAt: '2025-12-01T00:00:00Z',
+        }],
+        ['section-uuid-2', {
+          id: 'section-uuid-2',
+          songId: 'song-1',
+          bandId: 'band-1',
+          name: 'Resolved Chorus',
+          displayOrder: 1,
+          startBar: 9,
+          endBar: 24,
+          barCount: 16,
+          source: 'manual' as const,
+          createdAt: '2025-12-01T00:00:00Z',
+          updatedAt: '2025-12-01T00:00:00Z',
+        }],
+      ]);
+
+      vi.mocked(supabaseStorageService.getSectionsByIds).mockResolvedValue(mockSectionMap);
+
+      mockUsePracticeSessions.mockReturnValue(createMockSessionsHook({ sessions: sessionsWithSectionIds }));
+
+      render(
+        <PracticeHistory
+          songs={mockSongs}
+          currentUserId="user-1"
+          currentBandId="band-1"
+        />
+      );
+
+      // Wait for the section names to be resolved and displayed
+      await waitFor(() => {
+        expect(screen.getByText('Resolved Intro')).toBeInTheDocument();
+      });
+      expect(screen.getByText('Resolved Chorus')).toBeInTheDocument();
+    });
+
+    it('should show Unknown section for deleted sections', async () => {
+      // Session references a section that no longer exists
+      const sessionsWithDeletedSection: PracticeSession[] = [
+        {
+          id: 'session-deleted-section',
+          userId: 'user-1',
+          songId: 'song-1',
+          bandId: 'band-1',
+          durationMinutes: 30,
+          sectionIds: ['deleted-section-uuid'],
+          date: '2025-12-05',
+          createdAt: '2025-12-05T10:00:00Z',
+          updatedAt: '2025-12-05T10:00:00Z',
+        },
+      ];
+
+      // Mock returns empty map (section was deleted)
+      vi.mocked(supabaseStorageService.getSectionsByIds).mockResolvedValue(new Map());
+
+      mockUsePracticeSessions.mockReturnValue(createMockSessionsHook({ sessions: sessionsWithDeletedSection }));
+
+      render(
+        <PracticeHistory
+          songs={mockSongs}
+          currentUserId="user-1"
+          currentBandId="band-1"
+        />
+      );
+
+      // Wait for the section to be rendered as "Unknown section"
+      await waitFor(() => {
+        expect(screen.getByText('Unknown section')).toBeInTheDocument();
+      });
     });
   });
 

@@ -2145,6 +2145,40 @@ export class SupabaseStorageService implements IStorageService {
   }
 
   /**
+   * Get sections by their IDs (for resolving section names in practice history)
+   * Returns a Map for efficient lookups
+   */
+  async getSectionsByIds(sectionIds: string[]): Promise<Map<string, SongSection>> {
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      throw new Error('Supabase is not configured. Check environment variables.');
+    }
+
+    // Return empty map if no IDs provided
+    if (sectionIds.length === 0) {
+      return new Map();
+    }
+
+    try {
+      const { data, error } = await supabase
+        .from('song_sections')
+        .select('*')
+        .in('id', sectionIds);
+
+      if (error) {
+        console.error('Error fetching sections by IDs:', error);
+        throw new Error('Failed to load sections');
+      }
+
+      const sections = (data || []).map(row => this.transformSongSection(row));
+      return new Map(sections.map(section => [section.id, section]));
+    } catch (error) {
+      console.error('Error in getSectionsByIds:', error);
+      throw error instanceof Error ? error : new Error('Failed to load sections');
+    }
+  }
+
+  /**
    * Create a new section
    */
   async createSection(input: SongSectionInput): Promise<SongSection> {
