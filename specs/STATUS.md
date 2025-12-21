@@ -2,7 +2,7 @@
 
 > Quick reference for all specs, GitHub issues, and current status.
 >
-> Last updated: 2025-12-15
+> Last updated: 2025-12-21
 
 ---
 
@@ -19,9 +19,9 @@
 | Status | Count | Description |
 |--------|-------|-------------|
 | 🔴 Active | 0 | Currently being implemented |
-| 🟢 Done | 19 | Completed and merged |
+| 🟢 Done | 20 | Completed and merged |
 | 🟡 Pending | 0 | Queued for implementation (in sequence order) |
-| ⚪ Backlog | 18 | Planned but not yet prioritized |
+| ⚪ Backlog | 17 | Planned but not yet prioritized |
 | 🔵 GitHub Issues | 5 | Tracked in GitHub (bugs, smaller features) |
 
 ---
@@ -118,10 +118,11 @@ Smaller features, bug fixes, and follow-up work tracked in GitHub rather than fu
 
 ---
 
-## 🟢 Done (19)
+## 🟢 Done (20)
 
 | Spec | Type | Priority | Completed |
 |------|------|----------|-----------|
+| [feat-song-collaboration-architecture](done/feat-song-collaboration-architecture.md) | Architecture | Large | 2025-12-21 |
 | [feat-user-member-unlinking](completed/feat-user-member-unlinking.md) | Feature | Small | 2025-12-12 |
 | [feat-user-member-linking-phase-4-practice-history-design](done/feat-user-member-linking-phase-4-practice-history-design.md) | Feature | Low | 2025-12-10 |
 | [feat-user-member-linking-phase-3](done/feat-user-member-linking-phase-3.md) | Feature | High | 2025-12-10 |
@@ -150,7 +151,6 @@ Smaller features, bug fixes, and follow-up work tracked in GitHub rather than fu
 
 | Spec | Type | Effort | Notes |
 |------|------|--------|-------|
-| [feat-song-collaboration-architecture](backlog/feat-song-collaboration-architecture.md) | Architecture | Large | Master plan - [#196](https://github.com/zazu-22/band_assist/issues/196) |
 | [infra-test-environment-setup](backlog/infra-test-environment-setup.md) | Infrastructure | Small | Blocks service-layer-testing and ci-test-suite |
 | [infra-service-layer-testing](backlog/infra-service-layer-testing.md) | Testing | Medium | Critical path has 0% coverage |
 
@@ -194,6 +194,7 @@ Smaller features, bug fixes, and follow-up work tracked in GitHub rather than fu
 
 | Date | Item | Change |
 |------|------|--------|
+| 2025-12-21 | feat-song-collaboration-architecture | 🟢 Moved to done (PR #246) |
 | 2025-12-15 | Milestone #1 "Improve 'My Songs' View" | ✅ All issues complete |
 | 2025-12-15 | [#192](https://github.com/zazu-22/band_assist/issues/192) | ✅ Closed (PR #225, #227) |
 | 2025-12-15 | [#186](https://github.com/zazu-22/band_assist/issues/186) | ✅ Closed (PR #227) |
@@ -255,7 +256,7 @@ infra-test-environment-setup (backlog)
             └── infra-ci-test-suite (backlog)
 
 #197 infra-alphatab-1.7-upgrade ✅ (2025-12-12)
-    └── #196 feat-song-collaboration-architecture (backlog) ← Master Plan
+    └── #196 feat-song-collaboration-architecture ✅ (2025-12-21)
             ├── Phase 1: Song Sections (feat-lead-sheet-generation)
             ├── Phase 2: Section Assignments (new spec needed)
             ├── Phase 3: Annotations (feat-collaborative-song-notes)
@@ -268,7 +269,7 @@ infra-test-environment-setup (backlog)
 ```
 Milestones:
 ├── #3 Song Collaboration & Annotations
-│   └── #196 (epic: architecture) ─── master plan (OPEN)
+│   └── #196 (epic: architecture) ─── ✅ COMPLETED (2025-12-21)
 │
 ├── #1 Improve 'My Songs' View ✅ COMPLETE
 │   ├── #184 (epic) ─── ✅ CLOSED 2025-12-15
@@ -354,12 +355,18 @@ Recommended order considering dependencies and effort:
 | 15 | Milestone #2 - Improve Schedule Dialogue | Milestone | ✅ All 2 issues closed (2025-12-12) |
 | 16 | AlphaTab 1.7.1 Upgrade | Issue | ✅ Closed (PR #211, 2025-12-12) |
 
-### Phase 6: Next Steps
+### Phase 6: Architecture & Next Steps ✅ COMPLETE (Phase 6a)
 
 | Order | Item | Type | Rationale |
 |-------|------|------|-----------|
-| 17 | [#196](https://github.com/zazu-22/band_assist/issues/196) Song Collaboration Architecture | Epic | Master plan for collaboration features |
-| 18 | [#101](https://github.com/zazu-22/band_assist/issues/101) Mobile iOS refactor | Issue | Large scope, device testing needed |
+| 17 | [feat-song-collaboration-architecture](done/feat-song-collaboration-architecture.md) | Spec | ✅ Completed 2025-12-21 - Master plan for collaboration features |
+| 18 | [#196](https://github.com/zazu-22/band_assist/issues/196) Song Collaboration Epic | Epic | ✅ COMPLETED (2025-12-21) |
+
+### Phase 7: Upcoming
+
+| Order | Item | Type | Rationale |
+|-------|------|------|-----------|
+| 19 | [#101](https://github.com/zazu-22/band_assist/issues/101) Mobile iOS refactor | Issue | Large scope, device testing needed |
 
 ### Parallel Opportunities
 
@@ -368,7 +375,7 @@ These can run concurrently with minimal conflict:
 - **#101** (mobile) can run in parallel with other work if resources allow
 - **Infrastructure issues** (#154, #153, #142) — independent, can be tackled anytime
 
-> ✅ **Note:** Phases 1-5 are complete! Ready to move to Song Collaboration Architecture.
+> ✅ **Note:** Phases 1-6 are complete! Ready to move to Phase 7.
 
 ---
 
