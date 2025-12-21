@@ -155,7 +155,8 @@ export interface PracticeSession {
   bandId: string;
   durationMinutes: number;
   tempoBpm?: number;
-  sectionsPracticed?: string[]; // e.g., ["Intro", "Chorus", "Solo 1"]
+  sectionsPracticed?: string[]; // Legacy: free-text section names (e.g., ["Intro", "Chorus", "Solo 1"])
+  sectionIds?: string[];        // NEW: array of song_sections.id UUIDs for validated section tracking
   notes?: string;
   date: string; // YYYY-MM-DD
   createdAt: string;
@@ -190,7 +191,7 @@ export interface PracticeFilters {
 
 /** Input data for updating an existing practice session */
 export type UpdatePracticeSessionInput = Partial<
-  Pick<PracticeSession, 'durationMinutes' | 'tempoBpm' | 'sectionsPracticed' | 'notes' | 'date' | 'songId'>
+  Pick<PracticeSession, 'durationMinutes' | 'tempoBpm' | 'sectionsPracticed' | 'sectionIds' | 'notes' | 'date' | 'songId'>
 >;
 
 // =============================================================================

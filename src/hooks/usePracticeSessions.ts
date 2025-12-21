@@ -10,7 +10,8 @@ export interface LogPracticeSessionInput {
   songId: string;
   durationMinutes: number;
   tempoBpm?: number;
-  sectionsPracticed?: string[];
+  sectionsPracticed?: string[];  // Legacy: free-text section names
+  sectionIds?: string[];         // NEW: validated section UUIDs
   notes?: string;
   date: string;
 }

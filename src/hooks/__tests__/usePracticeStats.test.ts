@@ -8,6 +8,7 @@ import type { PracticeStats, PracticeSession } from '../../types';
 vi.mock('../../services/supabaseStorageService', () => ({
   supabaseStorageService: {
     calculatePracticeStats: vi.fn(),
+    calculateSectionPracticeStats: vi.fn(),
   },
 }));
 
@@ -49,6 +50,8 @@ describe('usePracticeStats', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    // Default mock for section stats (returns empty map)
+    vi.mocked(supabaseStorageService.calculateSectionPracticeStats).mockResolvedValue(new Map());
   });
 
   describe('null/undefined input handling', () => {

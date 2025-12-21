@@ -135,6 +135,7 @@ describe('Practice Tracking Service Methods', () => {
         duration_minutes: validSession.durationMinutes,
         tempo_bpm: validSession.tempoBpm,
         sections_practiced: validSession.sectionsPracticed,
+        section_ids: null, // NEW: Phase 4 Practice Integration
         notes: validSession.notes,
         date: validSession.date,
       });
@@ -281,11 +282,13 @@ describe('Practice Tracking Service Methods', () => {
         duration_minutes: minimalSession.durationMinutes,
         tempo_bpm: null,
         sections_practiced: null,
+        section_ids: null, // NEW: Phase 4 Practice Integration
         notes: null,
         date: minimalSession.date,
       });
       expect(result.tempoBpm).toBeUndefined();
       expect(result.sectionsPracticed).toBeUndefined();
+      expect(result.sectionIds).toBeUndefined(); // NEW: Phase 4 Practice Integration
       expect(result.notes).toBeUndefined();
     });
   });

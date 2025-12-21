@@ -9,6 +9,21 @@ vi.mock('@/lib/dateUtils', () => ({
   getTodayDateString: () => '2025-12-08',
 }));
 
+// Mock useSongSections hook for SectionPicker
+vi.mock('@/hooks/useSongSections', () => ({
+  useSongSections: () => ({
+    sections: [],
+    isLoading: false,
+    error: null,
+    refetch: vi.fn(),
+    createSection: vi.fn(),
+    updateSection: vi.fn(),
+    deleteSection: vi.fn(),
+    upsertSections: vi.fn(),
+    deleteAllSections: vi.fn(),
+  }),
+}));
+
 const mockSongs: Song[] = [
   {
     id: 'song-1',
@@ -60,6 +75,7 @@ describe('LogPracticeModal', () => {
     isOpen: true,
     onClose: vi.fn(),
     songs: mockSongs,
+    currentBandId: 'band-1',
     onSubmit: vi.fn(),
   };
 
@@ -95,7 +111,7 @@ describe('LogPracticeModal', () => {
       expect(screen.getByLabelText(/date/i)).toBeInTheDocument();
       expect(screen.getByLabelText(/duration/i)).toBeInTheDocument();
       expect(screen.getByLabelText(/tempo/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/sections/i)).toBeInTheDocument();
+      // Note: Sections are now rendered via SectionPicker after song selection
       expect(screen.getByLabelText(/notes/i)).toBeInTheDocument();
     });
 
@@ -125,7 +141,8 @@ describe('LogPracticeModal', () => {
       expect(screen.getByLabelText(/date/i)).toHaveValue('2025-12-05');
       expect(screen.getByLabelText(/duration/i)).toHaveValue(45);
       expect(screen.getByLabelText(/tempo/i)).toHaveValue(120);
-      expect(screen.getByLabelText(/sections/i)).toHaveValue('Intro, Verse 1');
+      // Note: Section pre-population is now via SectionPicker (not text input)
+      // The legacy sectionsPracticed is not shown in the UI
       expect(screen.getByLabelText(/notes/i)).toHaveValue('Great progress today');
     });
 
@@ -215,8 +232,9 @@ describe('LogPracticeModal', () => {
       const tempoInput = screen.getByLabelText(/tempo/i);
       await user.type(tempoInput, '120');
 
-      const sectionsInput = screen.getByLabelText(/sections/i);
-      await user.type(sectionsInput, 'Intro, Chorus');
+      // Note: Sections are now selected via SectionPicker component
+      // When no sections exist (empty mock), the picker shows "No sections defined"
+      // We skip testing section selection here - see integration tests for SectionPicker
 
       const notesInput = screen.getByLabelText(/notes/i);
       await user.type(notesInput, 'Good session');
@@ -230,7 +248,8 @@ describe('LogPracticeModal', () => {
           songId: 'song-1',
           durationMinutes: 30, // default value
           tempoBpm: 120,
-          sectionsPracticed: ['Intro', 'Chorus'],
+          sectionsPracticed: undefined, // No legacy sections entered
+          sectionIds: undefined, // No sections selected via picker
           notes: 'Good session',
           date: '2025-12-08', // mocked today
         });
