@@ -41,16 +41,3 @@ export type { PracticeControlBarProps } from './PracticeControlBar';
 
 export { SectionNav, calculateSectionSeekPercentage } from './SectionNav';
 export type { SectionNavProps } from './SectionNav';
-
-// Phase 4: Practice Integration components
-export { SectionPicker } from './SectionPicker';
-export type { SectionPickerProps } from './SectionPicker';
-
-export { YourAssignmentBar } from './YourAssignmentBar';
-export type { YourAssignmentBarProps } from './YourAssignmentBar';
-
-export { AnnotationOverlay } from './AnnotationOverlay';
-export type { AnnotationOverlayProps } from './AnnotationOverlay';
-
-export { SectionPracticeStats } from './SectionPracticeStats';
-export type { SectionPracticeStatsProps } from './SectionPracticeStats';

@@ -155,8 +155,7 @@ export interface PracticeSession {
   bandId: string;
   durationMinutes: number;
   tempoBpm?: number;
-  sectionsPracticed?: string[]; // Legacy: array of section names (e.g., ["Intro", "Chorus", "Solo 1"])
-  sectionIds?: string[];        // New: array of song_section UUIDs for structured references
+  sectionsPracticed?: string[]; // e.g., ["Intro", "Chorus", "Solo 1"]
   notes?: string;
   date: string; // YYYY-MM-DD
   createdAt: string;
@@ -191,21 +190,8 @@ export interface PracticeFilters {
 
 /** Input data for updating an existing practice session */
 export type UpdatePracticeSessionInput = Partial<
-  Pick<PracticeSession, 'durationMinutes' | 'tempoBpm' | 'sectionsPracticed' | 'sectionIds' | 'notes' | 'date' | 'songId'>
+  Pick<PracticeSession, 'durationMinutes' | 'tempoBpm' | 'sectionsPracticed' | 'notes' | 'date' | 'songId'>
 >;
-
-// =============================================================================
-// SECTION PRACTICE STATS (Phase 4 - Practice Integration)
-// =============================================================================
-
-/** Practice statistics for a specific section */
-export interface SectionPracticeStat {
-  sectionId: string;
-  sectionName: string;
-  sessionCount: number;
-  totalMinutes: number;
-  lastPracticedAt: string | null;
-}
 
 // =============================================================================
 // SONG SECTIONS (Phase 1 - Song Collaboration Architecture)

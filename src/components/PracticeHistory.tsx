@@ -842,7 +842,6 @@ export const PracticeHistory: React.FC<PracticeHistoryProps> = memo(function Pra
         isOpen={isLogModalOpen}
         onClose={handleCloseModal}
         songs={songs}
-        bandId={currentBandId}
         editSession={editingSession}
         onSubmit={handleSubmitSession}
         songStatuses={statuses}
