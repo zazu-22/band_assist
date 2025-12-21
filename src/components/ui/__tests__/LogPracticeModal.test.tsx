@@ -9,6 +9,57 @@ vi.mock('@/lib/dateUtils', () => ({
   getTodayDateString: () => '2025-12-08',
 }));
 
+// Mock useSongSections hook for SectionPicker
+vi.mock('@/hooks/useSongSections', () => ({
+  useSongSections: vi.fn(),
+}));
+
+import { useSongSections } from '@/hooks/useSongSections';
+const mockUseSongSections = vi.mocked(useSongSections);
+
+// Default mock return value (empty sections)
+const defaultSectionsMock = {
+  sections: [],
+  isLoading: false,
+  error: null,
+  refetch: vi.fn(),
+  createSection: vi.fn(),
+  updateSection: vi.fn(),
+  deleteSection: vi.fn(),
+  upsertSections: vi.fn(),
+  deleteAllSections: vi.fn(),
+};
+
+// Mock sections for integration tests
+const mockSectionsData = [
+  {
+    id: 'section-1',
+    name: 'Intro',
+    songId: 'song-1',
+    bandId: 'band-1',
+    displayOrder: 0,
+    startBar: 1,
+    endBar: 8,
+    barCount: 8,
+    source: 'manual' as const,
+    createdAt: '2025-12-01T00:00:00Z',
+    updatedAt: '2025-12-01T00:00:00Z',
+  },
+  {
+    id: 'section-2',
+    name: 'Verse 1',
+    songId: 'song-1',
+    bandId: 'band-1',
+    displayOrder: 1,
+    startBar: 9,
+    endBar: 16,
+    barCount: 8,
+    source: 'manual' as const,
+    createdAt: '2025-12-01T00:00:00Z',
+    updatedAt: '2025-12-01T00:00:00Z',
+  },
+];
+
 const mockSongs: Song[] = [
   {
     id: 'song-1',
@@ -60,11 +111,14 @@ describe('LogPracticeModal', () => {
     isOpen: true,
     onClose: vi.fn(),
     songs: mockSongs,
+    currentBandId: 'band-1',
     onSubmit: vi.fn(),
   };
 
   beforeEach(() => {
     vi.clearAllMocks();
+    // Set default mock for useSongSections (empty sections)
+    mockUseSongSections.mockReturnValue(defaultSectionsMock);
   });
 
   describe('rendering', () => {
@@ -95,7 +149,7 @@ describe('LogPracticeModal', () => {
       expect(screen.getByLabelText(/date/i)).toBeInTheDocument();
       expect(screen.getByLabelText(/duration/i)).toBeInTheDocument();
       expect(screen.getByLabelText(/tempo/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/sections/i)).toBeInTheDocument();
+      // Note: Sections are now rendered via SectionPicker after song selection
       expect(screen.getByLabelText(/notes/i)).toBeInTheDocument();
     });
 
@@ -125,7 +179,8 @@ describe('LogPracticeModal', () => {
       expect(screen.getByLabelText(/date/i)).toHaveValue('2025-12-05');
       expect(screen.getByLabelText(/duration/i)).toHaveValue(45);
       expect(screen.getByLabelText(/tempo/i)).toHaveValue(120);
-      expect(screen.getByLabelText(/sections/i)).toHaveValue('Intro, Verse 1');
+      // Note: Section pre-population is now via SectionPicker (not text input)
+      // The legacy sectionsPracticed is not shown in the UI
       expect(screen.getByLabelText(/notes/i)).toHaveValue('Great progress today');
     });
 
@@ -215,8 +270,9 @@ describe('LogPracticeModal', () => {
       const tempoInput = screen.getByLabelText(/tempo/i);
       await user.type(tempoInput, '120');
 
-      const sectionsInput = screen.getByLabelText(/sections/i);
-      await user.type(sectionsInput, 'Intro, Chorus');
+      // Note: Sections are now selected via SectionPicker component
+      // When no sections exist (empty mock), the picker shows "No sections defined"
+      // We skip testing section selection here - see integration tests for SectionPicker
 
       const notesInput = screen.getByLabelText(/notes/i);
       await user.type(notesInput, 'Good session');
@@ -230,7 +286,8 @@ describe('LogPracticeModal', () => {
           songId: 'song-1',
           durationMinutes: 30, // default value
           tempoBpm: 120,
-          sectionsPracticed: ['Intro', 'Chorus'],
+          sectionsPracticed: undefined, // No legacy sections entered
+          sectionIds: undefined, // No sections selected via picker
           notes: 'Good session',
           date: '2025-12-08', // mocked today
         });
@@ -515,6 +572,90 @@ describe('LogPracticeModal', () => {
 
       // Should show the status for the session's song (song-1 = Learning)
       expect(screen.getByRole('combobox', { name: /learning status/i })).toHaveTextContent('Learning');
+    });
+  });
+
+  describe('SectionPicker integration', () => {
+    it('should submit session with selected section IDs', async () => {
+      const user = userEvent.setup();
+      const onSubmit = vi.fn().mockResolvedValue(undefined);
+
+      // Mock useSongSections to return sections
+      mockUseSongSections.mockReturnValue({
+        ...defaultSectionsMock,
+        sections: mockSectionsData,
+      });
+
+      render(<LogPracticeModal {...defaultProps} songs={singleSong} onSubmit={onSubmit} />);
+
+      // Select sections via SectionPicker chips
+      const introChip = screen.getByRole('checkbox', { name: 'Intro' });
+      await user.click(introChip);
+
+      const verse1Chip = screen.getByRole('checkbox', { name: 'Verse 1' });
+      await user.click(verse1Chip);
+
+      // Submit the form
+      const submitButton = screen.getByRole('button', { name: /log session/i });
+      await user.click(submitButton);
+
+      await waitFor(() => {
+        expect(onSubmit).toHaveBeenCalledWith(
+          expect.objectContaining({
+            sectionIds: ['section-1', 'section-2'],
+          })
+        );
+      });
+    });
+
+    it('should pre-populate sections in edit mode', () => {
+      // Create session with sectionIds
+      const sessionWithSections: PracticeSession = {
+        ...mockEditSession,
+        sectionIds: ['section-1', 'section-2'],
+      };
+
+      // Mock useSongSections to return sections
+      mockUseSongSections.mockReturnValue({
+        ...defaultSectionsMock,
+        sections: mockSectionsData,
+      });
+
+      render(<LogPracticeModal {...defaultProps} editSession={sessionWithSections} />);
+
+      // Verify both sections are selected (aria-checked="true")
+      const introChip = screen.getByRole('checkbox', { name: 'Intro' });
+      const verse1Chip = screen.getByRole('checkbox', { name: 'Verse 1' });
+
+      expect(introChip).toHaveAttribute('aria-checked', 'true');
+      expect(verse1Chip).toHaveAttribute('aria-checked', 'true');
+    });
+
+    it('should show empty state when song has no sections', () => {
+      // Mock useSongSections to return empty sections
+      mockUseSongSections.mockReturnValue({
+        ...defaultSectionsMock,
+        sections: [],
+      });
+
+      render(<LogPracticeModal {...defaultProps} songs={singleSong} />);
+
+      // Section picker should show empty state
+      expect(screen.getByText('No sections defined for this song')).toBeInTheDocument();
+    });
+
+    it('should render section chips when song has sections', () => {
+      // Mock useSongSections to return sections
+      mockUseSongSections.mockReturnValue({
+        ...defaultSectionsMock,
+        sections: mockSectionsData,
+      });
+
+      render(<LogPracticeModal {...defaultProps} songs={singleSong} />);
+
+      // Section picker should show section chips
+      expect(screen.getByRole('checkbox', { name: 'Intro' })).toBeInTheDocument();
+      expect(screen.getByRole('checkbox', { name: 'Verse 1' })).toBeInTheDocument();
     });
   });
 });

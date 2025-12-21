@@ -7,6 +7,7 @@ export { ConfirmDialog } from './ConfirmDialog';
 export { CreateBandDialog } from './CreateBandDialog';
 export { DangerousActionDialog } from './DangerousActionDialog';
 export { LogPracticeModal, type PracticeFormData } from './LogPracticeModal';
+export { SectionPicker, type SectionPickerProps } from './SectionPicker';
 export { ErrorBoundary } from './ErrorBoundary';
 export { ResizablePanel } from './ResizablePanel';
 export { Alert, AlertTitle, AlertDescription } from './Alert';

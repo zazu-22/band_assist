@@ -8,15 +8,18 @@ import type { Song, PracticeSession, PracticeStats } from '@/types';
 vi.mock('@/hooks/usePracticeSessions');
 vi.mock('@/hooks/usePracticeStats');
 vi.mock('@/hooks/useUserSongStatus');
+vi.mock('@/hooks/useSongSections');
 
 import { usePracticeSessions } from '@/hooks/usePracticeSessions';
 import { usePracticeStats } from '@/hooks/usePracticeStats';
 import { useAllUserSongStatuses } from '@/hooks/useUserSongStatus';
+import { useSongSections } from '@/hooks/useSongSections';
 
 // Type the mocked hooks
 const mockUsePracticeSessions = vi.mocked(usePracticeSessions);
 const mockUsePracticeStats = vi.mocked(usePracticeStats);
 const mockUseAllUserSongStatuses = vi.mocked(useAllUserSongStatuses);
+const mockUseSongSections = vi.mocked(useSongSections);
 
 // Default mock functions for practice sessions hook
 const createMockSessionsHook = (overrides = {}) => ({
@@ -27,6 +30,16 @@ const createMockSessionsHook = (overrides = {}) => ({
   logSession: vi.fn(),
   updateSession: vi.fn(),
   deleteSession: vi.fn(),
+  ...overrides,
+});
+
+// Default mock functions for practice stats hook
+const createMockStatsHook = (overrides: { stats?: PracticeStats | null; isLoading?: boolean; error?: Error | null } = {}) => ({
+  stats: null,
+  sectionStats: new Map() as Map<string, { totalMinutes: number; sessionCount: number }>,
+  isLoading: false,
+  error: null,
+  refetch: vi.fn() as unknown as () => Promise<void>,
   ...overrides,
 });
 
@@ -100,6 +113,18 @@ describe('PracticeHistory', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    // Default mock for useSongSections (empty sections)
+    mockUseSongSections.mockReturnValue({
+      sections: [],
+      isLoading: false,
+      error: null,
+      refetch: vi.fn(),
+      createSection: vi.fn(),
+      updateSection: vi.fn(),
+      deleteSection: vi.fn(),
+      upsertSections: vi.fn(),
+      deleteAllSections: vi.fn(),
+    });
   });
 
   describe('unauthenticated state', () => {
@@ -107,12 +132,7 @@ describe('PracticeHistory', () => {
       // Setup mocks for unauthenticated state
       mockUsePracticeSessions.mockReturnValue(createMockSessionsHook());
 
-      mockUsePracticeStats.mockReturnValue({
-        stats: null,
-        isLoading: false,
-        error: null,
-        refetch: vi.fn(),
-      });
+      mockUsePracticeStats.mockReturnValue(createMockStatsHook());
 
       mockUseAllUserSongStatuses.mockReturnValue({
         statuses: new Map(),
@@ -142,12 +162,7 @@ describe('PracticeHistory', () => {
     it('should show loading spinner when sessions loading', () => {
       mockUsePracticeSessions.mockReturnValue(createMockSessionsHook({ isLoading: true }));
 
-      mockUsePracticeStats.mockReturnValue({
-        stats: null,
-        isLoading: false,
-        error: null,
-        refetch: vi.fn(),
-      });
+      mockUsePracticeStats.mockReturnValue(createMockStatsHook());
 
       mockUseAllUserSongStatuses.mockReturnValue({
         statuses: new Map(),
@@ -171,12 +186,7 @@ describe('PracticeHistory', () => {
     it('should show loading spinner when stats loading', () => {
       mockUsePracticeSessions.mockReturnValue(createMockSessionsHook());
 
-      mockUsePracticeStats.mockReturnValue({
-        stats: null,
-        isLoading: true,
-        error: null,
-        refetch: vi.fn(),
-      });
+      mockUsePracticeStats.mockReturnValue(createMockStatsHook({ isLoading: true }));
 
       mockUseAllUserSongStatuses.mockReturnValue({
         statuses: new Map(),
@@ -199,12 +209,7 @@ describe('PracticeHistory', () => {
     it('should show loading spinner when statuses loading', () => {
       mockUsePracticeSessions.mockReturnValue(createMockSessionsHook());
 
-      mockUsePracticeStats.mockReturnValue({
-        stats: null,
-        isLoading: false,
-        error: null,
-        refetch: vi.fn(),
-      });
+      mockUsePracticeStats.mockReturnValue(createMockStatsHook());
 
       mockUseAllUserSongStatuses.mockReturnValue({
         statuses: new Map(),
@@ -238,12 +243,7 @@ describe('PracticeHistory', () => {
     });
 
     it('should display stats cards with correct values', () => {
-      mockUsePracticeStats.mockReturnValue({
-        stats: mockStats,
-        isLoading: false,
-        error: null,
-        refetch: vi.fn(),
-      });
+      mockUsePracticeStats.mockReturnValue(createMockStatsHook({ stats: mockStats }));
 
       render(
         <PracticeHistory
@@ -267,12 +267,7 @@ describe('PracticeHistory', () => {
     });
 
     it('should display zero stats when stats is null', () => {
-      mockUsePracticeStats.mockReturnValue({
-        stats: null,
-        isLoading: false,
-        error: null,
-        refetch: vi.fn(),
-      });
+      mockUsePracticeStats.mockReturnValue(createMockStatsHook());
 
       render(
         <PracticeHistory
@@ -288,12 +283,7 @@ describe('PracticeHistory', () => {
     });
 
     it('should format minutes under 60 correctly', () => {
-      mockUsePracticeStats.mockReturnValue({
-        stats: { ...mockStats, totalMinutes: 45 },
-        isLoading: false,
-        error: null,
-        refetch: vi.fn(),
-      });
+      mockUsePracticeStats.mockReturnValue(createMockStatsHook({ stats: { ...mockStats, totalMinutes: 45 } }));
 
       render(
         <PracticeHistory
@@ -307,12 +297,7 @@ describe('PracticeHistory', () => {
     });
 
     it('should format hours and minutes correctly', () => {
-      mockUsePracticeStats.mockReturnValue({
-        stats: { ...mockStats, totalMinutes: 90 },
-        isLoading: false,
-        error: null,
-        refetch: vi.fn(),
-      });
+      mockUsePracticeStats.mockReturnValue(createMockStatsHook({ stats: { ...mockStats, totalMinutes: 90 } }));
 
       render(
         <PracticeHistory
@@ -330,12 +315,7 @@ describe('PracticeHistory', () => {
     it('should show empty state when no sessions', () => {
       mockUsePracticeSessions.mockReturnValue(createMockSessionsHook());
 
-      mockUsePracticeStats.mockReturnValue({
-        stats: mockStats,
-        isLoading: false,
-        error: null,
-        refetch: vi.fn(),
-      });
+      mockUsePracticeStats.mockReturnValue(createMockStatsHook({ stats: mockStats }));
 
       mockUseAllUserSongStatuses.mockReturnValue({
         statuses: new Map(),
@@ -363,12 +343,7 @@ describe('PracticeHistory', () => {
 
   describe('session table', () => {
     beforeEach(() => {
-      mockUsePracticeStats.mockReturnValue({
-        stats: mockStats,
-        isLoading: false,
-        error: null,
-        refetch: vi.fn(),
-      });
+      mockUsePracticeStats.mockReturnValue(createMockStatsHook({ stats: mockStats }));
 
       mockUseAllUserSongStatuses.mockReturnValue({
         statuses: new Map([
@@ -479,12 +454,7 @@ describe('PracticeHistory', () => {
 
   describe('song filter', () => {
     beforeEach(() => {
-      mockUsePracticeStats.mockReturnValue({
-        stats: mockStats,
-        isLoading: false,
-        error: null,
-        refetch: vi.fn(),
-      });
+      mockUsePracticeStats.mockReturnValue(createMockStatsHook({ stats: mockStats }));
 
       mockUseAllUserSongStatuses.mockReturnValue({
         statuses: new Map(),
@@ -533,12 +503,7 @@ describe('PracticeHistory', () => {
 
   describe('date range filter', () => {
     beforeEach(() => {
-      mockUsePracticeStats.mockReturnValue({
-        stats: mockStats,
-        isLoading: false,
-        error: null,
-        refetch: vi.fn(),
-      });
+      mockUsePracticeStats.mockReturnValue(createMockStatsHook({ stats: mockStats }));
 
       mockUseAllUserSongStatuses.mockReturnValue({
         statuses: new Map(),
@@ -611,12 +576,7 @@ describe('PracticeHistory', () => {
         error: new Error('Failed to fetch sessions'),
       }));
 
-      mockUsePracticeStats.mockReturnValue({
-        stats: null,
-        isLoading: false,
-        error: null,
-        refetch: vi.fn(),
-      });
+      mockUsePracticeStats.mockReturnValue(createMockStatsHook());
 
       mockUseAllUserSongStatuses.mockReturnValue({
         statuses: new Map(),
@@ -641,12 +601,7 @@ describe('PracticeHistory', () => {
     it('should display error message when stats fail to load', () => {
       mockUsePracticeSessions.mockReturnValue(createMockSessionsHook());
 
-      mockUsePracticeStats.mockReturnValue({
-        stats: null,
-        isLoading: false,
-        error: new Error('Failed to fetch stats'),
-        refetch: vi.fn(),
-      });
+      mockUsePracticeStats.mockReturnValue(createMockStatsHook({ error: new Error('Failed to fetch stats') }));
 
       mockUseAllUserSongStatuses.mockReturnValue({
         statuses: new Map(),
@@ -671,12 +626,7 @@ describe('PracticeHistory', () => {
 
   describe('status filter', () => {
     beforeEach(() => {
-      mockUsePracticeStats.mockReturnValue({
-        stats: mockStats,
-        isLoading: false,
-        error: null,
-        refetch: vi.fn(),
-      });
+      mockUsePracticeStats.mockReturnValue(createMockStatsHook({ stats: mockStats }));
     });
 
     it('should render status filter dropdown', () => {

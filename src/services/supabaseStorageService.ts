@@ -1453,7 +1453,8 @@ export class SupabaseStorageService implements IStorageService {
           band_id: session.bandId,
           duration_minutes: session.durationMinutes,
           tempo_bpm: session.tempoBpm ?? null,
-          sections_practiced: session.sectionsPracticed ?? null,
+          sections_practiced: session.sectionsPracticed ?? null, // Legacy
+          section_ids: session.sectionIds ?? null,               // NEW: validated section UUIDs
           notes: session.notes ?? null,
           date: session.date,
         })
@@ -1551,6 +1552,8 @@ export class SupabaseStorageService implements IStorageService {
   private transformPracticeSession(
     row: Database['public']['Tables']['practice_sessions']['Row']
   ): PracticeSession {
+    // TODO: Remove type assertion after running `supabase gen types` to include section_ids column
+    const rowWithSectionIds = row as typeof row & { section_ids?: string[] | null };
     return {
       id: row.id,
       userId: row.user_id,
@@ -1559,6 +1562,7 @@ export class SupabaseStorageService implements IStorageService {
       durationMinutes: row.duration_minutes,
       tempoBpm: row.tempo_bpm ?? undefined,
       sectionsPracticed: (row.sections_practiced as string[] | null) ?? undefined,
+      sectionIds: rowWithSectionIds.section_ids ?? undefined,
       notes: row.notes ?? undefined,
       date: row.date,
       createdAt: row.created_at,
@@ -1595,6 +1599,7 @@ export class SupabaseStorageService implements IStorageService {
       if ('durationMinutes' in updates) updatePayload.duration_minutes = updates.durationMinutes;
       if ('tempoBpm' in updates) updatePayload.tempo_bpm = updates.tempoBpm ?? null;
       if ('sectionsPracticed' in updates) updatePayload.sections_practiced = updates.sectionsPracticed ?? null;
+      if ('sectionIds' in updates) updatePayload.section_ids = updates.sectionIds ?? null;
       if ('notes' in updates) updatePayload.notes = updates.notes ?? null;
       if ('date' in updates) updatePayload.date = updates.date;
       if ('songId' in updates) updatePayload.song_id = updates.songId;
@@ -1995,6 +2000,95 @@ export class SupabaseStorageService implements IStorageService {
     } catch (error) {
       console.error('Error in calculatePracticeStats:', error);
       throw error instanceof Error ? error : new Error('Failed to calculate practice statistics');
+    }
+  }
+
+  /**
+   * Calculate section-level practice statistics
+   *
+   * Aggregates practice time and session counts per section based on section_ids
+   * in practice sessions. When multiple sections are logged in one session,
+   * the duration is distributed equally across sections.
+   *
+   * @param userId - User ID to calculate stats for
+   * @param bandId - Band ID to filter stats by
+   * @param songId - Optional song ID to filter stats to a specific song
+   * @param dateRange - Optional date range filter
+   * @returns Map of sectionId to { totalMinutes, sessionCount }
+   */
+  async calculateSectionPracticeStats(
+    userId: string,
+    bandId: string,
+    songId?: string,
+    dateRange?: { start: string; end: string }
+  ): Promise<Map<string, { totalMinutes: number; sessionCount: number }>> {
+    const supabase = getSupabaseClient();
+    if (!supabase) {
+      throw new Error('Supabase is not configured. Check environment variables.');
+    }
+
+    if (!this.currentBandId) {
+      throw new Error('No band selected. Call setCurrentBand() first.');
+    }
+
+    try {
+      // Query for sessions with section_ids
+      // Note: section_ids column not yet in generated types, use raw query approach
+      let query = supabase
+        .from('practice_sessions')
+        .select('duration_minutes, section_ids')
+        .eq('user_id', userId)
+        .eq('band_id', bandId);
+
+      if (songId) {
+        query = query.eq('song_id', songId);
+      }
+
+      if (dateRange?.start) {
+        query = query.gte('date', dateRange.start);
+      }
+      if (dateRange?.end) {
+        query = query.lte('date', dateRange.end);
+      }
+
+      const { data, error } = await query;
+
+      if (error) {
+        console.error('Error fetching section practice stats:', error);
+        throw new Error('Failed to calculate section statistics');
+      }
+
+      // Aggregate results into Map
+      const sectionStats = new Map<string, { totalMinutes: number; sessionCount: number }>();
+
+      // TODO: Remove type assertion after running `supabase gen types` to include section_ids column
+      // The database has section_ids but types haven't been regenerated yet
+      // Cast through unknown since generated types don't include section_ids column
+      type SessionWithSectionIds = { duration_minutes: number; section_ids?: string[] | null };
+      const sessionsWithSectionIds = data as unknown as SessionWithSectionIds[] | null;
+
+      for (const session of sessionsWithSectionIds ?? []) {
+        const sectionIds = session.section_ids;
+        if (!sectionIds || sectionIds.length === 0) continue;
+
+        // Distribute duration equally across sections when multiple sections are logged together.
+        // This is a simplification since we don't track per-section time within a session.
+        // Future enhancement: Allow users to specify per-section duration in LogPracticeModal.
+        const perSectionMinutes = session.duration_minutes / sectionIds.length;
+
+        for (const sectionId of sectionIds) {
+          const existing = sectionStats.get(sectionId) ?? { totalMinutes: 0, sessionCount: 0 };
+          sectionStats.set(sectionId, {
+            totalMinutes: existing.totalMinutes + perSectionMinutes,
+            sessionCount: existing.sessionCount + 1,
+          });
+        }
+      }
+
+      return sectionStats;
+    } catch (error) {
+      console.error('Error in calculateSectionPracticeStats:', error);
+      throw error instanceof Error ? error : new Error('Failed to calculate section statistics');
     }
   }
 
