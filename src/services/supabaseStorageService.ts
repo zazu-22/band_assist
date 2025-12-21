@@ -2071,7 +2071,9 @@ export class SupabaseStorageService implements IStorageService {
         const sectionIds = session.section_ids;
         if (!sectionIds || sectionIds.length === 0) continue;
 
-        // Distribute duration equally across sections
+        // Distribute duration equally across sections when multiple sections are logged together.
+        // This is a simplification since we don't track per-section time within a session.
+        // Future enhancement: Allow users to specify per-section duration in LogPracticeModal.
         const perSectionMinutes = session.duration_minutes / sectionIds.length;
 
         for (const sectionId of sectionIds) {

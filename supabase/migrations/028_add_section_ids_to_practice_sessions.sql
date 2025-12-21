@@ -42,3 +42,16 @@ BEGIN
 
   RAISE NOTICE 'Migration 028_add_section_ids_to_practice_sessions completed successfully';
 END $$;
+
+-- =============================================================================
+-- DOWN MIGRATION (for rollback)
+-- =============================================================================
+-- To rollback this migration, run the following commands:
+--
+-- DROP INDEX IF EXISTS idx_practice_sessions_section_ids;
+-- ALTER TABLE practice_sessions DROP COLUMN IF EXISTS section_ids;
+--
+-- Note: Rolling back will permanently lose any section_ids data stored after
+-- this migration was applied. The legacy sections_practiced column is preserved
+-- as a fallback.
+-- =============================================================================

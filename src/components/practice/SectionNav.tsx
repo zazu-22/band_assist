@@ -103,7 +103,11 @@ export const SectionNav: React.FC<SectionNavProps> = memo(function SectionNav({
   return (
     <div
       ref={containerRef}
-      className={cn('border-b border-border bg-card/50', className)}
+      className={cn(
+        'border-b border-border bg-card/50',
+        'focus:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-inset',
+        className
+      )}
       tabIndex={0} // Make focusable for keyboard events
       onKeyDown={handleKeyDown}
       role="navigation"
