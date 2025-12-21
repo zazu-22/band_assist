@@ -1552,8 +1552,6 @@ export class SupabaseStorageService implements IStorageService {
   private transformPracticeSession(
     row: Database['public']['Tables']['practice_sessions']['Row']
   ): PracticeSession {
-    // TODO: Remove type assertion after running `supabase gen types` to include section_ids column
-    const rowWithSectionIds = row as typeof row & { section_ids?: string[] | null };
     return {
       id: row.id,
       userId: row.user_id,
@@ -1562,7 +1560,7 @@ export class SupabaseStorageService implements IStorageService {
       durationMinutes: row.duration_minutes,
       tempoBpm: row.tempo_bpm ?? undefined,
       sectionsPracticed: (row.sections_practiced as string[] | null) ?? undefined,
-      sectionIds: rowWithSectionIds.section_ids ?? undefined,
+      sectionIds: row.section_ids ?? undefined,
       notes: row.notes ?? undefined,
       date: row.date,
       createdAt: row.created_at,
@@ -2033,7 +2031,6 @@ export class SupabaseStorageService implements IStorageService {
 
     try {
       // Query for sessions with section_ids
-      // Note: section_ids column not yet in generated types, use raw query approach
       let query = supabase
         .from('practice_sessions')
         .select('duration_minutes, section_ids')
@@ -2061,13 +2058,7 @@ export class SupabaseStorageService implements IStorageService {
       // Aggregate results into Map
       const sectionStats = new Map<string, { totalMinutes: number; sessionCount: number }>();
 
-      // TODO: Remove type assertion after running `supabase gen types` to include section_ids column
-      // The database has section_ids but types haven't been regenerated yet
-      // Cast through unknown since generated types don't include section_ids column
-      type SessionWithSectionIds = { duration_minutes: number; section_ids?: string[] | null };
-      const sessionsWithSectionIds = data as unknown as SessionWithSectionIds[] | null;
-
-      for (const session of sessionsWithSectionIds ?? []) {
+      for (const session of data ?? []) {
         const sectionIds = session.section_ids;
         if (!sectionIds || sectionIds.length === 0) continue;
 
@@ -2400,8 +2391,8 @@ export class SupabaseStorageService implements IStorageService {
       gpTrackIndex: row.gp_track_index ?? undefined,
       memberName: memberData?.name,
       memberAvatarColor: memberData?.avatar_color ?? undefined,
-      createdAt: row.created_at,
-      updatedAt: row.updated_at,
+      createdAt: row.created_at ?? new Date().toISOString(),
+      updatedAt: row.updated_at ?? new Date().toISOString(),
     };
   }
 

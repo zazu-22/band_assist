@@ -282,6 +282,7 @@ export type Database = {
           duration_minutes: number
           id: string
           notes: string | null
+          section_ids: string[] | null
           sections_practiced: Json | null
           song_id: string
           tempo_bpm: number | null
@@ -295,6 +296,7 @@ export type Database = {
           duration_minutes: number
           id?: string
           notes?: string | null
+          section_ids?: string[] | null
           sections_practiced?: Json | null
           song_id: string
           tempo_bpm?: number | null
@@ -308,6 +310,7 @@ export type Database = {
           duration_minutes?: number
           id?: string
           notes?: string | null
+          section_ids?: string[] | null
           sections_practiced?: Json | null
           song_id?: string
           tempo_bpm?: number | null
@@ -356,6 +359,209 @@ export type Database = {
             columns: ["band_id"]
             isOneToOne: false
             referencedRelation: "bands"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      section_assignments: {
+        Row: {
+          band_id: string
+          created_at: string | null
+          gp_track_index: number | null
+          id: string
+          member_id: string | null
+          notes: string | null
+          role: string
+          section_id: string
+          status: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          band_id: string
+          created_at?: string | null
+          gp_track_index?: number | null
+          id?: string
+          member_id?: string | null
+          notes?: string | null
+          role: string
+          section_id: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          band_id?: string
+          created_at?: string | null
+          gp_track_index?: number | null
+          id?: string
+          member_id?: string | null
+          notes?: string | null
+          role?: string
+          section_id?: string
+          status?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "section_assignments_band_id_fkey"
+            columns: ["band_id"]
+            isOneToOne: false
+            referencedRelation: "bands"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "section_assignments_member_id_fkey"
+            columns: ["member_id"]
+            isOneToOne: false
+            referencedRelation: "band_members"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "section_assignments_section_id_fkey"
+            columns: ["section_id"]
+            isOneToOne: false
+            referencedRelation: "song_sections"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      song_annotations: {
+        Row: {
+          annotation_type: string
+          author_id: string
+          band_id: string
+          bar_index: number
+          beat_index: number
+          content: string
+          created_at: string
+          id: string
+          is_resolved: boolean | null
+          resolved_at: string | null
+          resolved_by: string | null
+          section_id: string | null
+          song_id: string
+          track_index: number
+          updated_at: string
+          visible_during_playback: boolean | null
+        }
+        Insert: {
+          annotation_type?: string
+          author_id: string
+          band_id: string
+          bar_index: number
+          beat_index?: number
+          content: string
+          created_at?: string
+          id?: string
+          is_resolved?: boolean | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          section_id?: string | null
+          song_id: string
+          track_index?: number
+          updated_at?: string
+          visible_during_playback?: boolean | null
+        }
+        Update: {
+          annotation_type?: string
+          author_id?: string
+          band_id?: string
+          bar_index?: number
+          beat_index?: number
+          content?: string
+          created_at?: string
+          id?: string
+          is_resolved?: boolean | null
+          resolved_at?: string | null
+          resolved_by?: string | null
+          section_id?: string | null
+          song_id?: string
+          track_index?: number
+          updated_at?: string
+          visible_during_playback?: boolean | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "song_annotations_band_id_fkey"
+            columns: ["band_id"]
+            isOneToOne: false
+            referencedRelation: "bands"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "song_annotations_section_id_fkey"
+            columns: ["section_id"]
+            isOneToOne: false
+            referencedRelation: "song_sections"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "song_annotations_song_id_fkey"
+            columns: ["song_id"]
+            isOneToOne: false
+            referencedRelation: "songs"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      song_sections: {
+        Row: {
+          band_id: string
+          color: string | null
+          created_at: string
+          display_order: number
+          end_bar: number
+          end_tick: number | null
+          id: string
+          name: string
+          song_id: string
+          source: string
+          start_bar: number
+          start_tick: number | null
+          updated_at: string
+        }
+        Insert: {
+          band_id: string
+          color?: string | null
+          created_at?: string
+          display_order: number
+          end_bar: number
+          end_tick?: number | null
+          id?: string
+          name: string
+          song_id: string
+          source?: string
+          start_bar: number
+          start_tick?: number | null
+          updated_at?: string
+        }
+        Update: {
+          band_id?: string
+          color?: string | null
+          created_at?: string
+          display_order?: number
+          end_bar?: number
+          end_tick?: number | null
+          id?: string
+          name?: string
+          song_id?: string
+          source?: string
+          start_bar?: number
+          start_tick?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "song_sections_band_id_fkey"
+            columns: ["band_id"]
+            isOneToOne: false
+            referencedRelation: "bands"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "song_sections_song_id_fkey"
+            columns: ["song_id"]
+            isOneToOne: false
+            referencedRelation: "songs"
             referencedColumns: ["id"]
           },
         ]
@@ -506,209 +712,6 @@ export type Database = {
             columns: ["song_id"]
             isOneToOne: false
             referencedRelation: "songs"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      song_sections: {
-        Row: {
-          id: string
-          song_id: string
-          band_id: string
-          name: string
-          display_order: number
-          start_bar: number
-          end_bar: number
-          start_tick: number | null
-          end_tick: number | null
-          source: string
-          color: string | null
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          song_id: string
-          band_id: string
-          name: string
-          display_order: number
-          start_bar: number
-          end_bar: number
-          start_tick?: number | null
-          end_tick?: number | null
-          source?: string
-          color?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          song_id?: string
-          band_id?: string
-          name?: string
-          display_order?: number
-          start_bar?: number
-          end_bar?: number
-          start_tick?: number | null
-          end_tick?: number | null
-          source?: string
-          color?: string | null
-          created_at?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "song_sections_song_id_fkey"
-            columns: ["song_id"]
-            isOneToOne: false
-            referencedRelation: "songs"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "song_sections_band_id_fkey"
-            columns: ["band_id"]
-            isOneToOne: false
-            referencedRelation: "bands"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      section_assignments: {
-        Row: {
-          id: string
-          section_id: string
-          member_id: string | null
-          band_id: string
-          role: string
-          status: string
-          notes: string | null
-          gp_track_index: number | null
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          section_id: string
-          member_id?: string | null
-          band_id: string
-          role: string
-          status?: string
-          notes?: string | null
-          gp_track_index?: number | null
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          section_id?: string
-          member_id?: string | null
-          band_id?: string
-          role?: string
-          status?: string
-          notes?: string | null
-          gp_track_index?: number | null
-          created_at?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "section_assignments_section_id_fkey"
-            columns: ["section_id"]
-            isOneToOne: false
-            referencedRelation: "song_sections"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "section_assignments_member_id_fkey"
-            columns: ["member_id"]
-            isOneToOne: false
-            referencedRelation: "band_members"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "section_assignments_band_id_fkey"
-            columns: ["band_id"]
-            isOneToOne: false
-            referencedRelation: "bands"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      song_annotations: {
-        Row: {
-          id: string
-          song_id: string
-          band_id: string
-          author_id: string
-          section_id: string | null
-          bar_index: number
-          beat_index: number
-          track_index: number
-          content: string
-          annotation_type: string
-          is_resolved: boolean
-          resolved_by: string | null
-          resolved_at: string | null
-          visible_during_playback: boolean
-          created_at: string
-          updated_at: string
-        }
-        Insert: {
-          id?: string
-          song_id: string
-          band_id: string
-          author_id: string
-          section_id?: string | null
-          bar_index: number
-          beat_index?: number
-          track_index?: number
-          content: string
-          annotation_type?: string
-          is_resolved?: boolean
-          resolved_by?: string | null
-          resolved_at?: string | null
-          visible_during_playback?: boolean
-          created_at?: string
-          updated_at?: string
-        }
-        Update: {
-          id?: string
-          song_id?: string
-          band_id?: string
-          author_id?: string
-          section_id?: string | null
-          bar_index?: number
-          beat_index?: number
-          track_index?: number
-          content?: string
-          annotation_type?: string
-          is_resolved?: boolean
-          resolved_by?: string | null
-          resolved_at?: string | null
-          visible_during_playback?: boolean
-          created_at?: string
-          updated_at?: string
-        }
-        Relationships: [
-          {
-            foreignKeyName: "song_annotations_song_id_fkey"
-            columns: ["song_id"]
-            isOneToOne: false
-            referencedRelation: "songs"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "song_annotations_band_id_fkey"
-            columns: ["band_id"]
-            isOneToOne: false
-            referencedRelation: "bands"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "song_annotations_section_id_fkey"
-            columns: ["section_id"]
-            isOneToOne: false
-            referencedRelation: "song_sections"
             referencedColumns: ["id"]
           },
         ]
