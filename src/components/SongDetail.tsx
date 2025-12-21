@@ -44,7 +44,7 @@ import {
   Loader2,
 } from 'lucide-react';
 import { LazyAlphaTab } from './LazyAlphaTab';
-import type { AlphaTabHandle, TrackInfo } from './LazyAlphaTab';
+import type { AlphaTabHandle, TrackInfo, AlphaTabScore } from './LazyAlphaTab';
 import { findMatchingTrackIndex } from '@/lib/trackMatcher';
 import { StructureTab } from './structure';
 
@@ -87,6 +87,9 @@ export const SongDetail: React.FC<SongDetailProps> = ({
   const audioPlayerRef = useRef<HTMLAudioElement>(null);
   const alphaTabRef = useRef<AlphaTabHandle | null>(null);
 
+  // AlphaTab score state for section extraction
+  const [alphaTabScore, setAlphaTabScore] = useState<AlphaTabScore | null>(null);
+
   // Sync audio element volume with context
   React.useEffect(() => {
     if (audioPlayerRef.current) {
@@ -102,7 +105,7 @@ export const SongDetail: React.FC<SongDetailProps> = ({
     alphaTabRef.current = handle;
   }, []);
 
-  // Handle tracks loaded - auto-select based on user's preferred instrument
+  // Handle tracks loaded - auto-select based on user's preferred instrument and capture score
   const handleAlphaTabTracksLoaded = useCallback((tracks: TrackInfo[]) => {
     if (preferredInstrument && tracks.length > 1) {
       const matchIndex = findMatchingTrackIndex(tracks, preferredInstrument);
@@ -110,7 +113,18 @@ export const SongDetail: React.FC<SongDetailProps> = ({
         alphaTabRef.current.renderTrack(matchIndex);
       }
     }
+    // Capture score for section extraction
+    const score = alphaTabRef.current?.getScore() ?? null;
+    setAlphaTabScore(score);
   }, [preferredInstrument]);
+
+  // Clear alphaTabScore when chart changes to non-GP or when no chart is active
+  const activeChart = song.charts.find(c => c.id === activeChartId);
+  React.useEffect(() => {
+    if (!activeChart || activeChart.type !== 'GP') {
+      setAlphaTabScore(null);
+    }
+  }, [activeChart]);
 
   // Metadata Edit State
   const [editForm, setEditForm] = useState({
@@ -141,8 +155,6 @@ export const SongDetail: React.FC<SongDetailProps> = ({
     onConfirm: () => {},
   });
   const closeConfirmDialog = () => setConfirmDialog(prev => ({ ...prev, isOpen: false }));
-
-  const activeChart = song.charts.find(c => c.id === activeChartId);
 
   // --- Assignment Handlers ---
   const handleAddRole = (memberId: string, role: string) => {
@@ -861,7 +873,7 @@ export const SongDetail: React.FC<SongDetailProps> = ({
               aria-labelledby="tab-structure"
               className="max-w-4xl mx-auto animate-slide-in-from-bottom animation-forwards opacity-0 stagger-1"
             >
-              <StructureTab song={song} members={members} />
+              <StructureTab song={song} members={members} alphaTabScore={alphaTabScore} />
             </div>
           )}
 

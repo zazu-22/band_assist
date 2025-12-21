@@ -14,6 +14,7 @@ import {
   Gauge,
 } from 'lucide-react';
 import { AlphaTabApi as AlphaTabApiClass, midi } from '@coderline/alphatab';
+import { AlphaTabScore as SectionExtractorScore } from '@/lib/sectionExtractor';
 
 // Constants
 const POSITION_UPDATE_THROTTLE_MS = 100; // Throttle position updates to ~10 FPS for performance
@@ -284,6 +285,12 @@ export interface AlphaTabHandle {
    * @returns Volume level (0-1, where 0 = count-in disabled)
    */
   getCountInVolume(): number;
+
+  /**
+   * Get the currently loaded score for section extraction.
+   * @returns The score object with masterBars for extraction, or null if no score loaded
+   */
+  getScore(): SectionExtractorScore | null;
 }
 
 export interface AlphaTabRendererProps {
@@ -1315,6 +1322,11 @@ export const AlphaTabRenderer: React.FC<AlphaTabRendererProps> = ({
       getMasterVolume: () => masterVolume,
       getMetronomeVolume: () => metronomeVolume,
       getCountInVolume: () => countInVolume,
+      getScore: () => {
+        // AlphaTab's internal score contains both tracks and masterBars
+        // Cast to the extraction-compatible type which requires masterBars
+        return (apiRef.current?.score as unknown as SectionExtractorScore | null) ?? null;
+      },
     }),
     [
       playerReady,
