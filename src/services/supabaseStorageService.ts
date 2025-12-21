@@ -2036,7 +2036,7 @@ export class SupabaseStorageService implements IStorageService {
       // Note: section_ids column not yet in generated types, use raw query approach
       let query = supabase
         .from('practice_sessions')
-        .select('duration_minutes')
+        .select('duration_minutes, section_ids')
         .eq('user_id', userId)
         .eq('band_id', bandId);
 
@@ -2063,8 +2063,9 @@ export class SupabaseStorageService implements IStorageService {
 
       // TODO: Remove type assertion after running `supabase gen types` to include section_ids column
       // The database has section_ids but types haven't been regenerated yet
+      // Cast through unknown since generated types don't include section_ids column
       type SessionWithSectionIds = { duration_minutes: number; section_ids?: string[] | null };
-      const sessionsWithSectionIds = data as SessionWithSectionIds[] | null;
+      const sessionsWithSectionIds = data as unknown as SessionWithSectionIds[] | null;
 
       for (const session of sessionsWithSectionIds ?? []) {
         const sectionIds = session.section_ids;
