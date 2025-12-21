@@ -8,6 +8,9 @@ import type {
   TrackInfo,
 } from './AlphaTabRenderer';
 
+// Re-export AlphaTabScore from sectionExtractor for consumers using the lazy-loaded component
+export type { AlphaTabScore } from '@/lib/sectionExtractor';
+
 export type { AlphaTabHandle, AlphaTabRendererProps, TrackInfo };
 
 // Lazy load the heavy AlphaTabRenderer (~1MB with worker, fonts, soundfont)
