@@ -1,5 +1,23 @@
 # Changelog
 
+## [0.1.19](https://github.com/zazu-22/band_assist/compare/v0.1.18...v0.1.19) (2025-12-23)
+
+
+### Features
+
+* **annotations:** implement Phase 3 Song Annotations with real-time sync ([#236](https://github.com/zazu-22/band_assist/issues/236)) ([f6b2947](https://github.com/zazu-22/band_assist/commit/f6b29471a3db20884352fb6a3b513eac7fbcfb86))
+* **band-dashboard:** improve band assignments page UX ([#253](https://github.com/zazu-22/band_assist/issues/253)) ([42b3e28](https://github.com/zazu-22/band_assist/commit/42b3e2808d88a06470edc4027099d2185f9ba242))
+* **practice:** implement Phase 4 Practice Integration with section-aware logging ([#244](https://github.com/zazu-22/band_assist/issues/244)) ([d42b0e6](https://github.com/zazu-22/band_assist/commit/d42b0e6f177b17ec7fca578f35705b48ad8c6cdf))
+* **practice:** implement Phase 4 Practice Integration with section-aware logging ([#246](https://github.com/zazu-22/band_assist/issues/246)) ([0dc060d](https://github.com/zazu-22/band_assist/commit/0dc060ddc53416b9c1afd71aa2c2a5d750195572))
+* **section-assignments:** implement Phase 2 Section Assignments feature ([#196](https://github.com/zazu-22/band_assist/issues/196)) ([#233](https://github.com/zazu-22/band_assist/issues/233)) ([cfac8ae](https://github.com/zazu-22/band_assist/commit/cfac8ae90eb59c2f12450c4e012293512df7f962))
+* **songs:** add song sections for structural breakdown ([#231](https://github.com/zazu-22/band_assist/issues/231)) ([2e7bfce](https://github.com/zazu-22/band_assist/commit/2e7bfce99569dd805233f30b3a2bdf1af3dc9f3c))
+
+
+### Bug Fixes
+
+* **alphatab:** enable automatic extraction from GP tabs ([#247](https://github.com/zazu-22/band_assist/issues/247)) ([#250](https://github.com/zazu-22/band_assist/issues/250)) ([db6bf71](https://github.com/zazu-22/band_assist/commit/db6bf7155cbfac5bb53da476644aec169d372674))
+* **practice:** sections selected during logging now display in history table ([#249](https://github.com/zazu-22/band_assist/issues/249)) ([66eb800](https://github.com/zazu-22/band_assist/commit/66eb800c413c1d8bf0a95c46abde0c14881aa0bd)), closes [#248](https://github.com/zazu-22/band_assist/issues/248)
+
 ## [0.1.18](https://github.com/zazu-22/band_assist/compare/v0.1.17...v0.1.18) (2025-12-15)
 
 
