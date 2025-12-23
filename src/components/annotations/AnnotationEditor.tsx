@@ -198,7 +198,7 @@ export const AnnotationEditor = memo(function AnnotationEditor({
           <Checkbox
             id="visible-during-playback"
             checked={visibleDuringPlayback}
-            onCheckedChange={(checked) => setVisibleDuringPlayback(checked === true)}
+            onCheckedChange={(checked: boolean | 'indeterminate') => setVisibleDuringPlayback(checked === true)}
             disabled={isSaving || isDeleting}
           />
           <Label htmlFor="visible-during-playback" className="text-sm cursor-pointer">
