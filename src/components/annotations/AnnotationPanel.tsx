@@ -204,7 +204,7 @@ export const AnnotationPanel = memo(function AnnotationPanel({
               <Checkbox
                 id="show-resolved"
                 checked={filters.showResolved}
-                onCheckedChange={(checked) =>
+                onCheckedChange={(checked: boolean | 'indeterminate') =>
                   onFiltersChange({ ...filters, showResolved: checked === true })
                 }
               />
